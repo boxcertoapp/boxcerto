@@ -216,10 +216,20 @@ export default function Oficina() {
   const { user } = useAuth()
   const [selectedOS, setSelectedOS] = useState(null)
   const [showNewOS, setShowNewOS] = useState(false)
+  const [prefillPlate, setPrefillPlate] = useState('')
   const [refresh, setRefresh] = useState(0)
   const reload = () => setRefresh(r => r + 1)
 
-  // OS objects from Dashboard already have vehicle & client embedded
+  // Check sessionStorage for pre-fill plate (from Historico > Nova OS)
+  useEffect(() => {
+    const stored = sessionStorage.getItem('boxcerto_prefill_plate')
+    if (stored) {
+      sessionStorage.removeItem('boxcerto_prefill_plate')
+      setPrefillPlate(stored)
+      setShowNewOS(true)
+    }
+  }, [])
+
   const openOS = (os) => setSelectedOS(os)
 
   if (selectedOS) {
@@ -238,12 +248,13 @@ export default function Oficina() {
         key={refresh}
         officeName={user.oficina}
         onOpenOS={openOS}
-        onNewOS={() => setShowNewOS(true)}
+        onNewOS={() => { setPrefillPlate(''); setShowNewOS(true) }}
       />
       {showNewOS && (
         <NewOSModal
           officeName={user.oficina}
-          onClose={() => { setShowNewOS(false); reload() }}
+          prefillPlate={prefillPlate}
+          onClose={() => { setShowNewOS(false); setPrefillPlate(''); reload() }}
         />
       )}
     </>
@@ -251,8 +262,8 @@ export default function Oficina() {
 }
 
 // ── NEW OS MODAL ─────────────────────────────────────────
-function NewOSModal({ officeName, onClose }) {
-  const [placa, setPlaca] = useState('')
+function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
+  const [placa, setPlaca] = useState(prefillPlate)
   const [step, setStep] = useState('plate') // plate | newClient | confirm
   const [vehicle, setVehicle] = useState(null)
   const [client, setClient] = useState(null)
@@ -291,6 +302,13 @@ function NewOSModal({ officeName, onClose }) {
     if (n.length <= 6) return `${n.slice(0,3)}.${n.slice(3)}`
     if (n.length <= 9) return `${n.slice(0,3)}.${n.slice(3,6)}.${n.slice(6)}`
     return `${n.slice(0,3)}.${n.slice(3,6)}.${n.slice(6,9)}-${n.slice(9)}`
+  }
+  const validateCPF = (cpf) => {
+    if (!cpf) return true // optional
+    const n = cpf.replace(/\D/g, '')
+    if (n.length !== 11) return false
+    if (/^(\d)\1{10}$/.test(n)) return false // all same digit
+    return true
   }
   const handleCEP = async (val) => {
     const cep = val.replace(/\D/g, '')
@@ -356,6 +374,8 @@ function NewOSModal({ officeName, onClose }) {
   const createAndOpen = async () => {
     if (!newClient.nome || !newClient.whatsapp || !newClient.modelo)
       return setError('Nome, WhatsApp e Modelo são obrigatórios.')
+    if (!validateCPF(newClient.cpf))
+      return setError('CPF inválido. Verifique os 11 dígitos.')
     setLoading(true)
     try {
       const c = existingClient
@@ -744,8 +764,9 @@ function OSDetailModal({ os, onClose, officeName }) {
   const [desconto, setDesconto] = useState(() => {
     const d = os.desconto || {}
     const defaultMetodos = JSON.parse(localStorage.getItem('boxcerto_payment_defaults') || '["dinheiro","pix"]')
+    const defaultTipo = localStorage.getItem('boxcerto_desconto_tipo') || 'valor'
     return {
-      tipo: d.tipo || 'valor',
+      tipo: d.tipo || defaultTipo,
       valor: d.valor || '',
       metodos: d.metodos || defaultMetodos,
     }
@@ -754,6 +775,7 @@ function OSDetailModal({ os, onClose, officeName }) {
   const [editKm, setEditKm] = useState(false)
   const [stockItems, setStockItems] = useState([])
   const [stockPending, setStockPending] = useState(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const reload = async () => {
     const loaded = await itemStorage.getByOS(os.id)
@@ -802,6 +824,12 @@ function OSDetailModal({ os, onClose, officeName }) {
     setStatus('pronto')
     setDeliveryInfo({ deliveredAt: null, payments: [], deliveryNotes: '', desconto: null })
     setShowRevertConfirm(false)
+  }
+
+  const handleDeleteOS = async () => {
+    await osStorage.delete(os.id)
+    setShowDeleteConfirm(false)
+    onClose()
   }
 
   const handleAddItem = async () => {
@@ -892,6 +920,11 @@ function OSDetailModal({ os, onClose, officeName }) {
             <button onClick={handlePrint} className="w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center hover:bg-indigo-100 transition-colors">
               <Printer className="w-4 h-4 text-indigo-600" />
             </button>
+            {status !== 'entregue' && (
+              <button onClick={() => setShowDeleteConfirm(true)} className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center hover:bg-red-100 transition-colors">
+                <Trash2 className="w-4 h-4 text-red-500" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -1243,6 +1276,30 @@ function OSDetailModal({ os, onClose, officeName }) {
               <button onClick={handleRevert}
                 className="flex-1 py-3 rounded-xl bg-red-500 text-white font-semibold text-sm hover:bg-red-600 transition-colors">
                 Sim, estornar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 px-6">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5 text-red-500" />
+              </div>
+              <h3 className="font-bold text-slate-900">Excluir OS?</h3>
+            </div>
+            <p className="text-sm text-slate-500 mb-5">Esta ação é <strong>irreversível</strong>. A OS e todos os seus itens serão removidos permanentemente.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 py-3 rounded-xl border border-gray-200 text-slate-600 font-semibold text-sm hover:bg-gray-50 transition-colors">
+                Cancelar
+              </button>
+              <button onClick={handleDeleteOS}
+                className="flex-1 py-3 rounded-xl bg-red-500 text-white font-semibold text-sm hover:bg-red-600 transition-colors">
+                Excluir
               </button>
             </div>
           </div>

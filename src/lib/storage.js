@@ -300,6 +300,11 @@ export const osStorage = {
       desconto: { tipo: 'valor', valor: 0 },
     }).eq('id', id)
   },
+
+  delete: async (id) => {
+    await supabase.from('service_items').delete().eq('os_id', id)
+    await supabase.from('service_orders').delete().eq('id', id)
+  },
 }
 
 // ── ITENS DA OS ───────────────────────────────────────────

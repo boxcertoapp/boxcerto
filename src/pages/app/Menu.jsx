@@ -330,6 +330,10 @@ export default function Menu() {
   const [paymentDefaults, setPaymentDefaults] = useState(
     () => JSON.parse(localStorage.getItem('boxcerto_payment_defaults') || '["dinheiro","pix"]')
   )
+  const [defaultDescontoTipo, setDefaultDescontoTipo] = useState(
+    () => localStorage.getItem('boxcerto_desconto_tipo') || 'valor'
+  )
+  const [showPaymentSection, setShowPaymentSection] = useState(false)
   const [saved, setSaved] = useState(false)
   const [activeTab, setActiveTab] = useState('relatorios')
 
@@ -350,6 +354,7 @@ export default function Menu() {
   const handleSave = async () => {
     await officeDataStorage.save(user.oficina, officeData)
     localStorage.setItem('boxcerto_payment_defaults', JSON.stringify(paymentDefaults))
+    localStorage.setItem('boxcerto_desconto_tipo', defaultDescontoTipo)
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
   }
@@ -432,23 +437,58 @@ export default function Menu() {
               </div>
             </div>
           ))}
-          {/* Pagamentos padrão */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Formas de pagamento padrão</label>
-            <p className="text-xs text-slate-400 mb-3">Pré-selecionadas ao abrir o desconto em qualquer OS.</p>
-            <div className="grid grid-cols-2 gap-2">
-              {PAYMENT_METHODS_OPTIONS.map(m => {
-                const checked = paymentDefaults.includes(m.key)
-                return (
-                  <label key={m.key}
-                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border cursor-pointer transition-all ${checked ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-gray-50'}`}>
-                    <input type="checkbox" checked={checked} onChange={() => togglePaymentDefault(m.key)}
-                      className="w-3.5 h-3.5 accent-indigo-600" />
-                    <span className={`text-xs font-medium ${checked ? 'text-indigo-700' : 'text-slate-600'}`}>{m.label}</span>
-                  </label>
-                )
-              })}
-            </div>
+          {/* Pagamentos padrão — seção colapsível */}
+          <div className="border border-gray-200 rounded-2xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowPaymentSection(p => !p)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+            >
+              <div className="text-left">
+                <p className="text-sm font-medium text-slate-700">Padrões de desconto e pagamento</p>
+                <p className="text-xs text-slate-400">Pré-selecionados ao abrir cada OS</p>
+              </div>
+              {showPaymentSection
+                ? <ChevronUp className="w-4 h-4 text-slate-400 shrink-0" />
+                : <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />}
+            </button>
+            {showPaymentSection && (
+              <div className="px-4 pb-4 pt-1 space-y-4 border-t border-gray-100">
+                {/* Tipo de desconto padrão */}
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-2">Tipo de desconto padrão</label>
+                  <div className="flex bg-gray-100 rounded-xl p-1 gap-1 w-fit">
+                    {[{ key: 'valor', label: 'R$' }, { key: 'percent', label: '%' }].map(op => (
+                      <button
+                        key={op.key}
+                        type="button"
+                        onClick={() => setDefaultDescontoTipo(op.key)}
+                        className={`px-5 py-1.5 rounded-lg text-sm font-semibold transition-all ${defaultDescontoTipo === op.key ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}
+                      >
+                        {op.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {/* Formas de pagamento */}
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-2">Formas de pagamento pré-selecionadas</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PAYMENT_METHODS_OPTIONS.map(m => {
+                      const checked = paymentDefaults.includes(m.key)
+                      return (
+                        <label key={m.key}
+                          className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border cursor-pointer transition-all ${checked ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-gray-50'}`}>
+                          <input type="checkbox" checked={checked} onChange={() => togglePaymentDefault(m.key)}
+                            className="w-3.5 h-3.5 accent-indigo-600" />
+                          <span className={`text-xs font-medium ${checked ? 'text-indigo-700' : 'text-slate-600'}`}>{m.label}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <button onClick={handleSave}

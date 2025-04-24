@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import {
   Package, Plus, Trash2, X, AlertTriangle,
   BarChart2, Search, ChevronDown, ChevronUp,
-  Bell, BellOff, Printer, Edit2, Check
+  Bell, BellOff, Printer, Edit2, Check, ArrowUpDown
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { inventoryStorage, formatCurrency, officeDataStorage } from '../../lib/storage'
@@ -147,6 +147,16 @@ export default function Estoque() {
   const [showAdd, setShowAdd] = useState(false)
   const [editId, setEditId] = useState(null)
   const [showAlertOnly, setShowAlertOnly] = useState(false)
+  const [sortBy, setSortBy] = useState('az') // az | qty_asc | qty_desc | val_asc | val_desc
+  const [showSortMenu, setShowSortMenu] = useState(false)
+
+  const SORT_OPTIONS = [
+    { key: 'az',       label: 'A → Z' },
+    { key: 'qty_asc',  label: 'Qtd ↑ (menor)' },
+    { key: 'qty_desc', label: 'Qtd ↓ (maior)' },
+    { key: 'val_asc',  label: 'Valor ↑ (menor)' },
+    { key: 'val_desc', label: 'Valor ↓ (maior)' },
+  ]
 
   const reload = async () => {
     const [inv, od] = await Promise.all([
@@ -158,12 +168,20 @@ export default function Estoque() {
   }
   useEffect(() => { reload() }, [])
 
+  const sortFn = (a, b) => {
+    if (sortBy === 'az')       return a.produto.localeCompare(b.produto)
+    if (sortBy === 'qty_asc')  return a.quantidade - b.quantidade
+    if (sortBy === 'qty_desc') return b.quantidade - a.quantidade
+    if (sortBy === 'val_asc')  return a.valorVenda - b.valorVenda
+    if (sortBy === 'val_desc') return b.valorVenda - a.valorVenda
+    return 0
+  }
   const filtered = items.filter(i => {
     const match = i.produto.toLowerCase().includes(search.toLowerCase()) ||
       (i.fornecedor || '').toLowerCase().includes(search.toLowerCase())
     if (showAlertOnly) return match && i.alertaAtivo && i.quantidade <= i.quantidadeMin
     return match
-  }).sort((a, b) => a.produto.localeCompare(b.produto))
+  }).sort(sortFn)
 
   const emAlerta = items.filter(i => i.alertaAtivo && i.quantidade <= i.quantidadeMin)
   const totalInvestido = items.reduce((s, i) => s + i.valorCompra * i.quantidade, 0)
@@ -229,6 +247,27 @@ export default function Estoque() {
             placeholder="Buscar produto..."
             className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 bg-white"
           />
+        </div>
+        {/* Sort */}
+        <div className="relative">
+          <button
+            onClick={() => setShowSortMenu(p => !p)}
+            className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-50 transition-colors"
+            title="Ordenar"
+          >
+            <ArrowUpDown className="w-4 h-4 text-slate-600" />
+          </button>
+          {showSortMenu && (
+            <div className="absolute right-0 top-12 bg-white rounded-2xl border border-gray-100 shadow-xl z-20 overflow-hidden w-44">
+              {SORT_OPTIONS.map(opt => (
+                <button key={opt.key} onClick={() => { setSortBy(opt.key); setShowSortMenu(false) }}
+                  className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${sortBy === opt.key ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-700 hover:bg-gray-50'}`}>
+                  {opt.label}
+                  {sortBy === opt.key && <Check className="w-3.5 h-3.5 text-indigo-600" />}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <button
           onClick={() => printEstoque({ items: filtered, officeData, formatCurrencyFn: formatCurrency })}
