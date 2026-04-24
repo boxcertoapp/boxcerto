@@ -44,6 +44,8 @@ function AbaRelatorios({ user }) {
   const [mesSrv, setMesSrv] = useState(now.getMonth())
   const [anoSrv, setAnoSrv] = useState(now.getFullYear())
   const [servicosMes, setServicosMes] = useState([])
+  const [sortClientes, setSortClientes] = useState('az')
+  const [sortServicos, setSortServicos] = useState('date_desc')
 
   // Load on section change
   useEffect(() => {
@@ -90,7 +92,99 @@ function AbaRelatorios({ user }) {
   const nextMes = () => { if (mesSrv === 11) { setMesSrv(0); setAnoSrv(anoSrv+1) } else setMesSrv(mesSrv+1) }
   const toggle = (key) => setSection(prev => prev === key ? null : key)
 
-  const clientesVisiveis = showMoreClientes ? allClients : allClients.slice(0, LIMIT)
+  const printClientes = (clients, vehicles, officeInfo) => {
+    const rows = clients.map(c => {
+      const veiculos = vehicles.filter(v => v.clientId === c.id)
+      return `
+        <tr>
+          <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${c.nome}</td>
+          <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${c.whatsapp || '—'}</td>
+          <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${c.cpf || '—'}</td>
+          <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${veiculos.map(v => v.placa).join(', ') || '—'}</td>
+          <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${[c.cidade, c.uf].filter(Boolean).join('/')  || '—'}</td>
+        </tr>`
+    }).join('')
+    const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/><title>Relatório de Clientes</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;padding:32px;color:#1e293b}@media print{body{padding:16px}}</style></head><body>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #e2e8f0">
+    <div style="font-size:18px;font-weight:800">${officeInfo || 'Minha Oficina'}</div>
+    <div style="text-align:right">
+      <div style="background:#4f46e5;color:white;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;display:inline-block">Relatório de Clientes</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px">${new Date().toLocaleDateString('pt-BR')}</div>
+    </div>
+  </div>
+  <p style="font-size:12px;color:#64748b;margin-bottom:12px">${clients.length} clientes cadastrados</p>
+  <table style="width:100%;border-collapse:collapse">
+    <thead><tr style="background:#f8fafc">
+      <th style="padding:8px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Nome</th>
+      <th style="padding:8px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #e2e8f0">WhatsApp</th>
+      <th style="padding:8px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #e2e8f0">CPF</th>
+      <th style="padding:8px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Placas</th>
+      <th style="padding:8px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Cidade</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div style="text-align:center;color:#94a3b8;font-size:11px;margin-top:24px">Gerado por BoxCerto &bull; boxcerto.com</div>
+</body></html>`
+    const win = window.open('', '_blank', 'width=900,height=700')
+    if (!win) { alert('Permita pop-ups'); return }
+    win.document.write(html)
+    win.document.close()
+    win.onload = () => { win.focus(); win.print() }
+  }
+
+  const printServicos = (osList, mesLabel, officeInfo) => {
+    const rows = osList.map(os => `
+      <tr>
+        <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${os.vehicle?.placa || '—'}</td>
+        <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${os.vehicle?.modelo || '—'}</td>
+        <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${os.client?.nome || '—'}</td>
+        <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${os.deliveredAt ? new Date(os.deliveredAt).toLocaleDateString('pt-BR') : '—'}</td>
+        <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px;text-align:right;font-weight:600">R$ ${(os.totals?.venda || 0).toFixed(2).replace('.', ',')}</td>
+      </tr>`).join('')
+    const total = osList.reduce((s, os) => s + (os.totals?.venda || 0), 0)
+    const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/><title>Serviços do Mês</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;padding:32px;color:#1e293b}@media print{body{padding:16px}}</style></head><body>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #e2e8f0">
+    <div style="font-size:18px;font-weight:800">${officeInfo || 'Minha Oficina'}</div>
+    <div style="text-align:right">
+      <div style="background:#10b981;color:white;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;display:inline-block">Serviços do Mês</div>
+      <div style="font-size:13px;color:#1e293b;font-weight:700;margin-top:4px">${mesLabel}</div>
+    </div>
+  </div>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+    <thead><tr style="background:#f8fafc">
+      <th style="padding:8px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Placa</th>
+      <th style="padding:8px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Modelo</th>
+      <th style="padding:8px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Cliente</th>
+      <th style="padding:8px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Entrega</th>
+      <th style="padding:8px;text-align:right;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Total</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div style="background:#10b981;color:white;border-radius:12px;padding:14px 20px;display:flex;justify-content:space-between">
+    <span style="font-weight:600">${osList.length} carros entregues</span>
+    <span style="font-weight:800;font-size:18px">R$ ${total.toFixed(2).replace('.', ',')}</span>
+  </div>
+  <div style="text-align:center;color:#94a3b8;font-size:11px;margin-top:24px">Gerado por BoxCerto &bull; boxcerto.com</div>
+</body></html>`
+    const win = window.open('', '_blank', 'width=900,height=700')
+    if (!win) { alert('Permita pop-ups'); return }
+    win.document.write(html)
+    win.document.close()
+    win.onload = () => { win.focus(); win.print() }
+  }
+
+  const sortedClientes = [...allClients].sort((a, b) => sortClientes === 'az' ? a.nome.localeCompare(b.nome) : b.nome.localeCompare(a.nome))
+  const sortedServicos = [...servicosMes].sort((a, b) => {
+    if (sortServicos === 'date_desc') return new Date(b.deliveredAt || b.createdAt) - new Date(a.deliveredAt || a.createdAt)
+    if (sortServicos === 'date_asc') return new Date(a.deliveredAt || a.createdAt) - new Date(b.deliveredAt || b.createdAt)
+    if (sortServicos === 'val_desc') return (b.totals?.venda || 0) - (a.totals?.venda || 0)
+    if (sortServicos === 'val_asc') return (a.totals?.venda || 0) - (b.totals?.venda || 0)
+    return 0
+  })
+
+  const clientesVisiveis = showMoreClientes ? sortedClientes : sortedClientes.slice(0, LIMIT)
 
   const SectionBtn = ({ id, icon: Icon, iconColor, title, subtitle }) => (
     <button onClick={() => toggle(id)} className="w-full flex items-center justify-between p-4">
@@ -119,7 +213,23 @@ function AbaRelatorios({ user }) {
               <p className="text-center text-slate-400 text-sm py-6">Nenhum cliente cadastrado</p>
             ) : (
               <>
-                <p className="text-xs text-slate-400 font-medium mb-3">{allClients.length} clientes</p>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs text-slate-400 font-medium">{allClients.length} clientes</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex bg-gray-100 rounded-xl p-0.5 gap-0.5">
+                      {[{ key: 'az', label: 'A→Z' }, { key: 'za', label: 'Z→A' }].map(s => (
+                        <button key={s.key} onClick={() => setSortClientes(s.key)}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${sortClientes === s.key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                    <button onClick={() => printClientes(sortedClientes, clientVehicles, user.oficina)}
+                      className="w-7 h-7 bg-indigo-50 rounded-lg flex items-center justify-center hover:bg-indigo-100 transition-colors">
+                      <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                    </button>
+                  </div>
+                </div>
                 <div className="space-y-3">
                   {clientesVisiveis.map(c => {
                     const veiculos = clientVehicles.filter(v => v.clientId === c.id)
@@ -295,10 +405,29 @@ function AbaRelatorios({ user }) {
                     <p className="text-xs text-green-700 font-medium">{servicosMes.length} carro{servicosMes.length > 1 ? 's' : ''} entregue{servicosMes.length > 1 ? 's' : ''}</p>
                     <p className="text-xs text-green-600 mt-0.5">Total faturado</p>
                   </div>
-                  <p className="text-xl font-bold text-green-700">{formatCurrency(totalServicos)}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xl font-bold text-green-700">{formatCurrency(totalServicos)}</p>
+                    <button onClick={() => printServicos(sortedServicos, `${MESES[mesSrv]} ${anoSrv}`, user.oficina)}
+                      className="w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center hover:bg-green-200 transition-colors shrink-0">
+                      <FileText className="w-3.5 h-3.5 text-green-700" />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex bg-gray-100 rounded-xl p-0.5 gap-0.5 mb-3">
+                  {[
+                    { key: 'date_desc', label: 'Mais recente' },
+                    { key: 'date_asc', label: 'Mais antigo' },
+                    { key: 'val_desc', label: 'Maior valor' },
+                    { key: 'val_asc', label: 'Menor valor' },
+                  ].map(s => (
+                    <button key={s.key} onClick={() => setSortServicos(s.key)}
+                      className={`flex-1 py-1 rounded-lg text-[10px] font-semibold transition-all ${sortServicos === s.key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>
+                      {s.label}
+                    </button>
+                  ))}
                 </div>
                 <div className="space-y-2">
-                  {servicosMes.map(os => (
+                  {sortedServicos.map(os => (
                     <div key={os.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
                       <div className="bg-slate-800 px-2 py-1 rounded-lg shrink-0">
                         <span className="text-white text-xs font-bold plate-mercosul">{os.vehicle?.placa}</span>

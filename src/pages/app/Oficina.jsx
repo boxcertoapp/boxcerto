@@ -325,9 +325,17 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
     }
   }
 
+  const validatePlate = (placa) => {
+    const clean = placa.replace(/[^A-Z0-9]/g, '')
+    if (/^[A-Z]{3}\d{4}$/.test(clean)) return true  // old: ABC1234
+    if (/^[A-Z]{3}\d[A-Z]\d{2}$/.test(clean)) return true  // mercosul: ABC1A23
+    return false
+  }
+
   const searchPlate = async () => {
     const clean = placa.replace(/[^a-zA-Z0-9]/g, '')
     if (clean.length < 7) return setError('Placa inválida.')
+    if (!validatePlate(placa.toUpperCase())) return setError('Formato inválido. Use ABC-1234 ou ABC-1A23 (Mercosul).')
     setError('')
     setLoading(true)
     const found = await vehicleStorage.getByPlate(officeName, placa)
@@ -776,6 +784,14 @@ function OSDetailModal({ os, onClose, officeName }) {
   const [stockItems, setStockItems] = useState([])
   const [stockPending, setStockPending] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showEditData, setShowEditData] = useState(false)
+  const [editForm, setEditForm] = useState({
+    clienteNome: os.client?.nome || '',
+    clienteWhatsapp: os.client?.whatsapp || '',
+    clienteCpf: os.client?.cpf || '',
+    modelo: os.vehicle?.modelo || '',
+  })
+  const [savingEdit, setSavingEdit] = useState(false)
 
   const reload = async () => {
     const loaded = await itemStorage.getByOS(os.id)
@@ -830,6 +846,20 @@ function OSDetailModal({ os, onClose, officeName }) {
     await osStorage.delete(os.id)
     setShowDeleteConfirm(false)
     onClose()
+  }
+
+  const handleSaveEdit = async () => {
+    setSavingEdit(true)
+    await Promise.all([
+      os.client?.id && clientStorage.update(os.client.id, {
+        nome: editForm.clienteNome,
+        whatsapp: editForm.clienteWhatsapp,
+        cpf: editForm.clienteCpf,
+      }),
+      os.vehicle?.id && vehicleStorage.update(os.vehicle.id, { modelo: editForm.modelo }),
+    ])
+    setSavingEdit(false)
+    setShowEditData(false)
   }
 
   const handleAddItem = async () => {
@@ -905,8 +935,8 @@ function OSDetailModal({ os, onClose, officeName }) {
         <div className="flex items-center gap-2 p-4 border-b border-gray-100 shrink-0">
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full shrink-0"><X className="w-5 h-5 text-slate-600" /></button>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-slate-900 truncate">{os.vehicle?.placa} · {os.vehicle?.modelo}</p>
-            <p className="text-xs text-slate-400 truncate">{os.client?.nome} · {formatDate(os.createdAt)}</p>
+            <p className="font-bold text-slate-900 truncate">{os.vehicle?.placa} · {editForm.modelo || os.vehicle?.modelo}</p>
+            <p className="text-xs text-slate-400 truncate">{editForm.clienteNome || os.client?.nome} · {formatDate(os.createdAt)}</p>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <a href={`https://wa.me/55${os.client?.whatsapp?.replace(/\D/g,'')}?text=${encodeURIComponent(WPP_MESSAGES[status]?.(os.client?.nome, os.vehicle?.modelo, totalComDesconto) || '')}`}
@@ -919,6 +949,9 @@ function OSDetailModal({ os, onClose, officeName }) {
             </button>
             <button onClick={handlePrint} className="w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center hover:bg-indigo-100 transition-colors">
               <Printer className="w-4 h-4 text-indigo-600" />
+            </button>
+            <button onClick={() => setShowEditData(true)} className="w-9 h-9 bg-slate-50 rounded-full flex items-center justify-center hover:bg-slate-100 transition-colors">
+              <Edit2 className="w-4 h-4 text-slate-500" />
             </button>
             {status !== 'entregue' && (
               <button onClick={() => setShowDeleteConfirm(true)} className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center hover:bg-red-100 transition-colors">
@@ -1277,6 +1310,49 @@ function OSDetailModal({ os, onClose, officeName }) {
                 className="flex-1 py-3 rounded-xl bg-red-500 text-white font-semibold text-sm hover:bg-red-600 transition-colors">
                 Sim, estornar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditData && (
+        <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/50">
+          <div className="bg-white rounded-t-3xl w-full max-w-lg p-5 pb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-slate-900">Editar Dados</h2>
+              <button onClick={() => setShowEditData(false)} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-slate-500" /></button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Modelo do Veículo</label>
+                <input value={editForm.modelo} onChange={e => setEditForm(p => ({...p, modelo: e.target.value}))}
+                  placeholder="Ex: Fiat Strada 2022"
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
+              </div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider pt-1">Cliente</p>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Nome</label>
+                <input value={editForm.clienteNome} onChange={e => setEditForm(p => ({...p, clienteNome: e.target.value}))}
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">WhatsApp</label>
+                  <input value={editForm.clienteWhatsapp} onChange={e => setEditForm(p => ({...p, clienteWhatsapp: e.target.value}))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">CPF</label>
+                  <input value={editForm.clienteCpf} onChange={e => setEditForm(p => ({...p, clienteCpf: e.target.value}))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button onClick={() => setShowEditData(false)} className="flex-1 py-3 rounded-xl border border-gray-200 text-slate-600 font-semibold text-sm hover:bg-gray-50">Cancelar</button>
+                <button onClick={handleSaveEdit} disabled={savingEdit} className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 disabled:opacity-60">
+                  {savingEdit ? 'Salvando...' : 'Salvar'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
