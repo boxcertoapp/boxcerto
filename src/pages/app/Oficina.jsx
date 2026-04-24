@@ -1,0 +1,1253 @@
+import { useState, useEffect } from 'react'
+import {
+  Plus, MessageCircle, ChevronRight, ChevronUp, ChevronDown, X, Check,
+  Trash2, Search, Car, FileText, AlertCircle,
+  Printer, Share2, PackageCheck, RotateCcw,
+  CreditCard, Banknote, Smartphone, DollarSign,
+  Clock, Wrench, Package, Tag, Percent,
+  CalendarClock, Gauge, ReceiptText, TrendingUp,
+  CheckCircle2, Edit2
+} from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
+import {
+  osStorage, itemStorage, clientStorage, vehicleStorage,
+  STATUS_LABELS, STATUS_COLORS, formatCurrency, formatDate,
+  SERVICOS_COMUNS, GARANTIA_OPTIONS, officeDataStorage,
+  printOS, printReceipt, inventoryStorage
+} from '../../lib/storage'
+
+// ── HELPERS ───────────────────────────────────────────────
+const WPP_MESSAGES = {
+  orcamento: (cliente, modelo, total) =>
+    `Olá ${cliente}! 👋 O orçamento do seu *${modelo}* está pronto.\n\nTotal: *${formatCurrency(total)}*\n\nPodemos prosseguir com o serviço?`,
+  manutencao: (cliente, modelo) =>
+    `Olá ${cliente}! 🔧 Seu *${modelo}* já está em manutenção. Assim que ficar pronto, te aviso!`,
+  pronto: (cliente, modelo) =>
+    `Olá ${cliente}! ✅ Seu *${modelo}* está *pronto para retirada*. Qualquer dúvida, estamos à disposição!`,
+  entregue: (cliente, modelo) =>
+    `Olá ${cliente}! 😊 Obrigado pela confiança! Esperamos que esteja tudo certo com seu *${modelo}*.`,
+}
+
+function PlateTag({ placa }) {
+  return (
+    <div className="bg-slate-800 px-2.5 py-1.5 rounded-lg flex flex-col items-center min-w-[80px]">
+      <span className="text-white text-sm font-bold plate-mercosul tracking-widest">{placa}</span>
+      <span className="text-slate-500 text-[8px] mt-0.5">BRASIL</span>
+    </div>
+  )
+}
+
+function localDatetimeNow() {
+  const now = new Date()
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`
+}
+
+const PAYMENT_METHODS = [
+  { key: 'pix',     label: 'PIX',     icon: Smartphone },
+  { key: 'dinheiro',label: 'Dinheiro',icon: Banknote },
+  { key: 'debito',  label: 'Débito',  icon: CreditCard },
+  { key: 'credito', label: 'Crédito', icon: CreditCard },
+  { key: 'outros',  label: 'Outros',  icon: DollarSign },
+]
+
+// ── DASHBOARD ─────────────────────────────────────────────
+function Dashboard({ officeName, onOpenOS, onNewOS }) {
+  const [data, setData] = useState({ all: [], prontos: [], manutencao: [], orcamento: [], agendados: [] })
+
+  useEffect(() => {
+    const load = async () => {
+      // osStorage.getAll() already returns enriched OS (vehicle, client, totals embedded)
+      const all = await osStorage.getAll(officeName)
+      const active = all.filter(os => os.status !== 'entregue')
+      const today = new Date().toDateString()
+      setData({
+        all: active,
+        prontos: active.filter(os => os.status === 'pronto'),
+        manutencao: active.filter(os => os.status === 'manutencao'),
+        orcamento: active.filter(os => os.status === 'orcamento'),
+        agendados: active.filter(os => os.agendadoPara && new Date(os.agendadoPara).toDateString() === today),
+      })
+    }
+    load()
+  }, [officeName])
+
+  const hora = new Date().getHours()
+  const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite'
+
+  return (
+    <div className="p-4 pb-36 space-y-5">
+      {/* Saudação */}
+      <div>
+        <p className="text-slate-400 text-sm">{saudacao} 👋</p>
+        <p className="text-xl font-bold text-slate-900 mt-0.5">
+          {data.all.length === 0 ? 'Nenhuma OS em aberto' : `${data.all.length} OS em andamento`}
+        </p>
+      </div>
+
+      {/* Cards rápidos */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-green-50 rounded-2xl p-3 text-center border border-green-100">
+          <p className="text-2xl font-bold text-green-700">{data.prontos.length}</p>
+          <p className="text-xs text-green-600 mt-0.5 font-medium">Pronto{data.prontos.length !== 1 ? 's' : ''}</p>
+        </div>
+        <div className="bg-blue-50 rounded-2xl p-3 text-center border border-blue-100">
+          <p className="text-2xl font-bold text-blue-700">{data.manutencao.length}</p>
+          <p className="text-xs text-blue-600 mt-0.5 font-medium">Manutenção</p>
+        </div>
+        <div className="bg-amber-50 rounded-2xl p-3 text-center border border-amber-100">
+          <p className="text-2xl font-bold text-amber-700">{data.orcamento.length}</p>
+          <p className="text-xs text-amber-600 mt-0.5 font-medium">Orçamento{data.orcamento.length !== 1 ? 's' : ''}</p>
+        </div>
+      </div>
+
+      {/* Agendados hoje */}
+      {data.agendados.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <CalendarClock className="w-3.5 h-3.5" /> Agendados para hoje
+          </p>
+          <div className="space-y-2">
+            {data.agendados.map(os => (
+              <button key={os.id} onClick={() => onOpenOS(os)}
+                className="w-full bg-indigo-50 rounded-2xl border border-indigo-100 p-3 flex items-center gap-3 text-left hover:bg-indigo-100 transition-colors">
+                <PlateTag placa={os.vehicle?.placa || '???'} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-slate-900 text-sm truncate">{os.vehicle?.modelo}</p>
+                  <p className="text-xs text-slate-500 truncate">{os.client?.nome}</p>
+                </div>
+                <p className="text-xs text-indigo-600 font-medium shrink-0">
+                  {os.agendadoPara ? new Date(os.agendadoPara).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Prontos para retirar */}
+      {data.prontos.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> Prontos para retirar
+          </p>
+          <div className="space-y-2">
+            {data.prontos.map(os => (
+              <button key={os.id} onClick={() => onOpenOS(os)}
+                className="w-full bg-white rounded-2xl border border-green-100 p-3 flex items-center gap-3 text-left hover:border-green-200 transition-colors shadow-sm">
+                <PlateTag placa={os.vehicle?.placa || '???'} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-slate-900 text-sm truncate">{os.vehicle?.modelo}</p>
+                  <p className="text-xs text-slate-500 truncate">{os.client?.nome}</p>
+                </div>
+                {os.totals?.venda > 0 && <p className="text-sm font-bold text-slate-900 shrink-0">{formatCurrency(os.totals.venda)}</p>}
+                <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Em manutenção */}
+      {data.manutencao.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <Wrench className="w-3.5 h-3.5 text-blue-500" /> Em manutenção
+          </p>
+          <div className="space-y-2">
+            {data.manutencao.map(os => (
+              <button key={os.id} onClick={() => onOpenOS(os)}
+                className="w-full bg-white rounded-2xl border border-gray-100 p-3 flex items-center gap-3 text-left hover:border-blue-100 transition-colors">
+                <PlateTag placa={os.vehicle?.placa || '???'} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-slate-900 text-sm truncate">{os.vehicle?.modelo}</p>
+                  <p className="text-xs text-slate-500 truncate">{os.client?.nome}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Orçamentos */}
+      {data.orcamento.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <FileText className="w-3.5 h-3.5 text-amber-500" /> Orçamentos abertos
+          </p>
+          <div className="space-y-2">
+            {data.orcamento.map(os => (
+              <button key={os.id} onClick={() => onOpenOS(os)}
+                className="w-full bg-white rounded-2xl border border-gray-100 p-3 flex items-center gap-3 text-left hover:border-amber-100 transition-colors">
+                <PlateTag placa={os.vehicle?.placa || '???'} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-slate-900 text-sm truncate">{os.vehicle?.modelo}</p>
+                  <p className="text-xs text-slate-500 truncate">{os.client?.nome} · {formatDate(os.createdAt)}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {data.all.length === 0 && (
+        <div className="text-center py-16 text-slate-400">
+          <Car className="w-12 h-12 mx-auto mb-3 opacity-30" />
+          <p className="font-medium">Tudo tranquilo por aqui!</p>
+          <p className="text-sm mt-1">Toque no + para abrir uma OS</p>
+        </div>
+      )}
+
+      {/* FAB */}
+      <button
+        onClick={onNewOS}
+        className="fixed bottom-24 right-4 w-14 h-14 bg-indigo-600 rounded-full shadow-lg shadow-indigo-200 flex items-center justify-center hover:bg-indigo-700 transition-all active:scale-95 z-40"
+      >
+        <Plus className="w-7 h-7 text-white" />
+      </button>
+    </div>
+  )
+}
+
+// ── MAIN OFICINA ──────────────────────────────────────────
+export default function Oficina() {
+  const { user } = useAuth()
+  const [selectedOS, setSelectedOS] = useState(null)
+  const [showNewOS, setShowNewOS] = useState(false)
+  const [refresh, setRefresh] = useState(0)
+  const reload = () => setRefresh(r => r + 1)
+
+  // OS objects from Dashboard already have vehicle & client embedded
+  const openOS = (os) => setSelectedOS(os)
+
+  if (selectedOS) {
+    return (
+      <OSDetailModal
+        os={selectedOS}
+        onClose={() => { setSelectedOS(null); reload() }}
+        officeName={user.oficina}
+      />
+    )
+  }
+
+  return (
+    <>
+      <Dashboard
+        key={refresh}
+        officeName={user.oficina}
+        onOpenOS={openOS}
+        onNewOS={() => setShowNewOS(true)}
+      />
+      {showNewOS && (
+        <NewOSModal
+          officeName={user.oficina}
+          onClose={() => { setShowNewOS(false); reload() }}
+        />
+      )}
+    </>
+  )
+}
+
+// ── NEW OS MODAL ─────────────────────────────────────────
+function NewOSModal({ officeName, onClose }) {
+  const [placa, setPlaca] = useState('')
+  const [step, setStep] = useState('plate') // plate | newClient | confirm
+  const [vehicle, setVehicle] = useState(null)
+  const [client, setClient] = useState(null)
+  const [km, setKm] = useState('')
+  const [agendadoPara, setAgendadoPara] = useState('')
+  const [cepLoading, setCepLoading] = useState(false)
+  const [newClient, setNewClient] = useState({
+    nome: '', whatsapp: '', cpf: '', dataNascimento: '',
+    cep: '', endereco: '', numero: '', bairro: '', cidade: '', uf: '',
+    modelo: ''
+  })
+  const [clientSuggestions, setClientSuggestions] = useState([])
+  const [existingClient, setExistingClient] = useState(null)
+  const [allClients, setAllClients] = useState([]) // pre-loaded for suggestions
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    clientStorage.getAll(officeName).then(setAllClients)
+  }, [officeName])
+
+  const formatPlate = (v) => {
+    const clean = v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
+    if (clean.length <= 3) return clean
+    return `${clean.slice(0, 3)}-${clean.slice(3, 7)}`
+  }
+  const formatWpp = (val) => {
+    const n = val.replace(/\D/g, '')
+    if (n.length <= 2) return n
+    if (n.length <= 7) return `(${n.slice(0,2)}) ${n.slice(2)}`
+    return `(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7,11)}`
+  }
+  const formatCPF = (val) => {
+    const n = val.replace(/\D/g, '').slice(0, 11)
+    if (n.length <= 3) return n
+    if (n.length <= 6) return `${n.slice(0,3)}.${n.slice(3)}`
+    if (n.length <= 9) return `${n.slice(0,3)}.${n.slice(3,6)}.${n.slice(6)}`
+    return `${n.slice(0,3)}.${n.slice(3,6)}.${n.slice(6,9)}-${n.slice(9)}`
+  }
+  const handleCEP = async (val) => {
+    const cep = val.replace(/\D/g, '')
+    const formatted = cep.length > 5 ? `${cep.slice(0,5)}-${cep.slice(5,8)}` : cep
+    setNewClient(p => ({ ...p, cep: formatted }))
+    if (cep.length === 8) {
+      setCepLoading(true)
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`)
+        const data = await res.json()
+        if (!data.erro) setNewClient(p => ({ ...p, endereco: data.logradouro || '', bairro: data.bairro || '', cidade: data.localidade || '', uf: data.uf || '' }))
+      } catch {}
+      setCepLoading(false)
+    }
+  }
+
+  const searchPlate = async () => {
+    const clean = placa.replace(/[^a-zA-Z0-9]/g, '')
+    if (clean.length < 7) return setError('Placa inválida.')
+    setError('')
+    setLoading(true)
+    const found = await vehicleStorage.getByPlate(officeName, placa)
+    if (found) {
+      setVehicle(found)
+      const c = allClients.find(c => c.id === found.clientId)
+      setClient(c)
+      setStep('confirm')
+    } else {
+      setStep('newClient')
+    }
+    setLoading(false)
+  }
+
+  const handleNomeChange = (val) => {
+    setNewClient(p => ({ ...p, nome: val }))
+    setExistingClient(null)
+    if (val.length >= 4) {
+      const matches = allClients.filter(c => c.nome.toLowerCase().includes(val.toLowerCase())).slice(0, 5)
+      setClientSuggestions(matches)
+    } else {
+      setClientSuggestions([])
+    }
+  }
+
+  const selectExistingClient = (c) => {
+    setExistingClient(c)
+    setNewClient(p => ({
+      ...p,
+      nome: c.nome,
+      whatsapp: c.whatsapp || '',
+      cpf: c.cpf || '',
+      dataNascimento: c.dataNascimento || '',
+      cep: c.cep || '',
+      endereco: c.endereco || '',
+      numero: c.numero || '',
+      bairro: c.bairro || '',
+      cidade: c.cidade || '',
+      uf: c.uf || '',
+    }))
+    setClientSuggestions([])
+  }
+
+  const createAndOpen = async () => {
+    if (!newClient.nome || !newClient.whatsapp || !newClient.modelo)
+      return setError('Nome, WhatsApp e Modelo são obrigatórios.')
+    setLoading(true)
+    try {
+      const c = existingClient
+        ? existingClient
+        : await clientStorage.create({ officeName, ...newClient })
+      const v = await vehicleStorage.create({ officeName, clientId: c.id, placa, modelo: newClient.modelo })
+      await osStorage.create({ officeName, vehicleId: v.id, km, agendadoPara: agendadoPara || null })
+      onClose()
+    } catch (e) {
+      setError(e.message || 'Erro ao criar OS.')
+      setLoading(false)
+    }
+  }
+
+  const openOS = async () => {
+    setLoading(true)
+    try {
+      await osStorage.create({ officeName, vehicleId: vehicle.id, km, agendadoPara: agendadoPara || null })
+      onClose()
+    } catch (e) {
+      setError(e.message || 'Erro ao criar OS.')
+      setLoading(false)
+    }
+  }
+
+  const inp = 'w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 text-sm'
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40">
+      <div className="bg-white rounded-t-3xl w-full max-w-lg max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between p-5 pb-3 shrink-0">
+          <h2 className="text-lg font-bold text-slate-900">Nova Ordem de Serviço</h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-slate-500" /></button>
+        </div>
+
+        <div className="overflow-y-auto flex-1 px-5 pb-6">
+          {error && (
+            <div className="flex items-center gap-2 bg-red-50 text-red-600 text-sm p-3 rounded-xl mb-4">
+              <AlertCircle className="w-4 h-4" />{error}
+            </div>
+          )}
+
+          {step === 'plate' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Placa do Veículo</label>
+                <input type="text" value={placa} onChange={e => setPlaca(formatPlate(e.target.value))}
+                  placeholder="ABC-1D23" maxLength={8} autoFocus
+                  className="w-full px-4 py-4 text-center text-2xl font-bold plate-mercosul rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 uppercase tracking-widest" />
+              </div>
+              <button onClick={searchPlate} disabled={loading} className="w-full bg-indigo-600 text-white font-semibold py-3.5 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-60">
+                <Search className="w-5 h-5 inline mr-2" />{loading ? 'Buscando...' : 'Buscar / Abrir OS'}
+              </button>
+            </div>
+          )}
+
+          {(step === 'newClient' || step === 'confirm') && (
+            <div className="space-y-3">
+              {/* Seção KM + Agendamento */}
+              <div className="bg-indigo-50 rounded-xl p-3 space-y-2">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Entrada do Veículo</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1 flex items-center gap-1"><Gauge className="w-3 h-3" />KM atual</label>
+                    <input type="number" placeholder="Ex: 85000" value={km}
+                      onChange={e => setKm(e.target.value)} className={inp} min="0" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1 flex items-center gap-1"><CalendarClock className="w-3 h-3" />Agendar entrada</label>
+                    <input type="datetime-local" value={agendadoPara}
+                      onChange={e => setAgendadoPara(e.target.value)} className={inp} />
+                  </div>
+                </div>
+              </div>
+
+              {step === 'newClient' && (
+                <>
+                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-sm text-amber-700">
+                    Placa <strong>{placa}</strong> não encontrada. Cadastre o cliente:
+                  </div>
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider pt-1">Dados do Cliente</p>
+                  <div className="relative">
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Nome Completo *</label>
+                    <input
+                      type="text"
+                      placeholder="João da Silva Santos"
+                      value={newClient.nome}
+                      onChange={e => handleNomeChange(e.target.value)}
+                      autoFocus
+                      className={`${inp} ${existingClient ? 'border-green-400 bg-green-50' : ''}`}
+                    />
+                    {existingClient && (
+                      <span className="absolute right-3 top-[2.1rem] text-xs text-green-600 font-semibold flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Cliente encontrado
+                      </span>
+                    )}
+                    {clientSuggestions.length > 0 && (
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-20 overflow-hidden">
+                        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider px-3 pt-2 pb-1">Clientes cadastrados</p>
+                        {clientSuggestions.map(c => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onMouseDown={e => { e.preventDefault(); selectExistingClient(c) }}
+                            className="w-full text-left px-3 py-2.5 hover:bg-indigo-50 transition-colors flex items-center gap-2 border-t border-gray-50"
+                          >
+                            <div className="w-7 h-7 bg-indigo-100 rounded-full flex items-center justify-center shrink-0">
+                              <span className="text-indigo-600 text-xs font-bold">{c.nome[0].toUpperCase()}</span>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-slate-900 truncate">{c.nome}</p>
+                              {c.whatsapp && <p className="text-xs text-slate-400">{c.whatsapp}</p>}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">CPF</label>
+                      <input type="text" placeholder="000.000.000-00" value={newClient.cpf}
+                        onChange={e => setNewClient(p => ({...p, cpf: formatCPF(e.target.value)}))} className={inp} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Nascimento</label>
+                      <input type="date" value={newClient.dataNascimento}
+                        onChange={e => setNewClient(p => ({...p, dataNascimento: e.target.value}))} className={inp} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">WhatsApp *</label>
+                    <input type="text" placeholder="(51) 99999-9999" value={newClient.whatsapp}
+                      onChange={e => setNewClient(p => ({...p, whatsapp: formatWpp(e.target.value)}))} maxLength={15} className={inp} />
+                  </div>
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider pt-1">Endereço</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-2">
+                      <label className="block text-xs font-medium text-slate-600 mb-1">CEP {cepLoading && <span className="text-indigo-500">buscando...</span>}</label>
+                      <input type="text" placeholder="00000-000" value={newClient.cep}
+                        onChange={e => handleCEP(e.target.value)} maxLength={9} className={inp} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Número</label>
+                      <input type="text" placeholder="123" value={newClient.numero}
+                        onChange={e => setNewClient(p => ({...p, numero: e.target.value}))} className={inp} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Rua / Logradouro</label>
+                    <input type="text" value={newClient.endereco}
+                      onChange={e => setNewClient(p => ({...p, endereco: e.target.value}))} className={inp} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Bairro</label>
+                      <input type="text" value={newClient.bairro}
+                        onChange={e => setNewClient(p => ({...p, bairro: e.target.value}))} className={inp} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Cidade / UF</label>
+                      <div className="flex gap-1">
+                        <input type="text" value={newClient.cidade}
+                          onChange={e => setNewClient(p => ({...p, cidade: e.target.value}))} className={inp} />
+                        <input type="text" value={newClient.uf} maxLength={2}
+                          onChange={e => setNewClient(p => ({...p, uf: e.target.value.toUpperCase()}))}
+                          className={`${inp} w-12 text-center px-1`} />
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider pt-1">Veículo</p>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Modelo *</label>
+                    <input type="text" placeholder="Fiat Strada 2022" value={newClient.modelo}
+                      onChange={e => setNewClient(p => ({...p, modelo: e.target.value}))} className={inp} />
+                  </div>
+                  <button onClick={createAndOpen} disabled={loading}
+                    className="w-full bg-indigo-600 text-white font-semibold py-3.5 rounded-xl hover:bg-indigo-700 transition-colors mt-2 disabled:opacity-60">
+                    {loading ? 'Salvando...' : 'Cadastrar e Abrir OS'}
+                  </button>
+                </>
+              )}
+
+              {step === 'confirm' && vehicle && client && (
+                <>
+                  <div className="bg-gray-50 rounded-2xl p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <PlateTag placa={vehicle.placa} />
+                      <div>
+                        <p className="font-bold text-slate-900">{vehicle.modelo}</p>
+                        <p className="text-sm text-slate-500">{client.nome}</p>
+                      </div>
+                    </div>
+                    {client.whatsapp && <p className="text-xs text-slate-400">{client.whatsapp}</p>}
+                  </div>
+                  <button onClick={openOS} disabled={loading}
+                    className="w-full bg-indigo-600 text-white font-semibold py-3.5 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-60">
+                    <Plus className="w-5 h-5 inline mr-2" />{loading ? 'Abrindo...' : 'Abrir OS'}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── DELIVERY MODAL ────────────────────────────────────────
+function DeliveryModal({ os, items, desconto, onConfirm, onCancel }) {
+  const subtotal = items.reduce((s, i) => s + i.venda, 0)
+  const descontoValor = (() => {
+    if (!desconto || !desconto.valor) return 0
+    if (desconto.tipo === 'percent') return subtotal * desconto.valor / 100
+    return Math.min(Number(desconto.valor), subtotal)
+  })()
+  const total = Math.max(0, subtotal - descontoValor)
+
+  const [deliveredAt, setDeliveredAt] = useState(localDatetimeNow())
+  const [deliveryNotes, setDeliveryNotes] = useState('')
+  const [payments, setPayments] = useState([])
+
+  const paidTotal = payments.reduce((s, p) => s + (Number(p.amount) || 0), 0)
+  const remaining = total - paidTotal
+  const balanced = Math.abs(remaining) < 0.01
+
+  const addPayment = (method) => {
+    if (payments.find(p => p.method === method)) return
+    const autoAmount = remaining > 0 ? remaining.toFixed(2) : ''
+    setPayments(prev => [...prev, { method, amount: autoAmount }])
+  }
+  const removePayment = (method) => setPayments(prev => prev.filter(p => p.method !== method))
+  const updateAmount = (method, val) => setPayments(prev => prev.map(p => p.method === method ? { ...p, amount: val } : p))
+
+  const handleConfirm = () => {
+    if (!balanced || payments.length === 0) return
+    onConfirm({ deliveredAt: new Date(deliveredAt).toISOString(), deliveryNotes, payments, desconto })
+  }
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/50">
+      <div className="bg-white rounded-t-3xl w-full max-w-lg max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between p-5 pb-3 shrink-0">
+          <div className="flex items-center gap-2">
+            <PackageCheck className="w-5 h-5 text-green-600" />
+            <h2 className="text-lg font-bold text-slate-900">Entregar Veículo</h2>
+          </div>
+          <button onClick={onCancel} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-slate-500" /></button>
+        </div>
+
+        <div className="overflow-y-auto flex-1 px-5 pb-6 space-y-4">
+          {/* Total */}
+          <div className="bg-slate-900 rounded-2xl p-4 flex items-center justify-between">
+            <div>
+              <p className="text-slate-400 text-xs font-medium">Total da OS</p>
+              <p className="text-white text-2xl font-bold mt-0.5">{formatCurrency(total)}</p>
+              {descontoValor > 0 && (
+                <p className="text-green-400 text-xs mt-1">Desconto: − {formatCurrency(descontoValor)}</p>
+              )}
+            </div>
+            <div className="text-right">
+              <p className="text-slate-400 text-xs">Pago</p>
+              <p className={`text-xl font-bold mt-0.5 ${balanced ? 'text-green-400' : 'text-amber-400'}`}>{formatCurrency(paidTotal)}</p>
+            </div>
+          </div>
+
+          {/* Saldo */}
+          {!balanced && payments.length > 0 && (
+            <div className={`rounded-xl px-4 py-3 flex justify-between ${remaining > 0 ? 'bg-red-50' : 'bg-orange-50'}`}>
+              <span className={`text-sm font-semibold ${remaining > 0 ? 'text-red-600' : 'text-orange-600'}`}>{remaining > 0 ? 'Faltam' : 'Troco'}</span>
+              <span className={`text-base font-bold ${remaining > 0 ? 'text-red-600' : 'text-orange-600'}`}>{formatCurrency(Math.abs(remaining))}</span>
+            </div>
+          )}
+          {balanced && payments.length > 0 && (
+            <div className="bg-green-50 rounded-xl px-4 py-3 flex items-center gap-2">
+              <Check className="w-4 h-4 text-green-600" />
+              <span className="text-sm font-semibold text-green-700">Conta fechada! Pronto para entregar.</span>
+            </div>
+          )}
+
+          {/* Formas de pagamento */}
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Formas de Pagamento</p>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {PAYMENT_METHODS.map(({ key, label, icon: Icon }) => {
+                const active = payments.find(p => p.method === key)
+                return (
+                  <button key={key} onClick={() => active ? removePayment(key) : addPayment(key)}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${active ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 bg-white text-slate-600 hover:border-indigo-200'}`}>
+                    <Icon className="w-3.5 h-3.5" />{label}
+                    {active && <X className="w-3 h-3 ml-0.5 text-indigo-400" />}
+                  </button>
+                )
+              })}
+            </div>
+            {payments.length > 0 && (
+              <div className="space-y-2">
+                {payments.map(({ method, amount }) => {
+                  const meta = PAYMENT_METHODS.find(m => m.key === method)
+                  return (
+                    <div key={method} className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2.5">
+                      <span className="text-sm font-medium text-slate-700 w-20 shrink-0">{meta?.label}</span>
+                      <span className="text-slate-400 text-sm shrink-0">R$</span>
+                      <input type="number" value={amount} onChange={e => updateAmount(method, e.target.value)}
+                        placeholder="0,00" className="flex-1 bg-transparent text-slate-900 font-semibold text-sm focus:outline-none" min="0" step="0.01" />
+                      <button onClick={() => removePayment(method)} className="p-1 hover:bg-red-50 rounded-lg"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            {payments.length === 0 && <p className="text-sm text-slate-400 text-center py-2">Selecione ao menos uma forma de pagamento</p>}
+          </div>
+
+          {/* Data/hora */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+              <Clock className="w-3.5 h-3.5 inline mr-1" />Data e Hora de Entrega
+            </label>
+            <input type="datetime-local" value={deliveredAt} onChange={e => setDeliveredAt(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50" />
+          </div>
+
+          {/* Observações */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Observações da Entrega</label>
+            <textarea value={deliveryNotes} onChange={e => setDeliveryNotes(e.target.value)}
+              placeholder="Ex: cliente satisfeito, peça em garantia de 90 dias..."
+              rows={3} className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 resize-none" />
+          </div>
+
+          <button onClick={handleConfirm} disabled={!balanced || payments.length === 0}
+            className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-base transition-all ${balanced && payments.length > 0 ? 'bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-100' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
+            <PackageCheck className="w-5 h-5" />Confirmar Entrega
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── STOCK PICKER ROW ─────────────────────────────────────
+function StockPickerRow({ item, onAdd }) {
+  const [qty, setQty] = useState(1)
+  const semEstoque = item.quantidade <= 0
+  const insuficiente = qty > item.quantidade
+
+  return (
+    <div className={`bg-white rounded-lg px-3 py-2.5 flex items-center gap-2 ${semEstoque ? 'opacity-70' : ''}`}>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-slate-800 truncate">{item.produto}</p>
+        <p className={`text-xs font-medium ${semEstoque ? 'text-red-500' : insuficiente ? 'text-amber-500' : 'text-slate-400'}`}>
+          {semEstoque ? 'Sem estoque' : `${item.quantidade} disponível${item.quantidade > 1 ? 's' : ''}`}
+        </p>
+      </div>
+      <p className="text-xs font-semibold text-slate-700 shrink-0">{formatCurrency(item.valorVenda)}</p>
+      <div className="flex items-center gap-1 shrink-0">
+        <button type="button" onClick={() => setQty(q => Math.max(1, q - 1))}
+          className="w-6 h-6 rounded bg-gray-100 flex items-center justify-center text-slate-600 font-bold text-sm hover:bg-gray-200 transition-colors">−</button>
+        <span className="w-6 text-center text-sm font-bold text-slate-900">{qty}</span>
+        <button type="button" onClick={() => setQty(q => q + 1)}
+          className="w-6 h-6 rounded bg-gray-100 flex items-center justify-center text-slate-600 font-bold text-sm hover:bg-gray-200 transition-colors">+</button>
+      </div>
+      <button type="button" onClick={() => onAdd(qty)}
+        className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${insuficiente ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
+        {insuficiente ? '⚠️ Add' : 'Add'}
+      </button>
+    </div>
+  )
+}
+
+// ── OS DETAIL MODAL ───────────────────────────────────────
+function OSDetailModal({ os, onClose, officeName }) {
+  const [items, setItems] = useState([])
+  const [status, setStatus] = useState(os.status)
+  const [showAddItem, setShowAddItem] = useState(false)
+  const [showStockPicker, setShowStockPicker] = useState(false)
+  const [newItem, setNewItem] = useState({ descricao: '', custo: '', venda: '', garantia: '' })
+  const [suggestions, setSuggestions] = useState([])
+  const [obs, setObs] = useState(os.observacoes || '')
+  const [km, setKm] = useState(os.km || '')
+  const [showDelivery, setShowDelivery] = useState(false)
+  const [showRevertConfirm, setShowRevertConfirm] = useState(false)
+  const [deliveryInfo, setDeliveryInfo] = useState({ deliveredAt: os.deliveredAt, payments: os.payments || [], deliveryNotes: os.deliveryNotes || '', desconto: os.desconto })
+  const [desconto, setDesconto] = useState(() => {
+    const d = os.desconto || {}
+    const defaultMetodos = JSON.parse(localStorage.getItem('boxcerto_payment_defaults') || '["dinheiro","pix"]')
+    return {
+      tipo: d.tipo || 'valor',
+      valor: d.valor || '',
+      metodos: d.metodos || defaultMetodos,
+    }
+  })
+  const [showDesconto, setShowDesconto] = useState(!!(os.desconto?.valor))
+  const [editKm, setEditKm] = useState(false)
+  const [stockItems, setStockItems] = useState([])
+  const [stockPending, setStockPending] = useState(null)
+
+  const reload = async () => {
+    const loaded = await itemStorage.getByOS(os.id)
+    setItems(loaded)
+  }
+
+  useEffect(() => {
+    const init = async () => {
+      const [loadedItems, loadedStock] = await Promise.all([
+        itemStorage.getByOS(os.id),
+        inventoryStorage.getAll(officeName),
+      ])
+      setItems(loadedItems)
+      setStockItems(loadedStock)
+    }
+    init()
+  }, [])
+
+  // totals computed from items state (synchronous)
+  const totals = itemStorage.totals(items)
+  const descontoValor = (() => {
+    if (!desconto.valor) return 0
+    if (desconto.tipo === 'percent') return totals.venda * Number(desconto.valor) / 100
+    return Math.min(Number(desconto.valor), totals.venda)
+  })()
+  const totalComDesconto = Math.max(0, totals.venda - descontoValor)
+
+  const handleStatus = async (s) => {
+    if (s === 'entregue') { setShowDelivery(true); return }
+    if (status === 'entregue') { setShowRevertConfirm(true); return }
+    await osStorage.updateStatus(os.id, s)
+    setStatus(s)
+  }
+
+  const handleDeliveryConfirm = async ({ deliveredAt, deliveryNotes, payments, desconto: d }) => {
+    await osStorage.deliverOS(os.id, { deliveredAt, deliveryNotes, payments, desconto: d })
+    // Baixa automática no estoque
+    await Promise.all(items.filter(item => item.inventoryId).map(item => inventoryStorage.baixar(item.inventoryId, 1)))
+    setStatus('entregue')
+    setDeliveryInfo({ deliveredAt, payments, deliveryNotes, desconto: d })
+    setShowDelivery(false)
+  }
+
+  const handleRevert = async () => {
+    await osStorage.revertDelivery(os.id)
+    setStatus('pronto')
+    setDeliveryInfo({ deliveredAt: null, payments: [], deliveryNotes: '', desconto: null })
+    setShowRevertConfirm(false)
+  }
+
+  const handleAddItem = async () => {
+    if (!newItem.descricao || !newItem.venda) return
+    await itemStorage.add({ osId: os.id, ...newItem })
+    setNewItem({ descricao: '', custo: '', venda: '', garantia: '' })
+    setSuggestions([])
+    setShowAddItem(false)
+    await reload()
+  }
+
+  const handleAddFromStock = async (stockItem, qty, forceAdd = false) => {
+    const qtdInt = Math.max(1, parseInt(qty) || 1)
+    const ficaNegativo = stockItem.quantidade - qtdInt < 0
+
+    if (ficaNegativo && !forceAdd) {
+      setStockPending({ item: stockItem, qty: qtdInt })
+      return
+    }
+
+    const descricao = qtdInt > 1 ? `${stockItem.produto} (x${qtdInt})` : stockItem.produto
+    await itemStorage.add({
+      osId: os.id,
+      descricao,
+      custo: stockItem.valorCompra * qtdInt,
+      venda: stockItem.valorVenda * qtdInt,
+      garantia: '',
+      inventoryId: stockItem.id,
+    })
+    const novaQtd = stockItem.quantidade - qtdInt
+    await inventoryStorage.update(stockItem.id, { quantidade: novaQtd })
+    setStockItems(prev => prev.map(s => s.id === stockItem.id ? { ...s, quantidade: novaQtd } : s))
+    setStockPending(null)
+    setShowStockPicker(false)
+    await reload()
+  }
+
+  const handleDescricao = (val) => {
+    setNewItem({ ...newItem, descricao: val })
+    setSuggestions(val.length >= 2 ? SERVICOS_COMUNS.filter(s => s.toLowerCase().includes(val.toLowerCase())).slice(0, 4) : [])
+  }
+
+  const handleKmSave = async () => { await osStorage.updateKm(os.id, km); setEditKm(false) }
+  const handleSaveObs = async () => osStorage.updateObservacoes(os.id, obs)
+
+  const handlePrint = async () => {
+    const raw = await officeDataStorage.get(officeName)
+    const officeData = { nome: officeName, ...raw }
+    printOS({ os, client: os.client, vehicle: os.vehicle, items, officeData, formatCurrencyFn: formatCurrency, formatDateFn: formatDate, desconto })
+  }
+
+  const handlePrintReceipt = async () => {
+    const raw = await officeDataStorage.get(officeName)
+    const officeData = { nome: officeName, ...raw }
+    printReceipt({ os: { ...os, ...deliveryInfo }, client: os.client, vehicle: os.vehicle, items, officeData, formatCurrencyFn: formatCurrency, formatDateFn: formatDate })
+  }
+
+  const handleShareWpp = () => {
+    const phone = os.client?.whatsapp?.replace(/\D/g, '')
+    if (!phone) return alert('Cliente sem WhatsApp cadastrado.')
+    const linhas = items.map(i => `  • ${i.descricao}: ${formatCurrency(i.venda)}`).join('\n')
+    const desc = descontoValor > 0 ? `\n\n  🏷️ Desconto: − ${formatCurrency(descontoValor)}\n  *Total: ${formatCurrency(totalComDesconto)}*` : `\n\n*Total: ${formatCurrency(totals.venda)}*`
+    const msg = `*Orçamento — ${os.vehicle?.modelo} (${os.vehicle?.placa})*\n\nOlá ${os.client?.nome}! Segue o orçamento:\n\n${linhas}${desc}\n\nQualquer dúvida, estamos à disposição!`
+    window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`, '_blank')
+  }
+
+  const STATUS_WITHOUT_DELIVERY = Object.entries(STATUS_LABELS).filter(([k]) => k !== 'entregue')
+
+  return (
+    <>
+      <div className="fixed inset-0 z-[60] bg-white flex flex-col max-w-lg mx-auto">
+        {/* Header */}
+        <div className="flex items-center gap-2 p-4 border-b border-gray-100 shrink-0">
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full shrink-0"><X className="w-5 h-5 text-slate-600" /></button>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-slate-900 truncate">{os.vehicle?.placa} · {os.vehicle?.modelo}</p>
+            <p className="text-xs text-slate-400 truncate">{os.client?.nome} · {formatDate(os.createdAt)}</p>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <a href={`https://wa.me/55${os.client?.whatsapp?.replace(/\D/g,'')}?text=${encodeURIComponent(WPP_MESSAGES[status]?.(os.client?.nome, os.vehicle?.modelo, totalComDesconto) || '')}`}
+              target="_blank" rel="noreferrer"
+              className="w-9 h-9 bg-green-50 rounded-full flex items-center justify-center hover:bg-green-100 transition-colors">
+              <MessageCircle className="w-5 h-5 text-green-600" />
+            </a>
+            <button onClick={handleShareWpp} className="w-9 h-9 bg-green-600 rounded-full flex items-center justify-center hover:bg-green-700 transition-colors">
+              <Share2 className="w-4 h-4 text-white" />
+            </button>
+            <button onClick={handlePrint} className="w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center hover:bg-indigo-100 transition-colors">
+              <Printer className="w-4 h-4 text-indigo-600" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* KM */}
+          <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2">
+            <Gauge className="w-4 h-4 text-slate-400 shrink-0" />
+            <span className="text-xs text-slate-500 shrink-0">KM</span>
+            {editKm ? (
+              <>
+                <input type="number" value={km} onChange={e => setKm(e.target.value)} autoFocus
+                  className="flex-1 bg-transparent text-slate-900 font-semibold text-sm focus:outline-none" placeholder="0" />
+                <button onClick={handleKmSave} className="p-1 bg-indigo-100 rounded-lg"><Check className="w-3.5 h-3.5 text-indigo-600" /></button>
+              </>
+            ) : (
+              <>
+                <span className="flex-1 text-sm font-semibold text-slate-900">{km || '—'}</span>
+                {status !== 'entregue' && (
+                  <button onClick={() => setEditKm(true)} className="p-1 hover:bg-gray-200 rounded-lg"><Edit2 className="w-3.5 h-3.5 text-slate-400" /></button>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Status */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-4">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Status</p>
+            <div className="grid grid-cols-3 gap-2">
+              {STATUS_WITHOUT_DELIVERY.map(([key, label]) => (
+                <button key={key} onClick={() => handleStatus(key)} disabled={status === 'entregue'}
+                  className={`py-2.5 rounded-xl text-sm font-medium transition-all border-2 ${
+                    status === key
+                      ? key === 'orcamento' ? 'border-amber-400 bg-amber-50 text-amber-700'
+                      : key === 'manutencao' ? 'border-blue-400 bg-blue-50 text-blue-700'
+                      : 'border-green-400 bg-green-50 text-green-700'
+                      : status === 'entregue' ? 'border-transparent bg-gray-50 text-slate-300 cursor-not-allowed'
+                      : 'border-transparent bg-gray-50 text-slate-500 hover:bg-gray-100'
+                  }`}>
+                  {status === key && <Check className="w-3.5 h-3.5 inline mr-1" />}{label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Info entrega */}
+          {status === 'entregue' && (
+            <div className="bg-green-50 rounded-2xl border border-green-100 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <PackageCheck className="w-5 h-5 text-green-600" />
+                  <p className="text-sm font-bold text-green-800">Veículo Entregue</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={handlePrintReceipt} className="flex items-center gap-1 text-xs text-indigo-600 font-medium hover:text-indigo-700">
+                    <ReceiptText className="w-3.5 h-3.5" /> Recibo
+                  </button>
+                  <button onClick={() => setShowRevertConfirm(true)} className="flex items-center gap-1 text-xs text-red-400 hover:text-red-600 font-medium">
+                    <RotateCcw className="w-3.5 h-3.5" /> Estornar
+                  </button>
+                </div>
+              </div>
+              {deliveryInfo.deliveredAt && (
+                <p className="text-xs text-green-700 mb-2"><Clock className="w-3 h-3 inline mr-1" />{new Date(deliveryInfo.deliveredAt).toLocaleString('pt-BR')}</p>
+              )}
+              {deliveryInfo.payments?.length > 0 && (
+                <div className="space-y-1">
+                  {deliveryInfo.payments.map((p, i) => {
+                    const meta = PAYMENT_METHODS.find(m => m.key === p.method)
+                    return <div key={i} className="flex justify-between text-xs text-green-700"><span>{meta?.label || p.method}</span><span className="font-semibold">{formatCurrency(Number(p.amount))}</span></div>
+                  })}
+                </div>
+              )}
+              {deliveryInfo.deliveryNotes && <p className="text-xs text-green-600 italic mt-2">"{deliveryInfo.deliveryNotes}"</p>}
+            </div>
+          )}
+
+          {/* Itens */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Serviços / Peças</p>
+              {status !== 'entregue' && (
+                <div className="flex items-center gap-2">
+                  <button onClick={() => { setShowStockPicker(true); setShowAddItem(false) }}
+                    className="flex items-center gap-1 text-xs text-slate-500 font-semibold hover:text-indigo-600 transition-colors">
+                    <Package className="w-3.5 h-3.5" /> Estoque
+                  </button>
+                  <button onClick={() => { setShowAddItem(!showAddItem); setShowStockPicker(false) }}
+                    className="text-indigo-600 text-sm font-semibold flex items-center gap-1">
+                    <Plus className="w-4 h-4" /> Adicionar
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Picker do estoque */}
+            {showStockPicker && (
+              <div className="bg-indigo-50 rounded-xl p-3 mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold text-slate-600">Selecione do estoque:</p>
+                  <button onClick={() => setShowStockPicker(false)} className="text-xs text-slate-400 hover:text-slate-600">Fechar</button>
+                </div>
+                {stockItems.length === 0 ? (
+                  <p className="text-sm text-slate-400 text-center py-2">Nenhum produto cadastrado</p>
+                ) : (
+                  <div className="space-y-1 max-h-56 overflow-y-auto">
+                    {stockItems.map(s => (
+                      <StockPickerRow key={s.id} item={s} onAdd={(qty) => handleAddFromStock(s, qty)} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Modal confirmação estoque negativo */}
+            {stockPending && (
+              <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 px-6">
+                <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
+                      <AlertCircle className="w-5 h-5 text-amber-500" />
+                    </div>
+                    <h3 className="font-bold text-slate-900">Estoque insuficiente</h3>
+                  </div>
+                  <p className="text-sm text-slate-500 mb-1"><strong>{stockPending.item.produto}</strong></p>
+                  <p className="text-sm text-slate-500 mb-5">
+                    Disponível: <strong>{stockPending.item.quantidade}</strong> · Solicitado: <strong>{stockPending.qty}</strong><br />
+                    O estoque ficará em <strong className="text-red-600">{stockPending.item.quantidade - stockPending.qty}</strong>. Deseja adicionar mesmo assim?
+                  </p>
+                  <div className="flex gap-3">
+                    <button onClick={() => setStockPending(null)}
+                      className="flex-1 py-3 rounded-xl border border-gray-200 text-slate-600 font-semibold text-sm hover:bg-gray-50 transition-colors">
+                      Cancelar
+                    </button>
+                    <button onClick={() => handleAddFromStock(stockPending.item, stockPending.qty, true)}
+                      className="flex-1 py-3 rounded-xl bg-amber-500 text-white font-semibold text-sm hover:bg-amber-600 transition-colors">
+                      Adicionar mesmo assim
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {showAddItem && status !== 'entregue' && (
+              <div className="bg-indigo-50 rounded-xl p-3 mb-3 space-y-2">
+                <div className="relative">
+                  <input type="text" placeholder="Descrição do serviço..." value={newItem.descricao}
+                    onChange={e => handleDescricao(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-lg border border-indigo-200 text-sm focus:outline-none focus:border-indigo-400 bg-white" />
+                  {suggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 bg-white border border-gray-100 rounded-xl shadow-lg z-10 overflow-hidden mt-1">
+                      {suggestions.map((s, i) => (
+                        <button key={i} onClick={() => { setNewItem({ ...newItem, descricao: s }); setSuggestions([]) }}
+                          className="w-full text-left px-3 py-2.5 text-sm hover:bg-indigo-50 transition-colors">{s}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs text-slate-500 mb-1 block">Custo (seu)</label>
+                    <input type="number" placeholder="0,00" value={newItem.custo}
+                      onChange={e => setNewItem({ ...newItem, custo: e.target.value })}
+                      className="w-full px-3 py-2.5 rounded-lg border border-indigo-200 text-sm focus:outline-none focus:border-indigo-400 bg-white" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500 mb-1 block">Venda (cliente)</label>
+                    <input type="number" placeholder="0,00" value={newItem.venda}
+                      onChange={e => setNewItem({ ...newItem, venda: e.target.value })}
+                      className="w-full px-3 py-2.5 rounded-lg border border-indigo-200 text-sm focus:outline-none focus:border-indigo-400 bg-white" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500 mb-1 block flex items-center gap-1">🛡️ Garantia (opcional)</label>
+                  <select value={newItem.garantia} onChange={e => setNewItem({ ...newItem, garantia: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-lg border border-indigo-200 text-sm focus:outline-none focus:border-indigo-400 bg-white">
+                    {GARANTIA_OPTIONS.map(g => <option key={g} value={g}>{g || 'Sem garantia'}</option>)}
+                  </select>
+                </div>
+                <button onClick={handleAddItem}
+                  className="w-full bg-indigo-600 text-white text-sm font-semibold py-2.5 rounded-lg hover:bg-indigo-700 transition-colors">
+                  Adicionar Item
+                </button>
+              </div>
+            )}
+
+            {items.length === 0 ? (
+              <p className="text-center text-slate-400 text-sm py-4">Nenhum item adicionado</p>
+            ) : (
+              <div className="space-y-2">
+                {items.map(item => (
+                  <div key={item.id} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-800 truncate">{item.descricao}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-xs text-slate-400">Custo: {formatCurrency(item.custo)}</p>
+                        {item.garantia && <span className="text-xs text-indigo-500">🛡️ {item.garantia}</span>}
+                      </div>
+                    </div>
+                    <p className="text-sm font-semibold text-slate-900 shrink-0">{formatCurrency(item.venda)}</p>
+                    {status !== 'entregue' && (
+                      <button onClick={async () => { await itemStorage.remove(item.id); await reload() }}
+                        className="p-1.5 hover:bg-red-50 rounded-lg transition-colors shrink-0">
+                        <Trash2 className="w-4 h-4 text-red-400" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Desconto e Pagamento */}
+          {status !== 'entregue' && (
+            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              {/* Toggle header */}
+              <button
+                onClick={() => setShowDesconto(v => !v)}
+                className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+              >
+                <span className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <Tag className="w-3.5 h-3.5" />
+                  Desconto e Pagamento
+                  {descontoValor > 0 && (
+                    <span className="ml-1 bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full normal-case tracking-normal">
+                      − {formatCurrency(descontoValor)}
+                    </span>
+                  )}
+                </span>
+                {showDesconto
+                  ? <ChevronUp className="w-4 h-4 text-slate-400" />
+                  : <ChevronDown className="w-4 h-4 text-slate-400" />}
+              </button>
+
+              {showDesconto && (
+                <div className="px-4 pb-4 space-y-4 border-t border-gray-100 pt-3">
+                  {/* Tipo + valor */}
+                  <div>
+                    <p className="text-xs text-slate-400 mb-2">Desconto</p>
+                    <div className="flex gap-2">
+                      <div className="flex bg-gray-100 rounded-xl p-1 gap-1 shrink-0">
+                        <button onClick={() => setDesconto(p => ({...p, tipo: 'valor'}))}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${desconto.tipo === 'valor' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}>
+                          R$
+                        </button>
+                        <button onClick={() => setDesconto(p => ({...p, tipo: 'percent'}))}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${desconto.tipo === 'percent' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}>
+                          %
+                        </button>
+                      </div>
+                      <input type="number" value={desconto.valor} min="0"
+                        max={desconto.tipo === 'percent' ? 100 : undefined}
+                        onChange={e => setDesconto(p => ({...p, valor: e.target.value}))}
+                        placeholder={desconto.tipo === 'percent' ? 'Ex: 10' : 'Ex: 50,00'}
+                        className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
+                    </div>
+                    {descontoValor > 0 && (
+                      <p className="text-xs text-green-600 font-medium mt-1.5">
+                        Desconto de {formatCurrency(descontoValor)} · Total: {formatCurrency(totalComDesconto)}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Formas de pagamento */}
+                  <div>
+                    <p className="text-xs text-slate-400 mb-2">Formas de pagamento aceitas</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {PAYMENT_METHODS.map(m => {
+                        const checked = desconto.metodos?.includes(m.key)
+                        return (
+                          <label key={m.key}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-all ${checked ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-white'}`}>
+                            <input type="checkbox" checked={!!checked}
+                              onChange={() => setDesconto(p => ({
+                                ...p,
+                                metodos: checked
+                                  ? (p.metodos || []).filter(k => k !== m.key)
+                                  : [...(p.metodos || []), m.key]
+                              }))}
+                              className="w-3.5 h-3.5 accent-indigo-600" />
+                            <span className={`text-xs font-medium ${checked ? 'text-indigo-700' : 'text-slate-600'}`}>{m.label}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Observações */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-4">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Observações</p>
+            <textarea value={obs} onChange={e => setObs(e.target.value)} onBlur={handleSaveObs}
+              disabled={status === 'entregue'} placeholder="Anotações sobre o serviço..."
+              rows={3} className="w-full text-sm text-slate-700 resize-none focus:outline-none placeholder-slate-300 disabled:opacity-60" />
+          </div>
+        </div>
+
+        {/* Rodapé */}
+        <div className="border-t border-gray-100 bg-white p-4 shrink-0">
+          {items.length > 0 && (
+            <div className="mb-3 space-y-1">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Subtotal</span>
+                <span className="text-slate-700">{formatCurrency(totals.venda)}</span>
+              </div>
+              {descontoValor > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-green-600">Desconto</span>
+                  <span className="text-green-600">− {formatCurrency(descontoValor)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm font-bold">
+                <span className="text-slate-900">Total</span>
+                <span className="text-slate-900">{formatCurrency(totalComDesconto)}</span>
+              </div>
+            </div>
+          )}
+          {status !== 'entregue' && (
+            <button onClick={() => setShowDelivery(true)}
+              className="w-full flex items-center justify-center gap-2 bg-green-600 text-white font-bold py-4 rounded-2xl hover:bg-green-700 transition-all shadow-lg shadow-green-100 active:scale-95">
+              <PackageCheck className="w-5 h-5" />Entregar Veículo
+            </button>
+          )}
+        </div>
+      </div>
+
+      {showDelivery && (
+        <DeliveryModal os={os} items={items} desconto={desconto}
+          onConfirm={handleDeliveryConfirm} onCancel={() => setShowDelivery(false)} />
+      )}
+
+      {showRevertConfirm && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 px-6">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center shrink-0">
+                <RotateCcw className="w-5 h-5 text-red-500" />
+              </div>
+              <h3 className="font-bold text-slate-900">Estornar entrega?</h3>
+            </div>
+            <p className="text-sm text-slate-500 mb-5">Cancela o registro de entrega e pagamento, voltando o status para <strong>Pronto</strong>.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowRevertConfirm(false)}
+                className="flex-1 py-3 rounded-xl border border-gray-200 text-slate-600 font-semibold text-sm hover:bg-gray-50 transition-colors">
+                Cancelar
+              </button>
+              <button onClick={handleRevert}
+                className="flex-1 py-3 rounded-xl bg-red-500 text-white font-semibold text-sm hover:bg-red-600 transition-colors">
+                Sim, estornar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
