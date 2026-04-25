@@ -695,6 +695,204 @@ export const printReceipt = ({ os, client, vehicle, items, officeData, formatCur
   win.onload = () => { win.focus(); win.print() }
 }
 
+// ── PDF DOWNLOAD (jsPDF) ──────────────────────────────────
+const PAYMENT_NAMES = { pix: 'PIX', dinheiro: 'Dinheiro', debito: 'Débito', credito: 'Crédito', outros: 'Outros' }
+
+export const buildDescontoLabel = (desconto, valor) => {
+  if (!desconto || !valor) return ''
+  const metodos = (desconto.metodos || []).map(k => PAYMENT_NAMES[k] || k)
+  const sufixo = metodos.length > 0 ? ` no ${metodos.join('/')}` : ''
+  return desconto.tipo === 'percent' ? `Desconto (${desconto.valor}%${sufixo})` : `Desconto${sufixo}`
+}
+
+export const downloadOsPDF = async ({ os, client, vehicle, items, officeData, formatCurrencyFn, formatDateFn, desconto }) => {
+  const { jsPDF } = await import('jspdf')
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const W = 210, ml = 15, mr = 15, cW = 180
+  let y = 15
+
+  const C = {
+    main: [30, 41, 59], med: [100, 116, 139], light: [148, 163, 184],
+    line: [226, 232, 240], indigo: [79, 70, 229], green: [22, 163, 74],
+    bg: [248, 250, 252],
+  }
+  const txt = (t, x, yy, { size = 9, bold = false, color = C.main, align = 'left' } = {}) => {
+    doc.setFontSize(size); doc.setFont('helvetica', bold ? 'bold' : 'normal')
+    doc.setTextColor(...color); doc.text(String(t || ''), x, yy, { align })
+  }
+  const line = (yy) => { doc.setDrawColor(...C.line); doc.setLineWidth(0.3); doc.line(ml, yy, W - mr, yy) }
+
+  // ── Header ────────────────────────────────────────────
+  doc.setFillColor(...C.indigo)
+  doc.roundedRect(ml, y, 11, 11, 2, 2, 'F')
+  txt('B', ml + 3.8, y + 7.8, { size: 9, bold: true, color: [255, 255, 255] })
+  txt(officeData.nome || 'Minha Oficina', ml + 14, y + 4, { size: 13, bold: true })
+  if (officeData.cnpj) txt(`CNPJ: ${officeData.cnpj}`, ml + 14, y + 8, { size: 7, color: C.med })
+  if (officeData.endereco) txt(officeData.endereco, ml + 14, y + 12, { size: 7, color: C.med })
+
+  doc.setFillColor(...C.indigo)
+  doc.roundedRect(W - mr - 42, y, 42, 7, 2, 2, 'F')
+  txt('ORDEM DE SERVIÇO', W - mr - 21, y + 5, { size: 7, bold: true, color: [255, 255, 255], align: 'center' })
+  txt(`Data: ${formatDateFn(os.createdAt)}`, W - mr, y + 10, { size: 8, color: C.med, align: 'right' })
+  if (os.km) txt(`KM: ${os.km}`, W - mr, y + 14, { size: 8, color: C.med, align: 'right' })
+
+  y += 19; line(y); y += 5
+
+  // ── Cliente / Veículo ────────────────────────────────
+  const hw = (cW - 5) / 2
+  doc.setFillColor(...C.bg); doc.roundedRect(ml, y, hw, 24, 3, 3, 'F')
+  txt('CLIENTE', ml + 4, y + 5, { size: 7, bold: true, color: C.light })
+  txt(client?.nome || '—', ml + 4, y + 11, { size: 10, bold: true })
+  if (client?.whatsapp) txt(client.whatsapp, ml + 4, y + 16, { size: 8, color: C.med })
+  if (client?.cpf) txt(`CPF: ${client.cpf}`, ml + 4, y + 20, { size: 7, color: C.med })
+
+  const vX = ml + hw + 5
+  doc.setFillColor(...C.bg); doc.roundedRect(vX, y, hw, 24, 3, 3, 'F')
+  txt('VEÍCULO', vX + 4, y + 5, { size: 7, bold: true, color: C.light })
+  txt(vehicle?.modelo || '—', vX + 4, y + 11, { size: 10, bold: true })
+  txt(vehicle?.placa || '', vX + 4, y + 18, { size: 10, bold: true, color: C.indigo })
+
+  y += 30
+
+  // ── Tabela de itens ──────────────────────────────────
+  doc.setFillColor(...C.bg); doc.rect(ml, y, cW, 8, 'F')
+  txt('DESCRIÇÃO', ml + 3, y + 5.5, { size: 7, bold: true, color: C.light })
+  txt('VALOR', W - mr - 3, y + 5.5, { size: 7, bold: true, color: C.light, align: 'right' })
+  line(y + 8); y += 8
+
+  items.forEach(item => {
+    if (y > 255) { doc.addPage(); y = 20 }
+    const desc = item.descricao.length > 60 ? item.descricao.slice(0, 57) + '...' : item.descricao
+    txt(desc, ml + 3, y + 6)
+    if (item.garantia) txt(`🛡 ${item.garantia}`, ml + 3, y + 10.5, { size: 7, color: C.med })
+    txt(formatCurrencyFn(item.venda), W - mr - 3, y + 6, { bold: true, align: 'right' })
+    line(y + (item.garantia ? 13 : 9))
+    y += item.garantia ? 14 : 10
+  })
+  y += 4
+
+  // ── Totais ───────────────────────────────────────────
+  const subtotal = items.reduce((s, i) => s + i.venda, 0)
+  const descontoCalc = (() => {
+    if (!desconto?.valor) return 0
+    if (desconto.tipo === 'percent') return subtotal * Number(desconto.valor) / 100
+    return Math.min(Number(desconto.valor), subtotal)
+  })()
+  const total = subtotal - descontoCalc
+
+  if (descontoCalc > 0) {
+    txt('Subtotal', W - mr - 55, y, { size: 9, color: C.med }); txt(formatCurrencyFn(subtotal), W - mr, y, { size: 9, color: C.med, align: 'right' }); y += 5
+    const lbl = buildDescontoLabel(desconto, descontoCalc)
+    txt(lbl, W - mr - 55, y, { size: 9, color: C.green }); txt(`− ${formatCurrencyFn(descontoCalc)}`, W - mr, y, { size: 9, color: C.green, align: 'right' }); y += 5
+  }
+
+  doc.setFillColor(...C.indigo); doc.roundedRect(ml, y, cW, 13, 3, 3, 'F')
+  txt('TOTAL', ml + 5, y + 9, { size: 10, bold: true, color: [200, 200, 255] })
+  txt(formatCurrencyFn(total), W - mr - 5, y + 9, { size: 14, bold: true, color: [255, 255, 255], align: 'right' })
+  y += 18
+
+  // ── Observações ──────────────────────────────────────
+  if (os.observacoes) {
+    doc.setFillColor(255, 251, 235); doc.roundedRect(ml, y, cW, 18, 3, 3, 'F')
+    txt('OBSERVAÇÕES', ml + 4, y + 5, { size: 7, bold: true, color: [146, 64, 14] })
+    const obsLines = doc.splitTextToSize(os.observacoes, cW - 8)
+    doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(120, 53, 15)
+    doc.text(obsLines, ml + 4, y + 10); y += 22
+  }
+
+  // ── Condição de pagamento ────────────────────────────
+  const metodos = (desconto?.metodos || []).map(k => PAYMENT_NAMES[k] || k)
+  if (metodos.length > 0) {
+    doc.setFillColor(...C.bg); doc.roundedRect(ml, y, cW, 10, 3, 3, 'F')
+    txt('PAGAMENTO', ml + 4, y + 4, { size: 7, bold: true, color: C.light })
+    txt(metodos.join(' · '), ml + 4, y + 8, { size: 8, color: C.med })
+    y += 14
+  }
+
+  // ── Footer ───────────────────────────────────────────
+  txt('Gerado por BoxCerto · boxcerto.com', W / 2, 288, { size: 7, color: C.light, align: 'center' })
+
+  const filename = `orcamento-${vehicle?.placa || 'veiculo'}-${(client?.nome || 'cliente').split(' ')[0]}.pdf`
+  doc.save(filename)
+}
+
+export const downloadReceiptPDF = async ({ os, client, vehicle, items, officeData, formatCurrencyFn }) => {
+  const { jsPDF } = await import('jspdf')
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const W = 210, ml = 30, mr = 30, cW = 150
+  let y = 20
+
+  const C = { main: [30, 41, 59], med: [100, 116, 139], light: [148, 163, 184], line: [226, 232, 240], indigo: [79, 70, 229], green: [22, 163, 74], bg: [248, 250, 252] }
+  const txt = (t, x, yy, { size = 9, bold = false, color = C.main, align = 'left' } = {}) => {
+    doc.setFontSize(size); doc.setFont('helvetica', bold ? 'bold' : 'normal')
+    doc.setTextColor(...color); doc.text(String(t || ''), x, yy, { align })
+  }
+
+  // ── Header ────────────────────────────────────────────
+  doc.setFillColor(...C.indigo); doc.roundedRect(ml, y, 10, 10, 2, 2, 'F')
+  txt('B', ml + 3.3, y + 7, { size: 9, bold: true, color: [255, 255, 255] })
+  txt(officeData.nome || 'Minha Oficina', ml + 13, y + 5, { size: 12, bold: true })
+  if (officeData.telefone) txt(officeData.telefone, ml + 13, y + 10, { size: 7, color: C.med })
+
+  doc.setFillColor(...C.bg); doc.roundedRect(ml, y + 14, cW, 7, 2, 2, 'F')
+  txt('RECIBO DE PAGAMENTO', W / 2, y + 19, { size: 8, bold: true, color: C.med, align: 'center' })
+  y += 26
+
+  // ── Info OS ──────────────────────────────────────────
+  const row = (label, val, yy) => {
+    txt(label, ml, yy, { size: 8, bold: true, color: C.light })
+    txt(val, W - mr, yy, { size: 8, bold: true, align: 'right' })
+  }
+  row('Cliente', client?.nome || '—', y); y += 6
+  row('Veículo', `${vehicle?.modelo || '—'} · ${vehicle?.placa || ''}`, y); y += 6
+  row('Data de Entrega', os.deliveredAt ? new Date(os.deliveredAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—', y); y += 10
+
+  doc.setDrawColor(...C.line); doc.setLineWidth(0.3); doc.line(ml, y, W - mr, y); y += 6
+
+  // ── Pagamentos ───────────────────────────────────────
+  txt('FORMAS DE PAGAMENTO', ml, y, { size: 7, bold: true, color: C.light }); y += 6
+  const PLABELS = { pix: 'PIX', dinheiro: 'Dinheiro', debito: 'Cartão Débito', credito: 'Cartão Crédito', outros: 'Outros' }
+  ;(os.payments || []).forEach(p => {
+    txt(PLABELS[p.method] || p.method, ml, y, { size: 9 })
+    txt(formatCurrencyFn(Number(p.amount)), W - mr, y, { size: 9, bold: true, align: 'right' })
+    y += 7
+  })
+
+  // ── Totais ───────────────────────────────────────────
+  const subtotal = items.reduce((s, i) => s + i.venda, 0)
+  const desconto = os.desconto || {}
+  const descontoCalc = (() => {
+    if (!desconto.valor) return 0
+    if (desconto.tipo === 'percent') return subtotal * Number(desconto.valor) / 100
+    return Math.min(Number(desconto.valor), subtotal)
+  })()
+  const total = subtotal - descontoCalc
+
+  y += 2; doc.setDrawColor(...C.line); doc.line(ml, y, W - mr, y); y += 6
+
+  if (descontoCalc > 0) {
+    const lbl = buildDescontoLabel(desconto, descontoCalc)
+    txt(lbl, ml, y, { size: 8, color: C.green }); txt(`− ${formatCurrencyFn(descontoCalc)}`, W - mr, y, { size: 8, color: C.green, align: 'right' }); y += 7
+  }
+
+  doc.setFillColor(...C.indigo); doc.roundedRect(ml, y, cW, 13, 3, 3, 'F')
+  txt('TOTAL PAGO', ml + 5, y + 9, { size: 10, bold: true, color: [200, 200, 255] })
+  txt(formatCurrencyFn(total), W - mr - 5, y + 9, { size: 13, bold: true, color: [255, 255, 255], align: 'right' })
+  y += 18
+
+  if (os.deliveryNotes) {
+    doc.setFillColor(255, 251, 235); doc.roundedRect(ml, y, cW, 14, 3, 3, 'F')
+    const noteLines = doc.splitTextToSize(os.deliveryNotes, cW - 8)
+    doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(120, 53, 15)
+    doc.text(noteLines, ml + 4, y + 7); y += 18
+  }
+
+  txt('Obrigado pela confiança! · BoxCerto · boxcerto.com', W / 2, 288, { size: 7, color: C.light, align: 'center' })
+
+  const filename = `recibo-${vehicle?.placa || 'veiculo'}-${(client?.nome || 'cliente').split(' ')[0]}.pdf`
+  doc.save(filename)
+}
+
 // ── HELPERS ───────────────────────────────────────────────
 export const formatCurrency = (val) =>
   Number(val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })

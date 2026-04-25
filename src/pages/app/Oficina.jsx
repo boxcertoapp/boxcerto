@@ -13,7 +13,7 @@ import {
   osStorage, itemStorage, clientStorage, vehicleStorage,
   STATUS_LABELS, STATUS_COLORS, formatCurrency, formatDate,
   SERVICOS_COMUNS, GARANTIA_OPTIONS, officeDataStorage,
-  printOS, printReceipt, inventoryStorage
+  printOS, printReceipt, downloadOsPDF, downloadReceiptPDF, buildDescontoLabel, inventoryStorage
 } from '../../lib/storage'
 
 // ── HELPERS ───────────────────────────────────────────────
@@ -1015,13 +1015,13 @@ function OSDetailModal({ os, onClose, officeName }) {
   const handlePrint = async () => {
     const raw = await officeDataStorage.get(officeName)
     const officeData = { nome: officeName, ...raw }
-    printOS({ os, client: os.client, vehicle: os.vehicle, items, officeData, formatCurrencyFn: formatCurrency, formatDateFn: formatDate, desconto })
+    await downloadOsPDF({ os, client: os.client, vehicle: os.vehicle, items, officeData, formatCurrencyFn: formatCurrency, formatDateFn: formatDate, desconto })
   }
 
   const handlePrintReceipt = async () => {
     const raw = await officeDataStorage.get(officeName)
     const officeData = { nome: officeName, ...raw }
-    printReceipt({ os: { ...os, ...deliveryInfo }, client: os.client, vehicle: os.vehicle, items, officeData, formatCurrencyFn: formatCurrency, formatDateFn: formatDate })
+    await downloadReceiptPDF({ os: { ...os, ...deliveryInfo }, client: os.client, vehicle: os.vehicle, items, officeData, formatCurrencyFn: formatCurrency, formatDateFn: formatDate })
   }
 
   const handleShareWpp = () => {
@@ -1379,7 +1379,7 @@ function OSDetailModal({ os, onClose, officeName }) {
 
                   {/* Formas de pagamento */}
                   <div>
-                    <p className="text-xs text-slate-400 mb-2">Formas de pagamento aceitas</p>
+                    <p className="text-xs text-slate-400 mb-2">Desconto válido ao pagar em:</p>
                     <div className="grid grid-cols-2 gap-2">
                       {PAYMENT_METHODS.map(m => {
                         const checked = desconto.metodos?.includes(m.key)
@@ -1424,7 +1424,7 @@ function OSDetailModal({ os, onClose, officeName }) {
               </div>
               {descontoValor > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-green-600">Desconto</span>
+                  <span className="text-green-600">{buildDescontoLabel(desconto, descontoValor) || 'Desconto'}</span>
                   <span className="text-green-600">− {formatCurrency(descontoValor)}</span>
                 </div>
               )}
