@@ -164,7 +164,14 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
             {data.manutencao.map(os => (
               <button key={os.id} onClick={() => onOpenOS(os)}
                 className="w-full bg-white rounded-2xl border border-gray-100 p-3 flex items-center gap-3 text-left hover:border-blue-100 transition-colors">
-                <PlateTag placa={os.vehicle?.placa || '???'} />
+                <div className="relative shrink-0">
+                  <PlateTag placa={os.vehicle?.placa || '???'} />
+                  {os.aprovacaoStatus === 'aprovado' && (
+                    <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center ring-2 ring-white">
+                      <Check className="w-2.5 h-2.5 text-white" />
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-900 text-sm truncate">{os.vehicle?.modelo}</p>
                   <p className="text-xs text-slate-500 truncate">{os.client?.nome}</p>
@@ -185,11 +192,27 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
           <div className="space-y-2">
             {data.orcamento.map(os => (
               <button key={os.id} onClick={() => onOpenOS(os)}
-                className="w-full bg-white rounded-2xl border border-gray-100 p-3 flex items-center gap-3 text-left hover:border-amber-100 transition-colors">
-                <PlateTag placa={os.vehicle?.placa || '???'} />
+                className={`w-full bg-white rounded-2xl border p-3 flex items-center gap-3 text-left transition-colors ${
+                  os.aprovacaoStatus === 'aprovado'
+                    ? 'border-green-200 hover:border-green-300 bg-green-50/30'
+                    : 'border-gray-100 hover:border-amber-100'
+                }`}>
+                <div className="relative shrink-0">
+                  <PlateTag placa={os.vehicle?.placa || '???'} />
+                  {os.aprovacaoStatus === 'aprovado' && (
+                    <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center ring-2 ring-white">
+                      <Check className="w-2.5 h-2.5 text-white" />
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-900 text-sm truncate">{os.vehicle?.modelo}</p>
-                  <p className="text-xs text-slate-500 truncate">{os.client?.nome} · {formatDate(os.createdAt)}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <p className="text-xs text-slate-500 truncate">{os.client?.nome} · {formatDate(os.createdAt)}</p>
+                    {os.aprovacaoStatus === 'aprovado' && (
+                      <span className="text-xs text-green-600 font-semibold shrink-0">✓ Aprovado</span>
+                    )}
+                  </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
               </button>
@@ -808,6 +831,7 @@ function OSDetailModal({ os, onClose, officeName }) {
   const [editCepLoading, setEditCepLoading] = useState(false)
   const [savingEdit, setSavingEdit] = useState(false)
   const [enviando, setEnviando] = useState(false)
+  const [itensAlteradosAposAprovacao, setItensAlteradosAposAprovacao] = useState(false)
 
   const reload = async () => {
     const loaded = await itemStorage.getByOS(os.id)
@@ -916,6 +940,13 @@ function OSDetailModal({ os, onClose, officeName }) {
     setSuggestions([])
     setShowAddItem(false)
     await reload()
+    if (os.aprovacaoStatus === 'aprovado') setItensAlteradosAposAprovacao(true)
+  }
+
+  const handleRemoveItem = async (itemId) => {
+    await itemStorage.remove(itemId)
+    await reload()
+    if (os.aprovacaoStatus === 'aprovado') setItensAlteradosAposAprovacao(true)
   }
 
   const handleAddFromStock = async (stockItem, qty, forceAdd = false) => {
@@ -1091,10 +1122,29 @@ function OSDetailModal({ os, onClose, officeName }) {
                 </button>
               ))}
             </div>
-            {os.aprovacaoStatus === 'aprovado' && (
+            {os.aprovacaoStatus === 'aprovado' && !itensAlteradosAposAprovacao && (
               <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold flex items-center gap-1 w-fit">
                 <CheckCircle2 className="w-3 h-3" /> Aprovado pelo cliente
               </span>
+            )}
+            {itensAlteradosAposAprovacao && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-amber-800">Orçamento alterado após aprovação</p>
+                    <p className="text-xs text-amber-600 mt-0.5">O cliente aprovou uma versão diferente. Recomendamos re-enviar o link para nova aprovação.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleEnviarCliente}
+                  disabled={enviando}
+                  className="w-full flex items-center justify-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold py-2 rounded-lg transition-colors disabled:opacity-60"
+                >
+                  {enviando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                  Re-enviar para aprovação
+                </button>
+              </div>
             )}
           </div>
 
@@ -1254,7 +1304,7 @@ function OSDetailModal({ os, onClose, officeName }) {
                     </div>
                     <p className="text-sm font-semibold text-slate-900 shrink-0">{formatCurrency(item.venda)}</p>
                     {status !== 'entregue' && (
-                      <button onClick={async () => { await itemStorage.remove(item.id); await reload() }}
+                      <button onClick={() => handleRemoveItem(item.id)}
                         className="p-1.5 hover:bg-red-50 rounded-lg transition-colors shrink-0">
                         <Trash2 className="w-4 h-4 text-red-400" />
                       </button>
