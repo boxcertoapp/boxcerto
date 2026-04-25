@@ -170,8 +170,17 @@ export default function AdminPanel() {
       `Tem certeza que deseja excluir "${u.oficina || u.email}"? Todos os dados serão apagados. Esta ação é irreversível.`,
       async () => {
         try {
-          // Deleta o perfil — cascateia todos os dados (clients, vehicles, OS, etc.)
-          await supabase.from('profiles').delete().eq('id', u.id)
+          // Obtém o token JWT do admin para autenticar a requisição server-side
+          const { data: { session } } = await supabase.auth.getSession()
+          if (!session?.access_token) throw new Error('Sessão expirada. Faça login novamente.')
+
+          const res = await fetch('/api/admin-delete-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: u.id, adminToken: session.access_token }),
+          })
+          const json = await res.json()
+          if (!res.ok) throw new Error(json.error || 'Erro ao excluir usuário')
           reload()
         } catch (err) {
           alert('Erro ao excluir usuário: ' + err.message)
