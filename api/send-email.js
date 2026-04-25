@@ -1,19 +1,26 @@
 // ============================================================
-// send-email.js — Envio de emails transacionais via Titan SMTP
+// send-email.js — Envio de emails transacionais via Resend
 // POST /api/send-email
 // Body: { type: 'welcome' | 'trial_ending' | 'custom', to, nome, oficina, ...extras }
 // ============================================================
-import nodemailer from 'nodemailer'
+const RESEND_API_KEY = process.env.RESEND_API_KEY
+const FROM = 'BoxCerto <noreply@boxcerto.com>'
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.titan.email',
-  port: Number(process.env.SMTP_PORT || 465),
-  secure: true, // SSL na porta 465
-  auth: {
-    user: process.env.SMTP_USER || 'noreply@boxcerto.com',
-    pass: process.env.SMTP_PASS,
-  },
-})
+const sendViaResend = async ({ to, subject, html }) => {
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ from: FROM, to: [to], subject, html }),
+  })
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.message || 'Resend error')
+  }
+  return res.json()
+}
 
 // ── Templates ─────────────────────────────────────────────
 const templates = {
@@ -113,12 +120,7 @@ export default async function handler(req, res) {
   const { subject, html } = template(data)
 
   try {
-    await transporter.sendMail({
-      from: `"BoxCerto" <${process.env.SMTP_USER || 'noreply@boxcerto.com'}>`,
-      to,
-      subject,
-      html,
-    })
+    await sendViaResend({ to, subject, html })
     return res.status(200).json({ ok: true })
   } catch (err) {
     console.error('Email error:', err)

@@ -17,7 +17,7 @@ export default function EsqueciSenha() {
       redirectTo: `${window.location.origin}/redefinir-senha`,
     })
     setLoading(false)
-    if (error) return setErro('Não encontramos uma conta com esse e-mail.')
+    if (error) return setErro(error.message || 'Erro ao enviar o e-mail. Tente novamente.')
     setEnviado(true)
   }
 
