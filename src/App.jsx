@@ -8,6 +8,8 @@ import Pending from './pages/Pending'
 import Assinar from './pages/Assinar'
 import Sucesso from './pages/Sucesso'
 import Renovar from './pages/Renovar'
+import EsqueciSenha from './pages/EsqueciSenha'
+import RedefinirSenha from './pages/RedefinirSenha'
 import OrcamentoPublico from './pages/OrcamentoPublico'
 import AppLayout from './pages/app/AppLayout'
 import Oficina from './pages/app/Oficina'
@@ -30,6 +32,8 @@ export default function App() {
           <Route path="/renovar" element={<Renovar />} />
           <Route path="/assinar" element={<Assinar />} />
           <Route path="/sucesso" element={<Sucesso />} />
+          <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+          <Route path="/redefinir-senha" element={<RedefinirSenha />} />
           <Route path="/o/:token" element={<OrcamentoPublico />} />
 
           {/* Admin */}
