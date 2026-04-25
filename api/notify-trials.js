@@ -55,46 +55,19 @@ export default async function handler(req, res) {
     const diffMs = trialEnd - now
     const diasRestantes = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
 
-    // ── Envio de e-mail via Resend (se RESEND_API_KEY estiver configurado)
+    // ── Envio de e-mail via API interna (Titan SMTP)
     let emailSent = false
-    if (process.env.RESEND_API_KEY && u.email) {
+    if (u.email && process.env.SMTP_PASS) {
       try {
-        const emailRes = await fetch('https://api.resend.com/emails', {
+        const emailRes = await fetch(`${req.headers.origin || 'https://appboxcerto.vercel.app'}/api/send-email`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            from: 'BoxCerto <noreply@boxcerto.com>',
-            to: [u.email],
-            subject: diasRestantes <= 1
-              ? '⚠️ Seu trial BoxCerto expira hoje!'
-              : `⏳ Seu trial BoxCerto expira em ${diasRestantes} dias`,
-            html: `
-              <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
-                <div style="background:#4f46e5;border-radius:12px;padding:20px;text-align:center;margin-bottom:24px">
-                  <h1 style="color:white;margin:0;font-size:24px">BoxCerto</h1>
-                </div>
-                <h2 style="color:#1e293b">Olá, ${u.responsavel || u.oficina || 'cliente'}!</h2>
-                <p style="color:#475569">
-                  ${diasRestantes <= 1
-                    ? 'Seu período de trial <strong>expira hoje</strong>!'
-                    : `Seu período de trial expira em <strong>${diasRestantes} dias</strong>.`
-                  }
-                </p>
-                <p style="color:#475569">
-                  Para continuar usando o BoxCerto sem interrupção, escolha um plano:
-                </p>
-                <a href="https://appboxcerto.vercel.app/assinar"
-                   style="display:block;background:#4f46e5;color:white;text-decoration:none;padding:14px 24px;border-radius:10px;text-align:center;font-weight:bold;margin:20px 0">
-                  Ver planos →
-                </a>
-                <p style="color:#94a3b8;font-size:12px;text-align:center">
-                  BoxCerto · Suporte via WhatsApp
-                </p>
-              </div>
-            `,
+            type: 'trial_ending',
+            to: u.email,
+            nome: u.responsavel || u.oficina || 'Cliente',
+            oficina: u.oficina || '',
+            diasRestantes,
           }),
         })
         emailSent = emailRes.ok

@@ -38,6 +38,20 @@ export default function Register() {
     })
     setLoading(false)
     if (!result.ok) return setError(result.error)
+
+    // Envia email de boas-vindas em background (não bloqueia o redirecionamento)
+    fetch('/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'welcome',
+        to: form.email.trim(),
+        nome: form.responsavel.trim(),
+        oficina: form.oficina.trim(),
+        trialDias: 7,
+      }),
+    }).catch(() => {}) // silencia erros — não impede o cadastro
+
     navigate('/app/oficina')
   }
 
