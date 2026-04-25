@@ -49,6 +49,8 @@ const mapOS = (os) => !os ? null : ({
   desconto: os.desconto || { tipo: 'valor', valor: 0 },
   createdAt: os.created_at,
   updatedAt: os.updated_at,
+  aprovacaoToken: os.aprovacao_token || null,
+  aprovacaoStatus: os.aprovacao_status || 'pendente',
 })
 
 const mapItem = (i) => !i ? null : ({
@@ -309,6 +311,32 @@ export const osStorage = {
     await supabase.from('service_items').delete().eq('os_id', id)
     await supabase.from('service_orders').delete().eq('id', id)
   },
+
+  // Gera token de aprovação e salva na OS
+  generateApprovalToken: async (id) => {
+    const token = crypto.randomUUID()
+    const { error } = await supabase.from('service_orders').update({
+      aprovacao_token: token,
+      aprovacao_status: 'pendente',
+      updated_at: new Date().toISOString(),
+    }).eq('id', id)
+    if (error) throw new Error(error.message)
+    return token
+  },
+
+  // Busca OS pelo token (público — usa RPC SECURITY DEFINER)
+  getByToken: async (token) => {
+    const { data, error } = await supabase.rpc('get_os_by_token', { p_token: token })
+    if (error || !data) return null
+    return data
+  },
+
+  // Aprova OS pelo token (público)
+  approveByToken: async (token) => {
+    const { data, error } = await supabase.rpc('approve_os_by_token', { p_token: token })
+    if (error) throw new Error(error.message)
+    return data
+  },
 }
 
 // ── ITENS DA OS ───────────────────────────────────────────
@@ -511,7 +539,7 @@ export const printOS = ({ os, client, vehicle, items, officeData, formatCurrency
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
-<head><meta charset="UTF-8"/><title>OS — ${vehicle?.placa}</title>
+<head><meta charset="UTF-8"/><title>orcamento-${vehicle?.placa}-${client?.nome?.split(' ')[0] || 'cliente'}.pdf</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#1e293b;padding:32px;max-width:680px;margin:0 auto}@media print{body{padding:16px}}</style>
 </head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:24px;border-bottom:2px solid #e2e8f0">
@@ -607,7 +635,7 @@ export const printReceipt = ({ os, client, vehicle, items, officeData, formatCur
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
-<head><meta charset="UTF-8"/><title>Recibo — ${vehicle?.placa}</title>
+<head><meta charset="UTF-8"/><title>recibo-${vehicle?.placa}-${client?.nome?.split(' ')[0] || 'cliente'}.pdf</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#1e293b;padding:24px;max-width:400px;margin:0 auto}@media print{body{padding:12px}}</style>
 </head><body>
   <div style="text-align:center;margin-bottom:20px;padding-bottom:16px;border-bottom:2px dashed #e2e8f0">

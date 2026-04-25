@@ -7,6 +7,7 @@ import Register from './pages/Register'
 import Pending from './pages/Pending'
 import Assinar from './pages/Assinar'
 import Sucesso from './pages/Sucesso'
+import OrcamentoPublico from './pages/OrcamentoPublico'
 import AppLayout from './pages/app/AppLayout'
 import Oficina from './pages/app/Oficina'
 import Historico from './pages/app/Historico'
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="/renovar" element={<Renovar />} />
           <Route path="/assinar" element={<Assinar />} />
           <Route path="/sucesso" element={<Sucesso />} />
+          <Route path="/o/:token" element={<OrcamentoPublico />} />
 
           {/* Admin */}
           <Route path="/admin" element={<AdminPanel />} />

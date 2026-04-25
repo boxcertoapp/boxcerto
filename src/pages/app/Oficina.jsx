@@ -6,7 +6,7 @@ import {
   CreditCard, Banknote, Smartphone, DollarSign,
   Clock, Wrench, Package, Tag, Percent,
   CalendarClock, Gauge, ReceiptText, TrendingUp,
-  CheckCircle2, Edit2
+  CheckCircle2, Edit2, Send, Loader2
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import {
@@ -18,14 +18,20 @@ import {
 
 // ── HELPERS ───────────────────────────────────────────────
 const WPP_MESSAGES = {
-  orcamento: (cliente, modelo, total) =>
-    `Olá ${cliente}! 👋 O orçamento do seu *${modelo}* está pronto.\n\nTotal: *${formatCurrency(total)}*\n\nPodemos prosseguir com o serviço?`,
+  orcamento: (cliente, modelo, total, link) =>
+    link
+      ? `Olá ${cliente}! 👋 O orçamento do seu *${modelo}* está pronto.\n\nTotal: *${formatCurrency(total)}*\n\n📋 Veja e aprove online:\n${link}`
+      : `Olá ${cliente}! 👋 O orçamento do seu *${modelo}* está pronto.\n\nTotal: *${formatCurrency(total)}*\n\nPodemos prosseguir com o serviço?`,
   manutencao: (cliente, modelo) =>
     `Olá ${cliente}! 🔧 Seu *${modelo}* já está em manutenção. Assim que ficar pronto, te aviso!`,
   pronto: (cliente, modelo) =>
     `Olá ${cliente}! ✅ Seu *${modelo}* está *pronto para retirada*. Qualquer dúvida, estamos à disposição!`,
   entregue: (cliente, modelo) =>
     `Olá ${cliente}! 😊 Obrigado pela confiança! Esperamos que esteja tudo certo com seu *${modelo}*.`,
+  revisao: (cliente, modelo, dias) =>
+    `Olá ${cliente}! 🚗 Faz ${dias} dias desde a última visita do seu *${modelo}*. Que tal agendar uma revisão?`,
+  aniversario: (cliente) =>
+    `Olá ${cliente}! 🎂 Hoje é seu aniversário! A equipe da oficina deseja um dia incrível. Aproveite nosso desconto especial de aniversário! 🎁`,
 }
 
 function PlateTag({ placa }) {
@@ -792,6 +798,7 @@ function OSDetailModal({ os, onClose, officeName }) {
     modelo: os.vehicle?.modelo || '',
   })
   const [savingEdit, setSavingEdit] = useState(false)
+  const [enviando, setEnviando] = useState(false)
 
   const reload = async () => {
     const loaded = await itemStorage.getByOS(os.id)
@@ -905,6 +912,35 @@ function OSDetailModal({ os, onClose, officeName }) {
   const handleKmSave = async () => { await osStorage.updateKm(os.id, km); setEditKm(false) }
   const handleSaveObs = async () => osStorage.updateObservacoes(os.id, obs)
 
+  const handleEnviarCliente = async () => {
+    const phone = os.client?.whatsapp?.replace(/\D/g, '')
+    if (!phone) return alert('Cliente sem WhatsApp cadastrado.')
+    setEnviando(true)
+    try {
+      // Generate token if not exists, or reuse existing
+      let token = os.aprovacaoToken
+      if (!token) {
+        token = await osStorage.generateApprovalToken(os.id)
+        // Update local state - setSelectedOS is passed from parent, but here we update os directly
+        os.aprovacaoToken = token
+        os.aprovacaoStatus = 'pendente'
+      }
+      const baseUrl = window.location.origin
+      const link = `${baseUrl}/o/${token}`
+      const msg = WPP_MESSAGES.orcamento(
+        os.client?.nome?.split(' ')[0] || 'cliente',
+        os.vehicle?.modelo,
+        totalComDesconto,
+        link
+      )
+      window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`, '_blank')
+    } catch (e) {
+      alert('Erro ao gerar link de aprovação.')
+    } finally {
+      setEnviando(false)
+    }
+  }
+
   const handlePrint = async () => {
     const raw = await officeDataStorage.get(officeName)
     const officeData = { nome: officeName, ...raw }
@@ -944,6 +980,21 @@ function OSDetailModal({ os, onClose, officeName }) {
               className="w-9 h-9 bg-green-50 rounded-full flex items-center justify-center hover:bg-green-100 transition-colors">
               <MessageCircle className="w-5 h-5 text-green-600" />
             </a>
+            {os.status !== 'entregue' && (
+              <button
+                onClick={handleEnviarCliente}
+                disabled={enviando}
+                title="Enviar link de aprovação para o cliente"
+                className="flex items-center gap-1.5 bg-green-600 text-white text-xs font-semibold px-3 py-2 rounded-xl hover:bg-green-700 transition-colors disabled:opacity-60"
+              >
+                {enviando ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Send className="w-3.5 h-3.5" />
+                )}
+                Enviar para cliente
+              </button>
+            )}
             <button onClick={handleShareWpp} className="w-9 h-9 bg-green-600 rounded-full flex items-center justify-center hover:bg-green-700 transition-colors">
               <Share2 className="w-4 h-4 text-white" />
             </button>
@@ -985,7 +1036,7 @@ function OSDetailModal({ os, onClose, officeName }) {
           {/* Status */}
           <div className="bg-white rounded-2xl border border-gray-100 p-4">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Status</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2 mb-3">
               {STATUS_WITHOUT_DELIVERY.map(([key, label]) => (
                 <button key={key} onClick={() => handleStatus(key)} disabled={status === 'entregue'}
                   className={`py-2.5 rounded-xl text-sm font-medium transition-all border-2 ${
@@ -1000,6 +1051,11 @@ function OSDetailModal({ os, onClose, officeName }) {
                 </button>
               ))}
             </div>
+            {os.aprovacaoStatus === 'aprovado' && (
+              <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold flex items-center gap-1 w-fit">
+                <CheckCircle2 className="w-3 h-3" /> Aprovado pelo cliente
+              </span>
+            )}
           </div>
 
           {/* Info entrega */}

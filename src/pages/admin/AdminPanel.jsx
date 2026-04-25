@@ -4,18 +4,20 @@ import {
   Wrench, Users, CheckCircle, XCircle, Clock,
   LogOut, Phone, Mail, Building2, TrendingUp,
   Search, RefreshCw, Shield, Calendar,
-  ChevronDown, ChevronUp, Trash2, Loader2, Eye, EyeOff
+  ChevronDown, ChevronUp, Trash2, Loader2, Eye, EyeOff, AlertCircle, CreditCard
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { formatDate } from '../../lib/storage'
 
 const STATUS_CONFIG = {
-  pending:  { label: 'Pendente',  color: 'bg-amber-100 text-amber-700',   icon: Clock },
-  trial:    { label: 'Trial',     color: 'bg-indigo-100 text-indigo-700', icon: Clock },
-  active:   { label: 'Ativo',     color: 'bg-green-100 text-green-700',   icon: CheckCircle },
-  inactive: { label: 'Inativo',   color: 'bg-gray-100 text-gray-600',     icon: XCircle },
-  rejected: { label: 'Rejeitado', color: 'bg-red-100 text-red-600',       icon: XCircle },
+  pending:      { label: 'Pendente',     color: 'bg-amber-100 text-amber-700',    icon: Clock },
+  trial:        { label: 'Trial',        color: 'bg-indigo-100 text-indigo-700',  icon: Clock },
+  active:       { label: 'Ativo',        color: 'bg-green-100 text-green-700',    icon: CheckCircle },
+  inactive:     { label: 'Inativo',      color: 'bg-gray-100 text-gray-600',      icon: XCircle },
+  rejected:     { label: 'Rejeitado',    color: 'bg-red-100 text-red-600',        icon: XCircle },
+  cancelado:    { label: 'Cancelado',    color: 'bg-red-100 text-red-700',        icon: XCircle },
+  inadimplente: { label: 'Inadimplente', color: 'bg-orange-100 text-orange-700',  icon: AlertCircle },
 }
 
 const loadUsers = async () => {
@@ -35,6 +37,9 @@ const loadUsers = async () => {
     trialEnd: p.trial_end || null,
     createdAt: p.created_at,
     activatedAt: p.activated_at || null,
+    stripeCustomerId: p.stripe_customer_id || null,
+    nextBillingAt: p.next_billing_at || null,
+    canceledAt: p.canceled_at || null,
   }))
 }
 
@@ -215,9 +220,11 @@ export default function AdminPanel() {
   })
 
   const counts = {
-    total:  users.length,
-    active: users.filter(u => u.status === 'active').length,
-    trial:  users.filter(u => u.status === 'trial').length,
+    total:        users.length,
+    active:       users.filter(u => u.status === 'active').length,
+    trial:        users.filter(u => u.status === 'trial').length,
+    inadimplente: users.filter(u => u.status === 'inadimplente').length,
+    cancelado:    users.filter(u => u.status === 'cancelado').length,
   }
 
   const mrr = users
@@ -259,11 +266,12 @@ export default function AdminPanel() {
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
-            { label: 'Total Clientes', value: counts.total,  icon: Users,        color: 'text-slate-600', bg: 'bg-slate-100' },
-            { label: 'Ativos',         value: counts.active,  icon: CheckCircle,  color: 'text-green-600', bg: 'bg-green-100' },
-            { label: 'Em Trial',       value: counts.trial,   icon: Clock,        color: 'text-indigo-600', bg: 'bg-indigo-100' },
+            { label: 'Total Clientes', value: counts.total,        icon: Users,        color: 'text-slate-600', bg: 'bg-slate-100' },
+            { label: 'Ativos',         value: counts.active,        icon: CheckCircle,  color: 'text-green-600', bg: 'bg-green-100' },
+            { label: 'Em Trial',       value: counts.trial,         icon: Clock,        color: 'text-indigo-600', bg: 'bg-indigo-100' },
+            { label: 'Inadimplentes',  value: counts.inadimplente,  icon: AlertCircle,  color: 'text-orange-600', bg: 'bg-orange-100' },
             { label: 'MRR Estimado',   value: `R$${mrr.toFixed(0)}`, icon: TrendingUp, color: 'text-amber-600', bg: 'bg-amber-100' },
           ].map((s, i) => (
             <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4">
@@ -290,11 +298,13 @@ export default function AdminPanel() {
           </div>
           <div className="flex gap-2 flex-wrap">
             {[
-              { key: 'all',      label: 'Todos' },
-              { key: 'trial',    label: 'Trial' },
-              { key: 'pending',  label: 'Pendentes' },
-              { key: 'active',   label: 'Ativos' },
-              { key: 'inactive', label: 'Inativos' },
+              { key: 'all',          label: 'Todos' },
+              { key: 'trial',        label: 'Trial' },
+              { key: 'pending',      label: 'Pendentes' },
+              { key: 'active',       label: 'Ativos' },
+              { key: 'inadimplente', label: 'Inadimplentes' },
+              { key: 'cancelado',    label: 'Cancelados' },
+              { key: 'inactive',     label: 'Inativos' },
             ].map(f => (
               <button
                 key={f.key}
@@ -375,6 +385,8 @@ export default function AdminPanel() {
                           Cadastrado em {formatDate(u.createdAt)}
                           {u.activatedAt && ` · Ativado em ${formatDate(u.activatedAt)}`}
                           {u.trialEnd && u.status === 'trial' && ` · Trial até ${formatDate(u.trialEnd)}`}
+                          {u.nextBillingAt && u.status === 'active' && ` · Próx. cobrança: ${formatDate(u.nextBillingAt)}`}
+                          {u.canceledAt && u.status === 'cancelado' && ` · Cancelado em ${formatDate(u.canceledAt)}`}
                         </p>
                       </div>
 
@@ -407,6 +419,15 @@ export default function AdminPanel() {
                           </button>
                         )}
                         {(u.status === 'inactive' || u.status === 'rejected') && (
+                          <button
+                            onClick={() => approve(u.id)}
+                            className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-indigo-700 transition-colors"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                            Reativar
+                          </button>
+                        )}
+                        {(u.status === 'cancelado' || u.status === 'inadimplente') && (
                           <button
                             onClick={() => approve(u.id)}
                             className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-indigo-700 transition-colors"
@@ -477,6 +498,32 @@ export default function AdminPanel() {
                           </button>
                         )}
                       </div>
+
+                      {/* Stripe */}
+                      {(u.stripeCustomerId || u.status === 'active' || u.status === 'inadimplente') && (
+                        <div>
+                          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                            <CreditCard className="w-3.5 h-3.5" /> Stripe
+                          </p>
+                          <div className="flex flex-wrap gap-2 items-center">
+                            {u.stripeCustomerId && (
+                              <span className="text-xs text-slate-400 font-mono bg-white border border-gray-200 px-2 py-1 rounded-lg">
+                                {u.stripeCustomerId}
+                              </span>
+                            )}
+                            {u.stripeCustomerId && (
+                              <a
+                                href={`https://dashboard.stripe.com/customers/${u.stripeCustomerId}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-xs text-indigo-600 font-medium hover:underline flex items-center gap-1"
+                              >
+                                Ver no Stripe →
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Admin + Excluir */}
                       <div className="flex flex-wrap gap-3 items-center pt-2 border-t border-gray-200">
