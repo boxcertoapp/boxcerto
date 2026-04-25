@@ -6,7 +6,8 @@
 -- 1. Adicionar campos de aprovação nas ordens de serviço
 ALTER TABLE service_orders
   ADD COLUMN IF NOT EXISTS aprovacao_token text UNIQUE,
-  ADD COLUMN IF NOT EXISTS aprovacao_status text DEFAULT 'pendente';
+  ADD COLUMN IF NOT EXISTS aprovacao_status text DEFAULT 'pendente',
+  ADD COLUMN IF NOT EXISTS aprovado_em timestamptz;
 
 -- 2. Adicionar campos Stripe nos perfis
 ALTER TABLE profiles
@@ -88,6 +89,7 @@ BEGIN
   UPDATE service_orders
   SET
     aprovacao_status = 'aprovado',
+    aprovado_em = now(),
     updated_at = now()
   WHERE aprovacao_token = p_token
     AND aprovacao_status = 'pendente'

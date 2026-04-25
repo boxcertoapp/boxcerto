@@ -1123,9 +1123,20 @@ function OSDetailModal({ os, onClose, officeName }) {
               ))}
             </div>
             {os.aprovacaoStatus === 'aprovado' && !itensAlteradosAposAprovacao && (
-              <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold flex items-center gap-1 w-fit">
-                <CheckCircle2 className="w-3 h-3" /> Aprovado pelo cliente
-              </span>
+              <div className="bg-green-50 border border-green-200 rounded-xl px-3 py-2 flex items-center gap-2 w-fit">
+                <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                <div>
+                  <p className="text-xs font-bold text-green-800 leading-tight">Aprovado pelo cliente</p>
+                  {os.aprovadoEm && (
+                    <p className="text-[11px] text-green-600 leading-tight mt-0.5">
+                      {new Date(os.aprovadoEm).toLocaleString('pt-BR', {
+                        day: '2-digit', month: '2-digit', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                      })}
+                    </p>
+                  )}
+                </div>
+              </div>
             )}
             {itensAlteradosAposAprovacao && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">

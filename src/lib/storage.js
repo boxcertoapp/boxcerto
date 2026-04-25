@@ -51,6 +51,7 @@ const mapOS = (os) => !os ? null : ({
   updatedAt: os.updated_at,
   aprovacaoToken: os.aprovacao_token || null,
   aprovacaoStatus: os.aprovacao_status || 'pendente',
+  aprovadoEm: os.aprovado_em || null,
 })
 
 const mapItem = (i) => !i ? null : ({
