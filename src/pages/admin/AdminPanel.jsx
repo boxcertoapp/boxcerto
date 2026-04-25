@@ -5,11 +5,14 @@ import {
   LogOut, Phone, Mail, Building2, TrendingUp,
   Search, RefreshCw, Shield, Calendar,
   ChevronDown, ChevronUp, Trash2, Loader2, Eye, EyeOff, AlertCircle, CreditCard,
-  BellRing, DollarSign
+  BellRing, DollarSign, MessageSquare, BarChart2, Bell
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { formatDate } from '../../lib/storage'
+import Comunicacoes from './tabs/Comunicacoes'
+import Analytics from './tabs/Analytics'
+import Anuncios from './tabs/Anuncios'
 
 const STATUS_CONFIG = {
   pending:      { label: 'Pendente',     color: 'bg-amber-100 text-amber-700',    icon: Clock },
@@ -121,9 +124,17 @@ function SenhaModal({ title, message, onConfirm, onClose }) {
   )
 }
 
+const TABS = [
+  { key: 'usuarios',     label: 'Usuários',      icon: Users },
+  { key: 'comunicacoes', label: 'Comunicações',   icon: MessageSquare },
+  { key: 'analytics',   label: 'Analytics',      icon: BarChart2 },
+  { key: 'anuncios',    label: 'Anúncios',       icon: Bell },
+]
+
 export default function AdminPanel() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [tab, setTab] = useState('usuarios')
   const [users, setUsers] = useState([])
   const [filter, setFilter] = useState('all')
   const [query, setQuery] = useState('')
@@ -188,6 +199,25 @@ export default function AdminPanel() {
         }
       }
     )
+  }
+
+  // ── Impersonate (login como usuário) ────────────────────
+  const impersonate = async (u) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) throw new Error('Sessão expirada.')
+      const res = await fetch('/api/impersonate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminToken: session.access_token, userId: u.id }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Erro ao gerar link.')
+      // Abre o magic link em nova aba — o admin continua logado nesta aba
+      window.open(json.link, '_blank')
+    } catch (err) {
+      alert('Erro: ' + err.message)
+    }
   }
 
   // ── Grant / Revoke Admin ─────────────────────────────────
@@ -308,7 +338,51 @@ export default function AdminPanel() {
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+      {/* Tab navigation */}
+      <div className="border-b border-gray-100 bg-white sticky top-16 z-30">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="flex gap-1 overflow-x-auto">
+            {TABS.map(t => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`flex items-center gap-2 px-4 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                  tab === t.key
+                    ? 'border-indigo-600 text-indigo-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <t.icon className="w-4 h-4" />
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Tab: Comunicações */}
+      {tab === 'comunicacoes' && (
+        <div className="max-w-5xl mx-auto px-4 py-6">
+          <Comunicacoes users={users} />
+        </div>
+      )}
+
+      {/* Tab: Analytics */}
+      {tab === 'analytics' && (
+        <div className="max-w-5xl mx-auto px-4 py-6">
+          <Analytics users={users} />
+        </div>
+      )}
+
+      {/* Tab: Anúncios */}
+      {tab === 'anuncios' && (
+        <div className="max-w-5xl mx-auto px-4 py-6">
+          <Anuncios />
+        </div>
+      )}
+
+      {/* Tab: Usuários */}
+      {tab === 'usuarios' && <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {[
@@ -658,6 +732,17 @@ export default function AdminPanel() {
                           <span className="text-xs text-slate-400 italic">Você não pode alterar sua própria conta.</span>
                         )}
 
+                        {/* Login como usuário (impersonate) */}
+                        {!isSelf && (
+                          <button
+                            onClick={() => impersonate(u)}
+                            className="flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors"
+                          >
+                            <Eye className="w-4 h-4" />
+                            Login como usuário
+                          </button>
+                        )}
+
                         {/* Excluir usuário */}
                         {!isSelf && (
                           <button
@@ -676,7 +761,7 @@ export default function AdminPanel() {
             })}
           </div>
         )}
-      </div>
+      </div>}
     </div>
   )
 }

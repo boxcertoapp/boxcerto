@@ -1,6 +1,7 @@
 import { NavLink, Outlet, Navigate, useNavigate } from 'react-router-dom'
 import { Wrench, Clock, TrendingUp, Menu, Package, Zap } from 'lucide-react'
 import { useAuth, hasAccess, trialDaysLeft } from '../../contexts/AuthContext'
+import AnnouncementBanner from '../../components/AnnouncementBanner'
 
 const tabs = [
   { to: '/app/oficina',    icon: Wrench,     label: 'Oficina' },
@@ -27,6 +28,7 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      <AnnouncementBanner />
 
       {/* ── DESKTOP: sidebar + content ─────────────────────── */}
       <div className="hidden lg:flex min-h-screen">
