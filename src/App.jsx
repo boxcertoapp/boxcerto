@@ -7,6 +7,7 @@ import Register from './pages/Register'
 import Pending from './pages/Pending'
 import Assinar from './pages/Assinar'
 import Sucesso from './pages/Sucesso'
+import Renovar from './pages/Renovar'
 import OrcamentoPublico from './pages/OrcamentoPublico'
 import AppLayout from './pages/app/AppLayout'
 import Oficina from './pages/app/Oficina'
@@ -15,26 +16,6 @@ import Financeiro from './pages/app/Financeiro'
 import AppMenu from './pages/app/Menu'
 import Estoque from './pages/app/Estoque'
 import AdminPanel from './pages/admin/AdminPanel'
-
-function Renovar() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center max-w-sm">
-        <p className="text-2xl mb-2">⚠️</p>
-        <h2 className="text-xl font-bold text-slate-900 mb-2">Assinatura inativa</h2>
-        <p className="text-slate-500 text-sm mb-6">Sua assinatura está vencida. Renove para continuar usando o BoxCerto.</p>
-        <a
-          href="https://billing.stripe.com/p/login/test_00g00000000000"
-          target="_blank"
-          rel="noreferrer"
-          className="block w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition-colors"
-        >
-          Renovar assinatura
-        </a>
-      </div>
-    </div>
-  )
-}
 
 export default function App() {
   return (

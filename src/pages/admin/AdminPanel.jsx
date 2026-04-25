@@ -4,7 +4,8 @@ import {
   Wrench, Users, CheckCircle, XCircle, Clock,
   LogOut, Phone, Mail, Building2, TrendingUp,
   Search, RefreshCw, Shield, Calendar,
-  ChevronDown, ChevronUp, Trash2, Loader2, Eye, EyeOff, AlertCircle, CreditCard
+  ChevronDown, ChevronUp, Trash2, Loader2, Eye, EyeOff, AlertCircle, CreditCard,
+  BellRing, DollarSign
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -236,9 +237,43 @@ export default function AdminPanel() {
     cancelado:    users.filter(u => u.status === 'cancelado').length,
   }
 
-  const mrr = users
-    .filter(u => u.status === 'active')
-    .reduce((s, u) => s + (u.plan === 'annual' ? 418.80 / 12 : 47.90), 0)
+  const activeUsers = users.filter(u => u.status === 'active')
+  const mrrMensal = activeUsers.filter(u => u.plan !== 'annual').length * 47.90
+  const mrrAnual  = activeUsers.filter(u => u.plan === 'annual').length * (418.80 / 12)
+  const mrr = mrrMensal + mrrAnual
+
+  // Trials expirando nos próximos 3 dias
+  const now = new Date()
+  const in3days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
+  const trialsExpirando = users.filter(u =>
+    u.status === 'trial' && u.trialEnd &&
+    new Date(u.trialEnd) <= in3days && new Date(u.trialEnd) >= now
+  )
+
+  // Notificar trials expirando
+  const [notifyLoading, setNotifyLoading] = useState(false)
+  const [notifyResult, setNotifyResult] = useState(null)
+
+  const handleNotifyTrials = async () => {
+    setNotifyLoading(true)
+    setNotifyResult(null)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/notify-trials', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+      })
+      const json = await res.json()
+      setNotifyResult(json)
+    } catch (e) {
+      setNotifyResult({ error: e.message })
+    } finally {
+      setNotifyLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -275,13 +310,14 @@ export default function AdminPanel() {
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {[
-            { label: 'Total Clientes', value: counts.total,        icon: Users,        color: 'text-slate-600', bg: 'bg-slate-100' },
-            { label: 'Ativos',         value: counts.active,        icon: CheckCircle,  color: 'text-green-600', bg: 'bg-green-100' },
-            { label: 'Em Trial',       value: counts.trial,         icon: Clock,        color: 'text-indigo-600', bg: 'bg-indigo-100' },
-            { label: 'Inadimplentes',  value: counts.inadimplente,  icon: AlertCircle,  color: 'text-orange-600', bg: 'bg-orange-100' },
-            { label: 'MRR Estimado',   value: `R$${mrr.toFixed(0)}`, icon: TrendingUp, color: 'text-amber-600', bg: 'bg-amber-100' },
+            { label: 'Total Clientes', value: counts.total,          icon: Users,        color: 'text-slate-600',  bg: 'bg-slate-100' },
+            { label: 'Ativos',         value: counts.active,          icon: CheckCircle,  color: 'text-green-600',  bg: 'bg-green-100' },
+            { label: 'Em Trial',       value: counts.trial,           icon: Clock,        color: 'text-indigo-600', bg: 'bg-indigo-100' },
+            { label: 'Inadimplentes',  value: counts.inadimplente,    icon: AlertCircle,  color: 'text-orange-600', bg: 'bg-orange-100' },
+            { label: 'MRR Estimado',   value: `R$${mrr.toFixed(0)}`,  icon: TrendingUp,   color: 'text-amber-600',  bg: 'bg-amber-100' },
+            { label: 'Trial Expirando',value: trialsExpirando.length, icon: BellRing,     color: 'text-red-600',    bg: 'bg-red-100' },
           ].map((s, i) => (
             <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4">
               <div className={`w-9 h-9 ${s.bg} rounded-xl flex items-center justify-center mb-3`}>
@@ -291,6 +327,74 @@ export default function AdminPanel() {
               <p className="text-xs text-slate-400 mt-1">{s.label}</p>
             </div>
           ))}
+        </div>
+
+        {/* MRR Breakdown + Notificar Trials */}
+        <div className="grid md:grid-cols-2 gap-3">
+          {/* MRR breakdown */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <DollarSign className="w-4 h-4 text-amber-500" />
+              <p className="text-sm font-semibold text-slate-700">Receita Recorrente Mensal</p>
+            </div>
+            <p className="text-3xl font-extrabold text-slate-900 mb-3">R$ {mrr.toFixed(2).replace('.', ',')}</p>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-slate-500">Planos mensais ({activeUsers.filter(u => u.plan !== 'annual').length}x R$47,90)</span>
+                <span className="font-semibold text-slate-700">R$ {mrrMensal.toFixed(2).replace('.', ',')}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-slate-500">Planos anuais ({activeUsers.filter(u => u.plan === 'annual').length}x R$34,90)</span>
+                <span className="font-semibold text-slate-700">R$ {mrrAnual.toFixed(2).replace('.', ',')}</span>
+              </div>
+              <div className="pt-2 border-t border-gray-100 flex justify-between items-center text-sm">
+                <span className="text-slate-500">ARR (anualizado)</span>
+                <span className="font-bold text-indigo-600">R$ {(mrr * 12).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Notificar trials */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <BellRing className="w-4 h-4 text-red-500" />
+              <p className="text-sm font-semibold text-slate-700">Trials expirando em breve</p>
+            </div>
+            {trialsExpirando.length === 0 ? (
+              <p className="text-sm text-slate-400 mb-4">Nenhum trial expirando nos próximos 3 dias.</p>
+            ) : (
+              <div className="space-y-1.5 mb-4 max-h-28 overflow-y-auto">
+                {trialsExpirando.map(u => {
+                  const dias = Math.ceil((new Date(u.trialEnd) - now) / (1000*60*60*24))
+                  return (
+                    <div key={u.id} className="flex justify-between items-center text-sm">
+                      <span className="text-slate-600 truncate max-w-[60%]">{u.oficina || u.email}</span>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${dias <= 1 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                        {dias <= 0 ? 'hoje' : `${dias}d`}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            <button
+              onClick={handleNotifyTrials}
+              disabled={notifyLoading || trialsExpirando.length === 0}
+              className="w-full flex items-center justify-center gap-2 bg-red-50 border border-red-200 text-red-700 font-semibold py-2.5 rounded-xl hover:bg-red-100 transition-colors text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {notifyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BellRing className="w-4 h-4" />}
+              {notifyLoading ? 'Notificando...' : `Notificar ${trialsExpirando.length} usuário${trialsExpirando.length !== 1 ? 's' : ''}`}
+            </button>
+            {notifyResult && (
+              <div className={`mt-2 p-2.5 rounded-xl text-xs ${notifyResult.error ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+                {notifyResult.error
+                  ? `Erro: ${notifyResult.error}`
+                  : `✓ ${notifyResult.notified} notificados. Links WhatsApp gerados — veja o console para os links.`
+                }
+                {notifyResult.results && console.log('WhatsApp links:', notifyResult.results)}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Filtros e Busca */}
