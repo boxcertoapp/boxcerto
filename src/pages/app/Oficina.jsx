@@ -792,11 +792,20 @@ function OSDetailModal({ os, onClose, officeName }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showEditData, setShowEditData] = useState(false)
   const [editForm, setEditForm] = useState({
+    placa: os.vehicle?.placa || '',
+    modelo: os.vehicle?.modelo || '',
     clienteNome: os.client?.nome || '',
     clienteWhatsapp: os.client?.whatsapp || '',
     clienteCpf: os.client?.cpf || '',
-    modelo: os.vehicle?.modelo || '',
+    clienteNascimento: os.client?.dataNascimento || '',
+    clienteCep: os.client?.cep || '',
+    clienteEndereco: os.client?.endereco || '',
+    clienteNumero: os.client?.numero || '',
+    clienteBairro: os.client?.bairro || '',
+    clienteCidade: os.client?.cidade || '',
+    clienteUf: os.client?.uf || '',
   })
+  const [editCepLoading, setEditCepLoading] = useState(false)
   const [savingEdit, setSavingEdit] = useState(false)
   const [enviando, setEnviando] = useState(false)
 
@@ -862,11 +871,42 @@ function OSDetailModal({ os, onClose, officeName }) {
         nome: editForm.clienteNome,
         whatsapp: editForm.clienteWhatsapp,
         cpf: editForm.clienteCpf,
+        dataNascimento: editForm.clienteNascimento,
+        cep: editForm.clienteCep,
+        endereco: editForm.clienteEndereco,
+        numero: editForm.clienteNumero,
+        bairro: editForm.clienteBairro,
+        cidade: editForm.clienteCidade,
+        uf: editForm.clienteUf,
       }),
-      os.vehicle?.id && vehicleStorage.update(os.vehicle.id, { modelo: editForm.modelo }),
+      os.vehicle?.id && vehicleStorage.update(os.vehicle.id, {
+        modelo: editForm.modelo,
+        placa: editForm.placa,
+      }),
     ])
     setSavingEdit(false)
     setShowEditData(false)
+  }
+
+  const handleEditCep = async (val) => {
+    const cep = val.replace(/\D/g, '')
+    const formatted = cep.length > 5 ? `${cep.slice(0,5)}-${cep.slice(5,8)}` : cep
+    setEditForm(p => ({ ...p, clienteCep: formatted }))
+    if (cep.length === 8) {
+      setEditCepLoading(true)
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`)
+        const data = await res.json()
+        if (!data.erro) setEditForm(p => ({
+          ...p,
+          clienteEndereco: data.logradouro || p.clienteEndereco,
+          clienteBairro: data.bairro || p.clienteBairro,
+          clienteCidade: data.localidade || p.clienteCidade,
+          clienteUf: data.uf || p.clienteUf,
+        }))
+      } catch (_) {}
+      setEditCepLoading(false)
+    }
   }
 
   const handleAddItem = async () => {
@@ -1373,42 +1413,123 @@ function OSDetailModal({ os, onClose, officeName }) {
 
       {showEditData && (
         <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/50">
-          <div className="bg-white rounded-t-3xl w-full max-w-lg p-5 pb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold text-slate-900">Editar Dados</h2>
+          <div className="bg-white rounded-t-3xl w-full max-w-lg flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100 shrink-0">
+              <h2 className="text-base font-bold text-slate-900">Editar Dados da OS</h2>
               <button onClick={() => setShowEditData(false)} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-slate-500" /></button>
             </div>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Modelo do Veículo</label>
-                <input value={editForm.modelo} onChange={e => setEditForm(p => ({...p, modelo: e.target.value}))}
-                  placeholder="Ex: Fiat Strada 2022"
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
+            <div className="overflow-y-auto flex-1 px-5 py-4 space-y-3">
+              {/* Veículo */}
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Veículo</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Placa</label>
+                  <input value={editForm.placa}
+                    onChange={e => setEditForm(p => ({...p, placa: e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g,'')}))}
+                    placeholder="ABC-1234"
+                    maxLength={8}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 font-mono tracking-widest" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Modelo</label>
+                  <input value={editForm.modelo}
+                    onChange={e => setEditForm(p => ({...p, modelo: e.target.value}))}
+                    placeholder="Ex: Fiat Strada 2022"
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
+                </div>
               </div>
+
+              {/* Cliente */}
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider pt-1">Cliente</p>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Nome</label>
-                <input value={editForm.clienteNome} onChange={e => setEditForm(p => ({...p, clienteNome: e.target.value}))}
+                <label className="block text-xs font-medium text-slate-600 mb-1">Nome completo</label>
+                <input value={editForm.clienteNome}
+                  onChange={e => setEditForm(p => ({...p, clienteNome: e.target.value}))}
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">WhatsApp</label>
-                  <input value={editForm.clienteWhatsapp} onChange={e => setEditForm(p => ({...p, clienteWhatsapp: e.target.value}))}
+                  <input value={editForm.clienteWhatsapp}
+                    onChange={e => setEditForm(p => ({...p, clienteWhatsapp: e.target.value}))}
+                    placeholder="(51) 99999-9999"
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">CPF</label>
-                  <input value={editForm.clienteCpf} onChange={e => setEditForm(p => ({...p, clienteCpf: e.target.value}))}
+                  <input value={editForm.clienteCpf}
+                    onChange={e => setEditForm(p => ({...p, clienteCpf: e.target.value}))}
+                    placeholder="000.000.000-00"
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
                 </div>
               </div>
-              <div className="flex gap-2 pt-1">
-                <button onClick={() => setShowEditData(false)} className="flex-1 py-3 rounded-xl border border-gray-200 text-slate-600 font-semibold text-sm hover:bg-gray-50">Cancelar</button>
-                <button onClick={handleSaveEdit} disabled={savingEdit} className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 disabled:opacity-60">
-                  {savingEdit ? 'Salvando...' : 'Salvar'}
-                </button>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Data de Nascimento</label>
+                <input type="date" value={editForm.clienteNascimento}
+                  onChange={e => setEditForm(p => ({...p, clienteNascimento: e.target.value}))}
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
               </div>
+
+              {/* Endereço */}
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider pt-1">Endereço</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    CEP {editCepLoading && <span className="text-indigo-500">buscando...</span>}
+                  </label>
+                  <input value={editForm.clienteCep}
+                    onChange={e => handleEditCep(e.target.value)}
+                    placeholder="00000-000"
+                    maxLength={9}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Número</label>
+                  <input value={editForm.clienteNumero}
+                    onChange={e => setEditForm(p => ({...p, clienteNumero: e.target.value}))}
+                    placeholder="Ex: 123"
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Logradouro</label>
+                <input value={editForm.clienteEndereco}
+                  onChange={e => setEditForm(p => ({...p, clienteEndereco: e.target.value}))}
+                  placeholder="Rua, Av..."
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Bairro</label>
+                  <input value={editForm.clienteBairro}
+                    onChange={e => setEditForm(p => ({...p, clienteBairro: e.target.value}))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Cidade</label>
+                  <input value={editForm.clienteCidade}
+                    onChange={e => setEditForm(p => ({...p, clienteCidade: e.target.value}))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
+                </div>
+              </div>
+              <div className="w-24">
+                <label className="block text-xs font-medium text-slate-600 mb-1">UF</label>
+                <input value={editForm.clienteUf}
+                  onChange={e => setEditForm(p => ({...p, clienteUf: e.target.value.toUpperCase().slice(0,2)}))}
+                  placeholder="RS"
+                  maxLength={2}
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
+              </div>
+            </div>
+            <div className="flex gap-2 px-5 py-4 border-t border-gray-100 shrink-0">
+              <button onClick={() => setShowEditData(false)}
+                className="flex-1 py-3 rounded-xl border border-gray-200 text-slate-600 font-semibold text-sm hover:bg-gray-50">
+                Cancelar
+              </button>
+              <button onClick={handleSaveEdit} disabled={savingEdit}
+                className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 disabled:opacity-60 flex items-center justify-center gap-2">
+                {savingEdit ? <><Loader2 className="w-4 h-4 animate-spin" /> Salvando...</> : 'Salvar'}
+              </button>
             </div>
           </div>
         </div>

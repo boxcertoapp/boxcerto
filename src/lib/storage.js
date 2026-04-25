@@ -195,8 +195,12 @@ export const vehicleStorage = {
     return mapVehicle(data)
   },
 
-  update: async (id, { modelo }) => {
-    await supabase.from('vehicles').update({ modelo }).eq('id', id)
+  update: async (id, upd) => {
+    const mapped = {}
+    if (upd.modelo !== undefined) mapped.modelo = upd.modelo
+    if (upd.placa !== undefined) mapped.placa = upd.placa.toUpperCase()
+    if (Object.keys(mapped).length > 0)
+      await supabase.from('vehicles').update(mapped).eq('id', id)
   },
 
   search: async (_officeName, query) => {
