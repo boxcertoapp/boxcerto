@@ -3,7 +3,7 @@ import {
   Search, RefreshCw, Filter, Download, ChevronDown, ChevronUp,
   Trash2, Loader2, Eye, EyeOff, Shield, Calendar, CreditCard,
   Phone, Mail, Building2, CheckCircle, XCircle, Clock, AlertCircle,
-  FileText, MessageSquare, ChevronRight, X, Star, StickyNote
+  FileText, MessageSquare, ChevronRight, X, Star, StickyNote, Users
 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { formatDate } from '../../../lib/storage'
