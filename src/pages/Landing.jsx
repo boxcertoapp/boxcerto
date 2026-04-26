@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth, hasAccess } from '../contexts/AuthContext'
 import {
   Wrench, CheckCircle, ChevronDown, ChevronUp,
   MessageCircle, TrendingUp, Clock, Search,
@@ -11,8 +12,19 @@ const WPP_SUPORTE = 'https://wa.me/5553999999999?text=Ol%C3%A1%2C%20tenho%20d%C3
 
 export default function Landing() {
   const navigate = useNavigate()
+  const { user, loading } = useAuth()
   const [faqOpen, setFaqOpen] = useState(null)
   const [scrolled, setScrolled] = useState(false)
+
+  // Redireciona usuários já logados (inclui quem chegou via magic link)
+  useEffect(() => {
+    if (loading) return
+    if (!user) return
+    if (user.isAdmin) { navigate('/admin', { replace: true }); return }
+    if (hasAccess(user)) { navigate('/app/oficina', { replace: true }); return }
+    if (user.status === 'inactive') { navigate('/renovar', { replace: true }); return }
+    navigate('/pendente', { replace: true })
+  }, [user, loading, navigate])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40)
