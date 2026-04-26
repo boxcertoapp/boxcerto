@@ -1,30 +1,24 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Wrench, Users, CheckCircle, XCircle, Clock,
-  LogOut, Phone, Mail, Building2, TrendingUp,
-  Search, RefreshCw, Shield, Calendar,
-  ChevronDown, ChevronUp, Trash2, Loader2, Eye, EyeOff, AlertCircle, CreditCard,
-  BellRing, DollarSign, MessageSquare, BarChart2, Bell
+  Wrench, Users, LogOut, Shield, Eye, EyeOff, Loader2,
+  LayoutDashboard, DollarSign, BarChart2, MessageSquare, Bell, Settings,
+  ChevronRight, X
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { formatDate } from '../../lib/storage'
+
+// Seções do admin
+import Dashboard    from './sections/Dashboard'
+import Clientes     from './sections/Clientes'
+import Receita      from './sections/Receita'
+import Analytics    from './tabs/Analytics'
 import Comunicacoes from './tabs/Comunicacoes'
-import Analytics from './tabs/Analytics'
-import Anuncios from './tabs/Anuncios'
+import Anuncios     from './tabs/Anuncios'
+import Configuracoes from './sections/Configuracoes'
 
-const STATUS_CONFIG = {
-  pending:      { label: 'Pendente',     color: 'bg-amber-100 text-amber-700',    icon: Clock },
-  trial:        { label: 'Trial',        color: 'bg-indigo-100 text-indigo-700',  icon: Clock },
-  active:       { label: 'Ativo',        color: 'bg-green-100 text-green-700',    icon: CheckCircle },
-  inactive:     { label: 'Inativo',      color: 'bg-gray-100 text-gray-600',      icon: XCircle },
-  rejected:     { label: 'Rejeitado',    color: 'bg-red-100 text-red-600',        icon: XCircle },
-  cancelado:    { label: 'Cancelado',    color: 'bg-red-100 text-red-700',        icon: XCircle },
-  inadimplente: { label: 'Inadimplente', color: 'bg-orange-100 text-orange-700',  icon: AlertCircle },
-}
-
-const loadUsers = async () => {
+// ── Carrega todos os usuários (shared entre seções) ──────────
+export const loadUsers = async () => {
   const { data: profiles } = await supabase
     .from('profiles')
     .select('*')
@@ -44,16 +38,14 @@ const loadUsers = async () => {
     stripeCustomerId: p.stripe_customer_id || null,
     nextBillingAt: p.next_billing_at || null,
     canceledAt: p.canceled_at || null,
+    lastSeenAt: p.last_seen_at || null,
+    osCount: p.os_count || 0,
+    notasAdmin: p.notas_admin || '',
   }))
 }
 
-const updateProfile = async (id, fields) => {
-  const { error } = await supabase.from('profiles').update(fields).eq('id', id)
-  if (error) throw error
-}
-
-// Modal de confirmação com senha
-function SenhaModal({ title, message, onConfirm, onClose }) {
+// ── Modal de confirmação com senha ───────────────────────────
+export function SenhaModal({ title, message, onConfirm, onClose }) {
   const { user } = useAuth()
   const [senha, setSenha] = useState('')
   const [showSenha, setShowSenha] = useState(false)
@@ -62,17 +54,9 @@ function SenhaModal({ title, message, onConfirm, onClose }) {
 
   const confirmar = async () => {
     if (!senha) { setErro('Digite sua senha.'); return }
-    setLoading(true)
-    setErro('')
-    const { error } = await supabase.auth.signInWithPassword({
-      email: user.email,
-      password: senha,
-    })
-    if (error) {
-      setErro('Senha incorreta.')
-      setLoading(false)
-      return
-    }
+    setLoading(true); setErro('')
+    const { error } = await supabase.auth.signInWithPassword({ email: user.email, password: senha })
+    if (error) { setErro('Senha incorreta.'); setLoading(false); return }
     setLoading(false)
     onConfirm()
   }
@@ -82,40 +66,21 @@ function SenhaModal({ title, message, onConfirm, onClose }) {
       <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
         <h3 className="text-lg font-bold text-slate-900 mb-1">{title}</h3>
         <p className="text-sm text-slate-500 mb-5">{message}</p>
-
         <div className="relative mb-3">
-          <input
-            type={showSenha ? 'text' : 'password'}
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && confirmar()}
-            placeholder="Sua senha de admin"
-            autoFocus
-            className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm pr-10 focus:outline-none focus:border-indigo-400"
-          />
-          <button
-            type="button"
-            onClick={() => setShowSenha(s => !s)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-          >
+          <input type={showSenha ? 'text' : 'password'} value={senha}
+            onChange={e => setSenha(e.target.value)} onKeyDown={e => e.key === 'Enter' && confirmar()}
+            placeholder="Sua senha de admin" autoFocus
+            className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm pr-10 focus:outline-none focus:border-indigo-400" />
+          <button type="button" onClick={() => setShowSenha(s => !s)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
             {showSenha ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
-
         {erro && <p className="text-red-500 text-xs mb-3">{erro}</p>}
-
         <div className="flex gap-2">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-slate-600 text-sm font-medium hover:bg-gray-50 transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={confirmar}
-            disabled={loading}
-            className="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
-          >
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-slate-600 text-sm font-medium hover:bg-gray-50">Cancelar</button>
+          <button onClick={confirmar} disabled={loading}
+            className="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 flex items-center justify-center gap-2">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmar'}
           </button>
         </div>
@@ -124,88 +89,90 @@ function SenhaModal({ title, message, onConfirm, onClose }) {
   )
 }
 
-const TABS = [
-  { key: 'usuarios',     label: 'Usuários',      icon: Users },
-  { key: 'comunicacoes', label: 'Comunicações',   icon: MessageSquare },
-  { key: 'analytics',   label: 'Analytics',      icon: BarChart2 },
-  { key: 'anuncios',    label: 'Anúncios',       icon: Bell },
+// ── Modal de impersonação ────────────────────────────────────
+function ImpersonateModal({ email, link, onClose }) {
+  const [copied, setCopied] = useState(false)
+  const copy = () => {
+    navigator.clipboard.writeText(link).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
+  }
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+            <Eye className="w-5 h-5 text-amber-600" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-slate-900">Login como usuário</h3>
+            <p className="text-xs text-slate-500">{email}</p>
+          </div>
+          <button onClick={onClose} className="ml-auto p-1 text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+        </div>
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+          <p className="text-xs font-semibold text-amber-800 mb-1">⚠️ Importante</p>
+          <p className="text-xs text-amber-700">Abra o link em uma <strong>aba anônima (Ctrl+Shift+N)</strong> para não encerrar sua sessão de admin.</p>
+        </div>
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 mb-4 font-mono text-xs text-slate-500 break-all">
+          {link.substring(0, 100)}...
+        </div>
+        <div className="flex gap-2">
+          <button onClick={copy}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${copied ? 'bg-green-600 text-white' : 'bg-amber-500 text-white hover:bg-amber-600'}`}>
+            {copied ? '✓ Copiado!' : 'Copiar link'}
+          </button>
+          <button onClick={() => window.open(link, '_blank')}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700">
+            Abrir (nova aba)
+          </button>
+          <button onClick={onClose} className="px-3 py-2.5 rounded-xl border border-gray-200 text-slate-600 text-sm hover:bg-gray-50">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Navegação ────────────────────────────────────────────────
+const NAV = [
+  { key: 'dashboard',    label: 'Dashboard',      icon: LayoutDashboard, group: 'principal' },
+  { key: 'clientes',     label: 'Clientes',        icon: Users,           group: 'principal' },
+  { key: 'receita',      label: 'Receita',         icon: DollarSign,      group: 'principal' },
+  { key: 'analytics',   label: 'Analytics',       icon: BarChart2,       group: 'dados' },
+  { key: 'comunicacoes', label: 'Comunicações',    icon: MessageSquare,   group: 'dados' },
+  { key: 'anuncios',    label: 'Anúncios',        icon: Bell,            group: 'dados' },
+  { key: 'configuracoes',label: 'Configurações',   icon: Settings,        group: 'sistema' },
 ]
 
 export default function AdminPanel() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const [tab, setTab] = useState('usuarios')
+  const [section, setSection] = useState('dashboard')
   const [users, setUsers] = useState([])
-  const [filter, setFilter] = useState('all')
-  const [query, setQuery] = useState('')
+  const [loadingUsers, setLoadingUsers] = useState(true)
   const [refresh, setRefresh] = useState(0)
-  const [expandedId, setExpandedId] = useState(null)
-  const [editingTrialId, setEditingTrialId] = useState(null)
-  const [trialDate, setTrialDate] = useState('')
-
-  // Modal de senha
   const [senhaModal, setSenhaModal] = useState(null)
-  // { title, message, onConfirm }
+  const [impersonateModal, setImpersonateModal] = useState(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     if (!user?.isAdmin) return navigate('/login')
-    loadUsers().then(setUsers)
+    setLoadingUsers(true)
+    loadUsers().then(u => { setUsers(u); setLoadingUsers(false) })
   }, [refresh])
 
   const reload = () => setRefresh(r => r + 1)
 
-  // Abre modal de confirmação por senha e executa callback após verificar
   const confirmarComSenha = (title, message, callback) => {
     setSenhaModal({ title, message, onConfirm: () => { setSenhaModal(null); callback() } })
   }
 
-  // ── Ações de status ──────────────────────────────────────
-  const approve = async (id, plan = 'monthly') => {
-    await updateProfile(id, { status: 'active', plan, activated_at: new Date().toISOString() })
-    reload()
-  }
-
-  const reject = async (id) => {
-    await updateProfile(id, { status: 'rejected' })
-    reload()
-  }
-
-  const deactivate = async (id) => {
-    await updateProfile(id, { status: 'inactive' })
-    reload()
-  }
-
-  // ── Deletar usuário ──────────────────────────────────────
-  const deleteUser = (u) => {
-    confirmarComSenha(
-      'Excluir usuário',
-      `Tem certeza que deseja excluir "${u.oficina || u.email}"? Todos os dados serão apagados. Esta ação é irreversível.`,
-      async () => {
-        try {
-          // Obtém o token JWT do admin para autenticar a requisição server-side
-          const { data: { session } } = await supabase.auth.getSession()
-          if (!session?.access_token) throw new Error('Sessão expirada. Faça login novamente.')
-
-          const res = await fetch('/api/admin-delete-user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: u.id, adminToken: session.access_token }),
-          })
-          const json = await res.json()
-          if (!res.ok) throw new Error(json.error || 'Erro ao excluir usuário')
-          reload()
-        } catch (err) {
-          alert('Erro ao excluir usuário: ' + err.message)
-        }
-      }
-    )
-  }
-
-  // ── Impersonate (login como usuário) ────────────────────
+  const [impersonateLoading, setImpersonateLoading] = useState(null)
   const impersonate = async (u) => {
+    setImpersonateLoading(u.id)
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) throw new Error('Sessão expirada.')
+      if (!session?.access_token) throw new Error('Sessão expirada. Faça login novamente.')
       const res = await fetch('/api/impersonate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -213,555 +180,153 @@ export default function AdminPanel() {
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Erro ao gerar link.')
-      // Abre o magic link em nova aba — o admin continua logado nesta aba
-      window.open(json.link, '_blank')
+      setImpersonateModal({ email: json.email || u.email, link: json.link })
     } catch (err) {
       alert('Erro: ' + err.message)
+    } finally {
+      setImpersonateLoading(null)
     }
   }
 
-  // ── Grant / Revoke Admin ─────────────────────────────────
-  const toggleAdmin = (u) => {
-    const acao = u.isAdmin ? 'Remover admin' : 'Tornar admin'
-    const msg = u.isAdmin
-      ? `Remover permissão de administrador de "${u.oficina || u.email}"?`
-      : `Dar permissão de administrador a "${u.oficina || u.email}"? Ele terá acesso total ao painel.`
-
-    confirmarComSenha(acao, msg, async () => {
-      await updateProfile(u.id, { is_admin: !u.isAdmin })
-      reload()
-    })
-  }
-
-  // ── Editar trial_end ─────────────────────────────────────
-  const startEditTrial = (u) => {
-    setEditingTrialId(u.id)
-    setTrialDate(u.trialEnd ? u.trialEnd.split('T')[0] : '')
-  }
-
-  const saveTrial = async (id) => {
-    if (!trialDate) return
-    await updateProfile(id, {
-      trial_end: new Date(trialDate + 'T23:59:59').toISOString(),
-      status: 'trial',
-    })
-    setEditingTrialId(null)
-    reload()
-  }
-
-  // ── Filtros ──────────────────────────────────────────────
-  const filtered = users.filter(u => {
-    const matchFilter = filter === 'all' || u.status === filter
-    const matchQuery = !query ||
-      u.oficina?.toLowerCase().includes(query.toLowerCase()) ||
-      u.responsavel?.toLowerCase().includes(query.toLowerCase()) ||
-      u.email?.toLowerCase().includes(query.toLowerCase())
-    return matchFilter && matchQuery
-  })
-
-  const counts = {
-    total:        users.length,
-    active:       users.filter(u => u.status === 'active').length,
-    trial:        users.filter(u => u.status === 'trial').length,
-    inadimplente: users.filter(u => u.status === 'inadimplente').length,
-    cancelado:    users.filter(u => u.status === 'cancelado').length,
-  }
-
-  const activeUsers = users.filter(u => u.status === 'active')
-  const mrrMensal = activeUsers.filter(u => u.plan !== 'annual').length * 47.90
-  const mrrAnual  = activeUsers.filter(u => u.plan === 'annual').length * (418.80 / 12)
-  const mrr = mrrMensal + mrrAnual
-
-  // Trials expirando nos próximos 3 dias
+  // Conta alertas urgentes para badge
   const now = new Date()
-  const in3days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
-  const trialsExpirando = users.filter(u =>
-    u.status === 'trial' && u.trialEnd &&
-    new Date(u.trialEnd) <= in3days && new Date(u.trialEnd) >= now
-  )
+  const in3d = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
+  const trialsExpirando = users.filter(u => u.status === 'trial' && u.trialEnd && new Date(u.trialEnd) <= in3d && new Date(u.trialEnd) >= now)
+  const inadimplentes   = users.filter(u => u.status === 'inadimplente')
+  const alertCount = trialsExpirando.length + inadimplentes.length
 
-  // Notificar trials expirando
-  const [notifyLoading, setNotifyLoading] = useState(false)
-  const [notifyResult, setNotifyResult] = useState(null)
+  const groups = { principal: 'Principal', dados: 'Dados', sistema: 'Sistema' }
 
-  const handleNotifyTrials = async () => {
-    setNotifyLoading(true)
-    setNotifyResult(null)
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const res = await fetch('/api/notify-trials', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
-      })
-      const json = await res.json()
-      setNotifyResult(json)
-    } catch (e) {
-      setNotifyResult({ error: e.message })
-    } finally {
-      setNotifyLoading(false)
+  const sharedProps = {
+    users, loadingUsers, reload, confirmarComSenha, impersonate, impersonateLoading,
+    setSenhaModal, navigate,
+  }
+
+  const renderSection = () => {
+    switch (section) {
+      case 'dashboard':    return <Dashboard    {...sharedProps} onNavigate={setSection} />
+      case 'clientes':     return <Clientes     {...sharedProps} />
+      case 'receita':      return <Receita      {...sharedProps} />
+      case 'analytics':   return <Analytics    users={users} />
+      case 'comunicacoes': return <Comunicacoes users={users} />
+      case 'anuncios':    return <Anuncios     />
+      case 'configuracoes':return <Configuracoes users={users} reload={reload} />
+      default:             return <Dashboard    {...sharedProps} onNavigate={setSection} />
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {senhaModal && (
-        <SenhaModal
-          title={senhaModal.title}
-          message={senhaModal.message}
-          onConfirm={senhaModal.onConfirm}
-          onClose={() => setSenhaModal(null)}
-        />
-      )}
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Modais */}
+      {impersonateModal && <ImpersonateModal {...impersonateModal} onClose={() => setImpersonateModal(null)} />}
+      {senhaModal && <SenhaModal {...senhaModal} onClose={() => setSenhaModal(null)} />}
 
-      {/* Header */}
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+      {/* Overlay mobile */}
+      {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
+
+      {/* ── SIDEBAR ──────────────────────────────────────── */}
+      <aside className={`fixed top-0 left-0 h-screen w-56 bg-slate-900 flex flex-col z-40 transition-transform duration-200
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+
+        {/* Logo */}
+        <div className="px-4 py-4 border-b border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
               <Wrench className="w-4 h-4 text-white" />
             </div>
             <div>
-              <span className="font-bold text-slate-900">BoxCerto</span>
-              <span className="ml-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">Admin</span>
+              <p className="text-white font-bold text-sm leading-tight">BoxCerto</p>
+              <p className="text-indigo-400 text-[10px] font-semibold">Admin</p>
             </div>
           </div>
-          <button
-            onClick={() => { logout(); navigate('/') }}
-            className="flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm"
-          >
-            <LogOut className="w-4 h-4" />
-            Sair
-          </button>
-        </div>
-      </header>
-
-      {/* Tab navigation */}
-      <div className="border-b border-gray-100 bg-white sticky top-16 z-30">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="flex gap-1 overflow-x-auto">
-            {TABS.map(t => (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={`flex items-center gap-2 px-4 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                  tab === t.key
-                    ? 'border-indigo-600 text-indigo-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                <t.icon className="w-4 h-4" />
-                {t.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Tab: Comunicações */}
-      {tab === 'comunicacoes' && (
-        <div className="max-w-5xl mx-auto px-4 py-6">
-          <Comunicacoes users={users} />
-        </div>
-      )}
-
-      {/* Tab: Analytics */}
-      {tab === 'analytics' && (
-        <div className="max-w-5xl mx-auto px-4 py-6">
-          <Analytics users={users} />
-        </div>
-      )}
-
-      {/* Tab: Anúncios */}
-      {tab === 'anuncios' && (
-        <div className="max-w-5xl mx-auto px-4 py-6">
-          <Anuncios />
-        </div>
-      )}
-
-      {/* Tab: Usuários */}
-      {tab === 'usuarios' && <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {[
-            { label: 'Total Clientes', value: counts.total,          icon: Users,        color: 'text-slate-600',  bg: 'bg-slate-100' },
-            { label: 'Ativos',         value: counts.active,          icon: CheckCircle,  color: 'text-green-600',  bg: 'bg-green-100' },
-            { label: 'Em Trial',       value: counts.trial,           icon: Clock,        color: 'text-indigo-600', bg: 'bg-indigo-100' },
-            { label: 'Inadimplentes',  value: counts.inadimplente,    icon: AlertCircle,  color: 'text-orange-600', bg: 'bg-orange-100' },
-            { label: 'MRR Estimado',   value: `R$${mrr.toFixed(0)}`,  icon: TrendingUp,   color: 'text-amber-600',  bg: 'bg-amber-100' },
-            { label: 'Trial Expirando',value: trialsExpirando.length, icon: BellRing,     color: 'text-red-600',    bg: 'bg-red-100' },
-          ].map((s, i) => (
-            <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4">
-              <div className={`w-9 h-9 ${s.bg} rounded-xl flex items-center justify-center mb-3`}>
-                <s.icon className={`w-5 h-5 ${s.color}`} />
-              </div>
-              <p className="text-2xl font-bold text-slate-900">{s.value}</p>
-              <p className="text-xs text-slate-400 mt-1">{s.label}</p>
-            </div>
-          ))}
         </div>
 
-        {/* MRR Breakdown + Notificar Trials */}
-        <div className="grid md:grid-cols-2 gap-3">
-          {/* MRR breakdown */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <DollarSign className="w-4 h-4 text-amber-500" />
-              <p className="text-sm font-semibold text-slate-700">Receita Recorrente Mensal</p>
-            </div>
-            <p className="text-3xl font-extrabold text-slate-900 mb-3">R$ {mrr.toFixed(2).replace('.', ',')}</p>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-slate-500">Planos mensais ({activeUsers.filter(u => u.plan !== 'annual').length}x R$47,90)</span>
-                <span className="font-semibold text-slate-700">R$ {mrrMensal.toFixed(2).replace('.', ',')}</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-slate-500">Planos anuais ({activeUsers.filter(u => u.plan === 'annual').length}x R$34,90)</span>
-                <span className="font-semibold text-slate-700">R$ {mrrAnual.toFixed(2).replace('.', ',')}</span>
-              </div>
-              <div className="pt-2 border-t border-gray-100 flex justify-between items-center text-sm">
-                <span className="text-slate-500">ARR (anualizado)</span>
-                <span className="font-bold text-indigo-600">R$ {(mrr * 12).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Notificar trials */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <BellRing className="w-4 h-4 text-red-500" />
-              <p className="text-sm font-semibold text-slate-700">Trials expirando em breve</p>
-            </div>
-            {trialsExpirando.length === 0 ? (
-              <p className="text-sm text-slate-400 mb-4">Nenhum trial expirando nos próximos 3 dias.</p>
-            ) : (
-              <div className="space-y-1.5 mb-4 max-h-28 overflow-y-auto">
-                {trialsExpirando.map(u => {
-                  const dias = Math.ceil((new Date(u.trialEnd) - now) / (1000*60*60*24))
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-3 overflow-y-auto">
+          {Object.entries(groups).map(([gKey, gLabel]) => {
+            const items = NAV.filter(n => n.group === gKey)
+            return (
+              <div key={gKey} className="mb-4">
+                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest px-2 mb-1">{gLabel}</p>
+                {items.map(({ key, label, icon: Icon }) => {
+                  const isActive = section === key
+                  const badge = key === 'dashboard' && alertCount > 0 ? alertCount : null
                   return (
-                    <div key={u.id} className="flex justify-between items-center text-sm">
-                      <span className="text-slate-600 truncate max-w-[60%]">{u.oficina || u.email}</span>
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${dias <= 1 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
-                        {dias <= 0 ? 'hoje' : `${dias}d`}
-                      </span>
-                    </div>
+                    <button key={key} onClick={() => { setSection(key); setSidebarOpen(false) }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5 transition-all text-left
+                        ${isActive ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'}`}>
+                      <Icon className="w-4 h-4 shrink-0" />
+                      <span className="flex-1">{label}</span>
+                      {badge && <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{badge}</span>}
+                      {isActive && <ChevronRight className="w-3 h-3 opacity-60" />}
+                    </button>
                   )
                 })}
               </div>
-            )}
-            <button
-              onClick={handleNotifyTrials}
-              disabled={notifyLoading || trialsExpirando.length === 0}
-              className="w-full flex items-center justify-center gap-2 bg-red-50 border border-red-200 text-red-700 font-semibold py-2.5 rounded-xl hover:bg-red-100 transition-colors text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {notifyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BellRing className="w-4 h-4" />}
-              {notifyLoading ? 'Notificando...' : `Notificar ${trialsExpirando.length} usuário${trialsExpirando.length !== 1 ? 's' : ''}`}
-            </button>
-            {notifyResult && (
-              <div className={`mt-2 p-2.5 rounded-xl text-xs ${notifyResult.error ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
-                {notifyResult.error
-                  ? `Erro: ${notifyResult.error}`
-                  : `✓ ${notifyResult.notified} notificados. Links WhatsApp gerados — veja o console para os links.`
-                }
-                {notifyResult.results && console.log('WhatsApp links:', notifyResult.results)}
-              </div>
-            )}
-          </div>
-        </div>
+            )
+          })}
+        </nav>
 
-        {/* Filtros e Busca */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar por oficina, nome ou e-mail..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 bg-white"
-            />
+        {/* User */}
+        <div className="px-3 py-3 border-t border-slate-800">
+          <div className="flex items-center gap-2.5 mb-2">
+            <div className="w-7 h-7 bg-indigo-500 rounded-lg flex items-center justify-center shrink-0">
+              <Shield className="w-3.5 h-3.5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-xs font-semibold truncate">{user?.email}</p>
+              <p className="text-slate-500 text-[10px]">Super Admin</p>
+            </div>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            {[
-              { key: 'all',          label: 'Todos' },
-              { key: 'trial',        label: 'Trial' },
-              { key: 'pending',      label: 'Pendentes' },
-              { key: 'active',       label: 'Ativos' },
-              { key: 'inadimplente', label: 'Inadimplentes' },
-              { key: 'cancelado',    label: 'Cancelados' },
-              { key: 'inactive',     label: 'Inativos' },
-            ].map(f => (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
-                  filter === f.key ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 border border-gray-200'
-                }`}
-              >
-                {f.label}
+          <button onClick={() => { logout(); navigate('/') }}
+            className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-medium transition-colors">
+            <LogOut className="w-3.5 h-3.5" />
+            Sair
+          </button>
+        </div>
+      </aside>
+
+      {/* ── MAIN CONTENT ────────────────────────────────── */}
+      <div className="lg:ml-56 flex-1 flex flex-col min-h-screen">
+
+        {/* Topbar */}
+        <header className="bg-white border-b border-gray-100 sticky top-0 z-20 h-14 flex items-center px-4 gap-3">
+          {/* Mobile menu */}
+          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-1.5 text-slate-500 hover:text-slate-700">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-slate-400">Admin</span>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+            <span className="font-semibold text-slate-800">
+              {NAV.find(n => n.key === section)?.label || 'Dashboard'}
+            </span>
+          </div>
+
+          {/* Contadores rápidos */}
+          <div className="ml-auto flex items-center gap-3">
+            {alertCount > 0 && (
+              <button onClick={() => setSection('dashboard')}
+                className="flex items-center gap-1.5 bg-red-50 text-red-600 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-100 hover:bg-red-100 transition-colors">
+                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                {alertCount} alerta{alertCount !== 1 ? 's' : ''}
               </button>
-            ))}
-            <button onClick={reload} className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
-              <RefreshCw className="w-4 h-4 text-slate-500" />
-            </button>
+            )}
+            <div className="text-xs text-slate-400">
+              <span className="font-semibold text-slate-700">{users.filter(u => u.status === 'active').length}</span> ativos
+              <span className="mx-1.5 text-slate-200">|</span>
+              <span className="font-semibold text-indigo-600">{users.filter(u => u.status === 'trial').length}</span> trial
+            </div>
           </div>
-        </div>
+        </header>
 
-        {/* Lista de usuários */}
-        {filtered.length === 0 ? (
-          <div className="text-center py-16 text-slate-400">
-            <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p>Nenhum cadastro encontrado</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filtered.map(u => {
-              const sc = STATUS_CONFIG[u.status] || STATUS_CONFIG.trial
-              const isExpanded = expandedId === u.id
-              const isSelf = u.id === user.id
-
-              return (
-                <div key={u.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                  <div className="p-5">
-                    <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                      {/* Info */}
-                      <div className="flex-1 space-y-2 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-bold text-slate-900">{u.oficina || '(sem nome)'}</p>
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${sc.color}`}>
-                            {sc.label}
-                          </span>
-                          {u.plan && (
-                            <span className="text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">
-                              {u.plan === 'annual' ? 'Anual' : 'Mensal'}
-                            </span>
-                          )}
-                          {u.isAdmin && (
-                            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <Shield className="w-3 h-3" /> Admin
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
-                          {u.responsavel && (
-                            <span className="flex items-center gap-1.5">
-                              <Building2 className="w-3.5 h-3.5 shrink-0" />{u.responsavel}
-                            </span>
-                          )}
-                          {u.email && (
-                            <span className="flex items-center gap-1.5">
-                              <Mail className="w-3.5 h-3.5 shrink-0" />{u.email}
-                            </span>
-                          )}
-                          {u.whatsapp && (
-                            <span className="flex items-center gap-1.5">
-                              <Phone className="w-3.5 h-3.5 shrink-0" />
-                              <a
-                                href={`https://wa.me/55${u.whatsapp.replace(/\D/g, '')}`}
-                                target="_blank" rel="noreferrer"
-                                className="text-green-600 hover:underline"
-                              >
-                                {u.whatsapp}
-                              </a>
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-400">
-                          Cadastrado em {formatDate(u.createdAt)}
-                          {u.activatedAt && ` · Ativado em ${formatDate(u.activatedAt)}`}
-                          {u.trialEnd && u.status === 'trial' && ` · Trial até ${formatDate(u.trialEnd)}`}
-                          {u.nextBillingAt && u.status === 'active' && ` · Próx. cobrança: ${formatDate(u.nextBillingAt)}`}
-                          {u.canceledAt && u.status === 'cancelado' && ` · Cancelado em ${formatDate(u.canceledAt)}`}
-                        </p>
-                      </div>
-
-                      {/* Ações rápidas */}
-                      <div className="flex flex-wrap gap-2 shrink-0 items-center">
-                        {(u.status === 'pending' || u.status === 'trial') && (
-                          <>
-                            <button
-                              onClick={() => approve(u.id)}
-                              className="flex items-center gap-1.5 bg-green-600 text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-green-700 transition-colors"
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                              Aprovar
-                            </button>
-                            <button
-                              onClick={() => reject(u.id)}
-                              className="flex items-center gap-1.5 bg-red-50 text-red-600 text-sm font-semibold px-4 py-2 rounded-xl hover:bg-red-100 border border-red-100 transition-colors"
-                            >
-                              <XCircle className="w-4 h-4" />
-                              Rejeitar
-                            </button>
-                          </>
-                        )}
-                        {u.status === 'active' && (
-                          <button
-                            onClick={() => deactivate(u.id)}
-                            className="bg-gray-100 text-gray-600 text-sm font-medium px-4 py-2 rounded-xl hover:bg-gray-200 transition-colors"
-                          >
-                            Desativar
-                          </button>
-                        )}
-                        {(u.status === 'inactive' || u.status === 'rejected') && (
-                          <button
-                            onClick={() => approve(u.id)}
-                            className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-indigo-700 transition-colors"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                            Reativar
-                          </button>
-                        )}
-                        {(u.status === 'cancelado' || u.status === 'inadimplente') && (
-                          <button
-                            onClick={() => approve(u.id)}
-                            className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-indigo-700 transition-colors"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                            Reativar
-                          </button>
-                        )}
-                        {(u.status === 'pending' || u.status === 'trial') && (
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => approve(u.id, 'monthly')}
-                              className="bg-indigo-50 text-indigo-700 text-xs font-medium px-3 py-2 rounded-xl hover:bg-indigo-100 border border-indigo-100 transition-colors"
-                            >+ Mensal</button>
-                            <button
-                              onClick={() => approve(u.id, 'annual')}
-                              className="bg-indigo-50 text-indigo-700 text-xs font-medium px-3 py-2 rounded-xl hover:bg-indigo-100 border border-indigo-100 transition-colors"
-                            >+ Anual</button>
-                          </div>
-                        )}
-
-                        {/* Expandir */}
-                        <button
-                          onClick={() => setExpandedId(isExpanded ? null : u.id)}
-                          className="p-2 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-slate-500"
-                          title="Mais opções"
-                        >
-                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Painel expandido */}
-                  {isExpanded && (
-                    <div className="border-t border-gray-100 bg-gray-50 px-5 py-4 space-y-5">
-
-                      {/* Estender trial */}
-                      <div>
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5" /> Período trial
-                        </p>
-                        {editingTrialId === u.id ? (
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <input
-                              type="date"
-                              value={trialDate}
-                              onChange={e => setTrialDate(e.target.value)}
-                              className="border border-gray-300 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-400 bg-white"
-                            />
-                            <button
-                              onClick={() => saveTrial(u.id)}
-                              className="bg-indigo-600 text-white text-sm font-medium px-4 py-1.5 rounded-xl hover:bg-indigo-700 transition-colors"
-                            >Salvar</button>
-                            <button
-                              onClick={() => setEditingTrialId(null)}
-                              className="text-slate-500 text-sm px-3 py-1.5 rounded-xl hover:bg-gray-200 transition-colors"
-                            >Cancelar</button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => startEditTrial(u)}
-                            className="text-sm text-indigo-600 font-medium hover:underline"
-                          >
-                            {u.trialEnd
-                              ? `Vence em ${formatDate(u.trialEnd)} — Alterar data`
-                              : 'Definir data de trial'}
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Stripe */}
-                      {(u.stripeCustomerId || u.status === 'active' || u.status === 'inadimplente') && (
-                        <div>
-                          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-                            <CreditCard className="w-3.5 h-3.5" /> Stripe
-                          </p>
-                          <div className="flex flex-wrap gap-2 items-center">
-                            {u.stripeCustomerId && (
-                              <span className="text-xs text-slate-400 font-mono bg-white border border-gray-200 px-2 py-1 rounded-lg">
-                                {u.stripeCustomerId}
-                              </span>
-                            )}
-                            {u.stripeCustomerId && (
-                              <a
-                                href={`https://dashboard.stripe.com/customers/${u.stripeCustomerId}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-xs text-indigo-600 font-medium hover:underline flex items-center gap-1"
-                              >
-                                Ver no Stripe →
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Admin + Excluir */}
-                      <div className="flex flex-wrap gap-3 items-center pt-2 border-t border-gray-200">
-                        {/* Tornar / remover admin */}
-                        {!isSelf && (
-                          <button
-                            onClick={() => toggleAdmin(u)}
-                            className={`flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-xl border transition-colors ${
-                              u.isAdmin
-                                ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                            }`}
-                          >
-                            <Shield className="w-4 h-4" />
-                            {u.isAdmin ? 'Remover admin' : 'Tornar admin'}
-                          </button>
-                        )}
-                        {isSelf && (
-                          <span className="text-xs text-slate-400 italic">Você não pode alterar sua própria conta.</span>
-                        )}
-
-                        {/* Login como usuário (impersonate) */}
-                        {!isSelf && (
-                          <button
-                            onClick={() => impersonate(u)}
-                            className="flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors"
-                          >
-                            <Eye className="w-4 h-4" />
-                            Login como usuário
-                          </button>
-                        )}
-
-                        {/* Excluir usuário */}
-                        {!isSelf && (
-                          <button
-                            onClick={() => deleteUser(u)}
-                            className="flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-xl bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 transition-colors ml-auto"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Excluir usuário
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>}
+        {/* Page content */}
+        <main className="flex-1 p-5 max-w-6xl mx-auto w-full">
+          {renderSection()}
+        </main>
+      </div>
     </div>
   )
 }

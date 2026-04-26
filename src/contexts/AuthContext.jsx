@@ -69,6 +69,10 @@ export function AuthProvider({ children }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       loadProfile(session?.user ?? null)
+      // Atualiza last_seen_at sempre que o usuário faz login ou a sessão é renovada
+      if (session?.user) {
+        supabase.rpc('touch_last_seen').catch(() => {})
+      }
     })
 
     return () => subscription.unsubscribe()

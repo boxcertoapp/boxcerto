@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
   Mail, MessageCircle, Send, Loader2, CheckCircle,
-  Users, Clock, AlertCircle, Filter, Eye
+  Users, Clock, AlertCircle, Filter, Eye, FileEdit, Zap, History, Save, ToggleLeft, ToggleRight
 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 
@@ -113,13 +113,176 @@ const TEMPLATES = [
   },
 ]
 
+// ── Editor de templates (busca do banco) ─────────────────────
+function TemplateEditor() {
+  const [templates, setTemplates]     = useState([])
+  const [selected, setSelected]       = useState(null)
+  const [assunto, setAssunto]         = useState('')
+  const [corpo, setCorpo]             = useState('')
+  const [saving, setSaving]           = useState(false)
+  const [saved, setSaved]             = useState(false)
+  const [loading, setLoading]         = useState(true)
+  const [previewMode, setPreviewMode] = useState(false)
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      const { data } = await supabase.from('email_templates').select('*').order('nome')
+      setTemplates(data || [])
+      if (data?.length) select(data[0])
+      setLoading(false)
+    }
+    load()
+  }, [])
+
+  const select = (t) => { setSelected(t); setAssunto(t.assunto); setCorpo(t.corpo_html) }
+
+  const save = async () => {
+    if (!selected) return
+    setSaving(true)
+    await supabase.from('email_templates').update({
+      assunto, corpo_html: corpo, atualizado_em: new Date().toISOString()
+    }).eq('id', selected.id)
+    setSaving(false); setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+    // Atualiza local
+    setTemplates(ts => ts.map(t => t.id === selected.id ? { ...t, assunto, corpo_html: corpo } : t))
+    setSelected(s => ({ ...s, assunto, corpo_html: corpo }))
+  }
+
+  const sendTest = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    const { data: profile } = await supabase.from('profiles').select('email,responsavel,oficina').eq('id', session?.user?.id).single()
+    if (!profile) return alert('Perfil não encontrado.')
+    await fetch('/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: selected.slug, to: profile.email, nome: profile.responsavel, oficina: profile.oficina, dias: 3, trialDias: 7 }),
+    })
+    alert(`Email de teste enviado para ${profile.email}`)
+  }
+
+  if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-slate-400" /></div>
+  if (!templates.length) return (
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+      <strong>Tabela email_templates não encontrada.</strong> Execute o SQL <code>ADMIN_V2_MIGRATION.sql</code> no Supabase primeiro.
+    </div>
+  )
+
+  return (
+    <div className="grid md:grid-cols-3 gap-4">
+      {/* Lista de templates */}
+      <div className="space-y-1.5">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Templates</p>
+        {templates.map(t => (
+          <button key={t.id} onClick={() => select(t)}
+            className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+              selected?.id === t.id ? 'bg-indigo-600 text-white' : 'bg-gray-50 text-slate-700 hover:bg-gray-100'
+            }`}>
+            {t.nome}
+          </button>
+        ))}
+      </div>
+
+      {/* Editor */}
+      <div className="md:col-span-2 space-y-3">
+        {selected && (
+          <>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-sm font-bold text-slate-800 flex-1">{selected.nome}</p>
+              <button onClick={() => setPreviewMode(!previewMode)}
+                className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${previewMode ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-slate-600 hover:bg-gray-200'}`}>
+                <Eye className="w-3.5 h-3.5" />{previewMode ? 'Editar' : 'Preview'}
+              </button>
+              <button onClick={sendTest} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-gray-100 text-slate-600 hover:bg-gray-200">
+                <Send className="w-3.5 h-3.5" />Testar
+              </button>
+              <button onClick={save} disabled={saving}
+                className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${saved ? 'bg-green-600 text-white' : 'bg-indigo-600 text-white hover:bg-indigo-700'} disabled:opacity-60`}>
+                <Save className="w-3.5 h-3.5" />{saving ? 'Salvando...' : saved ? '✓ Salvo' : 'Salvar'}
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Assunto</label>
+              <input value={assunto} onChange={e => setAssunto(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
+            </div>
+
+            {previewMode ? (
+              <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50" style={{ minHeight: 300 }}>
+                <div className="bg-white px-3 py-1.5 border-b border-gray-200 text-xs text-slate-400 font-medium">Preview do email</div>
+                <iframe srcDoc={corpo} className="w-full" style={{ height: 350, border: 'none' }} title="preview" />
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">HTML do email</label>
+                <textarea value={corpo} onChange={e => setCorpo(e.target.value)} rows={14}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-mono focus:outline-none focus:border-indigo-400 resize-none" />
+              </div>
+            )}
+
+            {selected.variaveis?.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-slate-400 font-medium">Variáveis:</span>
+                {selected.variaveis.map(v => (
+                  <span key={v} className="text-xs bg-gray-100 text-slate-600 px-2 py-0.5 rounded font-mono">{v}</span>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Automações ───────────────────────────────────────────────
+function Automacoes() {
+  const automacoes = [
+    { key: 'welcome',      label: 'Boas-vindas',            desc: 'Enviado imediatamente após o cadastro', icon: '👋', ativo: true,  quando: 'Ao cadastrar' },
+    { key: 'trial_ending', label: 'Trial expirando',        desc: 'Enviado 3 dias antes do trial acabar', icon: '⏰', ativo: true,  quando: '3 dias antes do fim' },
+    { key: 'sem_acesso',   label: 'Sem acesso (7 dias)',    desc: 'Para assinantes que não acessam há 7 dias', icon: '👁️', ativo: false, quando: 'Após 7 dias sem login' },
+    { key: 'inadimplente', label: 'Pagamento falhou',       desc: 'Aviso quando o pagamento não é processado', icon: '💳', ativo: true,  quando: 'Ao detectar falha' },
+    { key: 'aniversario',  label: 'Aniversário de 1 mês',  desc: 'Parabeniza o cliente pelo 1 mês de uso', icon: '🎉', ativo: false, quando: '1 mês após ativação' },
+  ]
+  const [ativos, setAtivos] = useState(automacoes.map(a => a.ativo))
+
+  return (
+    <div className="space-y-3">
+      <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3">
+        <p className="text-xs font-semibold text-indigo-900">Como funcionam as automações</p>
+        <p className="text-xs text-indigo-700 mt-1">Emails automáticos disparados por gatilhos do sistema. As automações marcadas como ativas são executadas pelo job <code>/api/notify-trials</code> e pelo fluxo de cadastro.</p>
+      </div>
+      {automacoes.map((a, i) => (
+        <div key={a.key} className={`bg-white border rounded-2xl p-4 flex items-start gap-3 ${ativos[i] ? 'border-gray-200' : 'border-gray-100 opacity-60'}`}>
+          <span className="text-xl flex-shrink-0">{a.icon}</span>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-slate-800">{a.label}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{a.desc}</p>
+            <span className="text-[10px] bg-gray-100 text-slate-500 px-2 py-0.5 rounded-full font-medium mt-1 inline-block">
+              {a.quando}
+            </span>
+          </div>
+          <button onClick={() => setAtivos(prev => prev.map((v, j) => j === i ? !v : v))}
+            className={`flex-shrink-0 transition-colors ${ativos[i] ? 'text-indigo-600' : 'text-slate-300'}`}>
+            {ativos[i] ? <ToggleRight className="w-8 h-8" /> : <ToggleLeft className="w-8 h-8" />}
+          </button>
+        </div>
+      ))}
+      <p className="text-xs text-slate-400">* Os toggles acima são visuais. A ativação real depende de configuração no código dos jobs de automação.</p>
+    </div>
+  )
+}
+
 export default function Comunicacoes({ users }) {
+  const [aba, setAba]           = useState('enviar')
   const [segmento, setSegmento] = useState('trial_ending')
   const [template, setTemplate] = useState(TEMPLATES[1])
-  const [canal, setCanal] = useState('email')
-  const [loading, setLoading] = useState(false)
+  const [canal, setCanal]       = useState('email')
+  const [loading, setLoading]   = useState(false)
   const [resultado, setResultado] = useState(null)
-  const [logs, setLogs] = useState([])
+  const [logs, setLogs]         = useState([])
   const [showPreview, setShowPreview] = useState(false)
 
   useEffect(() => {
@@ -227,9 +390,54 @@ export default function Comunicacoes({ users }) {
 
   const seg = SEGMENTOS.find(s => s.key === segmento)
 
-  return (
-    <div className="space-y-6">
+  const ABAS = [
+    { key: 'enviar',    label: 'Enviar',      icon: Send },
+    { key: 'templates', label: 'Templates',   icon: FileEdit },
+    { key: 'automacoes',label: 'Automações',  icon: Zap },
+    { key: 'historico', label: 'Histórico',   icon: History },
+  ]
 
+  return (
+    <div className="space-y-5">
+
+      {/* Abas internas */}
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit">
+        {ABAS.map(a => (
+          <button key={a.key} onClick={() => setAba(a.key)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+              aba === a.key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}>
+            <a.icon className="w-3.5 h-3.5" />{a.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Templates */}
+      {aba === 'templates' && <TemplateEditor />}
+
+      {/* Automações */}
+      {aba === 'automacoes' && <Automacoes />}
+
+      {/* Histórico */}
+      {aba === 'historico' && (
+        <div className="space-y-3">
+          {logs.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-slate-400 text-sm">Nenhum envio registrado ainda.</div>
+          ) : logs.map((log, i) => (
+            <div key={i} className="bg-white rounded-xl border border-gray-100 p-3 flex items-center gap-3">
+              <span className="text-lg">{log.canal === 'email' ? '📧' : '💬'}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-700 truncate">{log.destinatario_nome || log.destinatario_email}</p>
+                <p className="text-xs text-slate-400">{log.template} · {log.assunto}</p>
+              </div>
+              <span className="text-xs text-slate-400 shrink-0">{new Date(log.enviado_em).toLocaleDateString('pt-BR')}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Seleção de segmento — só na aba Enviar */}
+      {aba === 'enviar' && <div className="space-y-6">
       {/* Seleção de segmento */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <div className="flex items-center gap-2 mb-4">
@@ -365,6 +573,7 @@ export default function Comunicacoes({ users }) {
           </div>
         )}
       </div>
+      </div>}
     </div>
   )
 }
