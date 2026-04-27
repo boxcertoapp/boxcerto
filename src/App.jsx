@@ -11,6 +11,8 @@ import Renovar from './pages/Renovar'
 import EsqueciSenha from './pages/EsqueciSenha'
 import RedefinirSenha from './pages/RedefinirSenha'
 import OrcamentoPublico from './pages/OrcamentoPublico'
+import Termos from './pages/Termos'
+import Privacidade from './pages/Privacidade'
 import AppLayout from './pages/app/AppLayout'
 import Oficina from './pages/app/Oficina'
 import Historico from './pages/app/Historico'
@@ -36,6 +38,8 @@ export default function App() {
           <Route path="/esqueci-senha" element={<EsqueciSenha />} />
           <Route path="/redefinir-senha" element={<RedefinirSenha />} />
           <Route path="/o/:token" element={<OrcamentoPublico />} />
+          <Route path="/termos" element={<Termos />} />
+          <Route path="/privacidade" element={<Privacidade />} />
 
           {/* Admin */}
           <Route path="/admin" element={<AdminPanel />} />

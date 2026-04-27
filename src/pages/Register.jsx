@@ -68,35 +68,6 @@ export default function Register() {
         <h1 className="text-2xl font-bold text-slate-900 mb-1">Cadastrar oficina</h1>
         <p className="text-slate-400 text-sm mb-6">7 dias grátis · Sem cartão agora</p>
 
-        {/* Seleção de plano */}
-        <div className="grid grid-cols-2 gap-2 mb-6">
-          {[
-            { key: 'monthly', label: 'Mensal',  price: 'R$47,90/mês' },
-            { key: 'annual',  label: 'Anual',   price: 'R$34,90/mês' },
-          ].map((p) => (
-            <button
-              key={p.key}
-              type="button"
-              onClick={() => setForm({ ...form, plan: p.key })}
-              className={`relative p-3 rounded-xl border-2 text-left transition-all ${
-                form.plan === p.key ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              {p.key === 'annual' && (
-                <span className="absolute -top-2 -right-1 bg-amber-400 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                  MELHOR
-                </span>
-              )}
-              <p className={`text-xs font-bold ${form.plan === p.key ? 'text-indigo-700' : 'text-slate-700'}`}>
-                {p.label}
-              </p>
-              <p className={`text-xs mt-0.5 ${form.plan === p.key ? 'text-indigo-600' : 'text-slate-400'}`}>
-                {p.price}
-              </p>
-            </button>
-          ))}
-        </div>
-
         {error && (
           <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-sm p-3 rounded-xl mb-4">
             <AlertCircle className="w-4 h-4 shrink-0" />
@@ -151,9 +122,9 @@ export default function Register() {
 
         <p className="text-xs text-slate-400 text-center mt-4">
           Ao cadastrar, você concorda com nossos{' '}
-          <a href="#" className="text-indigo-600 hover:underline">Termos de Uso</a>
+          <Link to="/termos" target="_blank" className="text-indigo-600 hover:underline">Termos de Uso</Link>
           {' '}e{' '}
-          <a href="#" className="text-indigo-600 hover:underline">Privacidade</a>.
+          <Link to="/privacidade" target="_blank" className="text-indigo-600 hover:underline">Privacidade</Link>.
         </p>
       </div>
 
