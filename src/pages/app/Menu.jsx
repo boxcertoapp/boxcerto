@@ -506,6 +506,26 @@ export default function Menu() {
   const handleLogout = () => { logout(); navigate('/') }
   const planLabel = user?.plan === 'annual' ? 'Plano Anual — R$418,80/ano' : 'Plano Mensal — R$47,90/mês'
   const isTrial = user?.status === 'trial'
+  const [portalLoading, setPortalLoading] = useState(false)
+
+  const abrirPortalCobranca = async () => {
+    setPortalLoading(true)
+    try {
+      const { data: session } = await import('../../lib/supabase').then(m => m.supabase.auth.getSession())
+      const token = session?.session?.access_token
+      const resp  = await fetch('/api/billing-portal', {
+        method:  'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      })
+      const data = await resp.json()
+      if (data.url) { window.open(data.url, '_blank') }
+      else { alert('Não foi possível abrir o portal. Tente novamente.') }
+    } catch (e) {
+      alert('Erro ao conectar ao portal de cobrança.')
+    } finally {
+      setPortalLoading(false)
+    }
+  }
 
   const TABS = [
     { key: 'relatorios', label: 'Relatórios' },
@@ -683,11 +703,13 @@ export default function Menu() {
                 </div>
               )}
               {!isTrial && (
-                <button onClick={() => window.open('https://billing.stripe.com/p/login/test_00g00000000000', '_blank')}
-                  className="w-full flex items-center justify-between p-3.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                <button onClick={abrirPortalCobranca} disabled={portalLoading}
+                  className="w-full flex items-center justify-between p-3.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors disabled:opacity-60">
                   <div className="flex items-center gap-3">
                     <CreditCard className="w-5 h-5 text-slate-600" />
-                    <span className="text-sm font-medium text-slate-700">Gerenciar assinatura</span>
+                    <span className="text-sm font-medium text-slate-700">
+                      {portalLoading ? 'Abrindo...' : 'Gerenciar assinatura'}
+                    </span>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400" />
                 </button>
