@@ -1,13 +1,10 @@
 /**
  * Logo.jsx — BoxCerto brand component
  *
- * /logo.svg      → tem fundo branco embutido → usar com texto em fundos claros
- * /logo-icon.svg → sem fundo (transparente)  → usar iconOnly ou em fundos escuros
- *
  * Uso:
- *   <Logo />                    → ícone (sem fundo) + wordmark "BoxCerto" em escuro
- *   <Logo iconOnly />           → só o ícone, sem fundo (qualquer background)
- *   <Logo onDark />             → ícone + wordmark em branco (footer, hero)
+ *   <Logo />                    → ícone + wordmark "BoxCerto"
+ *   <Logo iconOnly />           → só o ícone
+ *   <Logo onDark />             → wordmark branco (fundos escuros)
  *   <Logo size="sm|md|lg|xl" /> → tamanhos: 28 / 36 / 48 / 64px
  */
 export default function Logo({
@@ -18,10 +15,8 @@ export default function Logo({
 }) {
   const px       = { sm: 28, md: 36, lg: 48, xl: 64 }[size] ?? 36
   const fontSize = { sm: 16, md: 20, lg: 26, xl: 34 }[size] ?? 20
+  const radius   = Math.round(px * 0.22)
   const gap      = Math.round(px * 0.28)
-
-  // Sempre usa o ícone sem fundo — fica limpo em qualquer background
-  const iconSrc = '/logo-icon.svg'
 
   return (
     <div
@@ -29,13 +24,13 @@ export default function Logo({
       style={{ display: 'inline-flex', alignItems: 'center', gap }}
     >
       <img
-        src={iconSrc}
+        src="/logo.svg"
         alt="BoxCerto"
         width={px}
         height={px}
         loading="eager"
         decoding="async"
-        style={{ flexShrink: 0, display: 'block' }}
+        style={{ borderRadius: radius, flexShrink: 0, display: 'block' }}
       />
       {!iconOnly && (
         <span
