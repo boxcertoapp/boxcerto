@@ -1,17 +1,14 @@
 /**
  * Logo.jsx — BoxCerto brand component
  *
- * Usa o arquivo /logo.svg (cacheável, ~11KB) em vez de SVG inline.
- * O SVG tem fundo branco embutido — funciona perfeitamente em fundos claros.
- * Para fundos escuros, use a prop `onDark` para adicionar sombra/fundo.
+ * /logo.svg      → tem fundo branco embutido → usar com texto em fundos claros
+ * /logo-icon.svg → sem fundo (transparente)  → usar iconOnly ou em fundos escuros
  *
  * Uso:
- *   <Logo />                    → ícone + wordmark "BoxCerto" (padrão)
- *   <Logo iconOnly />           → só o ícone quadrado
- *   <Logo size="sm" />          → pequeno (28px)
- *   <Logo size="md" />          → médio (36px, padrão)
- *   <Logo size="lg" />          → grande (48px)
- *   <Logo onDark />             → wordmark branco para fundos escuros
+ *   <Logo />                    → ícone (sem fundo) + wordmark "BoxCerto" em escuro
+ *   <Logo iconOnly />           → só o ícone, sem fundo (qualquer background)
+ *   <Logo onDark />             → ícone + wordmark em branco (footer, hero)
+ *   <Logo size="sm|md|lg|xl" /> → tamanhos: 28 / 36 / 48 / 64px
  */
 export default function Logo({
   iconOnly = false,
@@ -19,23 +16,26 @@ export default function Logo({
   onDark = false,
   className = '',
 }) {
-  const px = { sm: 28, md: 36, lg: 48, xl: 64 }[size] ?? 36
+  const px       = { sm: 28, md: 36, lg: 48, xl: 64 }[size] ?? 36
   const fontSize = { sm: 16, md: 20, lg: 26, xl: 34 }[size] ?? 20
-  const radius = Math.round(px * 0.22)
+  const gap      = Math.round(px * 0.28)
+
+  // Sempre usa o ícone sem fundo — fica limpo em qualquer background
+  const iconSrc = '/logo-icon.svg'
 
   return (
     <div
       className={className}
-      style={{ display: 'inline-flex', alignItems: 'center', gap: Math.round(px * 0.28) }}
+      style={{ display: 'inline-flex', alignItems: 'center', gap }}
     >
       <img
-        src="/logo.svg"
+        src={iconSrc}
         alt="BoxCerto"
         width={px}
         height={px}
         loading="eager"
         decoding="async"
-        style={{ borderRadius: radius, flexShrink: 0, display: 'block' }}
+        style={{ flexShrink: 0, display: 'block' }}
       />
       {!iconOnly && (
         <span
