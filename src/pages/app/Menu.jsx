@@ -714,29 +714,30 @@ export default function Menu() {
             <h2 className="text-lg font-extrabold mb-1">Precisa de ajuda?</h2>
             <p className="text-indigo-200 text-sm">Guias, perguntas frequentes e atendimento direto.</p>
           </div>
+          {/* Ação principal — ticket */}
           <button onClick={() => navigate('/app/suporte')}
-            className="w-full flex items-center gap-3 bg-white rounded-2xl border border-gray-100 p-4 hover:bg-gray-50 transition-colors">
-            <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center shrink-0">
-              <LifeBuoy className="w-5 h-5 text-indigo-600" />
+            className="w-full flex items-center gap-3 bg-indigo-600 rounded-2xl p-4 hover:bg-indigo-700 transition-colors">
+            <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center shrink-0">
+              <LifeBuoy className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1 text-left">
-              <p className="text-sm font-bold text-slate-800">Acessar Central de Ajuda</p>
-              <p className="text-xs text-slate-400">Guias, FAQ e abertura de chamados</p>
+              <p className="text-sm font-bold text-white">Acessar Central de Suporte</p>
+              <p className="text-xs text-indigo-200">Guias, FAQ e abertura de chamados</p>
             </div>
-            <ChevronRight className="w-4 h-4 text-slate-400" />
+            <ChevronRight className="w-4 h-4 text-indigo-300" />
           </button>
-          <a href="https://wa.me/5553997065725?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20o%20BoxCerto!"
-            target="_blank" rel="noreferrer"
-            className="flex items-center gap-3 bg-green-500 rounded-2xl p-4 hover:bg-green-600 transition-colors">
-            <div className="w-10 h-10 bg-green-400 rounded-xl flex items-center justify-center shrink-0">
-              <MessageCircle className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-white">WhatsApp de Suporte</p>
-              <p className="text-xs text-green-100">(53) 99706-5725 · Resposta rápida</p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-green-200" />
-          </a>
+
+          {/* WhatsApp — secundário e discreto */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-4">
+            <p className="text-xs text-slate-400 mb-2">Para situações de urgência extrema:</p>
+            <a href="https://wa.me/5553997065725?text=Ol%C3%A1%2C%20tenho%20uma%20urg%C3%AAncia%20no%20BoxCerto."
+              target="_blank" rel="noreferrer"
+              className="flex items-center gap-2 text-slate-500 hover:text-green-600 transition-colors">
+              <MessageCircle className="w-4 h-4 shrink-0" />
+              <span className="text-sm font-medium">WhatsApp (53) 99706-5725</span>
+              <ChevronRight className="w-3.5 h-3.5 ml-auto" />
+            </a>
+          </div>
         </div>
       )}
     </div>
