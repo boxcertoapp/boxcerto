@@ -4,6 +4,7 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Logo from '../components/Logo'
 import {
   CheckCircle, ArrowRight, Star, Wrench, MessageCircle,
   Clock, TrendingUp, ShieldCheck, AlertTriangle, X,
@@ -215,9 +216,7 @@ function AprovacaoMock() {
           <div className="bg-white rounded-xl rounded-tl-none p-3 shadow-sm text-[12px] text-slate-700 leading-relaxed">
             Oi João! Seu orçamento tá pronto 👇
             <div className="mt-2 bg-indigo-50 border border-indigo-100 rounded-xl p-2.5 flex items-center gap-2">
-              <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
-                <Wrench className="w-3.5 h-3.5 text-white" />
-              </div>
+              <img src="/logo.svg" width="28" height="28" alt="" style={{borderRadius:6,flexShrink:0}} />
               <div>
                 <p className="text-[11px] font-bold text-indigo-700">Ver orçamento</p>
                 <p className="text-[9px] text-slate-400">boxcerto.com/o/abc123</p>
@@ -307,12 +306,7 @@ export default function LandingAds() {
 
       {/* NAV */}
       <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-gray-100 shadow-sm px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center">
-            <Wrench className="w-4 h-4 text-white" />
-          </div>
-          <span className="font-bold text-slate-900">BoxCerto</span>
-        </div>
+        <Logo size="md" />
         <button onClick={goRegister} className="bg-indigo-600 text-white font-bold text-sm px-4 py-2 rounded-xl hover:bg-indigo-700 transition-colors">
           Testar grátis
         </button>

@@ -6,6 +6,7 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Logo from '../components/Logo'
 import {
   CheckCircle, ArrowRight, Star, Wrench, ShieldCheck,
   TrendingUp, Users, X, Award, Zap, DollarSign,
@@ -165,12 +166,7 @@ export default function LandingAds2() {
 
       {/* NAV */}
       <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-gray-100 shadow-sm px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center">
-            <Wrench className="w-4 h-4 text-white" />
-          </div>
-          <span className="font-bold text-slate-900">BoxCerto</span>
-        </div>
+        <Logo size="md" />
         <button onClick={goRegister}
           className="bg-emerald-500 text-white font-bold text-sm px-4 py-2 rounded-xl hover:bg-emerald-400 transition-colors">
           Entrar grátis
