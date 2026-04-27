@@ -4,7 +4,7 @@ import {
   LogOut, CreditCard, ChevronRight, Shield, Building2,
   Phone, Mail, MapPin, FileText, Camera, Check, Save,
   Users, Cake, Wrench, Calendar, ChevronDown, ChevronUp,
-  UserX, MessageCircle
+  UserX, MessageCircle, LifeBuoy
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import {
@@ -511,6 +511,7 @@ export default function Menu() {
     { key: 'relatorios', label: 'Relatórios' },
     { key: 'oficina', label: 'Oficina' },
     { key: 'conta', label: 'Minha Conta' },
+    { key: 'suporte', label: 'Suporte' },
   ]
 
   return (
@@ -700,6 +701,43 @@ export default function Menu() {
           </button>
           <p className="text-center text-xs text-slate-300">BoxCerto v1.0.0</p>
         </>
+      )}
+
+      {/* ── SUPORTE ── */}
+      {activeTab === 'suporte' && (
+        <div className="space-y-3">
+          <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-2xl p-5 text-white">
+            <div className="flex items-center gap-2 mb-1">
+              <LifeBuoy className="w-5 h-5 text-indigo-200" />
+              <p className="text-indigo-200 text-sm font-medium">Central de Suporte</p>
+            </div>
+            <h2 className="text-lg font-extrabold mb-1">Precisa de ajuda?</h2>
+            <p className="text-indigo-200 text-sm">Guias, perguntas frequentes e atendimento direto.</p>
+          </div>
+          <button onClick={() => navigate('/app/suporte')}
+            className="w-full flex items-center gap-3 bg-white rounded-2xl border border-gray-100 p-4 hover:bg-gray-50 transition-colors">
+            <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center shrink-0">
+              <LifeBuoy className="w-5 h-5 text-indigo-600" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-bold text-slate-800">Acessar Central de Ajuda</p>
+              <p className="text-xs text-slate-400">Guias, FAQ e abertura de chamados</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-slate-400" />
+          </button>
+          <a href="https://wa.me/5553997065725?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20o%20BoxCerto!"
+            target="_blank" rel="noreferrer"
+            className="flex items-center gap-3 bg-green-500 rounded-2xl p-4 hover:bg-green-600 transition-colors">
+            <div className="w-10 h-10 bg-green-400 rounded-xl flex items-center justify-center shrink-0">
+              <MessageCircle className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-white">WhatsApp de Suporte</p>
+              <p className="text-xs text-green-100">(53) 99706-5725 · Resposta rápida</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-green-200" />
+          </a>
+        </div>
       )}
     </div>
   )

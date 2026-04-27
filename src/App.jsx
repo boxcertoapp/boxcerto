@@ -17,6 +17,7 @@ import Historico from './pages/app/Historico'
 import Financeiro from './pages/app/Financeiro'
 import AppMenu from './pages/app/Menu'
 import Estoque from './pages/app/Estoque'
+import Suporte from './pages/app/Suporte'
 import AdminPanel from './pages/admin/AdminPanel'
 
 export default function App() {
@@ -46,6 +47,7 @@ export default function App() {
             <Route path="historico" element={<Historico />} />
             <Route path="financeiro" element={<Financeiro />} />
             <Route path="estoque" element={<Estoque />} />
+            <Route path="suporte" element={<Suporte />} />
             <Route path="menu" element={<AppMenu />} />
           </Route>
 

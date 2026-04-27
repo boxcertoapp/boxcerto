@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Wrench, Users, LogOut, Shield, Eye, EyeOff, Loader2,
   LayoutDashboard, DollarSign, BarChart2, MessageSquare, Bell, Settings,
-  ChevronRight, X
+  ChevronRight, X, LifeBuoy
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -16,6 +16,7 @@ import Analytics    from './tabs/Analytics'
 import Comunicacoes from './tabs/Comunicacoes'
 import Anuncios     from './tabs/Anuncios'
 import Configuracoes from './sections/Configuracoes'
+import SuporteAdmin  from './sections/Suporte'
 
 // ── Carrega todos os usuários (shared entre seções) ──────────
 export const loadUsers = async () => {
@@ -141,6 +142,7 @@ const NAV = [
   { key: 'analytics',   label: 'Analytics',       icon: BarChart2,       group: 'dados' },
   { key: 'comunicacoes', label: 'Comunicações',    icon: MessageSquare,   group: 'dados' },
   { key: 'anuncios',    label: 'Anúncios',        icon: Bell,            group: 'dados' },
+  { key: 'suporte',      label: 'Suporte',          icon: LifeBuoy,        group: 'sistema' },
   { key: 'configuracoes',label: 'Configurações',   icon: Settings,        group: 'sistema' },
 ]
 
@@ -210,6 +212,7 @@ export default function AdminPanel() {
       case 'analytics':   return <Analytics    users={users} />
       case 'comunicacoes': return <Comunicacoes users={users} />
       case 'anuncios':    return <Anuncios     />
+      case 'suporte':      return <SuporteAdmin />
       case 'configuracoes':return <Configuracoes users={users} reload={reload} />
       default:             return <Dashboard    {...sharedProps} onNavigate={setSection} />
     }
