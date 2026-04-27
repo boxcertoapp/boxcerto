@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Wrench } from 'lucide-react'
+import Logo from '../components/Logo'
 
 const EMPRESA  = 'BoxCerto Tecnologia Ltda.'
 const CNPJ     = '52.354.481/0001-37'
@@ -21,12 +21,7 @@ export default function Termos() {
     <div className="min-h-screen bg-gray-50 px-4 py-12">
       {/* Logo */}
       <div className="flex justify-center mb-10">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center">
-            <Wrench className="w-5 h-5 text-white" />
-          </div>
-          <span className="font-bold text-slate-900 text-xl">BoxCerto</span>
-        </Link>
+        <Link to="/"><Logo size="md" /></Link>
       </div>
 
       <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-gray-100 shadow-sm p-8">

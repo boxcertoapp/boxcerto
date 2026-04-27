@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Wrench, Eye, EyeOff, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import Logo from '../components/Logo'
 
 export default function Login() {
   const { login } = useAuth()
@@ -29,11 +30,8 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
-      <Link to="/" className="flex items-center gap-2 mb-8">
-        <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center">
-          <Wrench className="w-5 h-5 text-white" />
-        </div>
-        <span className="font-bold text-slate-900 text-xl">BoxCerto</span>
+      <Link to="/" className="mb-8">
+        <Logo size="md" />
       </Link>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 w-full max-w-sm">

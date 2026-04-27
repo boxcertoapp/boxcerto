@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CheckCircle, Wrench } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import Logo from '../components/Logo'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function Sucesso() {
@@ -23,11 +24,8 @@ export default function Sucesso() {
         </div>
 
         {/* Logo */}
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center">
-            <Wrench className="w-3.5 h-3.5 text-white" />
-          </div>
-          <span className="font-bold text-slate-900">BoxCerto</span>
+        <div className="flex justify-center mb-4">
+          <Logo size="sm" />
         </div>
 
         <h1 className="text-2xl font-extrabold text-slate-900 mb-2">

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Wrench, ArrowLeft, Mail, CheckCircle, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Mail, CheckCircle, AlertCircle } from 'lucide-react'
+import Logo from '../components/Logo'
 import { supabase } from '../lib/supabase'
 
 export default function EsqueciSenha() {
@@ -45,12 +46,7 @@ export default function EsqueciSenha() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
-      <Link to="/" className="flex items-center gap-2 mb-8">
-        <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center">
-          <Wrench className="w-5 h-5 text-white" />
-        </div>
-        <span className="font-bold text-slate-900 text-xl">BoxCerto</span>
-      </Link>
+      <Link to="/"><Logo size="md" /></Link>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 w-full max-w-sm">
         <Link to="/login" className="flex items-center gap-1.5 text-slate-400 hover:text-slate-600 text-sm mb-5 transition-colors">

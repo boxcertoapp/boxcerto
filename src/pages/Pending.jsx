@@ -1,5 +1,6 @@
 import { useLocation, Link } from 'react-router-dom'
-import { Wrench, Clock, CheckCircle, MessageCircle } from 'lucide-react'
+import { Clock, CheckCircle, MessageCircle } from 'lucide-react'
+import Logo from '../components/Logo'
 
 export default function Pending() {
   const location = useLocation()
@@ -7,11 +8,8 @@ export default function Pending() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-10 text-center">
-      <Link to="/" className="flex items-center gap-2 mb-12">
-        <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center">
-          <Wrench className="w-5 h-5 text-white" />
-        </div>
-        <span className="font-bold text-slate-900 text-xl">MecanicaCerto</span>
+      <Link to="/" className="mb-12 inline-block">
+        <Logo size="md" />
       </Link>
 
       <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-10 max-w-md w-full">
