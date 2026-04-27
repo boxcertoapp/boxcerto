@@ -14,6 +14,7 @@ import OrcamentoPublico from './pages/OrcamentoPublico'
 import Termos from './pages/Termos'
 import Privacidade from './pages/Privacidade'
 import LandingAds from './pages/LandingAds'
+import LandingAds2 from './pages/LandingAds2'
 import AppLayout from './pages/app/AppLayout'
 import Oficina from './pages/app/Oficina'
 import Historico from './pages/app/Historico'
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="/termos" element={<Termos />} />
           <Route path="/privacidade" element={<Privacidade />} />
           <Route path="/lp" element={<LandingAds />} />
+          <Route path="/lp2" element={<LandingAds2 />} />
 
           {/* Admin */}
           <Route path="/admin" element={<AdminPanel />} />
