@@ -13,6 +13,7 @@ import RedefinirSenha from './pages/RedefinirSenha'
 import OrcamentoPublico from './pages/OrcamentoPublico'
 import Termos from './pages/Termos'
 import Privacidade from './pages/Privacidade'
+import LandingAds from './pages/LandingAds'
 import AppLayout from './pages/app/AppLayout'
 import Oficina from './pages/app/Oficina'
 import Historico from './pages/app/Historico'
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="/o/:token" element={<OrcamentoPublico />} />
           <Route path="/termos" element={<Termos />} />
           <Route path="/privacidade" element={<Privacidade />} />
+          <Route path="/lp" element={<LandingAds />} />
 
           {/* Admin */}
           <Route path="/admin" element={<AdminPanel />} />
