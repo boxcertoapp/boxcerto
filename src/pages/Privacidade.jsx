@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Wrench } from 'lucide-react'
 
 const EMPRESA  = 'BoxCerto Tecnologia Ltda.'
-const CNPJ     = '00.000.000/0001-00' // substituir pelo CNPJ real
+const CNPJ     = '52.354.481/0001-37'
 const EMAIL    = 'contato@boxcerto.com'
 const WHATSAPP = '(53) 99706-5725'
 const DATA_VIG = '01 de maio de 2025'
