@@ -13,41 +13,52 @@ const WPP = 'https://wa.me/5553997065725?text=Ol%C3%A1%2C%20tenho%20d%C3%BAvidas
 
 const SEGMENTOS = [
   { emoji: '🔧', label: 'Mecânica Geral' },
-  { emoji: '🎨', label: 'Oficina de Pintura' },
+  { emoji: '🎨', label: 'Funilaria e Pintura' },
   { emoji: '⚡', label: 'Auto Elétrica' },
-  { emoji: '✨', label: 'Estética Automotiva' },
   { emoji: '❄️', label: 'Ar Condicionado Auto' },
+  { emoji: '🏍️', label: 'Mecânica de Motos' },
 ]
 
 // ── WhatsApp-style testimonial ─────────────────────────────────
-function WppCard({ nome, tipo, cidade, mensagem, hora }) {
+const AVATAR_GRAD = [
+  ['#1565C0','#0D47A1'],
+  ['#6A1B9A','#4A148C'],
+  ['#B71C1C','#7F0000'],
+]
+function WppCard({ nome, tipo, cidade, mensagem, hora, gradIdx = 0 }) {
+  const [c1, c2] = AVATAR_GRAD[gradIdx % AVATAR_GRAD.length]
   return (
     <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200">
-      <div className="px-4 py-3 flex items-center gap-3" style={{ background: '#128C7E' }}>
-        <div className="w-9 h-9 rounded-full bg-emerald-200 flex items-center justify-center shrink-0">
-          <span className="text-emerald-900 font-bold text-sm">{nome[0]}</span>
+      {/* header escuro (estilo WPP Business) */}
+      <div className="px-4 py-3 flex items-center gap-3" style={{ background: '#075E54' }}>
+        <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+          style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }}>
+          <span className="text-white font-bold text-sm">{nome[0]}</span>
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-white font-semibold text-sm truncate">{nome}</p>
-          <p className="text-emerald-200 text-xs truncate">{tipo} · {cidade}</p>
+          <p className="text-white/60 text-xs truncate">{tipo} · {cidade}</p>
         </div>
-        <div className="flex gap-0.5">
-          {[1,2,3].map(i => <div key={i} className="w-1 h-1 rounded-full bg-emerald-300" />)}
+        <div className="flex gap-0.5 shrink-0">
+          {[1,2,3,4,5].map(i => <Star key={i} className="w-3 h-3 text-amber-400 fill-amber-400" />)}
         </div>
       </div>
-      <div className="p-4 space-y-3" style={{ background: '#E5DDD5' }}>
-        <div className="flex justify-start">
-          <div className="bg-white rounded-2xl rounded-tl-none px-4 py-3 max-w-[90%] shadow-sm">
-            <p className="text-slate-800 text-sm leading-relaxed">{mensagem}</p>
+      {/* chat */}
+      <div className="p-4" style={{ background: '#E5DDD5' }}>
+        <div className="text-center mb-3">
+          <span className="bg-black/15 text-white text-[9px] px-2 py-0.5 rounded-full">HOJE</span>
+        </div>
+        <div className="flex items-end gap-2">
+          <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mb-0.5"
+            style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }}>
+            <span className="text-white font-bold text-[9px]">{nome[0]}</span>
+          </div>
+          <div className="bg-white rounded-2xl rounded-tl-none px-4 py-3 max-w-[88%] shadow-sm">
+            <p className="text-slate-800 text-sm leading-relaxed whitespace-pre-line">{mensagem}</p>
             <div className="flex items-center justify-end gap-1.5 mt-2">
               <span className="text-[10px] text-slate-400">{hora}</span>
-              <span className="text-blue-500 text-[11px] font-black">✓✓</span>
+              <span className="text-slate-400 text-[10px]">✓✓</span>
             </div>
-          </div>
-        </div>
-        <div className="flex justify-center">
-          <div className="bg-white/80 rounded-full px-3 py-1 flex gap-0.5 shadow-sm">
-            {[1,2,3,4,5].map(i => <Star key={i} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />)}
           </div>
         </div>
       </div>
@@ -145,7 +156,7 @@ export default function Landing() {
   const faqs = [
     { q: 'Preciso instalar algum programa?', a: 'Não. O BoxCerto funciona direto no navegador — no celular, no tablet ou no computador. Só entrar e usar. Sem instalação, sem complicação.' },
     { q: 'Funciona para quem trabalha sozinho?', a: 'Foi feito exatamente para isso. Um mecânico solo consegue usar sem treinamento nenhum. Se você sabe usar o WhatsApp, sabe usar o BoxCerto.' },
-    { q: 'Funciona para estética, pintura, autoelétrica e ar condicionado?', a: 'Sim. O BoxCerto foi pensado para qualquer oficina automotiva — mecânica, pintura, auto elétrica, estética e ar condicionado. Qualquer negócio que receba veículo, faça serviço e entregue ao cliente.' },
+    { q: 'Funciona para pintura, auto elétrica, ar condicionado e moto?', a: 'Sim. O BoxCerto foi pensado para qualquer negócio automotivo — mecânica geral, funilaria e pintura, auto elétrica, ar condicionado automotivo e mecânica de motos. Qualquer operação que receba veículo, faça serviço e precise de aprovação do cliente.' },
     { q: 'É muito caro para uma oficina pequena?', a: 'R$47,90 por mês é menos do que uma hora de mão de obra. Se você recuperar 1 cliente por mês ou deixar de perder 1 orçamento por semana, o sistema já se pagou — e sobra dinheiro.' },
     { q: 'Já uso planilha, por que mudar?', a: 'Planilha não avisa quando peça está acabando, não envia WhatsApp ao cliente, não registra aprovação de orçamento com data e hora, não mostra o lucro real separando custo de peça. O BoxCerto faz tudo isso — e roda no celular.' },
     { q: 'O BoxCerto emite nota fiscal?', a: 'Não, e é uma escolha intencional. O BoxCerto é desenhado para ser leve, rápido e sem burocracia. Sistemas fiscais adicionam complexidade e custo que a maioria das oficinas pequenas não precisa no dia a dia. Foco total na sua operação — do orçamento à entrega.' },
@@ -658,25 +669,28 @@ export default function Landing() {
           </div>
           <div className="grid md:grid-cols-3 gap-5">
             <WppCard
-              nome="Carlos Mendonça"
+              gradIdx={0}
+              nome="João Batista R."
               tipo="Mecânica Geral"
-              cidade="Porto Alegre, RS"
-              hora="09:47"
-              mensagem="Em 2 semanas de uso já recuperei clientes que eu nem lembrava mais. O histórico salvou minha vida numa discussão sobre garantia — tava tudo registrado. Recomendo muito! 🔧"
-            />
-            <WppCard
-              nome="Adriana Freitas"
-              tipo="Auto Elétrica"
               cidade="Curitiba, PR"
-              hora="14:22"
-              mensagem="Trabalho sozinha e antes gastava 1 hora por dia respondendo 'meu carro tá pronto?'. Agora mando o status pelo WhatsApp em 5 segundos e volto pro serviço. Melhor investimento que fiz! ⚡"
+              hora="09:14"
+              mensagem={"cara o sistema me salvou semana passada\n\ncliente chegou aqui falando que não tinha autorizado a troca de embreagem. abri o boxcerto, mostrei pra ele: nome dele, data, horário. ele ficou sem palavras e pagou na hora kkkk"}
             />
             <WppCard
-              nome="Marcos Teixeira"
-              tipo="Oficina de Pintura"
+              gradIdx={1}
+              nome="Adriana F."
+              tipo="Auto Elétrica"
+              cidade="Goiânia, GO"
+              hora="14:22"
+              mensagem={"trabalho sozinha e ficava quase 1h por dia atendendo telefone de 'meu carro tá pronto?'\n\nagora mando o link com o status em 5 segundos e volto pro serviço. mudou meu dia completamente ⚡"}
+            />
+            <WppCard
+              gradIdx={2}
+              nome="Paulo R."
+              tipo="Ar Condicionado Auto"
               cidade="São Paulo, SP"
               hora="18:05"
-              mensagem="Descobri que tava lucrando 30% a menos porque não separava custo de peça. O financeiro do BoxCerto abriu meu olho. Agora sei exatamente quanto ganho em cada carro. 🎯"
+              mensagem={"descobri que tava lucrando 30% menos do que achava porque não separava custo de peça do valor cobrado\n\no financeiro do sistema mostrou exatamente onde o dinheiro tava indo. agora sei o que ganho em cada carro"}
             />
           </div>
           <div className="mt-10 flex justify-center">
