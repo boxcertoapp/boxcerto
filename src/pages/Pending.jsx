@@ -40,7 +40,7 @@ export default function Pending() {
           <p className="text-sm text-indigo-700">
             Tem alguma dúvida? Fale com a gente pelo WhatsApp:{' '}
             <a
-              href="https://wa.me/5551999999999?text=Olá,%20acabei%20de%20me%20cadastrar%20no%20MecanicaCerto%20e%20tenho%20uma%20dúvida."
+              href="https://wa.me/5553997065725?text=Ol%C3%A1%2C%20acabei%20de%20me%20cadastrar%20no%20BoxCerto%20e%20tenho%20uma%20d%C3%BAvida."
               target="_blank"
               rel="noreferrer"
               className="font-semibold underline"

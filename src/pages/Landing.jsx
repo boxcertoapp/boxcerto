@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, hasAccess } from '../contexts/AuthContext'
 import {
@@ -6,7 +6,7 @@ import {
   MessageCircle, TrendingUp, Clock, Search,
   Star, ArrowRight, Zap, Shield, X,
   FileText, Users, Package, Monitor, Check,
-  ThumbsUp, BarChart2, ChevronRight
+  LogIn
 } from 'lucide-react'
 
 const WPP = 'https://wa.me/5553997065725?text=Ol%C3%A1%2C%20tenho%20d%C3%BAvidas%20sobre%20o%20BoxCerto!'
@@ -19,11 +19,10 @@ const SEGMENTOS = [
   { emoji: '❄️', label: 'Ar Condicionado Auto' },
 ]
 
-// ── WhatsApp-style testimonial ──────────────────────────────
-function WppCard({ nome, tipo, cidade, mensagem, hora, stars = 5 }) {
+// ── WhatsApp-style testimonial ─────────────────────────────────
+function WppCard({ nome, tipo, cidade, mensagem, hora }) {
   return (
     <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200">
-      {/* Header */}
       <div className="px-4 py-3 flex items-center gap-3" style={{ background: '#128C7E' }}>
         <div className="w-9 h-9 rounded-full bg-emerald-200 flex items-center justify-center shrink-0">
           <span className="text-emerald-900 font-bold text-sm">{nome[0]}</span>
@@ -36,7 +35,6 @@ function WppCard({ nome, tipo, cidade, mensagem, hora, stars = 5 }) {
           {[1,2,3].map(i => <div key={i} className="w-1 h-1 rounded-full bg-emerald-300" />)}
         </div>
       </div>
-      {/* Chat */}
       <div className="p-4 space-y-3" style={{ background: '#E5DDD5' }}>
         <div className="flex justify-start">
           <div className="bg-white rounded-2xl rounded-tl-none px-4 py-3 max-w-[90%] shadow-sm">
@@ -49,9 +47,7 @@ function WppCard({ nome, tipo, cidade, mensagem, hora, stars = 5 }) {
         </div>
         <div className="flex justify-center">
           <div className="bg-white/80 rounded-full px-3 py-1 flex gap-0.5 shadow-sm">
-            {Array.from({ length: stars }).map((_, i) => (
-              <Star key={i} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-            ))}
+            {[1,2,3,4,5].map(i => <Star key={i} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />)}
           </div>
         </div>
       </div>
@@ -59,7 +55,7 @@ function WppCard({ nome, tipo, cidade, mensagem, hora, stars = 5 }) {
   )
 }
 
-// ── Loss calculator ─────────────────────────────────────────
+// ── Loss Calculator ────────────────────────────────────────────
 function Calculadora({ onCTA }) {
   const [carros, setCarros] = useState(25)
   const [ticket, setTicket] = useState(600)
@@ -77,8 +73,7 @@ function Calculadora({ onCTA }) {
           <div className="grid md:grid-cols-2 gap-8 mb-8">
             <div>
               <label className="block text-slate-300 text-sm font-semibold mb-3">
-                Carros atendidos por mês:{' '}
-                <span className="text-indigo-400 text-lg font-bold">{carros}</span>
+                Carros atendidos por mês: <span className="text-indigo-400 text-lg font-bold">{carros}</span>
               </label>
               <input type="range" min="5" max="120" value={carros}
                 onChange={e => setCarros(+e.target.value)}
@@ -87,8 +82,7 @@ function Calculadora({ onCTA }) {
             </div>
             <div>
               <label className="block text-slate-300 text-sm font-semibold mb-3">
-                Ticket médio por carro:{' '}
-                <span className="text-indigo-400 text-lg font-bold">R$ {ticket}</span>
+                Ticket médio por carro: <span className="text-indigo-400 text-lg font-bold">R$ {ticket}</span>
               </label>
               <input type="range" min="150" max="3000" step="50" value={ticket}
                 onChange={e => setTicket(+e.target.value)}
@@ -99,12 +93,8 @@ function Calculadora({ onCTA }) {
 
           <div className="rounded-2xl p-6 text-center mb-6 border border-red-700/40" style={{ background: 'rgba(127,29,29,0.25)' }}>
             <p className="text-slate-400 text-sm mb-1">Estimativa de perda mensal por falta de controle</p>
-            <p className="text-5xl font-bold text-red-400 my-2">
-              R$&nbsp;{perda.toLocaleString('pt-BR')}
-            </p>
-            <p className="text-slate-500 text-xs">
-              Orçamentos perdidos + clientes sem retorno + lucro que você não enxerga
-            </p>
+            <p className="text-5xl font-bold text-red-400 my-2">R$&nbsp;{perda.toLocaleString('pt-BR')}</p>
+            <p className="text-slate-500 text-xs">Orçamentos perdidos + clientes sem retorno + lucro que você não enxerga</p>
           </div>
 
           <div className="bg-slate-700/50 rounded-xl p-4 mb-6 text-center">
@@ -124,7 +114,7 @@ function Calculadora({ onCTA }) {
   )
 }
 
-// ── Main Landing ─────────────────────────────────────────────
+// ── Main Landing ───────────────────────────────────────────────
 export default function Landing() {
   const navigate = useNavigate()
   const { user, loading } = useAuth()
@@ -132,7 +122,6 @@ export default function Landing() {
   const [scrolled, setScrolled] = useState(false)
   const [showSticky, setShowSticky] = useState(false)
 
-  // Auth redirect
   useEffect(() => {
     if (loading) return
     if (!user) return
@@ -157,17 +146,18 @@ export default function Landing() {
     { q: 'Preciso instalar algum programa?', a: 'Não. O BoxCerto funciona direto no navegador — no celular, no tablet ou no computador. Só entrar e usar. Sem instalação, sem complicação.' },
     { q: 'Funciona para quem trabalha sozinho?', a: 'Foi feito exatamente para isso. Um mecânico solo consegue usar sem treinamento nenhum. Se você sabe usar o WhatsApp, sabe usar o BoxCerto.' },
     { q: 'Funciona para estética, pintura, autoelétrica e ar condicionado?', a: 'Sim. O BoxCerto foi pensado para qualquer oficina automotiva — mecânica, pintura, auto elétrica, estética e ar condicionado. Qualquer negócio que receba veículo, faça serviço e entregue ao cliente.' },
-    { q: 'É muito caro para uma oficina pequena?', a: 'R$47,90 por mês é menos do que uma hora de mão de obra. Se você recuperar 1 cliente esquecido por mês ou não perder 1 orçamento por semana, o sistema já se pagou — e sobra dinheiro.' },
-    { q: 'Já uso planilha, por que mudar?', a: 'Planilha não avisa quando peça está acabando, não envia WhatsApp para o cliente, não mostra o lucro real separando custo de peça, não registra aprovação de orçamento. O BoxCerto faz tudo isso automaticamente — e roda no celular na palma da mão.' },
-    { q: 'Meus dados ficam seguros?', a: 'Sim. Todos os dados ficam em servidores seguros. Nenhuma informação sua ou dos seus clientes é compartilhada com ninguém.' },
+    { q: 'É muito caro para uma oficina pequena?', a: 'R$47,90 por mês é menos do que uma hora de mão de obra. Se você recuperar 1 cliente por mês ou deixar de perder 1 orçamento por semana, o sistema já se pagou — e sobra dinheiro.' },
+    { q: 'Já uso planilha, por que mudar?', a: 'Planilha não avisa quando peça está acabando, não envia WhatsApp ao cliente, não registra aprovação de orçamento com data e hora, não mostra o lucro real separando custo de peça. O BoxCerto faz tudo isso — e roda no celular.' },
+    { q: 'O BoxCerto emite nota fiscal?', a: 'Não, e é uma escolha intencional. O BoxCerto é desenhado para ser leve, rápido e sem burocracia. Sistemas fiscais adicionam complexidade e custo que a maioria das oficinas pequenas não precisa no dia a dia. Foco total na sua operação — do orçamento à entrega.' },
+    { q: 'Meus dados ficam seguros?', a: 'Sim. Todos os dados ficam em servidores seguros e protegidos. Nenhuma informação sua ou dos seus clientes é compartilhada com ninguém.' },
     { q: 'O que acontece depois dos 7 dias grátis?', a: 'Você escolhe um plano e continua usando. Se não quiser assinar, pode sair sem custo algum. Não pedimos cartão para começar.' },
-    { q: 'Posso cancelar quando quiser?', a: 'No plano mensal, sim — cancela a qualquer momento sem multa. No anual, você trava o menor preço pelo ano todo.' },
+    { q: 'Posso cancelar quando quiser?', a: 'No plano mensal, sim — cancela a qualquer momento sem multa, sem burocracia, em 1 clique. No anual, você trava o menor preço pelo ano todo.' },
   ]
 
   return (
     <div className="min-h-screen bg-white">
 
-      {/* ── NAV ─────────────────────────────────────── */}
+      {/* ── NAV ──────────────────────────────────────── */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/95 backdrop-blur shadow-sm border-b border-gray-100' : 'bg-transparent'}`}>
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -176,9 +166,15 @@ export default function Landing() {
             </div>
             <span className={`font-bold text-lg transition-colors ${scrolled ? 'text-slate-900' : 'text-white'}`}>BoxCerto</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {/* Entrar — sempre visível, importante para usuários recorrentes */}
             <button onClick={() => navigate('/login')}
-              className={`text-sm font-medium px-3 py-2 transition-colors hidden sm:block ${scrolled ? 'text-slate-500 hover:text-slate-900' : 'text-white/80 hover:text-white'}`}>
+              className={`flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl border transition-all ${
+                scrolled
+                  ? 'border-gray-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600 bg-white'
+                  : 'border-white/30 text-white/90 hover:text-white hover:border-white/60'
+              }`}>
+              <LogIn className="w-4 h-4" />
               Entrar
             </button>
             <button onClick={goRegister}
@@ -195,23 +191,20 @@ export default function Landing() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-indigo-600/15 rounded-full blur-3xl" />
 
         <div className="relative max-w-6xl mx-auto px-5 pt-20 pb-0 text-center">
-          {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-sm font-medium px-4 py-2 rounded-full mb-8">
             <Zap className="w-4 h-4" />
             7 dias grátis &middot; Sem cartão de crédito &middot; Cancele quando quiser
           </div>
 
-          {/* Headline */}
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight mb-6 max-w-4xl mx-auto">
-            Sua oficina está cheia de serviço<br />
-            <span className="text-indigo-400">e perdendo dinheiro ao mesmo tempo.</span>
+            Pare de perder orçamentos<br />
+            <span className="text-indigo-400">no WhatsApp.</span>
           </h1>
           <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed">
-            O BoxCerto organiza carros, clientes, orçamentos e lucro em um sistema simples —
-            feito para mecânicas, estéticas, autoelétricas e oficinas de pintura que atendem pelo WhatsApp.
+            Crie orçamentos profissionais, envie um link para o cliente aprovar pelo celular
+            e receba a confirmação com data e hora registradas. Simples, rápido e feito para qualquer oficina automotiva.
           </p>
 
-          {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
             <button onClick={goRegister}
               className="w-full sm:w-auto bg-indigo-600 text-white text-lg font-bold px-8 py-4 rounded-2xl hover:bg-indigo-500 transition-all shadow-lg flex items-center justify-center gap-2 group">
@@ -219,12 +212,11 @@ export default function Landing() {
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
             <button onClick={() => navigate('/login')}
-              className="w-full sm:w-auto text-slate-400 hover:text-white text-base font-medium px-6 py-4 rounded-2xl border border-slate-700 hover:border-slate-500 transition-all">
-              Já tenho conta
+              className="w-full sm:w-auto text-slate-400 hover:text-white text-base font-medium px-6 py-4 rounded-2xl border border-slate-700 hover:border-slate-500 transition-all flex items-center justify-center gap-2">
+              <LogIn className="w-4 h-4" /> Já tenho conta
             </button>
           </div>
 
-          {/* Counter */}
           <div className="flex items-center justify-center gap-2 mb-16">
             <div className="flex -space-x-2">
               {['C','A','M','J','R'].map((l,i) => (
@@ -269,9 +261,9 @@ export default function Landing() {
                 </div>
                 <div className="p-2 space-y-2 bg-gray-50">
                   {[
-                    { placa: 'RST-2F45', modelo: 'Ford Ranger',  cliente: 'Carlos M.',  status: 'Pronto',    sc: 'bg-green-100 text-green-700' },
+                    { placa: 'RST-2F45', modelo: 'Ford Ranger',  cliente: 'Carlos M.',  status: 'Pronto',       sc: 'bg-green-100 text-green-700' },
                     { placa: 'ABC-1D23', modelo: 'Fiat Strada',  cliente: 'Ana Paula',  status: 'Aguard. apr.', sc: 'bg-amber-100 text-amber-700' },
-                    { placa: 'XYZ-8G90', modelo: 'VW Gol',       cliente: 'Roberto S.', status: 'Em serviço', sc: 'bg-blue-100 text-blue-700' },
+                    { placa: 'XYZ-8G90', modelo: 'VW Gol',       cliente: 'Roberto S.', status: 'Em serviço',   sc: 'bg-blue-100 text-blue-700' },
                   ].map((c, i) => (
                     <div key={i} className="bg-white rounded-xl p-2.5 flex items-center gap-2 shadow-sm border border-gray-100">
                       <div className="bg-slate-800 px-1.5 py-1 rounded-md min-w-[52px] text-center">
@@ -311,7 +303,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── SOCIAL PROOF BAR ────────────────────────── */}
+      {/* ── SOCIAL PROOF BAR ─────────────────────────── */}
       <section className="bg-gray-50 py-10 border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-5">
           <p className="text-center text-slate-400 text-xs font-semibold uppercase tracking-widest mb-6">Funciona para qualquer tipo de oficina automotiva</p>
@@ -326,7 +318,156 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── DORES ───────────────────────────────────── */}
+      {/* ── APROVAÇÃO POR LINK — DIFERENCIAL #1 ──────── */}
+      <section className="py-20 bg-indigo-600 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 to-indigo-800" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl" />
+        <div className="relative max-w-5xl mx-auto px-5">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+
+            {/* Copy */}
+            <div>
+              <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-indigo-200 text-xs font-bold px-3 py-1.5 rounded-full mb-6 uppercase tracking-wider">
+                <Zap className="w-3.5 h-3.5" /> Diferencial exclusivo
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-5 leading-tight">
+                Dê adeus ao<br />"não autorizei esse serviço."
+              </h2>
+              <p className="text-indigo-200 text-lg mb-6 leading-relaxed">
+                Você envia o orçamento por um <strong className="text-white">link exclusivo no WhatsApp</strong>. O cliente abre no navegador, vê o detalhamento completo e clica em <strong className="text-white">Aprovar</strong>. O BoxCerto registra a aprovação com <strong className="text-white">data e hora</strong> — segurança jurídica para você e agilidade para o cliente.
+              </p>
+              <ul className="space-y-3 mb-8">
+                {[
+                  'Link único por orçamento — não pode ser editado depois',
+                  'Cliente aprova no navegador, sem precisar ter o app',
+                  'Data e hora do aceite registradas automaticamente',
+                  'OS entra em execução assim que o cliente aprova',
+                  'Fim do "pode fazer" perdido no WhatsApp',
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-indigo-300 shrink-0 mt-0.5" />
+                    <span className="text-indigo-100 text-sm">{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <button onClick={goRegister}
+                className="bg-white text-indigo-600 font-bold px-8 py-4 rounded-2xl hover:bg-indigo-50 transition-all inline-flex items-center gap-2 shadow-xl">
+                Quero aprovar orçamentos assim <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Visual: WPP link → browser page */}
+            <div className="flex flex-col items-center gap-4">
+
+              {/* Passo 1: WPP com link */}
+              <div className="w-full max-w-sm">
+                <p className="text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-2 text-center">1. Você envia o link pelo WhatsApp</p>
+                <div className="rounded-2xl overflow-hidden shadow-xl border border-white/10">
+                  <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: '#075E54' }}>
+                    <div className="w-7 h-7 rounded-full bg-emerald-200 flex items-center justify-center shrink-0">
+                      <span className="text-emerald-900 font-bold text-xs">C</span>
+                    </div>
+                    <div>
+                      <p className="text-white text-xs font-semibold">Carlos Mendonça</p>
+                      <p className="text-emerald-300 text-[10px]">online</p>
+                    </div>
+                  </div>
+                  <div className="p-3" style={{ background: '#E5DDD5' }}>
+                    <div className="flex justify-end">
+                      <div className="rounded-2xl rounded-tr-none px-3 py-2 max-w-[85%] shadow-sm" style={{ background: '#DCF8C6' }}>
+                        <p className="text-slate-700 text-xs mb-1.5">Olá Carlos! Segue o orçamento do seu Ranger 👇</p>
+                        {/* Link preview */}
+                        <div className="bg-white rounded-xl overflow-hidden border border-green-200">
+                          <div className="bg-indigo-600 px-3 py-2 flex items-center gap-2">
+                            <div className="w-5 h-5 bg-white/20 rounded flex items-center justify-center">
+                              <Wrench className="w-3 h-3 text-white" />
+                            </div>
+                            <span className="text-white text-[10px] font-bold">BoxCerto</span>
+                          </div>
+                          <div className="px-3 py-2">
+                            <p className="text-slate-800 text-[10px] font-bold">Orçamento #0042 — Ford Ranger</p>
+                            <p className="text-slate-500 text-[9px]">boxcerto.com/o/abc123 · Toque para ver</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-end gap-1 mt-1.5">
+                          <span className="text-[9px] text-slate-500">14:32</span>
+                          <span className="text-blue-500 text-[10px] font-black">✓✓</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Seta */}
+              <div className="text-indigo-300 text-2xl">↓</div>
+
+              {/* Passo 2: Tela do navegador */}
+              <div className="w-full max-w-sm">
+                <p className="text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-2 text-center">2. Cliente abre e aprova no navegador</p>
+                <div className="bg-white rounded-2xl overflow-hidden shadow-xl border border-white/10">
+                  {/* Browser bar */}
+                  <div className="bg-gray-100 px-3 py-2 flex items-center gap-2 border-b border-gray-200">
+                    <div className="flex gap-1">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+                    </div>
+                    <div className="flex-1 bg-white rounded-md px-2 py-0.5 text-[9px] text-slate-400 border border-gray-200">
+                      boxcerto.com/o/abc123
+                    </div>
+                  </div>
+                  {/* Orçamento page */}
+                  <div className="p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-6 h-6 bg-indigo-600 rounded-md flex items-center justify-center">
+                        <Wrench className="w-3.5 h-3.5 text-white" />
+                      </div>
+                      <span className="text-xs font-bold text-slate-900">Orçamento #0042</span>
+                      <span className="ml-auto text-[9px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">Aguard. aprovação</span>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-3 mb-3 space-y-1.5">
+                      <div className="flex justify-between text-[10px]">
+                        <span className="text-slate-500">Troca de pastilhas</span>
+                        <span className="text-slate-800 font-semibold">R$280</span>
+                      </div>
+                      <div className="flex justify-between text-[10px]">
+                        <span className="text-slate-500">Fluido de freio</span>
+                        <span className="text-slate-800 font-semibold">R$80</span>
+                      </div>
+                      <div className="flex justify-between text-[10px]">
+                        <span className="text-slate-500">Mão de obra</span>
+                        <span className="text-slate-800 font-semibold">R$120</span>
+                      </div>
+                      <div className="border-t border-gray-200 pt-1.5 flex justify-between text-[10px]">
+                        <span className="font-bold text-slate-900">Total</span>
+                        <span className="font-bold text-slate-900">R$480,00</span>
+                      </div>
+                    </div>
+                    <button className="w-full bg-emerald-500 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-1.5">
+                      <Check className="w-3.5 h-3.5" /> Aprovar Orçamento
+                    </button>
+                    <p className="text-[9px] text-slate-400 text-center mt-2">Ao aprovar, você autoriza a execução do serviço</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Confirmação */}
+              <div className="w-full max-w-sm bg-emerald-500 rounded-2xl px-4 py-3 flex items-center gap-3 shadow-lg">
+                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center shrink-0">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-white text-xs font-bold">Aprovado! Oficina notificada.</p>
+                  <p className="text-emerald-100 text-[10px]">Registrado em 25/04/2025 às 14:35 — OS em execução</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── DORES ────────────────────────────────────── */}
       <section className="py-20 bg-white">
         <div className="max-w-5xl mx-auto px-5">
           <div className="text-center mb-14">
@@ -337,10 +478,10 @@ export default function Landing() {
           <div className="grid md:grid-cols-2 gap-4">
             {[
               { e: '📋', d: '"Onde foi que eu anotei o telefone desse cliente?"', t: 'Papéis perdidos, cadernos rasurados, post-it que some. Você perde tempo toda semana procurando informação que deveria estar na ponta dos dedos.' },
-              { e: '📞', d: '"Meu carro tá pronto?" — 3 vezes por dia.', t: 'Cliente ligando, você parando o serviço pra atender, explicando tudo de novo. Com o BoxCerto, você manda um WhatsApp em 1 toque — e o cliente para de ligar.' },
-              { e: '💸', d: 'Trabalhou o mês todo e não sabe quanto lucrou.', t: 'Recebeu dinheiro, pagou peça, pagou conta — mas no final do mês, sobrou quanto? Sem separar custo de peça do valor cobrado, você pode estar trabalhando de graça.' },
-              { e: '🔧', d: '"Esse carro já veio aqui antes?" Não lembro.', t: 'Cliente volta com o carro e você não tem o histórico. Não sabe o que foi feito, quanto cobrou, quais peças usou. Cada atendimento recomeça do zero.' },
-              { e: '📄', d: 'Orçamento perdido no WhatsApp — cliente fechou com outro.', t: 'Você mandou o orçamento por mensagem, o cliente sumiu, você não acompanhou. Dias depois, o carro foi para o concorrente. Com o BoxCerto, aprovação é em 1 toque.' },
+              { e: '📞', d: '"Meu carro tá pronto?" — 3 vezes por dia.', t: 'Cliente ligando, você parando o serviço pra atender. Com o BoxCerto, você manda o status pelo WhatsApp em 1 toque — e o cliente para de ligar.' },
+              { e: '💸', d: 'Trabalhou o mês todo e não sabe quanto lucrou.', t: 'Recebeu dinheiro, pagou peça, pagou conta — mas no final, sobrou quanto? Sem separar custo de peça do valor cobrado, você pode estar trabalhando de graça.' },
+              { e: '🔧', d: '"Esse carro já veio aqui antes?" Não lembro.', t: 'Cliente volta e você não tem o histórico. Não sabe o que foi feito, quanto cobrou, quais peças usou. Cada atendimento recomeça do zero.' },
+              { e: '📄', d: '"Pode fazer" no WhatsApp — cliente sumiu.', t: 'Você mandou o orçamento por mensagem, o cliente não respondeu. Dias depois, o carro foi para o concorrente. Com o BoxCerto, o cliente aprova por link com 1 clique.' },
               { e: '📦', d: '"Acabou a peça? Mas eu pedi semana passada..."', t: 'Sem controle de estoque, você descobre que a peça acabou na hora que o cliente está esperando. O BoxCerto desconta automaticamente e avisa antes de acabar.' },
             ].map((item, i) => (
               <div key={i} className="flex gap-4 p-5 bg-gray-50 rounded-2xl border border-gray-100 hover:border-red-200 hover:bg-red-50/30 transition-all group">
@@ -362,152 +503,41 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── FLUXO BOXCERTO ──────────────────────────── */}
+      {/* ── FLUXO BOXCERTO ───────────────────────────── */}
       <section className="py-20 bg-gray-50 border-y border-gray-100">
         <div className="max-w-5xl mx-auto px-5">
           <div className="text-center mb-14">
             <p className="text-indigo-600 font-semibold text-sm uppercase tracking-wider mb-3">Como funciona</p>
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">O Fluxo BoxCerto</h2>
-            <p className="text-slate-500 max-w-xl mx-auto">Da entrada do carro até a entrega, cada etapa organizada e visível — no celular, no tablet ou no computador.</p>
+            <p className="text-slate-500 max-w-xl mx-auto">Da entrada do carro até a entrega, cada etapa organizada — no celular, no tablet ou no computador.</p>
           </div>
-          <div className="relative">
-            {/* Connecting line (desktop) */}
-            <div className="hidden md:block absolute top-10 left-[10%] right-[10%] h-0.5 bg-indigo-100 z-0" />
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-              {[
-                { n: '1', emoji: '🚗', title: 'Entrada', desc: 'Cliente chega, você cadastra o veículo em segundos — placa, modelo, KM, observações.' },
-                { n: '2', emoji: '📝', title: 'Orçamento', desc: 'Monte o orçamento item por item com peças, mão de obra, garantia e desconto.' },
-                { n: '3', emoji: '✅', title: 'Aprovação', desc: 'Cliente aprova em 1 toque pelo WhatsApp. A OS muda automaticamente.', destaque: true },
-                { n: '4', emoji: '⚙️', title: 'Execução', desc: 'Equipe executa com status claro. Todo mundo sabe o que está acontecendo.' },
-                { n: '5', emoji: '🏁', title: 'Entrega', desc: 'Entregue com histórico registrado, financeiro atualizado e recibo em PDF.' },
-              ].map((step, i) => (
-                <div key={i} className={`relative z-10 flex flex-col items-center text-center p-5 rounded-2xl border-2 transition-all ${step.destaque ? 'border-indigo-400 bg-indigo-50 shadow-lg shadow-indigo-100' : 'border-gray-100 bg-white'}`}>
-                  {step.destaque && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap">
-                      ⭐ DIFERENCIAL
-                    </div>
-                  )}
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black mb-3 ${step.destaque ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-slate-600'}`}>
-                    {step.n}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {[
+              { n: '1', emoji: '🚗', title: 'Entrada', desc: 'Cadastra o veículo em segundos — placa, modelo, KM, observações.' },
+              { n: '2', emoji: '📝', title: 'Orçamento', desc: 'Monte com peças, mão de obra, garantia e desconto. PDF automático.' },
+              { n: '3', emoji: '✅', title: 'Aprovação', desc: 'Link no WhatsApp → cliente abre no navegador → aprova com 1 clique.', destaque: true },
+              { n: '4', emoji: '⚙️', title: 'Execução', desc: 'Equipe executa com status claro. Todo mundo sabe o que está acontecendo.' },
+              { n: '5', emoji: '🏁', title: 'Entrega', desc: 'Histórico registrado, financeiro atualizado, recibo em PDF.' },
+            ].map((step, i) => (
+              <div key={i} className={`relative flex flex-col items-center text-center p-5 rounded-2xl border-2 transition-all ${step.destaque ? 'border-indigo-400 bg-indigo-50 shadow-lg shadow-indigo-100' : 'border-gray-100 bg-white'}`}>
+                {step.destaque && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap">
+                    ⭐ DIFERENCIAL
                   </div>
-                  <span className="text-2xl mb-2">{step.emoji}</span>
-                  <p className={`font-bold mb-1.5 ${step.destaque ? 'text-indigo-800' : 'text-slate-900'}`}>{step.title}</p>
-                  <p className={`text-xs leading-relaxed ${step.destaque ? 'text-indigo-600' : 'text-slate-500'}`}>{step.desc}</p>
+                )}
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black mb-3 ${step.destaque ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-slate-600'}`}>
+                  {step.n}
                 </div>
-              ))}
-            </div>
+                <span className="text-2xl mb-2">{step.emoji}</span>
+                <p className={`font-bold mb-1.5 text-sm ${step.destaque ? 'text-indigo-800' : 'text-slate-900'}`}>{step.title}</p>
+                <p className={`text-xs leading-relaxed ${step.destaque ? 'text-indigo-600' : 'text-slate-500'}`}>{step.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ── APROVAÇÃO COM 1 CLIQUE ──────────────────── */}
-      <section className="py-20 bg-indigo-600 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 to-indigo-800" />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl" />
-        <div className="relative max-w-5xl mx-auto px-5">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-indigo-200 text-xs font-bold px-3 py-1.5 rounded-full mb-6 uppercase tracking-wider">
-                <Zap className="w-3.5 h-3.5" /> Recurso exclusivo
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-5 leading-tight">
-                Cliente aprova o orçamento em 1 toque — e você já sabe na hora.
-              </h2>
-              <p className="text-indigo-200 text-lg mb-8 leading-relaxed">
-                Chega de "manda de novo o orçamento", "não recebi", "pode confirmar?". O cliente recebe o orçamento pelo WhatsApp, clica em Aprovar, e a ordem de serviço entra em execução automaticamente.
-              </p>
-              <ul className="space-y-3 mb-8">
-                {[
-                  'Orçamento em PDF profissional enviado pelo WhatsApp',
-                  'Cliente aprova com 1 toque — sem ligar, sem digitar',
-                  'Status da OS muda automaticamente para "Em execução"',
-                  'Você vê a aprovação em tempo real no painel',
-                  'Sem papel, sem confirmação manual, sem perda de tempo',
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-indigo-300 shrink-0 mt-0.5" />
-                    <span className="text-indigo-100 text-sm">{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <button onClick={goRegister}
-                className="bg-white text-indigo-600 font-bold px-8 py-4 rounded-2xl hover:bg-indigo-50 transition-all inline-flex items-center gap-2 shadow-xl">
-                Quero aprovar orçamentos assim <ArrowRight className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* WhatsApp mockup with approval */}
-            <div className="flex justify-center">
-              <div className="w-72 rounded-3xl overflow-hidden shadow-2xl border border-white/10">
-                {/* WPP Header */}
-                <div className="px-4 py-3 flex items-center gap-3" style={{ background: '#075E54' }}>
-                  <div className="w-9 h-9 rounded-full bg-emerald-200 flex items-center justify-center shrink-0">
-                    <span className="text-emerald-900 font-bold text-sm">C</span>
-                  </div>
-                  <div>
-                    <p className="text-white font-semibold text-sm">Carlos Mendonça</p>
-                    <p className="text-emerald-300 text-xs">online agora</p>
-                  </div>
-                </div>
-                {/* Chat */}
-                <div className="p-4 space-y-3" style={{ background: '#E5DDD5' }}>
-                  {/* Outgoing message */}
-                  <div className="flex justify-end">
-                    <div className="rounded-2xl rounded-tr-none px-4 py-2.5 max-w-[85%] shadow-sm" style={{ background: '#DCF8C6' }}>
-                      <p className="text-slate-800 text-xs font-semibold mb-1">📄 Orçamento #0042</p>
-                      <p className="text-slate-600 text-xs">Ford Ranger · RST-2F45</p>
-                      <div className="my-2 border-t border-green-200" />
-                      <div className="space-y-0.5 text-xs text-slate-700">
-                        <p>• Troca de pastilhas dianteiras</p>
-                        <p>• Revisão do freio traseiro</p>
-                        <p>• Fluido de freio</p>
-                      </div>
-                      <div className="mt-2 pt-2 border-t border-green-200 flex justify-between items-center">
-                        <span className="text-[10px] text-slate-500">Total</span>
-                        <span className="font-bold text-slate-900 text-sm">R$ 480,00</span>
-                      </div>
-                      <div className="flex items-center justify-end gap-1 mt-1">
-                        <span className="text-[10px] text-slate-500">14:32</span>
-                        <span className="text-blue-500 text-[11px] font-black">✓✓</span>
-                      </div>
-                    </div>
-                  </div>
-                  {/* Approval button message */}
-                  <div className="flex justify-end">
-                    <div className="rounded-2xl rounded-tr-none px-4 py-3 max-w-[85%] shadow-sm" style={{ background: '#DCF8C6' }}>
-                      <p className="text-slate-700 text-xs mb-2">Toque abaixo para aprovar o orçamento:</p>
-                      <button className="w-full bg-emerald-500 text-white text-xs font-bold py-2 rounded-xl shadow-sm">
-                        ✅ APROVAR ORÇAMENTO
-                      </button>
-                      <div className="flex items-center justify-end gap-1 mt-1.5">
-                        <span className="text-[10px] text-slate-500">14:32</span>
-                        <span className="text-blue-500 text-[11px] font-black">✓✓</span>
-                      </div>
-                    </div>
-                  </div>
-                  {/* Client approved */}
-                  <div className="flex justify-start">
-                    <div className="bg-white rounded-2xl rounded-tl-none px-4 py-2.5 max-w-[80%] shadow-sm">
-                      <p className="text-slate-800 text-xs">✅ Orçamento aprovado! Pode começar o serviço.</p>
-                      <div className="flex items-center justify-end mt-1">
-                        <span className="text-[10px] text-slate-400">14:35</span>
-                      </div>
-                    </div>
-                  </div>
-                  {/* System notification */}
-                  <div className="flex justify-center">
-                    <div className="bg-indigo-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm">
-                      🔔 OS #0042 → Em execução
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── ANTES / DEPOIS ──────────────────────────── */}
+      {/* ── ANTES / DEPOIS ───────────────────────────── */}
       <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-5">
           <div className="text-center mb-12">
@@ -515,7 +545,6 @@ export default function Landing() {
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900">Antes e depois do BoxCerto</h2>
           </div>
           <div className="grid md:grid-cols-2 gap-4">
-            {/* Antes */}
             <div className="bg-red-50 border-2 border-red-100 rounded-3xl p-7">
               <div className="flex items-center gap-2 mb-6">
                 <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
@@ -526,6 +555,7 @@ export default function Landing() {
               <ul className="space-y-3">
                 {[
                   'Orçamento perdido no WhatsApp',
+                  '"Pode fazer" sem registro formal',
                   'Cliente ligando sem parar',
                   'Carro parado sem responsável',
                   'Controle em papel ou planilha',
@@ -533,7 +563,6 @@ export default function Landing() {
                   'Histórico do cliente inexistente',
                   'Peça acaba sem aviso',
                   'Recibo escrito à mão',
-                  'Aprovação por ligação ou mensagem',
                   'Financeiro impossível de entender',
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3">
@@ -545,7 +574,6 @@ export default function Landing() {
                 ))}
               </ul>
             </div>
-            {/* Depois */}
             <div className="bg-emerald-50 border-2 border-emerald-200 rounded-3xl p-7">
               <div className="flex items-center gap-2 mb-6">
                 <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
@@ -555,15 +583,15 @@ export default function Landing() {
               </div>
               <ul className="space-y-3">
                 {[
-                  'Orçamento em PDF enviado pelo WhatsApp',
-                  'Status atualizado automático para o cliente',
+                  'Link de orçamento enviado pelo WhatsApp',
+                  'Cliente aprova no navegador — data e hora registradas',
+                  'Status automático no WhatsApp — cliente para de ligar',
                   'Todo carro com responsável e prazo',
                   'Tudo no celular, tablet ou computador',
                   'Lucro real separando custo de peça',
                   'Histórico completo de qualquer cliente',
                   'Alerta de estoque baixo automático',
                   'Recibo em PDF em 1 toque',
-                  'Aprovação de orçamento em 1 clique',
                   'Financeiro claro no fim de cada mês',
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3">
@@ -585,7 +613,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── MÓDULOS ─────────────────────────────────── */}
+      {/* ── MÓDULOS ──────────────────────────────────── */}
       <section className="py-20 bg-slate-900">
         <div className="max-w-5xl mx-auto px-5">
           <div className="text-center mb-14">
@@ -595,11 +623,11 @@ export default function Landing() {
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
-              { icon: <Wrench className="w-6 h-6 text-white" />, bg: 'bg-indigo-600', title: 'Oficina — Visão em tempo real', desc: 'Dashboard com todos os carros. Placa, modelo, cliente e status em um card. Um toque para mandar mensagem no WhatsApp com o status atualizado.', items: ['Dashboard com resumo do dia', 'Agendamento e KM do veículo', 'WhatsApp automático com 1 toque'] },
-              { icon: <Search className="w-6 h-6 text-white" />, bg: 'bg-violet-600', title: 'Histórico — Memória eterna', desc: 'Busque qualquer cliente ou placa e veja tudo que já foi feito. Nunca mais perca o histórico de um cliente, mesmo que ele volte anos depois.', items: ['Busca por placa, nome ou CPF', 'Linha do tempo de todas as OS', 'Lista completa de clientes e veículos'] },
+              { icon: <Wrench className="w-6 h-6 text-white" />, bg: 'bg-indigo-600', title: 'Oficina — Visão em tempo real', desc: 'Dashboard com todos os carros. Placa, modelo, cliente e status por cor. Um toque para WhatsApp com o status atualizado.', items: ['Dashboard por cores: orçamento, serviço, pronto', 'Agendamento e KM do veículo', 'WhatsApp automático com 1 toque'] },
+              { icon: <Search className="w-6 h-6 text-white" />, bg: 'bg-violet-600', title: 'Histórico — Memória eterna', desc: 'Busque qualquer cliente ou placa e veja tudo que já foi feito. Nunca mais perca o histórico, mesmo que o cliente volte anos depois.', items: ['Busca por placa, nome ou CPF', 'Linha do tempo de todas as OS', 'Lista completa de clientes e veículos'] },
               { icon: <TrendingUp className="w-6 h-6 text-white" />, bg: 'bg-emerald-600', title: 'Financeiro — Lucro real', desc: 'Veja quanto entrou, quanto custou e quanto você realmente lucrou. O custo de peça fica invisível para o cliente — só você vê.', items: ['Lucro líquido do mês em destaque', 'Custo de peça separado do valor cobrado', 'Controle de despesas fixas'] },
-              { icon: <FileText className="w-6 h-6 text-white" />, bg: 'bg-amber-500', title: 'Orçamento — Profissional em PDF', desc: 'Monte item por item com desconto, garantia por peça e recibo de pagamento. O app calcula o lucro previsto automaticamente.', items: ['PDF profissional com logo da sua oficina', 'Garantia por item de serviço', 'Aprovação em 1 toque pelo WhatsApp'] },
-              { icon: <Package className="w-6 h-6 text-white" />, bg: 'bg-rose-500', title: 'Estoque — Chega de peça faltando', desc: 'Cadastre suas peças e o app desconta automaticamente ao usar na OS. Alerta de estoque baixo antes de acabar.', items: ['Baixa automática ao usar no orçamento', 'Alerta de estoque baixo configurável', 'Relatório imprimível em 1 toque'] },
+              { icon: <FileText className="w-6 h-6 text-white" />, bg: 'bg-amber-500', title: 'Orçamento — Profissional em PDF', desc: 'Monte item por item com desconto, garantia por peça e recibo de pagamento. Envie o link de aprovação pelo WhatsApp.', items: ['PDF profissional com logo da sua oficina', 'Link exclusivo para aprovação do cliente', 'Aprovação com registro de data e hora'] },
+              { icon: <Package className="w-6 h-6 text-white" />, bg: 'bg-rose-500', title: 'Estoque — Chega de peça faltando', desc: 'Cadastre suas peças e o app desconta automaticamente ao usar na OS. Alerta de estoque baixo antes de acabar na hora errada.', items: ['Baixa automática ao usar no orçamento', 'Alerta de estoque baixo configurável', 'Relatório imprimível em 1 toque'] },
             ].map((f, i) => (
               <div key={i} className="bg-slate-800 rounded-2xl p-6 border border-slate-700 hover:border-slate-500 transition-all">
                 <div className="flex items-center gap-3 mb-4">
@@ -620,7 +648,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── DEPOIMENTOS (WHATSAPP STYLE) ────────────── */}
+      {/* ── DEPOIMENTOS (WHATSAPP STYLE) ─────────────── */}
       <section className="py-20 bg-white">
         <div className="max-w-5xl mx-auto px-5">
           <div className="text-center mb-14">
@@ -641,17 +669,16 @@ export default function Landing() {
               tipo="Auto Elétrica"
               cidade="Curitiba, PR"
               hora="14:22"
-              mensagem="Trabalho sozinha e antes gastava 1 hora por dia só respondendo 'meu carro tá pronto?'. Agora mando um WhatsApp em 5 segundos e volto pro serviço. Melhor investimento que fiz! ⚡"
+              mensagem="Trabalho sozinha e antes gastava 1 hora por dia respondendo 'meu carro tá pronto?'. Agora mando o status pelo WhatsApp em 5 segundos e volto pro serviço. Melhor investimento que fiz! ⚡"
             />
             <WppCard
               nome="Marcos Teixeira"
               tipo="Oficina de Pintura"
               cidade="São Paulo, SP"
               hora="18:05"
-              mensagem="Descobri que tava lucrando 30% a menos do que achava porque não separava custo de peça. O financeiro do BoxCerto abriu meu olho. Agora sei exatamente quanto ganho em cada carro. 🎯"
+              mensagem="Descobri que tava lucrando 30% a menos porque não separava custo de peça. O financeiro do BoxCerto abriu meu olho. Agora sei exatamente quanto ganho em cada carro. 🎯"
             />
           </div>
-          {/* Floating badge */}
           <div className="mt-10 flex justify-center">
             <div className="inline-flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-2xl px-6 py-4">
               <div className="flex -space-x-1.5">
@@ -670,10 +697,10 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── CALCULADORA ─────────────────────────────── */}
+      {/* ── CALCULADORA ──────────────────────────────── */}
       <Calculadora onCTA={goRegister} />
 
-      {/* ── PREÇOS ──────────────────────────────────── */}
+      {/* ── PREÇOS ───────────────────────────────────── */}
       <section id="precos" className="py-20 bg-gray-50">
         <div className="max-w-4xl mx-auto px-5">
           <div className="text-center mb-14">
@@ -696,7 +723,7 @@ export default function Landing() {
                 {[
                   'OS ilimitadas',
                   'Clientes e veículos ilimitados',
-                  'Aprovação de orçamento em 1 toque',
+                  'Aprovação de orçamento por link',
                   'WhatsApp automático',
                   'Histórico completo',
                   'Controle financeiro',
@@ -715,20 +742,18 @@ export default function Landing() {
               </button>
             </div>
 
-            {/* Anual */}
+            {/* Anual — botão verde para guiar o olho */}
             <div className="bg-indigo-600 rounded-3xl p-8 relative flex flex-col shadow-xl shadow-indigo-200">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-xs font-black px-4 py-1.5 rounded-full whitespace-nowrap shadow-sm">
                 ⭐ MAIS POPULAR — ECONOMIZE R$156/ANO
               </div>
               <h3 className="text-lg font-bold text-white mb-1 mt-2">Plano Anual</h3>
-              <p className="text-indigo-200 text-sm mb-6">Pague uma vez, use o ano todo</p>
-              <div className="mb-2">
-                <div className="flex items-end gap-1">
-                  <span className="text-5xl font-bold text-white">R$34,90</span>
-                  <span className="text-indigo-200 mb-1.5">/mês</span>
-                </div>
-                <p className="text-indigo-300 text-sm mt-1 mb-6">Cobrado R$418,80 uma vez por ano</p>
+              <p className="text-indigo-200 text-sm mb-2">Pague uma vez, use o ano todo</p>
+              <div className="flex items-end gap-1">
+                <span className="text-5xl font-bold text-white">R$34,90</span>
+                <span className="text-indigo-200 mb-1.5">/mês</span>
               </div>
+              <p className="text-indigo-300 text-sm mt-1 mb-6">Cobrado R$418,80 uma vez por ano</p>
               <ul className="space-y-3 mb-8 flex-1">
                 {[
                   'Tudo do plano mensal',
@@ -744,44 +769,45 @@ export default function Landing() {
                   </li>
                 ))}
               </ul>
+              {/* Verde para destacar visualmente como a melhor escolha */}
               <button onClick={goRegister}
-                className="w-full bg-white text-indigo-600 font-bold py-3.5 rounded-2xl hover:bg-indigo-50 transition-colors shadow-lg">
-                Testar 7 dias grátis — melhor oferta
+                className="w-full bg-emerald-500 text-white font-bold py-3.5 rounded-2xl hover:bg-emerald-400 transition-colors shadow-lg text-base">
+                Testar 7 dias grátis — melhor oferta ⭐
               </button>
             </div>
           </div>
 
           {/* Trust badges */}
           <div className="flex flex-wrap items-center justify-center gap-6 mt-10 text-sm text-slate-400">
-            <div className="flex items-center gap-2"><Shield className="w-4 h-4 text-slate-400" /> Pagamento 100% seguro</div>
-            <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-slate-400" /> 7 dias grátis, sem cartão</div>
-            <div className="flex items-center gap-2"><X className="w-4 h-4 text-slate-400" /> Cancele quando quiser</div>
-            <div className="flex items-center gap-2"><Shield className="w-4 h-4 text-slate-400" /> Dados protegidos pela LGPD</div>
+            <div className="flex items-center gap-2"><Shield className="w-4 h-4" /> Pagamento 100% seguro</div>
+            <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4" /> 7 dias grátis, sem cartão</div>
+            <div className="flex items-center gap-2"><X className="w-4 h-4" /> Cancele em 1 clique</div>
+            <div className="flex items-center gap-2"><Shield className="w-4 h-4" /> Dados protegidos pela LGPD</div>
           </div>
 
-          {/* Guarantee section */}
+          {/* Guarantee */}
           <div className="mt-10 bg-white border-2 border-emerald-200 rounded-3xl p-6 max-w-xl mx-auto text-center">
             <div className="w-14 h-14 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-3">
               <Shield className="w-7 h-7 text-emerald-500" />
             </div>
-            <h3 className="font-bold text-slate-900 text-lg mb-2">Garantia de 7 dias</h3>
+            <h3 className="font-bold text-slate-900 text-lg mb-2">Teste Grátis por 7 Dias — Cancelamento em 1 Clique</h3>
             <p className="text-slate-500 text-sm leading-relaxed">
-              Teste o BoxCerto por 7 dias completamente grátis, sem inserir cartão. Se não gostar, é só sair — sem custo, sem burocracia, sem pergunta.
+              Comece sem cartão de crédito. Se não gostar dentro dos 7 dias, é só sair — sem custo, sem burocracia, sem nenhuma pergunta.
             </p>
           </div>
 
           <div className="text-center mt-8">
-            <p className="text-slate-400 text-sm mb-2">Ficou com alguma dúvida antes de começar?</p>
+            <p className="text-slate-400 text-sm mb-2">Ainda com dúvida? Fale agora com um especialista em oficinas.</p>
             <a href={WPP} target="_blank" rel="noreferrer"
               className="inline-flex items-center gap-2 text-emerald-600 font-semibold text-sm hover:text-emerald-700 transition-colors">
               <MessageCircle className="w-4 h-4" />
-              Fale com a gente no WhatsApp
+              Conversar pelo WhatsApp
             </a>
           </div>
         </div>
       </section>
 
-      {/* ── FAQ ─────────────────────────────────────── */}
+      {/* ── FAQ ──────────────────────────────────────── */}
       <section className="py-20 bg-white">
         <div className="max-w-2xl mx-auto px-5">
           <div className="text-center mb-12">
@@ -810,7 +836,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── CTA FINAL ───────────────────────────────── */}
+      {/* ── CTA FINAL ────────────────────────────────── */}
       <section className="py-24 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 to-indigo-800" />
         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
@@ -818,23 +844,23 @@ export default function Landing() {
         <div className="relative max-w-3xl mx-auto px-5 text-center">
           <p className="text-indigo-300 font-semibold text-sm uppercase tracking-wider mb-4">Está esperando o quê?</p>
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-5 leading-tight">
-            Sua oficina perde dinheiro<br />todo dia que passa sem controle.
+            Organize sua oficina e aprove<br />orçamentos mais rápido.
           </h2>
           <p className="text-indigo-200 text-lg mb-10 max-w-xl mx-auto leading-relaxed">
-            7 dias grátis. Sem cartão. Sem treinamento. Em 5 minutos seu painel já está funcionando — no celular, no tablet ou no computador.
+            Teste o BoxCerto grátis por 7 dias e veja como fica o fluxo da sua oficina — sem caderno, sem planilha e sem orçamento perdido no WhatsApp.
           </p>
           <button onClick={goRegister}
             className="bg-white text-indigo-600 font-bold text-lg px-10 py-5 rounded-2xl hover:bg-indigo-50 transition-all inline-flex items-center gap-3 shadow-xl group mb-6">
-            Testar grátis por 7 dias — sem cartão
+            Começar teste grátis — 7 dias sem cartão
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
           <p className="text-indigo-300 text-sm">
-            Sem cartão de crédito &middot; Cancele quando quiser &middot; +347 oficinas já usam
+            Sem cartão &middot; Cancele em 1 clique &middot; +347 oficinas já usam
           </p>
         </div>
       </section>
 
-      {/* ── FOOTER ──────────────────────────────────── */}
+      {/* ── FOOTER ───────────────────────────────────── */}
       <footer className="bg-slate-900 py-10">
         <div className="max-w-6xl mx-auto px-5 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
@@ -842,13 +868,16 @@ export default function Landing() {
               <Wrench className="w-3.5 h-3.5 text-white" />
             </div>
             <span className="font-bold text-white">BoxCerto</span>
-            <span className="text-slate-600 text-xs ml-2">Gestão de Oficina</span>
+            <span className="text-slate-600 text-xs ml-1">Gestão de Oficina</span>
           </div>
           <div className="flex flex-wrap justify-center gap-5 text-slate-400 text-sm">
-            <button onClick={() => navigate('/login')} className="hover:text-white transition-colors">Entrar</button>
+            <button onClick={() => navigate('/login')} className="hover:text-white transition-colors flex items-center gap-1.5">
+              <LogIn className="w-3.5 h-3.5" /> Entrar na conta
+            </button>
             <button onClick={goRegister} className="hover:text-white transition-colors">Cadastrar</button>
-            <a href={WPP} target="_blank" rel="noreferrer" className="hover:text-white transition-colors flex items-center gap-1.5">
-              <MessageCircle className="w-3.5 h-3.5" /> Suporte WhatsApp
+            <a href={WPP} target="_blank" rel="noreferrer"
+              className="hover:text-white transition-colors flex items-center gap-1.5">
+              <MessageCircle className="w-3.5 h-3.5" /> Ainda com dúvida? Fale com a gente
             </a>
             <a href="mailto:contato@boxcerto.com" className="hover:text-white transition-colors">contato@boxcerto.com</a>
           </div>
@@ -856,7 +885,7 @@ export default function Landing() {
         </div>
       </footer>
 
-      {/* ── STICKY MOBILE CTA ───────────────────────── */}
+      {/* ── STICKY MOBILE CTA ────────────────────────── */}
       <div className={`fixed bottom-0 left-0 right-0 z-50 transition-all duration-300 md:hidden ${showSticky ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`}>
         <div className="bg-white border-t border-gray-200 px-4 py-3 shadow-2xl flex items-center gap-3">
           <div className="flex-1">

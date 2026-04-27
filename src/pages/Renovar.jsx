@@ -19,7 +19,7 @@ export default function Renovar() {
 
   const abrirWhatsApp = () => {
     const msg = encodeURIComponent(`Olá! Minha conta BoxCerto (${user?.email}) está com acesso bloqueado. Podem me ajudar?`)
-    window.open(`https://wa.me/5553999999999?text=${msg}`, '_blank')
+    window.open(`https://wa.me/5553997065725?text=${msg}`, '_blank')
   }
 
   return (
