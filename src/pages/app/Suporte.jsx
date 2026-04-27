@@ -180,7 +180,7 @@ function FormTicket({ user, onEnviado }) {
 
       {/* WhatsApp — secundário, discreto */}
       <div className="pt-1 border-t border-gray-100 text-center">
-        <p className="text-xs text-slate-400 mb-1.5">Situação de urgência extrema?</p>
+        <p className="text-xs text-slate-400 mb-1.5">Prefere falar diretamente?</p>
         <a href={WPP} target="_blank" rel="noreferrer"
           className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-green-600 transition-colors font-medium">
           <MessageCircle className="w-3.5 h-3.5" />

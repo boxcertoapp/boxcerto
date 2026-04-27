@@ -729,7 +729,7 @@ export default function Menu() {
 
           {/* WhatsApp — secundário e discreto */}
           <div className="bg-white rounded-2xl border border-gray-100 p-4">
-            <p className="text-xs text-slate-400 mb-2">Para situações de urgência extrema:</p>
+            <p className="text-xs text-slate-400 mb-2">Prefere falar diretamente?</p>
             <a href="https://wa.me/5553997065725?text=Ol%C3%A1%2C%20tenho%20uma%20urg%C3%AAncia%20no%20BoxCerto."
               target="_blank" rel="noreferrer"
               className="flex items-center gap-2 text-slate-500 hover:text-green-600 transition-colors">
