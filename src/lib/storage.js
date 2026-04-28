@@ -292,6 +292,13 @@ export const osStorage = {
     await supabase.from('service_orders').update({ km, updated_at: new Date().toISOString() }).eq('id', id)
   },
 
+  confirmarChegada: async (id) => {
+    await supabase.from('service_orders').update({
+      agendado_para: null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', id)
+  },
+
   deliverOS: async (id, { deliveredAt, deliveryNotes, payments, desconto }) => {
     await supabase.from('service_orders').update({
       status: 'entregue',

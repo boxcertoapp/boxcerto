@@ -57,22 +57,80 @@ const PAYMENT_METHODS = [
   { key: 'outros',  label: 'Outros',  icon: DollarSign },
 ]
 
+// ── HELPERS DE AGENDA ─────────────────────────────────────
+function startOfDay(d) { const x = new Date(d); x.setHours(0,0,0,0); return x }
+function endOfDay(d)   { const x = new Date(d); x.setHours(23,59,59,999); return x }
+function startOfWeek(d) {
+  const x = new Date(d); const day = x.getDay()
+  x.setDate(x.getDate() - (day === 0 ? 6 : day - 1)); x.setHours(0,0,0,0); return x
+}
+function endOfWeek(d) {
+  const x = startOfWeek(d); x.setDate(x.getDate() + 6); x.setHours(23,59,59,999); return x
+}
+
+function agendaGroup(os) {
+  if (!os.agendadoPara) return null
+  const d = new Date(os.agendadoPara)
+  const now = new Date()
+  const todayStart = startOfDay(now)
+  const todayEnd   = endOfDay(now)
+  const weekEnd    = endOfWeek(now)
+  const nextWeekStart = new Date(weekEnd); nextWeekStart.setDate(nextWeekStart.getDate() + 1); nextWeekStart.setHours(0,0,0,0)
+  const nextWeekEnd   = endOfWeek(nextWeekStart)
+  if (d < todayStart)          return 'atrasado'
+  if (d <= todayEnd)           return 'hoje'
+  if (d <= weekEnd)            return 'semana'
+  if (d <= nextWeekEnd)        return 'proxima'
+  return 'futuro'
+}
+
+function AgendaCard({ os, onOpen }) {
+  const grupo = agendaGroup(os)
+  const d = new Date(os.agendadoPara)
+  const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  const dia  = d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })
+
+  const isAtrasado = grupo === 'atrasado'
+  const isHoje     = grupo === 'hoje'
+
+  return (
+    <button onClick={() => onOpen(os)}
+      className={`w-full rounded-2xl border p-3 flex items-center gap-3 text-left transition-colors ${
+        isAtrasado ? 'bg-red-50 border-red-200 hover:bg-red-100' :
+        isHoje     ? 'bg-amber-50 border-amber-200 hover:bg-amber-100' :
+                     'bg-white border-gray-100 hover:border-indigo-100'
+      }`}>
+      <PlateTag placa={os.vehicle?.placa || '???'} />
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-slate-900 text-sm truncate">{os.vehicle?.modelo}</p>
+        <p className="text-xs text-slate-500 truncate">{os.client?.nome}</p>
+      </div>
+      <div className="text-right shrink-0">
+        <p className={`text-xs font-bold ${isAtrasado ? 'text-red-600' : isHoje ? 'text-amber-600' : 'text-indigo-600'}`}>{hora}</p>
+        <p className="text-[10px] text-slate-400 capitalize">{dia}</p>
+      </div>
+    </button>
+  )
+}
+
 // ── DASHBOARD ─────────────────────────────────────────────
 function Dashboard({ officeName, onOpenOS, onNewOS }) {
   const [data, setData] = useState({ all: [], prontos: [], manutencao: [], orcamento: [], agendados: [] })
+  const [filtroAgenda, setFiltroAgenda] = useState('hoje')
 
   useEffect(() => {
     const load = async () => {
-      // osStorage.getAll() already returns enriched OS (vehicle, client, totals embedded)
       const all = await osStorage.getAll(officeName)
       const active = all.filter(os => os.status !== 'entregue')
-      const today = new Date().toDateString()
+      // OS agendada = tem agendadoPara E status ainda é 'orcamento'
+      const agendados = active.filter(os => os.agendadoPara && os.status === 'orcamento')
+      const agendadosIds = new Set(agendados.map(o => o.id))
       setData({
         all: active,
-        prontos: active.filter(os => os.status === 'pronto'),
-        manutencao: active.filter(os => os.status === 'manutencao'),
-        orcamento: active.filter(os => os.status === 'orcamento'),
-        agendados: active.filter(os => os.agendadoPara && new Date(os.agendadoPara).toDateString() === today),
+        prontos:   active.filter(os => os.status === 'pronto'),
+        manutencao:active.filter(os => os.status === 'manutencao'),
+        orcamento: active.filter(os => os.status === 'orcamento' && !agendadosIds.has(os.id)),
+        agendados,
       })
     }
     load()
@@ -81,53 +139,120 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
   const hora = new Date().getHours()
   const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite'
 
+  // Grupos de agenda
+  const atrasados  = data.agendados.filter(os => agendaGroup(os) === 'atrasado')
+  const hoje       = data.agendados.filter(os => agendaGroup(os) === 'hoje')
+  const semana     = data.agendados.filter(os => agendaGroup(os) === 'semana')
+  const proxima    = data.agendados.filter(os => agendaGroup(os) === 'proxima')
+  const futuro     = data.agendados.filter(os => agendaGroup(os) === 'futuro')
+
+  const agendadosFiltrados = (() => {
+    if (filtroAgenda === 'hoje')    return hoje
+    if (filtroAgenda === 'semana')  return semana
+    if (filtroAgenda === 'proxima') return proxima
+    return data.agendados // todos
+  })()
+
+  const FILTROS = [
+    { key: 'hoje',    label: 'Hoje' },
+    { key: 'semana',  label: 'Esta semana' },
+    { key: 'proxima', label: 'Próxima semana' },
+    { key: 'todos',   label: 'Todos' },
+  ]
+
+  const activeCount = data.all.filter(os => !os.agendadoPara || os.status !== 'orcamento').length
+
   return (
     <div className="p-4 pb-36 space-y-5">
       {/* Saudação */}
       <div>
         <p className="text-slate-400 text-sm">{saudacao} 👋</p>
         <p className="text-xl font-bold text-slate-900 mt-0.5">
-          {data.all.length === 0 ? 'Nenhuma OS em aberto' : `${data.all.length} OS em andamento`}
+          {activeCount === 0 ? 'Nenhuma OS em aberto' : `${activeCount} OS em andamento`}
         </p>
       </div>
 
-      {/* Cards rápidos */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-green-50 rounded-2xl p-3 text-center border border-green-100">
-          <p className="text-2xl font-bold text-green-700">{data.prontos.length}</p>
-          <p className="text-xs text-green-600 mt-0.5 font-medium">Pronto{data.prontos.length !== 1 ? 's' : ''}</p>
+      {/* Cards rápidos — 4 cards */}
+      <div className="grid grid-cols-4 gap-2">
+        <div className="bg-green-50 rounded-2xl p-2.5 text-center border border-green-100">
+          <p className="text-xl font-bold text-green-700">{data.prontos.length}</p>
+          <p className="text-[10px] text-green-600 mt-0.5 font-medium leading-tight">Pronto{data.prontos.length !== 1 ? 's' : ''}</p>
         </div>
-        <div className="bg-blue-50 rounded-2xl p-3 text-center border border-blue-100">
-          <p className="text-2xl font-bold text-blue-700">{data.manutencao.length}</p>
-          <p className="text-xs text-blue-600 mt-0.5 font-medium">Manutenção</p>
+        <div className="bg-blue-50 rounded-2xl p-2.5 text-center border border-blue-100">
+          <p className="text-xl font-bold text-blue-700">{data.manutencao.length}</p>
+          <p className="text-[10px] text-blue-600 mt-0.5 font-medium leading-tight">Manutenção</p>
         </div>
-        <div className="bg-amber-50 rounded-2xl p-3 text-center border border-amber-100">
-          <p className="text-2xl font-bold text-amber-700">{data.orcamento.length}</p>
-          <p className="text-xs text-amber-600 mt-0.5 font-medium">Orçamento{data.orcamento.length !== 1 ? 's' : ''}</p>
+        <div className="bg-amber-50 rounded-2xl p-2.5 text-center border border-amber-100">
+          <p className="text-xl font-bold text-amber-700">{data.orcamento.length}</p>
+          <p className="text-[10px] text-amber-600 mt-0.5 font-medium leading-tight">Orçamento{data.orcamento.length !== 1 ? 's' : ''}</p>
+        </div>
+        <div className="bg-indigo-50 rounded-2xl p-2.5 text-center border border-indigo-100 relative">
+          <p className="text-xl font-bold text-indigo-700">{data.agendados.length}</p>
+          <p className="text-[10px] text-indigo-600 mt-0.5 font-medium leading-tight">Agendados</p>
+          {atrasados.length > 0 && (
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{atrasados.length}</span>
+          )}
         </div>
       </div>
 
-      {/* Agendados hoje */}
+      {/* ── AGENDA ─────────────────────────────────────────── */}
       {data.agendados.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <CalendarClock className="w-3.5 h-3.5" /> Agendados para hoje
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <CalendarClock className="w-3.5 h-3.5" /> Agendamentos
           </p>
-          <div className="space-y-2">
-            {data.agendados.map(os => (
-              <button key={os.id} onClick={() => onOpenOS(os)}
-                className="w-full bg-indigo-50 rounded-2xl border border-indigo-100 p-3 flex items-center gap-3 text-left hover:bg-indigo-100 transition-colors">
-                <PlateTag placa={os.vehicle?.placa || '???'} />
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-slate-900 text-sm truncate">{os.vehicle?.modelo}</p>
-                  <p className="text-xs text-slate-500 truncate">{os.client?.nome}</p>
-                </div>
-                <p className="text-xs text-indigo-600 font-medium shrink-0">
-                  {os.agendadoPara ? new Date(os.agendadoPara).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''}
-                </p>
+
+          {/* Chips de filtro */}
+          <div className="flex gap-1.5 mb-3 flex-wrap">
+            {FILTROS.map(f => (
+              <button key={f.key} onClick={() => setFiltroAgenda(f.key)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                  filtroAgenda === f.key
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-100 text-slate-500 hover:bg-gray-200'
+                }`}>
+                {f.label}
+                {f.key === 'hoje'    && hoje.length    > 0 && <span className="ml-1 opacity-70">({hoje.length})</span>}
+                {f.key === 'semana'  && semana.length  > 0 && <span className="ml-1 opacity-70">({semana.length})</span>}
+                {f.key === 'proxima' && proxima.length > 0 && <span className="ml-1 opacity-70">({proxima.length})</span>}
+                {f.key === 'todos'   && data.agendados.length > 0 && <span className="ml-1 opacity-70">({data.agendados.length})</span>}
               </button>
             ))}
           </div>
+
+          {/* Atrasados — sempre visíveis como alerta */}
+          {atrasados.length > 0 && (
+            <div className="mb-3">
+              <p className="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                ⚠ Atrasados — não confirmaram chegada
+              </p>
+              <div className="space-y-2">
+                {atrasados.map(os => <AgendaCard key={os.id} os={os} onOpen={onOpenOS} />)}
+              </div>
+            </div>
+          )}
+
+          {/* Filtro selecionado */}
+          {agendadosFiltrados.length === 0 && !atrasados.length ? (
+            <p className="text-xs text-slate-400 text-center py-4">Nenhum agendamento nesse período</p>
+          ) : (
+            <div className="space-y-2">
+              {filtroAgenda === 'todos' ? (
+                <>
+                  {hoje.length   > 0 && <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mt-2 mb-1">Hoje</p>}
+                  {hoje.map(os => <AgendaCard key={os.id} os={os} onOpen={onOpenOS} />)}
+                  {semana.length > 0 && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-3 mb-1">Esta semana</p>}
+                  {semana.map(os => <AgendaCard key={os.id} os={os} onOpen={onOpenOS} />)}
+                  {proxima.length > 0 && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-3 mb-1">Próxima semana</p>}
+                  {proxima.map(os => <AgendaCard key={os.id} os={os} onOpen={onOpenOS} />)}
+                  {futuro.length > 0 && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-3 mb-1">Mais à frente</p>}
+                  {futuro.map(os => <AgendaCard key={os.id} os={os} onOpen={onOpenOS} />)}
+                </>
+              ) : (
+                agendadosFiltrados.map(os => <AgendaCard key={os.id} os={os} onOpen={onOpenOS} />)
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -221,7 +346,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
         </div>
       )}
 
-      {data.all.length === 0 && (
+      {activeCount === 0 && data.agendados.length === 0 && (
         <div className="text-center py-16 text-slate-400">
           <Car className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="font-medium">Tudo tranquilo por aqui!</p>
@@ -1084,6 +1209,31 @@ function OSDetailModal({ os, onClose, officeName }) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
+
+          {/* Banner: Confirmar chegada */}
+          {os.agendadoPara && status === 'orcamento' && (() => {
+            const d = new Date(os.agendadoPara)
+            const isAtrasado = d < new Date() && d.toDateString() !== new Date().toDateString()
+            return (
+              <div className={`rounded-2xl p-4 border flex items-center gap-3 ${isAtrasado ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
+                <CalendarClock className={`w-5 h-5 shrink-0 ${isAtrasado ? 'text-red-500' : 'text-amber-500'}`} />
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs font-bold ${isAtrasado ? 'text-red-700' : 'text-amber-700'}`}>
+                    {isAtrasado ? '⚠ Agendamento em atraso' : 'Agendado para:'}
+                  </p>
+                  <p className={`text-sm font-semibold ${isAtrasado ? 'text-red-900' : 'text-amber-900'}`}>
+                    {d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })} às {d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+                <button
+                  onClick={async () => { await osStorage.confirmarChegada(os.id); onClose() }}
+                  className="bg-indigo-600 text-white text-xs font-bold px-3 py-2 rounded-xl hover:bg-indigo-700 transition-colors shrink-0 whitespace-nowrap">
+                  Confirmar chegada ✓
+                </button>
+              </div>
+            )
+          })()}
+
           {/* KM */}
           <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2">
             <Gauge className="w-4 h-4 text-slate-400 shrink-0" />
