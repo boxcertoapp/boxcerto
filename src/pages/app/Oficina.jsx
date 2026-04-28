@@ -155,8 +155,8 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
 
   const FILTROS = [
     { key: 'hoje',    label: 'Hoje' },
-    { key: 'semana',  label: 'Esta semana' },
-    { key: 'proxima', label: 'Próxima semana' },
+    { key: 'semana',  label: 'Semana' },
+    { key: 'proxima', label: 'Próxima' },
     { key: 'todos',   label: 'Todos' },
   ]
 

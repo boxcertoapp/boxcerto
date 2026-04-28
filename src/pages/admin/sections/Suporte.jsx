@@ -127,8 +127,7 @@ export default function Suporte() {
 
   const carregar = async () => {
     setLoading(true)
-    const q = supabase.from('support_tickets').select('*').order('created_at', { ascending: false })
-    const { data } = await q
+    const { data } = await supabase.rpc('get_all_support_tickets')
     setTickets(data || [])
     setLoading(false)
   }
