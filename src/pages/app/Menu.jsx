@@ -4,7 +4,7 @@ import {
   LogOut, CreditCard, ChevronRight, Shield, Building2,
   Phone, Mail, MapPin, FileText, Camera, Check, Save,
   Users, Cake, Wrench, Calendar, ChevronDown, ChevronUp,
-  UserX, MessageCircle, LifeBuoy
+  UserX, MessageCircle
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import {
@@ -539,7 +539,8 @@ export default function Menu() {
       {/* Tabs */}
       <div className="flex bg-gray-100 rounded-2xl p-1 gap-1">
         {TABS.map(t => (
-          <button key={t.key} onClick={() => setActiveTab(t.key)}
+          <button key={t.key}
+            onClick={() => t.key === 'suporte' ? navigate('/app/suporte') : setActiveTab(t.key)}
             className={`flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === t.key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>
             {t.label}
           </button>
@@ -726,42 +727,6 @@ export default function Menu() {
       )}
 
       {/* ── SUPORTE ── */}
-      {activeTab === 'suporte' && (
-        <div className="space-y-3">
-          <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-2xl p-5 text-white">
-            <div className="flex items-center gap-2 mb-1">
-              <LifeBuoy className="w-5 h-5 text-indigo-200" />
-              <p className="text-indigo-200 text-sm font-medium">Central de Suporte</p>
-            </div>
-            <h2 className="text-lg font-extrabold mb-1">Precisa de ajuda?</h2>
-            <p className="text-indigo-200 text-sm">Guias, perguntas frequentes e atendimento direto.</p>
-          </div>
-          {/* Ação principal — ticket */}
-          <button onClick={() => navigate('/app/suporte')}
-            className="w-full flex items-center gap-3 bg-indigo-600 rounded-2xl p-4 hover:bg-indigo-700 transition-colors">
-            <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center shrink-0">
-              <LifeBuoy className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-bold text-white">Acessar Central de Suporte</p>
-              <p className="text-xs text-indigo-200">Guias, FAQ e abertura de chamados</p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-indigo-300" />
-          </button>
-
-          {/* WhatsApp — secundário e discreto */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-4">
-            <p className="text-xs text-slate-400 mb-2">Prefere falar diretamente?</p>
-            <a href="https://wa.me/5553997065725?text=Ol%C3%A1%2C%20tenho%20uma%20urg%C3%AAncia%20no%20BoxCerto."
-              target="_blank" rel="noreferrer"
-              className="flex items-center gap-2 text-slate-500 hover:text-green-600 transition-colors">
-              <MessageCircle className="w-4 h-4 shrink-0" />
-              <span className="text-sm font-medium">WhatsApp (53) 99706-5725</span>
-              <ChevronRight className="w-3.5 h-3.5 ml-auto" />
-            </a>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
