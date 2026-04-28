@@ -117,6 +117,7 @@ function AgendaCard({ os, onOpen }) {
 function Dashboard({ officeName, onOpenOS, onNewOS }) {
   const [data, setData] = useState({ all: [], prontos: [], manutencao: [], orcamento: [], agendados: [] })
   const [filtroAgenda, setFiltroAgenda] = useState('hoje')
+  const [agendaAberta, setAgendaAberta] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -135,6 +136,12 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
     }
     load()
   }, [officeName])
+
+  // Auto-abre a agenda se houver agendamentos atrasados
+  useEffect(() => {
+    const hasAtrasados = data.agendados.some(os => agendaGroup(os) === 'atrasado')
+    if (hasAtrasados) setAgendaAberta(true)
+  }, [data.agendados])
 
   const hora = new Date().getHours()
   const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite'
@@ -198,60 +205,80 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
       {/* ── AGENDA ─────────────────────────────────────────── */}
       {data.agendados.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-            <CalendarClock className="w-3.5 h-3.5" /> Agendamentos
-          </p>
+          {/* Cabeçalho colapsável */}
+          <button
+            onClick={() => setAgendaAberta(a => !a)}
+            className="w-full flex items-center gap-2 mb-3 group">
+            <CalendarClock className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              Ver agendamentos ({data.agendados.length})
+            </span>
+            {atrasados.length > 0 && (
+              <span className="px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full">
+                {atrasados.length} atrasado{atrasados.length > 1 ? 's' : ''}
+              </span>
+            )}
+            <span className="ml-auto text-slate-300 group-hover:text-slate-500 transition-colors">
+              {agendaAberta
+                ? <ChevronUp className="w-4 h-4" />
+                : <ChevronDown className="w-4 h-4" />}
+            </span>
+          </button>
 
-          {/* Chips de filtro */}
-          <div className="flex gap-1.5 mb-3 flex-wrap">
-            {FILTROS.map(f => (
-              <button key={f.key} onClick={() => setFiltroAgenda(f.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                  filtroAgenda === f.key
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-100 text-slate-500 hover:bg-gray-200'
-                }`}>
-                {f.label}
-                {f.key === 'hoje'    && hoje.length    > 0 && <span className="ml-1 opacity-70">({hoje.length})</span>}
-                {f.key === 'semana'  && semana.length  > 0 && <span className="ml-1 opacity-70">({semana.length})</span>}
-                {f.key === 'proxima' && proxima.length > 0 && <span className="ml-1 opacity-70">({proxima.length})</span>}
-                {f.key === 'todos'   && data.agendados.length > 0 && <span className="ml-1 opacity-70">({data.agendados.length})</span>}
-              </button>
-            ))}
-          </div>
-
-          {/* Atrasados — sempre visíveis como alerta */}
-          {atrasados.length > 0 && (
-            <div className="mb-3">
-              <p className="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                ⚠ Atrasados — não confirmaram chegada
-              </p>
-              <div className="space-y-2">
-                {atrasados.map(os => <AgendaCard key={os.id} os={os} onOpen={onOpenOS} />)}
+          {agendaAberta && (
+            <>
+              {/* Chips de filtro */}
+              <div className="flex gap-1.5 mb-3 flex-wrap">
+                {FILTROS.map(f => (
+                  <button key={f.key} onClick={() => setFiltroAgenda(f.key)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                      filtroAgenda === f.key
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-100 text-slate-500 hover:bg-gray-200'
+                    }`}>
+                    {f.label}
+                    {f.key === 'hoje'    && hoje.length    > 0 && <span className="ml-1 opacity-70">({hoje.length})</span>}
+                    {f.key === 'semana'  && semana.length  > 0 && <span className="ml-1 opacity-70">({semana.length})</span>}
+                    {f.key === 'proxima' && proxima.length > 0 && <span className="ml-1 opacity-70">({proxima.length})</span>}
+                    {f.key === 'todos'   && data.agendados.length > 0 && <span className="ml-1 opacity-70">({data.agendados.length})</span>}
+                  </button>
+                ))}
               </div>
-            </div>
-          )}
 
-          {/* Filtro selecionado */}
-          {agendadosFiltrados.length === 0 && !atrasados.length ? (
-            <p className="text-xs text-slate-400 text-center py-4">Nenhum agendamento nesse período</p>
-          ) : (
-            <div className="space-y-2">
-              {filtroAgenda === 'todos' ? (
-                <>
-                  {hoje.length   > 0 && <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mt-2 mb-1">Hoje</p>}
-                  {hoje.map(os => <AgendaCard key={os.id} os={os} onOpen={onOpenOS} />)}
-                  {semana.length > 0 && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-3 mb-1">Esta semana</p>}
-                  {semana.map(os => <AgendaCard key={os.id} os={os} onOpen={onOpenOS} />)}
-                  {proxima.length > 0 && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-3 mb-1">Próxima semana</p>}
-                  {proxima.map(os => <AgendaCard key={os.id} os={os} onOpen={onOpenOS} />)}
-                  {futuro.length > 0 && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-3 mb-1">Mais à frente</p>}
-                  {futuro.map(os => <AgendaCard key={os.id} os={os} onOpen={onOpenOS} />)}
-                </>
-              ) : (
-                agendadosFiltrados.map(os => <AgendaCard key={os.id} os={os} onOpen={onOpenOS} />)
+              {/* Atrasados — sempre visíveis como alerta */}
+              {atrasados.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                    ⚠ Atrasados — não confirmaram chegada
+                  </p>
+                  <div className="space-y-2">
+                    {atrasados.map(os => <AgendaCard key={os.id} os={os} onOpen={onOpenOS} />)}
+                  </div>
+                </div>
               )}
-            </div>
+
+              {/* Filtro selecionado */}
+              {agendadosFiltrados.length === 0 && !atrasados.length ? (
+                <p className="text-xs text-slate-400 text-center py-4">Nenhum agendamento nesse período</p>
+              ) : (
+                <div className="space-y-2">
+                  {filtroAgenda === 'todos' ? (
+                    <>
+                      {hoje.length   > 0 && <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mt-2 mb-1">Hoje</p>}
+                      {hoje.map(os => <AgendaCard key={os.id} os={os} onOpen={onOpenOS} />)}
+                      {semana.length > 0 && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-3 mb-1">Esta semana</p>}
+                      {semana.map(os => <AgendaCard key={os.id} os={os} onOpen={onOpenOS} />)}
+                      {proxima.length > 0 && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-3 mb-1">Próxima semana</p>}
+                      {proxima.map(os => <AgendaCard key={os.id} os={os} onOpen={onOpenOS} />)}
+                      {futuro.length > 0 && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-3 mb-1">Mais à frente</p>}
+                      {futuro.map(os => <AgendaCard key={os.id} os={os} onOpen={onOpenOS} />)}
+                    </>
+                  ) : (
+                    agendadosFiltrados.map(os => <AgendaCard key={os.id} os={os} onOpen={onOpenOS} />)
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
