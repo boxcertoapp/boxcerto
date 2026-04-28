@@ -33,18 +33,20 @@ function TicketCard({ ticket, onUpdate }) {
 
   const salvarResposta = async (novoStatus) => {
     setSaving(true)
-    const { error } = await supabase.from('support_tickets').update({
-      resposta:       resposta,
-      status:         novoStatus || ticket.status,
-      respondido_em:  new Date().toISOString(),
-      updated_at:     new Date().toISOString(),
-    }).eq('id', ticket.id)
+    const { error } = await supabase.rpc('admin_responder_ticket', {
+      p_id:       ticket.id,
+      p_resposta: resposta,
+      p_status:   novoStatus || ticket.status,
+    })
     setSaving(false)
     if (!error) { setSaved(true); setTimeout(() => setSaved(false), 2000); onUpdate() }
   }
 
   const mudarStatus = async (status) => {
-    await supabase.from('support_tickets').update({ status, updated_at: new Date().toISOString() }).eq('id', ticket.id)
+    await supabase.rpc('admin_mudar_status_ticket', {
+      p_id:     ticket.id,
+      p_status: status,
+    })
     onUpdate()
   }
 
