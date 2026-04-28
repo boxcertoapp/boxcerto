@@ -31,7 +31,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
       <Link to="/" className="mb-8">
-        <Logo size="md" />
+        <Logo size="md" priority />
       </Link>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 w-full max-w-sm">
