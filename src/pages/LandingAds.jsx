@@ -306,7 +306,7 @@ export default function LandingAds() {
 
       {/* NAV */}
       <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-gray-100 shadow-sm px-4 py-3 flex items-center justify-between">
-        <Logo size="md" />
+        <Logo size="md" priority />
         <button onClick={goRegister} className="bg-indigo-600 text-white font-bold text-sm px-4 py-2 rounded-xl hover:bg-indigo-700 transition-colors">
           Testar grátis
         </button>

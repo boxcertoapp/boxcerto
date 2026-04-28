@@ -173,7 +173,7 @@ export default function Landing() {
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/95 backdrop-blur shadow-sm border-b border-gray-100' : 'bg-transparent'}`}>
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <Logo iconOnly size="md" />
+            <Logo iconOnly size="md" priority />
             <span className={`font-bold text-lg transition-colors ${scrolled ? 'text-slate-900' : 'text-white'}`}>BoxCerto</span>
           </div>
           <div className="flex items-center gap-2">

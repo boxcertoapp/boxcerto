@@ -6,11 +6,13 @@
  *   <Logo iconOnly />           → só o ícone
  *   <Logo onDark />             → wordmark branco (fundos escuros)
  *   <Logo size="sm|md|lg|xl" /> → tamanhos: 28 / 36 / 48 / 64px
+ *   <Logo priority />           → fetchpriority="high" (LCP / acima do fold)
  */
 export default function Logo({
   iconOnly = false,
   size = 'md',
   onDark = false,
+  priority = false,
   className = '',
 }) {
   const px       = { sm: 28, md: 36, lg: 48, xl: 64 }[size] ?? 36
@@ -28,7 +30,8 @@ export default function Logo({
         alt="BoxCerto"
         width={px}
         height={px}
-        loading="eager"
+        loading={priority ? 'eager' : 'lazy'}
+        fetchpriority={priority ? 'high' : undefined}
         decoding="async"
         style={{ borderRadius: radius, flexShrink: 0, display: 'block' }}
       />
