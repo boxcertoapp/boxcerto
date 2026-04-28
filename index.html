@@ -12,6 +12,12 @@
     <!-- Preload crítico -->
     <link rel="preload" href="/logo.svg" as="image" type="image/svg+xml" />
 
+    <!-- Performance: preconnect serviços externos -->
+    <link rel="preconnect" href="https://js.stripe.com" crossorigin />
+    <link rel="dns-prefetch" href="https://js.stripe.com" />
+    <link rel="dns-prefetch" href="https://api.stripe.com" />
+    <link rel="dns-prefetch" href="https://hooks.stripe.com" />
+
     <!-- SEO primário -->
     <title>BoxCerto — Gestão de Oficina Mecânica Online</title>
     <meta name="description" content="Envie orçamentos por link no WhatsApp, cliente aprova em 1 clique. Controle OS, clientes, estoque e financeiro. Teste grátis 7 dias — sem cartão." />

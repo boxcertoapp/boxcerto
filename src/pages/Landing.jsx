@@ -248,7 +248,7 @@ export default function Landing() {
                 </div>
                 <div className="bg-white px-4 py-3 border-b border-gray-100 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <img src="/logo.svg" width="20" height="20" alt="" style={{borderRadius:4}} />
+                    <img src="/logo.svg" width="20" height="20" alt="" loading="lazy" decoding="async" style={{borderRadius:4}} />
                     <span className="text-xs font-bold text-slate-900">BoxCerto</span>
                   </div>
                   <span className="text-[10px] text-slate-400">Oficina do José</span>
@@ -387,7 +387,7 @@ export default function Landing() {
                         {/* Link preview */}
                         <div className="bg-white rounded-xl overflow-hidden border border-green-200">
                           <div className="bg-indigo-600 px-3 py-2 flex items-center gap-2">
-                            <img src="/logo.svg" width="18" height="18" alt="" style={{borderRadius:3}} />
+                            <img src="/logo.svg" width="18" height="18" alt="" loading="lazy" decoding="async" style={{borderRadius:3}} />
                             <span className="text-white text-[10px] font-bold">BoxCerto</span>
                           </div>
                           <div className="px-3 py-2">
@@ -426,7 +426,7 @@ export default function Landing() {
                   {/* Orçamento page */}
                   <div className="p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <img src="/logo.svg" width="24" height="24" alt="" style={{borderRadius:5}} />
+                      <img src="/logo.svg" width="24" height="24" alt="" loading="lazy" decoding="async" style={{borderRadius:5}} />
                       <span className="text-xs font-bold text-slate-900">Orçamento #0042</span>
                       <span className="ml-auto text-[9px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">Aguard. aprovação</span>
                     </div>
