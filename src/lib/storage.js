@@ -121,12 +121,13 @@ export const clientStorage = {
 
   search: async (_officeName, query) => {
     const q = query.toLowerCase()
+    const qDigits = q.replace(/\D/g, '') // só dígitos para busca por CPF/telefone
     const { data } = await supabase.from('clients').select('*')
     return (data || [])
       .filter(c =>
         c.nome?.toLowerCase().includes(q) ||
-        (c.cpf || '').replace(/\D/g, '').includes(q.replace(/\D/g, '')) ||
-        (c.whatsapp || '').replace(/\D/g, '').includes(q.replace(/\D/g, ''))
+        (qDigits.length > 0 && (c.cpf || '').replace(/\D/g, '').includes(qDigits)) ||
+        (qDigits.length > 0 && (c.whatsapp || '').replace(/\D/g, '').includes(qDigits))
       )
       .map(mapClient)
   },
@@ -206,6 +207,7 @@ export const vehicleStorage = {
 
   search: async (_officeName, query) => {
     const q = query.toLowerCase()
+    const qDigits = q.replace(/\D/g, '') // só dígitos para busca por CPF
     const { data } = await supabase
       .from('vehicles')
       .select('*, clients(*)')
@@ -214,7 +216,7 @@ export const vehicleStorage = {
         v.placa?.toLowerCase().includes(q) ||
         v.modelo?.toLowerCase().includes(q) ||
         v.clients?.nome?.toLowerCase().includes(q) ||
-        (v.clients?.cpf || '').replace(/\D/g, '').includes(q.replace(/\D/g, ''))
+        (qDigits.length > 0 && (v.clients?.cpf || '').replace(/\D/g, '').includes(qDigits))
       )
       .map(v => ({ ...mapVehicle(v), client: mapClient(v.clients) }))
   },

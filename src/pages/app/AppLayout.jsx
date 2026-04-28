@@ -2,6 +2,7 @@ import { NavLink, Outlet, Navigate, useNavigate } from 'react-router-dom'
 import { Wrench, Clock, TrendingUp, Menu, Package, Zap } from 'lucide-react'
 import { useAuth, hasAccess, trialDaysLeft } from '../../contexts/AuthContext'
 import AnnouncementBanner from '../../components/AnnouncementBanner'
+import Logo from '../../components/Logo'
 
 const tabs = [
   { to: '/app/oficina',    icon: Wrench,     label: 'Oficina' },
@@ -38,11 +39,8 @@ export default function AppLayout() {
           {/* Logo */}
           <div className="px-5 py-4 border-b border-gray-100">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0">
-                <Wrench className="w-4 h-4 text-white" />
-              </div>
+              <Logo size="sm" priority />
               <div className="min-w-0">
-                <p className="font-bold text-slate-900 text-sm leading-tight">BoxCerto</p>
                 <p className="text-[10px] text-slate-400 truncate">{user.oficina}</p>
               </div>
             </div>
@@ -122,12 +120,7 @@ export default function AppLayout() {
 
         {/* Header */}
         <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between sticky top-0 z-40 shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <Wrench className="w-3.5 h-3.5 text-white" />
-            </div>
-            <span className="font-bold text-slate-900 text-sm">BoxCerto</span>
-          </div>
+          <Logo size="sm" priority />
           <span className="text-xs text-slate-400 truncate max-w-[150px]">{user.oficina}</span>
         </header>
 
