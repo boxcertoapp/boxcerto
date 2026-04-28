@@ -107,10 +107,12 @@ function FormTicket({ user, onEnviado }) {
     if (!msg.trim())    return setErro('Descreva sua dúvida.')
     setErro('')
     setLoading(true)
-    const { error } = await supabase.from('support_tickets').insert({
-      user_id: user.id, oficina: user.oficina || '',
-      email: user.email || '', categoria: cat,
-      titulo: titulo.trim(), mensagem: msg.trim(), status: 'aberto',
+    const { error } = await supabase.rpc('submit_support_ticket', {
+      p_oficina:   user.oficina || '',
+      p_email:     user.email   || '',
+      p_categoria: cat,
+      p_titulo:    titulo.trim(),
+      p_mensagem:  msg.trim(),
     })
     setLoading(false)
     if (error) return setErro('Erro ao enviar. Tente novamente.')
@@ -198,8 +200,7 @@ function MeusTickets({ user }) {
   const [expandedId, setExpandedId] = useState(null)
 
   useEffect(() => {
-    supabase.from('support_tickets').select('*').eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+    supabase.rpc('get_my_support_tickets')
       .then(({ data }) => { setTickets(data || []); setLoading(false) })
   }, [user.id])
 
