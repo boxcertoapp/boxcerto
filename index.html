@@ -2,11 +2,81 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preload" href="/logo.svg" as="image" type="image/svg+xml" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="BoxCerto — Gestão de oficinas simples e inteligente. Controle suas OS, clientes e finanças em um só lugar." />
-    <title>BoxCerto — Gestão de Oficina</title>
+
+    <!-- Favicon & PWA -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/logo.svg" />
+    <meta name="theme-color" content="#3F46E5" />
+
+    <!-- Preload crítico -->
+    <link rel="preload" href="/logo.svg" as="image" type="image/svg+xml" />
+
+    <!-- SEO primário -->
+    <title>BoxCerto — Gestão de Oficina Mecânica Online</title>
+    <meta name="description" content="Envie orçamentos por link no WhatsApp, cliente aprova em 1 clique. Controle OS, clientes, estoque e financeiro. Teste grátis 7 dias — sem cartão." />
+    <meta name="keywords" content="gestão de oficina mecânica, software para mecânica, orçamento para oficina, controle de ordem de serviço, sistema oficina online, BoxCerto" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://boxcerto.com/" />
+
+    <!-- Open Graph (WhatsApp, Facebook, LinkedIn) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://boxcerto.com/" />
+    <meta property="og:site_name" content="BoxCerto" />
+    <meta property="og:title" content="BoxCerto — Orçamento de oficina aprovado pelo WhatsApp" />
+    <meta property="og:description" content="Envie o orçamento por link, cliente aprova em 1 clique, BoxCerto registra com data e hora. Controle OS, estoque e financeiro. 7 dias grátis." />
+    <meta property="og:image" content="https://boxcerto.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="BoxCerto — Gestão de oficina mecânica online" />
+    <meta property="og:locale" content="pt_BR" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="BoxCerto — Orçamento de oficina aprovado pelo WhatsApp" />
+    <meta name="twitter:description" content="Envie o orçamento por link, cliente aprova em 1 clique. 7 dias grátis, sem cartão." />
+    <meta name="twitter:image" content="https://boxcerto.com/og-image.png" />
+
+    <!-- Schema.org JSON-LD -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "BoxCerto",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web, Android, iOS",
+      "description": "Sistema de gestão para oficinas mecânicas. Orçamentos por link no WhatsApp, controle de OS, estoque e financeiro.",
+      "url": "https://boxcerto.com",
+      "logo": "https://boxcerto.com/logo.svg",
+      "offers": {
+        "@type": "Offer",
+        "price": "47.90",
+        "priceCurrency": "BRL",
+        "priceValidUntil": "2026-12-31",
+        "availability": "https://schema.org/InStock",
+        "description": "Plano mensal — 7 dias de teste gratuito"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "reviewCount": "347",
+        "bestRating": "5",
+        "worstRating": "1"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "BoxCerto Tecnologia Ltda.",
+        "url": "https://boxcerto.com",
+        "logo": "https://boxcerto.com/logo.svg",
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "telephone": "+55-53-99706-5725",
+          "contactType": "customer service",
+          "availableLanguage": "Portuguese"
+        }
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

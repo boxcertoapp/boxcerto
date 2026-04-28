@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+
+# Páginas públicas — indexar
+Allow: /$
+Allow: /termos
+Allow: /privacidade
+
+# Páginas de app — não indexar
+Disallow: /app/
+Disallow: /admin/
+Disallow: /pendente
+Disallow: /renovar
+Disallow: /sucesso
+Disallow: /o/
+
+Sitemap: https://boxcerto.com/sitemap.xml
