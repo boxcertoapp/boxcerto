@@ -1329,19 +1329,24 @@ function OSDetailModal({ os, onClose, officeName }) {
           </div>
 
           {/* Técnico responsável */}
-          {(tecnicosList.length > 0 || tecnico) && (
-            <div className="relative">
+          <div className="relative">
               <button
-                onClick={() => status !== 'entregue' && setShowTecnicoPicker(p => !p)}
-                className={`w-full flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2 text-left ${status !== 'entregue' ? 'hover:bg-gray-100 transition-colors' : ''}`}
+                onClick={() => status !== 'entregue' && tecnicosList.length > 0 && setShowTecnicoPicker(p => !p)}
+                className={`w-full flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2 text-left ${status !== 'entregue' && tecnicosList.length > 0 ? 'hover:bg-gray-100 transition-colors' : ''}`}
               >
                 <Wrench className="w-4 h-4 text-slate-400 shrink-0" />
                 <span className="text-xs text-slate-500 shrink-0">Técnico</span>
-                <span className={`flex-1 text-sm font-semibold ${tecnico ? 'text-slate-900' : 'text-slate-400'}`}>
-                  {tecnico || 'Sem técnico'}
-                </span>
-                {tecnico && <TecnicoAvatar nome={tecnico} />}
-                {status !== 'entregue' && <Edit2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+                {tecnicosList.length === 0 ? (
+                  <span className="flex-1 text-xs text-slate-400 italic">Cadastre técnicos em Menu → Oficina</span>
+                ) : (
+                  <>
+                    <span className={`flex-1 text-sm font-semibold ${tecnico ? 'text-slate-900' : 'text-slate-400'}`}>
+                      {tecnico || 'Sem técnico'}
+                    </span>
+                    {tecnico && <TecnicoAvatar nome={tecnico} />}
+                    {status !== 'entregue' && <Edit2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+                  </>
+                )}
               </button>
 
               {showTecnicoPicker && (
@@ -1379,7 +1384,6 @@ function OSDetailModal({ os, onClose, officeName }) {
                 </div>
               )}
             </div>
-          )}
 
           {/* Status */}
           <div className="bg-white rounded-2xl border border-gray-100 p-4">
