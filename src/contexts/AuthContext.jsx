@@ -11,6 +11,7 @@ const buildUser = (authUser, profile) => {
   const defaultTrialEnd = authUser.created_at
     ? new Date(new Date(authUser.created_at).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
     : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+  const tipo = profile?.tipo || 'master'
   return {
     id: authUser.id,
     email: authUser.email,
@@ -21,6 +22,12 @@ const buildUser = (authUser, profile) => {
     plan: profile?.plan || null,
     trialEnd: profile?.trial_end || defaultTrialEnd,
     isAdmin: authUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() || profile?.is_admin === true,
+    // Modo Técnico
+    tipo,
+    isTecnico: tipo === 'tecnico',
+    masterId: profile?.master_id || null,
+    nome: profile?.nome || profile?.responsavel || '',
+    setupDone: profile?.setup_done !== false, // true por padrão para masters
   }
 }
 
@@ -32,6 +39,7 @@ export const isTrialValid = (user) => {
 export const hasAccess = (user) => {
   if (!user) return false
   if (user.isAdmin) return true
+  if (user.isTecnico) return true // técnicos têm status 'active' mas checamos separado
   if (user.status === 'active') return true
   if (user.status === 'trial' && isTrialValid(user)) return true
   return false

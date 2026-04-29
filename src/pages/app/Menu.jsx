@@ -4,7 +4,8 @@ import {
   LogOut, CreditCard, ChevronRight, Shield, Building2,
   Phone, Mail, MapPin, FileText, Camera, Check, Save,
   Users, Cake, Wrench, Calendar, ChevronDown, ChevronUp,
-  UserX, MessageCircle, UserPlus, Trash2, HardHat, Tag
+  UserX, MessageCircle, UserPlus, Trash2, HardHat, Tag,
+  Link2, Copy, CheckCheck, ToggleLeft, ToggleRight
 } from 'lucide-react'
 
 // ── Máscaras ──────────────────────────────────────────────
@@ -473,7 +474,8 @@ export default function Menu() {
   const navigate = useNavigate()
   const logoRef = useRef()
 
-  const [officeData, setOfficeData] = useState({ nome: '', endereco: '', telefone: '', cnpj: '', logo: '', tecnicos: [] })
+  const [officeData, setOfficeData] = useState({ nome: '', endereco: '', telefone: '', cnpj: '', logo: '', tecnicos: [], podeAssumir: false })
+  const [linkCopiado, setLinkCopiado] = useState(null) // índice do técnico cujo link foi copiado
   const [savedFields, setSavedFields] = useState({ nome: '', endereco: '', telefone: '', cnpj: '' })
   const [novoTecnico, setNovoTecnico] = useState({ nome: '', email: '' })
   const [showAddTecnico, setShowAddTecnico] = useState(false)
@@ -494,12 +496,13 @@ export default function Menu() {
     if (user?.oficina) {
       officeDataStorage.get(user.oficina).then(data => {
         const loaded = {
-          nome:     data?.nome     || user.oficina || '',
-          endereco: data?.endereco || '',
-          telefone: data?.telefone || user.whatsapp || '',
-          cnpj:     data?.cnpj    || '',
-          logo:     data?.logo    || '',
-          tecnicos: data?.tecnicos || [],
+          nome:        data?.nome        || user.oficina || '',
+          endereco:    data?.endereco    || '',
+          telefone:    data?.telefone    || user.whatsapp || '',
+          cnpj:        data?.cnpj        || '',
+          logo:        data?.logo        || '',
+          tecnicos:    data?.tecnicos    || [],
+          podeAssumir: data?.podeAssumir ?? false,
         }
         setOfficeData(loaded)
         setSavedFields({ nome: loaded.nome, endereco: loaded.endereco, telefone: loaded.telefone, cnpj: loaded.cnpj })
@@ -665,37 +668,92 @@ export default function Menu() {
             {showTecnicosSection && (
               <div className="px-4 pb-4 pt-1 border-t border-gray-100 space-y-3">
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  O e-mail é opcional por ora — será usado futuramente para criar acesso individual do técnico ao app.
+                  Cadastre os técnicos da equipe. Informando o e-mail, você pode gerar um link de convite para que eles acessem a área exclusiva do técnico.
                 </p>
+
+                {/* Toggle: técnico pode assumir qualquer OS */}
+                <div className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2.5">
+                  <div className="flex-1 min-w-0 pr-3">
+                    <p className="text-xs font-semibold text-slate-700">Técnico pode assumir qualquer OS</p>
+                    <p className="text-[10px] text-slate-400 leading-tight mt-0.5">Se desativado, o técnico só vê as OS atribuídas a ele</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const updated = { ...officeData, podeAssumir: !officeData.podeAssumir }
+                      setOfficeData(updated)
+                      await officeDataStorage.save(user.oficina, updated)
+                    }}
+                    className="shrink-0"
+                  >
+                    {officeData.podeAssumir
+                      ? <ToggleRight className="w-8 h-8 text-indigo-500" />
+                      : <ToggleLeft className="w-8 h-8 text-slate-300" />
+                    }
+                  </button>
+                </div>
 
                 {/* Lista de técnicos */}
                 {officeData.tecnicos.length === 0 ? (
                   <p className="text-sm text-slate-400 text-center py-3">Nenhum técnico cadastrado ainda</p>
                 ) : (
                   <div className="space-y-2">
-                    {officeData.tecnicos.map((t, i) => (
-                      <div key={i} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
-                        <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center shrink-0">
-                          <span className="text-indigo-700 text-xs font-bold">
-                            {t.nome.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase()}
-                          </span>
+                    {officeData.tecnicos.map((t, i) => {
+                      const conviteLink = t.email
+                        ? `${window.location.origin}/tecnico-convite?m=${user.id}&n=${btoa(unescape(encodeURIComponent(t.nome)))}&e=${btoa(unescape(encodeURIComponent(t.email)))}`
+                        : null
+                      return (
+                        <div key={i} className="bg-gray-50 rounded-xl p-3 space-y-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center shrink-0">
+                              <span className="text-indigo-700 text-xs font-bold">
+                                {t.nome.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-slate-900 truncate">{t.nome}</p>
+                              {t.email && <p className="text-xs text-slate-400 truncate">{t.email}</p>}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const updated = { ...officeData, tecnicos: officeData.tecnicos.filter((_, idx) => idx !== i) }
+                                setOfficeData(updated)
+                                await officeDataStorage.save(user.oficina, updated)
+                              }}
+                              className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors shrink-0">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          {/* Botão de convite */}
+                          {conviteLink && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(conviteLink)
+                                setLinkCopiado(i)
+                                setTimeout(() => setLinkCopiado(null), 2500)
+                              }}
+                              className={`w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                                linkCopiado === i
+                                  ? 'bg-green-50 border-green-200 text-green-700'
+                                  : 'bg-white border-indigo-200 text-indigo-600 hover:bg-indigo-50'
+                              }`}
+                            >
+                              {linkCopiado === i
+                                ? <><CheckCheck className="w-3.5 h-3.5" /> Link copiado!</>
+                                : <><Link2 className="w-3.5 h-3.5" /> Gerar link de convite</>
+                              }
+                            </button>
+                          )}
+                          {!t.email && (
+                            <p className="text-[10px] text-slate-400 text-center">
+                              Adicione o e-mail para gerar o link de convite
+                            </p>
+                          )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-slate-900 truncate">{t.nome}</p>
-                          {t.email && <p className="text-xs text-slate-400 truncate">{t.email}</p>}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            const updated = { ...officeData, tecnicos: officeData.tecnicos.filter((_, idx) => idx !== i) }
-                            setOfficeData(updated)
-                            await officeDataStorage.save(user.oficina, updated)
-                          }}
-                          className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors shrink-0">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
 
@@ -711,7 +769,7 @@ export default function Menu() {
                     />
                     <input
                       type="email"
-                      placeholder="E-mail (opcional)"
+                      placeholder="E-mail (para convite de acesso)"
                       value={novoTecnico.email}
                       onChange={e => setNovoTecnico(p => ({ ...p, email: e.target.value }))}
                       className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-indigo-400"

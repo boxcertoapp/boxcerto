@@ -23,6 +23,7 @@ export default function Login() {
     if (!result.ok) return setError(result.error)
     const u = result.user
     if (u.isAdmin) return navigate('/admin')
+    if (u.isTecnico) return navigate('/tecnico')
     if (u.status === 'rejected') return navigate('/pendente')
     if (u.status === 'inactive') return navigate('/renovar')
     navigate('/app/oficina')

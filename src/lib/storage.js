@@ -477,12 +477,13 @@ export const officeDataStorage = {
     const { data } = await supabase.from('office_data').select('*').maybeSingle()
     if (!data) return {}
     return {
-      nome: data.nome || '',
-      cnpj: data.cnpj || '',
-      telefone: data.telefone || '',
-      endereco: data.endereco || '',
-      logo: data.logo || '',
-      tecnicos: data.tecnicos || [],
+      nome:        data.nome        || '',
+      cnpj:        data.cnpj        || '',
+      telefone:    data.telefone    || '',
+      endereco:    data.endereco    || '',
+      logo:        data.logo        || '',
+      tecnicos:    data.tecnicos    || [],
+      podeAssumir: data.pode_assumir_os ?? false,
     }
   },
 
@@ -490,25 +491,27 @@ export const officeDataStorage = {
     const { data: existing } = await supabase.from('office_data').select('user_id').maybeSingle()
     if (existing) {
       await supabase.from('office_data').update({
-        nome: officeData.nome || '',
-        cnpj: officeData.cnpj || '',
-        telefone: officeData.telefone || '',
-        endereco: officeData.endereco || '',
-        logo: officeData.logo || '',
-        tecnicos: officeData.tecnicos || [],
-        updated_at: new Date().toISOString(),
+        nome:            officeData.nome        || '',
+        cnpj:            officeData.cnpj        || '',
+        telefone:        officeData.telefone    || '',
+        endereco:        officeData.endereco    || '',
+        logo:            officeData.logo        || '',
+        tecnicos:        officeData.tecnicos    || [],
+        pode_assumir_os: officeData.podeAssumir ?? false,
+        updated_at:      new Date().toISOString(),
       }).eq('user_id', existing.user_id)
     } else {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       await supabase.from('office_data').insert({
-        user_id: user.id,
-        nome: officeData.nome || '',
-        cnpj: officeData.cnpj || '',
-        telefone: officeData.telefone || '',
-        endereco: officeData.endereco || '',
-        logo: officeData.logo || '',
-        tecnicos: officeData.tecnicos || [],
+        user_id:         user.id,
+        nome:            officeData.nome        || '',
+        cnpj:            officeData.cnpj        || '',
+        telefone:        officeData.telefone    || '',
+        endereco:        officeData.endereco    || '',
+        logo:            officeData.logo        || '',
+        tecnicos:        officeData.tecnicos    || [],
+        pode_assumir_os: officeData.podeAssumir ?? false,
       })
     }
   },

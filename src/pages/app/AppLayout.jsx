@@ -23,6 +23,7 @@ export default function AppLayout() {
   )
 
   if (!user) return <Navigate to="/login" replace />
+  if (user.isTecnico) return <Navigate to="/tecnico" replace />
   if (!hasAccess(user)) return <Navigate to="/renovar" replace />
 
   const diasRestantes = user.status === 'trial' ? trialDaysLeft(user) : null
