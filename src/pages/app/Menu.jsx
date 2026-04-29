@@ -659,7 +659,11 @@ export default function Menu() {
                         </div>
                         <button
                           type="button"
-                          onClick={() => setOfficeData(p => ({ ...p, tecnicos: p.tecnicos.filter((_, idx) => idx !== i) }))}
+                          onClick={async () => {
+                            const updated = { ...officeData, tecnicos: officeData.tecnicos.filter((_, idx) => idx !== i) }
+                            setOfficeData(updated)
+                            await officeDataStorage.save(user.oficina, updated)
+                          }}
                           className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors shrink-0">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -688,14 +692,16 @@ export default function Menu() {
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
                           if (!novoTecnico.nome.trim()) return
-                          setOfficeData(p => ({
-                            ...p,
-                            tecnicos: [...p.tecnicos, { nome: novoTecnico.nome.trim(), email: novoTecnico.email.trim() }]
-                          }))
+                          const updated = {
+                            ...officeData,
+                            tecnicos: [...officeData.tecnicos, { nome: novoTecnico.nome.trim(), email: novoTecnico.email.trim() }]
+                          }
+                          setOfficeData(updated)
                           setNovoTecnico({ nome: '', email: '' })
                           setShowAddTecnico(false)
+                          await officeDataStorage.save(user.oficina, updated)
                         }}
                         disabled={!novoTecnico.nome.trim()}
                         className="flex-1 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-40 transition-colors">
@@ -718,7 +724,6 @@ export default function Menu() {
                   </button>
                 )}
 
-                <p className="text-[10px] text-slate-400 text-center">Salve a oficina para confirmar as alterações</p>
               </div>
             )}
           </div>
