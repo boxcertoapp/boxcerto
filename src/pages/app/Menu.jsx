@@ -622,7 +622,7 @@ export default function Menu() {
           {[
             { key: 'nome',     label: 'Nome da Oficina',      icon: <Building2 className="w-4 h-4" />, placeholder: 'Auto Mecânica João Silva',                 fmt: null },
             { key: 'cnpj',     label: 'CNPJ (opcional)',       icon: <FileText  className="w-4 h-4" />, placeholder: '00.000.000/0001-00',                      fmt: formatCNPJ },
-            { key: 'telefone', label: 'Telefone / WhatsApp',   icon: <Phone     className="w-4 h-4" />, placeholder: '(51) 3199-8786 ou (51) 99999-9999',       fmt: formatTelefone },
+            { key: 'telefone', label: 'Telefone / WhatsApp',   icon: <Phone     className="w-4 h-4" />, placeholder: '(XX) XXXX-XXXX ou (XX) XXXXX-XXXX',       fmt: formatTelefone },
             { key: 'endereco', label: 'Endereço completo',     icon: <MapPin    className="w-4 h-4" />, placeholder: 'Rua das Flores, 123 — Porto Alegre, RS',   fmt: null },
           ].map(f => (
             <div key={f.key}>
