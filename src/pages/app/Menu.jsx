@@ -4,7 +4,7 @@ import {
   LogOut, CreditCard, ChevronRight, Shield, Building2,
   Phone, Mail, MapPin, FileText, Camera, Check, Save,
   Users, Cake, Wrench, Calendar, ChevronDown, ChevronUp,
-  UserX, MessageCircle
+  UserX, MessageCircle, UserPlus, Trash2, HardHat
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import {
@@ -455,7 +455,10 @@ export default function Menu() {
   const navigate = useNavigate()
   const logoRef = useRef()
 
-  const [officeData, setOfficeData] = useState({ nome: '', endereco: '', telefone: '', cnpj: '', logo: '' })
+  const [officeData, setOfficeData] = useState({ nome: '', endereco: '', telefone: '', cnpj: '', logo: '', tecnicos: [] })
+  const [novoTecnico, setNovoTecnico] = useState({ nome: '', email: '' })
+  const [showAddTecnico, setShowAddTecnico] = useState(false)
+  const [showTecnicosSection, setShowTecnicosSection] = useState(false)
   const [paymentDefaults, setPaymentDefaults] = useState(
     () => JSON.parse(localStorage.getItem('boxcerto_payment_defaults') || '["dinheiro","pix"]')
   )
@@ -475,6 +478,7 @@ export default function Menu() {
           telefone: data?.telefone || user.whatsapp || '',
           cnpj: data?.cnpj || '',
           logo: data?.logo || '',
+          tecnicos: data?.tecnicos || [],
         })
       })
     }
@@ -588,6 +592,117 @@ export default function Menu() {
               </div>
             </div>
           ))}
+          {/* ── TÉCNICOS DA EQUIPE ── */}
+          <div className="border border-gray-200 rounded-2xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowTecnicosSection(p => !p)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <HardHat className="w-4 h-4 text-indigo-500 shrink-0" />
+                <div className="text-left">
+                  <p className="text-sm font-medium text-slate-700">Equipe / Técnicos</p>
+                  <p className="text-xs text-slate-400">
+                    {officeData.tecnicos.length === 0
+                      ? 'Nenhum técnico cadastrado'
+                      : `${officeData.tecnicos.length} técnico${officeData.tecnicos.length > 1 ? 's' : ''} cadastrado${officeData.tecnicos.length > 1 ? 's' : ''}`}
+                  </p>
+                </div>
+              </div>
+              {showTecnicosSection
+                ? <ChevronUp className="w-4 h-4 text-slate-400 shrink-0" />
+                : <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />}
+            </button>
+
+            {showTecnicosSection && (
+              <div className="px-4 pb-4 pt-1 border-t border-gray-100 space-y-3">
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  O e-mail é opcional por ora — será usado futuramente para criar acesso individual do técnico ao app.
+                </p>
+
+                {/* Lista de técnicos */}
+                {officeData.tecnicos.length === 0 ? (
+                  <p className="text-sm text-slate-400 text-center py-3">Nenhum técnico cadastrado ainda</p>
+                ) : (
+                  <div className="space-y-2">
+                    {officeData.tecnicos.map((t, i) => (
+                      <div key={i} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
+                        <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center shrink-0">
+                          <span className="text-indigo-700 text-xs font-bold">
+                            {t.nome.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-slate-900 truncate">{t.nome}</p>
+                          {t.email && <p className="text-xs text-slate-400 truncate">{t.email}</p>}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setOfficeData(p => ({ ...p, tecnicos: p.tecnicos.filter((_, idx) => idx !== i) }))}
+                          className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors shrink-0">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Adicionar novo técnico */}
+                {showAddTecnico ? (
+                  <div className="bg-indigo-50 rounded-xl p-3 space-y-2">
+                    <input
+                      type="text"
+                      placeholder="Nome completo *"
+                      value={novoTecnico.nome}
+                      onChange={e => setNovoTecnico(p => ({ ...p, nome: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-indigo-400"
+                    />
+                    <input
+                      type="email"
+                      placeholder="E-mail (opcional)"
+                      value={novoTecnico.email}
+                      onChange={e => setNovoTecnico(p => ({ ...p, email: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-indigo-400"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!novoTecnico.nome.trim()) return
+                          setOfficeData(p => ({
+                            ...p,
+                            tecnicos: [...p.tecnicos, { nome: novoTecnico.nome.trim(), email: novoTecnico.email.trim() }]
+                          }))
+                          setNovoTecnico({ nome: '', email: '' })
+                          setShowAddTecnico(false)
+                        }}
+                        disabled={!novoTecnico.nome.trim()}
+                        className="flex-1 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-40 transition-colors">
+                        Adicionar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowAddTecnico(false); setNovoTecnico({ nome: '', email: '' }) }}
+                        className="px-4 py-2 bg-white border border-gray-200 text-slate-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowAddTecnico(true)}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-indigo-200 rounded-xl text-indigo-600 text-sm font-semibold hover:border-indigo-400 hover:bg-indigo-50 transition-all">
+                    <UserPlus className="w-4 h-4" /> Adicionar técnico
+                  </button>
+                )}
+
+                <p className="text-[10px] text-slate-400 text-center">Salve a oficina para confirmar as alterações</p>
+              </div>
+            )}
+          </div>
+
           {/* Pagamentos padrão — seção colapsível */}
           <div className="border border-gray-200 rounded-2xl overflow-hidden">
             <button

@@ -17,6 +17,26 @@ import {
 } from '../../lib/storage'
 
 // ── HELPERS ───────────────────────────────────────────────
+function iniciais(nome) {
+  if (!nome) return ''
+  const parts = nome.trim().split(/\s+/)
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+function TecnicoAvatar({ nome, size = 'sm' }) {
+  if (!nome) return null
+  return (
+    <div
+      title={nome}
+      className={`bg-indigo-600 text-white font-bold rounded-full flex items-center justify-center shrink-0 ${
+        size === 'sm' ? 'w-6 h-6 text-[9px]' : 'w-8 h-8 text-xs'
+      }`}>
+      {iniciais(nome)}
+    </div>
+  )
+}
+
 const WPP_MESSAGES = {
   orcamento: (cliente, modelo, total, link) =>
     link
@@ -299,6 +319,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
                   <p className="text-xs text-slate-500 truncate">{os.client?.nome}</p>
                 </div>
                 {os.totals?.venda > 0 && <p className="text-sm font-bold text-slate-900 shrink-0">{formatCurrency(os.totals.venda)}</p>}
+                <TecnicoAvatar nome={os.tecnico} />
                 <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
               </button>
             ))}
@@ -328,6 +349,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
                   <p className="font-semibold text-slate-900 text-sm truncate">{os.vehicle?.modelo}</p>
                   <p className="text-xs text-slate-500 truncate">{os.client?.nome}</p>
                 </div>
+                <TecnicoAvatar nome={os.tecnico} />
                 <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
               </button>
             ))}
@@ -366,6 +388,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
                     )}
                   </div>
                 </div>
+                <TecnicoAvatar nome={os.tecnico} />
                 <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
               </button>
             ))}
@@ -984,6 +1007,9 @@ function OSDetailModal({ os, onClose, officeName }) {
   const [savingEdit, setSavingEdit] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [itensAlteradosAposAprovacao, setItensAlteradosAposAprovacao] = useState(false)
+  const [tecnico, setTecnico] = useState(os.tecnico || '')
+  const [tecnicosList, setTecnicosList] = useState([])
+  const [showTecnicoPicker, setShowTecnicoPicker] = useState(false)
 
   const reload = async () => {
     const loaded = await itemStorage.getByOS(os.id)
@@ -992,12 +1018,14 @@ function OSDetailModal({ os, onClose, officeName }) {
 
   useEffect(() => {
     const init = async () => {
-      const [loadedItems, loadedStock] = await Promise.all([
+      const [loadedItems, loadedStock, officeData] = await Promise.all([
         itemStorage.getByOS(os.id),
         inventoryStorage.getAll(officeName),
+        officeDataStorage.get(officeName),
       ])
       setItems(loadedItems)
       setStockItems(loadedStock)
+      setTecnicosList(officeData?.tecnicos || [])
     }
     init()
   }, [])
@@ -1189,6 +1217,9 @@ function OSDetailModal({ os, onClose, officeName }) {
 
   return (
     <>
+      {showTecnicoPicker && (
+        <div className="fixed inset-0 z-[61]" onClick={() => setShowTecnicoPicker(false)} />
+      )}
       <div className="fixed inset-0 z-[60] bg-white flex flex-col max-w-lg mx-auto">
         {/* Header */}
         <div className="flex items-center gap-2 p-4 border-b border-gray-100 shrink-0">
@@ -1280,6 +1311,59 @@ function OSDetailModal({ os, onClose, officeName }) {
               </>
             )}
           </div>
+
+          {/* Técnico responsável */}
+          {(tecnicosList.length > 0 || tecnico) && (
+            <div className="relative">
+              <button
+                onClick={() => status !== 'entregue' && setShowTecnicoPicker(p => !p)}
+                className={`w-full flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2 text-left ${status !== 'entregue' ? 'hover:bg-gray-100 transition-colors' : ''}`}
+              >
+                <Wrench className="w-4 h-4 text-slate-400 shrink-0" />
+                <span className="text-xs text-slate-500 shrink-0">Técnico</span>
+                <span className={`flex-1 text-sm font-semibold ${tecnico ? 'text-slate-900' : 'text-slate-400'}`}>
+                  {tecnico || 'Sem técnico'}
+                </span>
+                {tecnico && <TecnicoAvatar nome={tecnico} />}
+                {status !== 'entregue' && <Edit2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+              </button>
+
+              {showTecnicoPicker && (
+                <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-2xl border border-gray-200 shadow-lg z-[62] overflow-hidden">
+                  <div className="p-1.5 space-y-0.5">
+                    <button
+                      onClick={async () => {
+                        setTecnico(''); setShowTecnicoPicker(false)
+                        await osStorage.updateTecnico(os.id, '')
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-colors ${!tecnico ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-500 hover:bg-gray-50'}`}>
+                      <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
+                        <span className="text-slate-400 text-[10px]">—</span>
+                      </div>
+                      Sem técnico
+                    </button>
+                    {tecnicosList.map((t, i) => (
+                      <button key={i}
+                        onClick={async () => {
+                          setTecnico(t.nome); setShowTecnicoPicker(false)
+                          await osStorage.updateTecnico(os.id, t.nome)
+                        }}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-colors ${tecnico === t.nome ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-700 hover:bg-gray-50'}`}>
+                        <div className="w-7 h-7 bg-indigo-600 rounded-full flex items-center justify-center shrink-0">
+                          <span className="text-white text-[9px] font-bold">{iniciais(t.nome)}</span>
+                        </div>
+                        <div className="flex-1 min-w-0 text-left">
+                          <p className="truncate">{t.nome}</p>
+                          {t.email && <p className="text-xs text-slate-400 truncate">{t.email}</p>}
+                        </div>
+                        {tecnico === t.nome && <Check className="w-4 h-4 text-indigo-600 shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Status */}
           <div className="bg-white rounded-2xl border border-gray-100 p-4">

@@ -43,6 +43,7 @@ const mapOS = (os) => !os ? null : ({
   km: os.km || '',
   observacoes: os.observacoes || '',
   agendadoPara: os.agendado_para,
+  tecnico: os.tecnico || '',
   deliveredAt: os.delivered_at,
   deliveryNotes: os.delivery_notes || '',
   payments: os.payments || [],
@@ -299,6 +300,13 @@ export const osStorage = {
     }).eq('id', id)
   },
 
+  updateTecnico: async (id, tecnico) => {
+    await supabase.from('service_orders').update({
+      tecnico: tecnico || null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', id)
+  },
+
   deliverOS: async (id, { deliveredAt, deliveryNotes, payments, desconto }) => {
     await supabase.from('service_orders').update({
       status: 'entregue',
@@ -474,6 +482,7 @@ export const officeDataStorage = {
       telefone: data.telefone || '',
       endereco: data.endereco || '',
       logo: data.logo || '',
+      tecnicos: data.tecnicos || [],
     }
   },
 
@@ -486,6 +495,7 @@ export const officeDataStorage = {
         telefone: officeData.telefone || '',
         endereco: officeData.endereco || '',
         logo: officeData.logo || '',
+        tecnicos: officeData.tecnicos || [],
         updated_at: new Date().toISOString(),
       }).eq('user_id', existing.user_id)
     } else {
@@ -498,6 +508,7 @@ export const officeDataStorage = {
         telefone: officeData.telefone || '',
         endereco: officeData.endereco || '',
         logo: officeData.logo || '',
+        tecnicos: officeData.tecnicos || [],
       })
     }
   },
