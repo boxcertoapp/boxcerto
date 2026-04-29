@@ -1292,23 +1292,39 @@ function OSDetailModal({ os, onClose, officeName }) {
             )
           })()}
 
-          {/* KM */}
-          <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2">
-            <Gauge className="w-4 h-4 text-slate-400 shrink-0" />
-            <span className="text-xs text-slate-500 shrink-0">KM</span>
-            {editKm ? (
-              <>
-                <input type="number" value={km} onChange={e => setKm(e.target.value)} autoFocus
-                  className="flex-1 bg-transparent text-slate-900 font-semibold text-sm focus:outline-none" placeholder="0" />
-                <button onClick={handleKmSave} className="p-1 bg-indigo-100 rounded-lg"><Check className="w-3.5 h-3.5 text-indigo-600" /></button>
-              </>
-            ) : (
-              <>
-                <span className="flex-1 text-sm font-semibold text-slate-900">{km || '—'}</span>
-                {status !== 'entregue' && (
-                  <button onClick={() => setEditKm(true)} className="p-1 hover:bg-gray-200 rounded-lg"><Edit2 className="w-3.5 h-3.5 text-slate-400" /></button>
-                )}
-              </>
+          {/* KM + badge Aprovado na mesma linha */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2 flex-1 min-w-0">
+              <Gauge className="w-4 h-4 text-slate-400 shrink-0" />
+              <span className="text-xs text-slate-500 shrink-0">KM</span>
+              {editKm ? (
+                <>
+                  <input type="number" value={km} onChange={e => setKm(e.target.value)} autoFocus
+                    className="flex-1 bg-transparent text-slate-900 font-semibold text-sm focus:outline-none min-w-0" placeholder="0" />
+                  <button onClick={handleKmSave} className="p-1 bg-indigo-100 rounded-lg shrink-0"><Check className="w-3.5 h-3.5 text-indigo-600" /></button>
+                </>
+              ) : (
+                <>
+                  <span className="flex-1 text-sm font-semibold text-slate-900">{km || '—'}</span>
+                  {status !== 'entregue' && (
+                    <button onClick={() => setEditKm(true)} className="p-1 hover:bg-gray-200 rounded-lg shrink-0"><Edit2 className="w-3.5 h-3.5 text-slate-400" /></button>
+                  )}
+                </>
+              )}
+            </div>
+
+            {os.aprovacaoStatus === 'aprovado' && !itensAlteradosAposAprovacao && (
+              <div className="bg-green-50 border border-green-200 rounded-xl px-2.5 py-2 flex items-center gap-1.5 shrink-0">
+                <CheckCircle2 className="w-3.5 h-3.5 text-green-600 shrink-0" />
+                <div>
+                  <p className="text-[10px] font-bold text-green-800 leading-tight">Aprovado</p>
+                  {os.aprovadoEm && (
+                    <p className="text-[10px] text-green-600 leading-tight">
+                      {new Date(os.aprovadoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  )}
+                </div>
+              </div>
             )}
           </div>
 
@@ -1383,22 +1399,6 @@ function OSDetailModal({ os, onClose, officeName }) {
                 </button>
               ))}
             </div>
-            {os.aprovacaoStatus === 'aprovado' && !itensAlteradosAposAprovacao && (
-              <div className="bg-green-50 border border-green-200 rounded-xl px-3 py-2 flex items-center gap-2 w-fit">
-                <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
-                <div>
-                  <p className="text-xs font-bold text-green-800 leading-tight">Aprovado pelo cliente</p>
-                  {os.aprovadoEm && (
-                    <p className="text-[11px] text-green-600 leading-tight mt-0.5">
-                      {new Date(os.aprovadoEm).toLocaleString('pt-BR', {
-                        day: '2-digit', month: '2-digit', year: 'numeric',
-                        hour: '2-digit', minute: '2-digit'
-                      })}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
             {itensAlteradosAposAprovacao && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
                 <div className="flex items-start gap-2">
