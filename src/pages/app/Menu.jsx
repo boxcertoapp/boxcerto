@@ -476,6 +476,8 @@ export default function Menu() {
 
   const [officeData, setOfficeData] = useState({ nome: '', endereco: '', telefone: '', cnpj: '', logo: '', tecnicos: [], podeAssumir: false })
   const [linkCopiado, setLinkCopiado] = useState(null) // índice do técnico cujo link foi copiado
+  const [editEmailIdx, setEditEmailIdx] = useState(null) // índice do técnico com e-mail sendo editado
+  const [editEmailVal, setEditEmailVal] = useState('')
   const [savedFields, setSavedFields] = useState({ nome: '', endereco: '', telefone: '', cnpj: '' })
   const [novoTecnico, setNovoTecnico] = useState({ nome: '', email: '' })
   const [showAddTecnico, setShowAddTecnico] = useState(false)
@@ -702,8 +704,10 @@ export default function Menu() {
                       const conviteLink = t.email
                         ? `${window.location.origin}/tecnico-convite?m=${user.id}&n=${btoa(unescape(encodeURIComponent(t.nome)))}&e=${btoa(unescape(encodeURIComponent(t.email)))}`
                         : null
+                      const isEditingEmail = editEmailIdx === i
                       return (
                         <div key={i} className="bg-gray-50 rounded-xl p-3 space-y-2">
+                          {/* Linha principal: avatar + nome + lixeira */}
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center shrink-0">
                               <span className="text-indigo-700 text-xs font-bold">
@@ -712,21 +716,70 @@ export default function Menu() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold text-slate-900 truncate">{t.nome}</p>
-                              {t.email && <p className="text-xs text-slate-400 truncate">{t.email}</p>}
+                              {t.email
+                                ? <p className="text-xs text-slate-400 truncate">{t.email}</p>
+                                : <p className="text-xs text-amber-500 font-medium">Sem e-mail — convite indisponível</p>
+                              }
                             </div>
                             <button
                               type="button"
                               onClick={async () => {
                                 const updated = { ...officeData, tecnicos: officeData.tecnicos.filter((_, idx) => idx !== i) }
                                 setOfficeData(updated)
+                                setEditEmailIdx(null)
                                 await officeDataStorage.save(user.oficina, updated)
                               }}
                               className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors shrink-0">
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
-                          {/* Botão de convite */}
-                          {conviteLink && (
+
+                          {/* Edição inline de e-mail */}
+                          {isEditingEmail ? (
+                            <div className="flex gap-2">
+                              <input
+                                autoFocus
+                                type="email"
+                                value={editEmailVal}
+                                onChange={e => setEditEmailVal(e.target.value)}
+                                placeholder="email@tecnico.com"
+                                className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-indigo-300 focus:outline-none focus:border-indigo-500 bg-white"
+                              />
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  const novos = officeData.tecnicos.map((tc, idx) =>
+                                    idx === i ? { ...tc, email: editEmailVal.trim() } : tc
+                                  )
+                                  const updated = { ...officeData, tecnicos: novos }
+                                  setOfficeData(updated)
+                                  setEditEmailIdx(null)
+                                  setEditEmailVal('')
+                                  await officeDataStorage.save(user.oficina, updated)
+                                }}
+                                className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
+                              >
+                                Salvar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setEditEmailIdx(null); setEditEmailVal('') }}
+                                className="px-2 py-1.5 bg-gray-200 text-slate-600 text-xs rounded-lg hover:bg-gray-300 transition-colors"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : !t.email ? (
+                            /* Sem e-mail: botão para adicionar */
+                            <button
+                              type="button"
+                              onClick={() => { setEditEmailIdx(i); setEditEmailVal('') }}
+                              className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold border border-dashed border-amber-300 text-amber-600 hover:bg-amber-50 transition-colors"
+                            >
+                              <Mail className="w-3.5 h-3.5" /> Adicionar e-mail para convidar
+                            </button>
+                          ) : (
+                            /* Com e-mail: botão copiar link */
                             <button
                               type="button"
                               onClick={() => {
@@ -742,14 +795,9 @@ export default function Menu() {
                             >
                               {linkCopiado === i
                                 ? <><CheckCheck className="w-3.5 h-3.5" /> Link copiado!</>
-                                : <><Link2 className="w-3.5 h-3.5" /> Gerar link de convite</>
+                                : <><Link2 className="w-3.5 h-3.5" /> Copiar link de convite</>
                               }
                             </button>
-                          )}
-                          {!t.email && (
-                            <p className="text-[10px] text-slate-400 text-center">
-                              Adicione o e-mail para gerar o link de convite
-                            </p>
                           )}
                         </div>
                       )

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Plus, MessageCircle, ChevronRight, ChevronUp, ChevronDown, X, Check,
   Trash2, Search, Car, FileText, AlertCircle,
@@ -1010,6 +1010,8 @@ function OSDetailModal({ os, onClose, officeName }) {
   const [tecnico, setTecnico] = useState(os.tecnico || '')
   const [tecnicosList, setTecnicosList] = useState([])
   const [showTecnicoPicker, setShowTecnicoPicker] = useState(false)
+  const [pickerPos, setPickerPos] = useState(null)
+  const tecnicoButtonRef = useRef(null)
 
   const reload = async () => {
     const loaded = await itemStorage.getByOS(os.id)
@@ -1218,7 +1220,48 @@ function OSDetailModal({ os, onClose, officeName }) {
   return (
     <>
       {showTecnicoPicker && (
-        <div className="fixed inset-0 z-[61]" onClick={() => setShowTecnicoPicker(false)} />
+        <>
+          {/* Backdrop — fecha picker ao clicar fora */}
+          <div className="fixed inset-0 z-[61]" onClick={() => setShowTecnicoPicker(false)} />
+          {/* Picker fixo no viewport, acima do backdrop */}
+          {pickerPos && (
+            <div
+              className="fixed z-[62] bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden"
+              style={{ top: pickerPos.bottom + 4, left: pickerPos.left, width: pickerPos.width }}
+            >
+              <div className="p-1.5 space-y-0.5 max-h-60 overflow-y-auto">
+                <button
+                  onClick={async () => {
+                    setTecnico(''); setShowTecnicoPicker(false)
+                    await osStorage.updateTecnico(os.id, '')
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-colors ${!tecnico ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-500 hover:bg-gray-50'}`}>
+                  <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
+                    <span className="text-slate-400 text-[10px]">—</span>
+                  </div>
+                  Sem técnico
+                </button>
+                {tecnicosList.map((t, i) => (
+                  <button key={i}
+                    onClick={async () => {
+                      setTecnico(t.nome); setShowTecnicoPicker(false)
+                      await osStorage.updateTecnico(os.id, t.nome)
+                    }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-colors ${tecnico === t.nome ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-700 hover:bg-gray-50'}`}>
+                    <div className="w-7 h-7 bg-indigo-600 rounded-full flex items-center justify-center shrink-0">
+                      <span className="text-white text-[9px] font-bold">{iniciais(t.nome)}</span>
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="truncate">{t.nome}</p>
+                      {t.email && <p className="text-xs text-slate-400 truncate">{t.email}</p>}
+                    </div>
+                    {tecnico === t.nome && <Check className="w-4 h-4 text-indigo-600 shrink-0" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
       <div className="fixed inset-0 z-[60] bg-white flex flex-col max-w-lg mx-auto">
         {/* Header */}
@@ -1329,55 +1372,27 @@ function OSDetailModal({ os, onClose, officeName }) {
           </div>
 
           {/* Técnico responsável */}
-          {(tecnicosList.length > 0 || tecnico) && <div className="relative">
-              <button
-                onClick={() => status !== 'entregue' && setShowTecnicoPicker(p => !p)}
-                className={`w-full flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2 text-left ${status !== 'entregue' ? 'hover:bg-gray-100 transition-colors' : ''}`}
-              >
-                <Wrench className="w-4 h-4 text-slate-400 shrink-0" />
-                <span className="text-xs text-slate-500 shrink-0">Técnico</span>
-                <span className={`flex-1 text-sm font-semibold ${tecnico ? 'text-slate-900' : 'text-slate-400'}`}>
-                  {tecnico || 'Sem técnico'}
-                </span>
-                {tecnico && <TecnicoAvatar nome={tecnico} />}
-                {status !== 'entregue' && <Edit2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
-              </button>
-
-              {showTecnicoPicker && (
-                <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-2xl border border-gray-200 shadow-lg z-[62] overflow-hidden">
-                  <div className="p-1.5 space-y-0.5">
-                    <button
-                      onClick={async () => {
-                        setTecnico(''); setShowTecnicoPicker(false)
-                        await osStorage.updateTecnico(os.id, '')
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-colors ${!tecnico ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-500 hover:bg-gray-50'}`}>
-                      <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
-                        <span className="text-slate-400 text-[10px]">—</span>
-                      </div>
-                      Sem técnico
-                    </button>
-                    {tecnicosList.map((t, i) => (
-                      <button key={i}
-                        onClick={async () => {
-                          setTecnico(t.nome); setShowTecnicoPicker(false)
-                          await osStorage.updateTecnico(os.id, t.nome)
-                        }}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-colors ${tecnico === t.nome ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-700 hover:bg-gray-50'}`}>
-                        <div className="w-7 h-7 bg-indigo-600 rounded-full flex items-center justify-center shrink-0">
-                          <span className="text-white text-[9px] font-bold">{iniciais(t.nome)}</span>
-                        </div>
-                        <div className="flex-1 min-w-0 text-left">
-                          <p className="truncate">{t.nome}</p>
-                          {t.email && <p className="text-xs text-slate-400 truncate">{t.email}</p>}
-                        </div>
-                        {tecnico === t.nome && <Check className="w-4 h-4 text-indigo-600 shrink-0" />}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>}
+          {(tecnicosList.length > 0 || tecnico) && (
+            <button
+              ref={tecnicoButtonRef}
+              onClick={() => {
+                if (status === 'entregue') return
+                if (!showTecnicoPicker && tecnicoButtonRef.current) {
+                  setPickerPos(tecnicoButtonRef.current.getBoundingClientRect())
+                }
+                setShowTecnicoPicker(p => !p)
+              }}
+              className={`w-full flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2 text-left ${status !== 'entregue' ? 'hover:bg-gray-100 transition-colors' : ''}`}
+            >
+              <Wrench className="w-4 h-4 text-slate-400 shrink-0" />
+              <span className="text-xs text-slate-500 shrink-0">Técnico</span>
+              <span className={`flex-1 text-sm font-semibold ${tecnico ? 'text-slate-900' : 'text-slate-400'}`}>
+                {tecnico || 'Sem técnico'}
+              </span>
+              {tecnico && <TecnicoAvatar nome={tecnico} />}
+              {status !== 'entregue' && <Edit2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+            </button>
+          )}
 
           {/* Status */}
           <div className="bg-white rounded-2xl border border-gray-100 p-4">
