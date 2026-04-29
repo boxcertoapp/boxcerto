@@ -725,6 +725,19 @@ export const buildDescontoLabel = (desconto, valor) => {
   return desconto.tipo === 'percent' ? `Desconto (${desconto.valor}%${sufixo})` : `Desconto${sufixo}`
 }
 
+// Helper: carrega imagem e retorna dimensões respeitando aspect ratio
+const logoImgDims = (src, maxW, maxH) => new Promise(res => {
+  const img = new Image()
+  img.onload = () => {
+    const r = img.naturalWidth / img.naturalHeight
+    let w = maxH * r, h = maxH
+    if (w > maxW) { w = maxW; h = maxW / r }
+    res({ w, h })
+  }
+  img.onerror = () => res(null)
+  img.src = src
+})
+
 export const downloadOsPDF = async ({ os, client, vehicle, items, officeData, formatCurrencyFn, formatDateFn, desconto }) => {
   const { jsPDF } = await import('jspdf')
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
@@ -743,12 +756,26 @@ export const downloadOsPDF = async ({ os, client, vehicle, items, officeData, fo
   const line = (yy) => { doc.setDrawColor(...C.line); doc.setLineWidth(0.3); doc.line(ml, yy, W - mr, yy) }
 
   // ── Header ────────────────────────────────────────────
-  doc.setFillColor(...C.indigo)
-  doc.roundedRect(ml, y, 11, 11, 2, 2, 'F')
-  txt('B', ml + 3.8, y + 7.8, { size: 9, bold: true, color: [255, 255, 255] })
-  txt(officeData.nome || 'Minha Oficina', ml + 14, y + 4, { size: 13, bold: true })
-  if (officeData.cnpj) txt(`CNPJ: ${officeData.cnpj}`, ml + 14, y + 8, { size: 7, color: C.med })
-  if (officeData.endereco) txt(officeData.endereco, ml + 14, y + 12, { size: 7, color: C.med })
+  let textX = ml + 14 // posição X do texto (muda se tiver logo)
+  if (officeData.logo) {
+    try {
+      const dims = await logoImgDims(officeData.logo, 35, 12)
+      if (dims) {
+        const fmt = (officeData.logo.match(/data:image\/(\w+)/i) || [])[1]?.toUpperCase().replace('JPG', 'JPEG') || 'PNG'
+        doc.addImage(officeData.logo, fmt, ml, y, dims.w, dims.h)
+        textX = ml + dims.w + 3
+      } else { textX = null }
+    } catch (_) { textX = null }
+  }
+  if (textX === null || !officeData.logo) {
+    doc.setFillColor(...C.indigo)
+    doc.roundedRect(ml, y, 11, 11, 2, 2, 'F')
+    txt('B', ml + 3.8, y + 7.8, { size: 9, bold: true, color: [255, 255, 255] })
+    textX = ml + 14
+  }
+  txt(officeData.nome || 'Minha Oficina', textX, y + 4, { size: 13, bold: true })
+  if (officeData.cnpj) txt(`CNPJ: ${officeData.cnpj}`, textX, y + 8, { size: 7, color: C.med })
+  if (officeData.endereco) txt(officeData.endereco, textX, y + 12, { size: 7, color: C.med })
 
   doc.setFillColor(...C.indigo)
   doc.roundedRect(W - mr - 42, y, 42, 7, 2, 2, 'F')
@@ -849,10 +876,24 @@ export const downloadReceiptPDF = async ({ os, client, vehicle, items, officeDat
   }
 
   // ── Header ────────────────────────────────────────────
-  doc.setFillColor(...C.indigo); doc.roundedRect(ml, y, 10, 10, 2, 2, 'F')
-  txt('B', ml + 3.3, y + 7, { size: 9, bold: true, color: [255, 255, 255] })
-  txt(officeData.nome || 'Minha Oficina', ml + 13, y + 5, { size: 12, bold: true })
-  if (officeData.telefone) txt(officeData.telefone, ml + 13, y + 10, { size: 7, color: C.med })
+  let rTextX = ml + 13
+  if (officeData.logo) {
+    try {
+      const dims = await logoImgDims(officeData.logo, 30, 10)
+      if (dims) {
+        const fmt = (officeData.logo.match(/data:image\/(\w+)/i) || [])[1]?.toUpperCase().replace('JPG', 'JPEG') || 'PNG'
+        doc.addImage(officeData.logo, fmt, ml, y, dims.w, dims.h)
+        rTextX = ml + dims.w + 3
+      } else { rTextX = null }
+    } catch (_) { rTextX = null }
+  }
+  if (rTextX === null || !officeData.logo) {
+    doc.setFillColor(...C.indigo); doc.roundedRect(ml, y, 10, 10, 2, 2, 'F')
+    txt('B', ml + 3.3, y + 7, { size: 9, bold: true, color: [255, 255, 255] })
+    rTextX = ml + 13
+  }
+  txt(officeData.nome || 'Minha Oficina', rTextX, y + 5, { size: 12, bold: true })
+  if (officeData.telefone) txt(officeData.telefone, rTextX, y + 10, { size: 7, color: C.med })
 
   doc.setFillColor(...C.bg); doc.roundedRect(ml, y + 14, cW, 7, 2, 2, 'F')
   txt('RECIBO DE PAGAMENTO', W / 2, y + 19, { size: 8, bold: true, color: C.med, align: 'center' })

@@ -498,12 +498,25 @@ export default function Menu() {
     )
   }
 
+  const [logoSaving, setLogoSaving] = useState(false)
+  const [logoSaved, setLogoSaved]   = useState(false)
+
+  const autoSaveLogo = async (newLogo) => {
+    setLogoSaving(true)
+    const updated = { ...officeData, logo: newLogo }
+    setOfficeData(updated)
+    await officeDataStorage.save(user.oficina, updated)
+    setLogoSaving(false)
+    setLogoSaved(true)
+    setTimeout(() => setLogoSaved(false), 2500)
+  }
+
   const handleLogoChange = (e) => {
     const file = e.target.files[0]
     if (!file) return
     if (file.size > 1024 * 1024) return alert('A imagem deve ter no máximo 1MB.')
     const reader = new FileReader()
-    reader.onload = (ev) => setOfficeData({ ...officeData, logo: ev.target.result })
+    reader.onload = (ev) => autoSaveLogo(ev.target.result)
     reader.readAsDataURL(file)
   }
 
@@ -561,16 +574,23 @@ export default function Menu() {
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">Logotipo (máx. 1MB)</label>
             <div className="flex items-center gap-4">
-              <div onClick={() => logoRef.current?.click()}
-                className="w-20 h-20 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-all overflow-hidden shrink-0">
-                {officeData.logo ? <img src={officeData.logo} alt="Logo" className="w-full h-full object-contain" /> : <Camera className="w-8 h-8 text-slate-300" />}
+              <div onClick={() => !logoSaving && logoRef.current?.click()}
+                className={`w-20 h-20 rounded-2xl border-2 border-dashed flex items-center justify-center cursor-pointer transition-all overflow-hidden shrink-0 ${logoSaving ? 'border-gray-100 opacity-60' : 'border-gray-200 hover:border-indigo-400 hover:bg-indigo-50'}`}>
+                {officeData.logo
+                  ? <img src={officeData.logo} alt="Logo" className="w-full h-full object-contain" />
+                  : <Camera className="w-8 h-8 text-slate-300" />}
               </div>
               <div>
-                <button onClick={() => logoRef.current?.click()} className="text-indigo-600 text-sm font-semibold hover:underline block mb-1">
-                  {officeData.logo ? 'Trocar logo' : 'Adicionar logo'}
+                <button onClick={() => !logoSaving && logoRef.current?.click()} disabled={logoSaving}
+                  className="text-indigo-600 text-sm font-semibold hover:underline block mb-1 disabled:opacity-50">
+                  {logoSaving ? 'Salvando…' : logoSaved ? '✓ Logo salvo!' : officeData.logo ? 'Trocar logo' : 'Adicionar logo'}
                 </button>
-                {officeData.logo && <button onClick={() => setOfficeData({ ...officeData, logo: '' })} className="text-red-400 text-xs hover:underline">Remover</button>}
-                <p className="text-xs text-slate-400 mt-1">PNG, JPG, até 1MB</p>
+                {officeData.logo && !logoSaving && (
+                  <button onClick={() => autoSaveLogo('')} className="text-red-400 text-xs hover:underline">
+                    Remover
+                  </button>
+                )}
+                <p className="text-xs text-slate-400 mt-1">PNG, JPG, até 1MB · salvo automaticamente</p>
               </div>
               <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
             </div>
