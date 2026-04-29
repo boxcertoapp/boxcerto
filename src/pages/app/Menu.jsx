@@ -4,8 +4,26 @@ import {
   LogOut, CreditCard, ChevronRight, Shield, Building2,
   Phone, Mail, MapPin, FileText, Camera, Check, Save,
   Users, Cake, Wrench, Calendar, ChevronDown, ChevronUp,
-  UserX, MessageCircle, UserPlus, Trash2, HardHat
+  UserX, MessageCircle, UserPlus, Trash2, HardHat, Tag
 } from 'lucide-react'
+
+// ── Máscaras ──────────────────────────────────────────────
+const formatCNPJ = (val) => {
+  const n = val.replace(/\D/g, '').slice(0, 14)
+  if (n.length <= 2) return n
+  if (n.length <= 5) return `${n.slice(0,2)}.${n.slice(2)}`
+  if (n.length <= 8) return `${n.slice(0,2)}.${n.slice(2,5)}.${n.slice(5)}`
+  if (n.length <= 12) return `${n.slice(0,2)}.${n.slice(2,5)}.${n.slice(5,8)}/${n.slice(8)}`
+  return `${n.slice(0,2)}.${n.slice(2,5)}.${n.slice(5,8)}/${n.slice(8,12)}-${n.slice(12)}`
+}
+
+const formatTelefone = (val) => {
+  const n = val.replace(/\D/g, '').slice(0, 11)
+  if (n.length <= 2)  return n
+  if (n.length <= 6)  return `(${n.slice(0,2)}) ${n.slice(2)}`
+  if (n.length <= 10) return `(${n.slice(0,2)}) ${n.slice(2,6)}-${n.slice(6)}`   // fixo
+  return `(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7)}`                        // móvel
+}
 import { useAuth } from '../../contexts/AuthContext'
 import {
   officeDataStorage, clientStorage, vehicleStorage, osStorage,
@@ -456,6 +474,7 @@ export default function Menu() {
   const logoRef = useRef()
 
   const [officeData, setOfficeData] = useState({ nome: '', endereco: '', telefone: '', cnpj: '', logo: '', tecnicos: [] })
+  const [savedFields, setSavedFields] = useState({ nome: '', endereco: '', telefone: '', cnpj: '' })
   const [novoTecnico, setNovoTecnico] = useState({ nome: '', email: '' })
   const [showAddTecnico, setShowAddTecnico] = useState(false)
   const [showTecnicosSection, setShowTecnicosSection] = useState(false)
@@ -469,17 +488,21 @@ export default function Menu() {
   const [saved, setSaved] = useState(false)
   const [activeTab, setActiveTab] = useState('relatorios')
 
+  const isDirty = ['nome','cnpj','telefone','endereco'].some(k => officeData[k] !== savedFields[k])
+
   useEffect(() => {
     if (user?.oficina) {
       officeDataStorage.get(user.oficina).then(data => {
-        setOfficeData({
-          nome: data?.nome || user.oficina || '',
+        const loaded = {
+          nome:     data?.nome     || user.oficina || '',
           endereco: data?.endereco || '',
           telefone: data?.telefone || user.whatsapp || '',
-          cnpj: data?.cnpj || '',
-          logo: data?.logo || '',
+          cnpj:     data?.cnpj    || '',
+          logo:     data?.logo    || '',
           tecnicos: data?.tecnicos || [],
-        })
+        }
+        setOfficeData(loaded)
+        setSavedFields({ nome: loaded.nome, endereco: loaded.endereco, telefone: loaded.telefone, cnpj: loaded.cnpj })
       })
     }
   }, [user])
@@ -488,6 +511,7 @@ export default function Menu() {
     await officeDataStorage.save(user.oficina, officeData)
     localStorage.setItem('boxcerto_payment_defaults', JSON.stringify(paymentDefaults))
     localStorage.setItem('boxcerto_desconto_tipo', defaultDescontoTipo)
+    setSavedFields({ nome: officeData.nome, endereco: officeData.endereco, telefone: officeData.telefone, cnpj: officeData.cnpj })
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
   }
@@ -596,17 +620,20 @@ export default function Menu() {
             </div>
           </div>
           {[
-            { key: 'nome', label: 'Nome da Oficina', icon: <Building2 className="w-4 h-4" />, placeholder: 'Auto Mecânica João Silva' },
-            { key: 'cnpj', label: 'CNPJ (opcional)', icon: <FileText className="w-4 h-4" />, placeholder: '00.000.000/0001-00' },
-            { key: 'telefone', label: 'Telefone / WhatsApp', icon: <Phone className="w-4 h-4" />, placeholder: '(51) 99999-9999' },
-            { key: 'endereco', label: 'Endereço completo', icon: <MapPin className="w-4 h-4" />, placeholder: 'Rua das Flores, 123 — Porto Alegre, RS' },
+            { key: 'nome',     label: 'Nome da Oficina',      icon: <Building2 className="w-4 h-4" />, placeholder: 'Auto Mecânica João Silva',                 fmt: null },
+            { key: 'cnpj',     label: 'CNPJ (opcional)',       icon: <FileText  className="w-4 h-4" />, placeholder: '00.000.000/0001-00',                      fmt: formatCNPJ },
+            { key: 'telefone', label: 'Telefone / WhatsApp',   icon: <Phone     className="w-4 h-4" />, placeholder: '(51) 3199-8786 ou (51) 99999-9999',       fmt: formatTelefone },
+            { key: 'endereco', label: 'Endereço completo',     icon: <MapPin    className="w-4 h-4" />, placeholder: 'Rua das Flores, 123 — Porto Alegre, RS',   fmt: null },
           ].map(f => (
             <div key={f.key}>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">{f.label}</label>
               <div className="relative">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{f.icon}</div>
                 <input type="text" value={officeData[f.key]}
-                  onChange={e => setOfficeData({ ...officeData, [f.key]: e.target.value })}
+                  onChange={e => {
+                    const val = f.fmt ? f.fmt(e.target.value) : e.target.value
+                    setOfficeData(p => ({ ...p, [f.key]: val }))
+                  }}
                   placeholder={f.placeholder}
                   className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all" />
               </div>
@@ -735,9 +762,12 @@ export default function Menu() {
               onClick={() => setShowPaymentSection(p => !p)}
               className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
             >
-              <div className="text-left">
-                <p className="text-sm font-medium text-slate-700">Padrões de desconto e pagamento</p>
-                <p className="text-xs text-slate-400">Pré-selecionados ao abrir cada OS</p>
+              <div className="flex items-center gap-3">
+                <Tag className="w-4 h-4 text-indigo-500 shrink-0" />
+                <div className="text-left">
+                  <p className="text-sm font-medium text-slate-700">Padrões de desconto e pagamento</p>
+                  <p className="text-xs text-slate-400">Pré-selecionados ao abrir cada OS</p>
+                </div>
               </div>
               {showPaymentSection
                 ? <ChevronUp className="w-4 h-4 text-slate-400 shrink-0" />
@@ -782,10 +812,12 @@ export default function Menu() {
             )}
           </div>
 
-          <button onClick={handleSave}
-            className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold transition-all ${saved ? 'bg-green-600 text-white' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
-            {saved ? <><Check className="w-5 h-5" /> Salvo!</> : <><Save className="w-5 h-5" /> Salvar dados</>}
-          </button>
+          {(isDirty || saved) && (
+            <button onClick={handleSave}
+              className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold transition-all ${saved ? 'bg-green-600 text-white' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
+              {saved ? <><Check className="w-5 h-5" /> Salvo!</> : <><Save className="w-5 h-5" /> Salvar dados</>}
+            </button>
+          )}
         </div>
       )}
 
