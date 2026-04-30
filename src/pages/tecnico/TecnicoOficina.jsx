@@ -387,7 +387,8 @@ function OSDetalhe({ os: osInicial, meNome, masterId, podeAssumir, onClose, onRe
   const totalFeitas = os.checklist.filter(t => t.feito).length
 
   return (
-    <div className="fixed inset-0 z-[60] bg-white flex flex-col max-w-lg mx-auto">
+    <div className="fixed inset-0 z-[60] flex items-stretch sm:items-center justify-center sm:bg-black/40">
+    <div className="bg-white flex flex-col w-full h-full sm:h-[92vh] sm:max-w-xl sm:rounded-2xl sm:shadow-2xl sm:overflow-hidden">
 
       {/* Header */}
       <div className={`shrink-0 ${os.urgente ? 'bg-red-500' : 'bg-slate-900'}`}>
@@ -700,6 +701,7 @@ function OSDetalhe({ os: osInicial, meNome, masterId, podeAssumir, onClose, onRe
       {/* Modal histórico */}
       {showHistory && <HistoricoModal os={os} onClose={() => setShowHistory(false)} />}
     </div>
+    </div>{/* /backdrop */}
   )
 }
 
@@ -818,7 +820,7 @@ export default function TecnicoOficina() {
             </div>
           )}
           <div className="flex-1 bg-gray-50 rounded-xl px-3 py-2 text-center">
-            <p className="text-xl font-black text-slate-600">{osVisiveis.length}</p>
+            <p className="text-xl font-black text-slate-600">{osExibidas.length}</p>
             <p className="text-[10px] font-semibold text-slate-400">Visíveis</p>
           </div>
         </div>

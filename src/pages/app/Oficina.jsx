@@ -1296,8 +1296,9 @@ function OSDetailModal({ os, onClose, officeName }) {
 
   return (
     <>
-{/* sem portal — picker controlado pelo estado showTecnicoPicker */}
-      <div className="fixed inset-0 z-[60] bg-white flex flex-col max-w-lg mx-auto">
+      {/* Overlay/backdrop em telas maiores */}
+      <div className="fixed inset-0 z-[60] flex items-stretch sm:items-center justify-center sm:bg-black/40">
+      <div className="bg-white flex flex-col w-full h-full sm:h-[92vh] sm:max-w-xl sm:rounded-2xl sm:overflow-hidden sm:shadow-2xl">
         {/* Header */}
         <div className="flex items-center gap-2 p-4 border-b border-gray-100 shrink-0">
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full shrink-0"><X className="w-5 h-5 text-slate-600" /></button>
@@ -1386,7 +1387,7 @@ function OSDetailModal({ os, onClose, officeName }) {
             )
           })()}
 
-          {/* KM + badge Aprovado na mesma linha */}
+          {/* KM + Urgente + badge Aprovado na mesma linha */}
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2 flex-1 min-w-0">
               <Gauge className="w-4 h-4 text-slate-400 shrink-0" />
@@ -1406,6 +1407,22 @@ function OSDetailModal({ os, onClose, officeName }) {
                 </>
               )}
             </div>
+
+            {/* Urgente inline */}
+            {status !== 'entregue' && (
+              <button
+                type="button"
+                onClick={toggleUrgente}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors shrink-0 ${
+                  urgente
+                    ? 'bg-red-50 border-red-300 text-red-700'
+                    : 'bg-white border-gray-200 text-slate-400 hover:bg-gray-50'
+                }`}
+              >
+                <TriangleAlert className={`w-3 h-3 ${urgente ? 'text-red-500' : 'text-slate-300'}`} />
+                {urgente ? '🔴' : 'Urgente'}
+              </button>
+            )}
 
             {os.aprovacaoStatus === 'aprovado' && !itensAlteradosAposAprovacao && (
               <div className="bg-green-50 border border-green-200 rounded-xl px-2.5 py-2 flex items-center gap-1.5 shrink-0">
@@ -1490,27 +1507,13 @@ function OSDetailModal({ os, onClose, officeName }) {
             </div>
           )}
 
-          {/* ── Urgente + Problema flag ─────────────────────── */}
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={toggleUrgente}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
-                urgente
-                  ? 'bg-red-50 border-red-300 text-red-700'
-                  : 'bg-white border-gray-200 text-slate-500 hover:bg-gray-50'
-              }`}
-            >
-              <TriangleAlert className={`w-3 h-3 ${urgente ? 'text-red-500' : 'text-slate-400'}`} />
-              {urgente ? 'Urgente ✕' : 'Urgente'}
-            </button>
-            {problemaFlag && (
-              <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200">
-                <Flag className="w-3 h-3 text-amber-600" />
-                <span className="text-xs font-semibold text-amber-700">Problema</span>
-              </div>
-            )}
-          </div>
+          {/* ── Problema flag (quando existe) ──────────────── */}
+          {problemaFlag && (
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 self-start">
+              <Flag className="w-3 h-3 text-amber-600" />
+              <span className="text-xs font-semibold text-amber-700">⚠ Técnico sinalizou problema</span>
+            </div>
+          )}
 
           {/* ── Tarefas (checklist) ─────────────────────────── */}
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -1956,6 +1959,7 @@ function OSDetailModal({ os, onClose, officeName }) {
           )}
         </div>
       </div>
+      </div>{/* /backdrop */}
 
       {showDelivery && (
         <DeliveryModal os={os} items={items} desconto={desconto}
