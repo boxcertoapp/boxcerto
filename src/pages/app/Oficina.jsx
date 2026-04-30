@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Plus, MessageCircle, ChevronRight, ChevronUp, ChevronDown, X, Check,
   Trash2, Search, Car, FileText, AlertCircle,
@@ -1219,24 +1220,37 @@ function OSDetailModal({ os, onClose, officeName }) {
 
   return (
     <>
-      {showTecnicoPicker && (
+      {showTecnicoPicker && createPortal(
         <>
-          {/* Backdrop — fecha picker ao clicar fora */}
-          <div className="fixed inset-0 z-[61]" onClick={() => setShowTecnicoPicker(false)} />
-          {/* Picker fixo no viewport, acima do backdrop */}
+          {/* Backdrop via portal — fora de qualquer stacking context */}
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
+            onClick={() => setShowTecnicoPicker(false)}
+          />
+          {/* Picker via portal — garante que fica acima de tudo */}
           {pickerPos && (
             <div
-              className="fixed z-[62] bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden"
-              style={{ top: pickerPos.bottom + 4, left: pickerPos.left, width: pickerPos.width }}
+              style={{
+                position: 'fixed',
+                top: pickerPos.bottom + 4,
+                left: pickerPos.left,
+                width: pickerPos.width,
+                zIndex: 9999,
+                background: 'white',
+                borderRadius: 16,
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+                overflow: 'hidden',
+              }}
             >
-              <div className="p-1.5 space-y-0.5 max-h-60 overflow-y-auto">
+              <div style={{ padding: 6, display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 240, overflowY: 'auto' }}>
                 <button
                   onClick={async () => {
                     setTecnico(''); setShowTecnicoPicker(false)
                     await osStorage.updateTecnico(os.id, '')
                   }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-colors ${!tecnico ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-500 hover:bg-gray-50'}`}>
-                  <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
                     <span className="text-slate-400 text-[10px]">—</span>
                   </div>
                   Sem técnico
@@ -1261,7 +1275,8 @@ function OSDetailModal({ os, onClose, officeName }) {
               </div>
             </div>
           )}
-        </>
+        </>,
+        document.body
       )}
       <div className="fixed inset-0 z-[60] bg-white flex flex-col max-w-lg mx-auto">
         {/* Header */}
