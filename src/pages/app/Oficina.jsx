@@ -7,7 +7,8 @@ import {
   CreditCard, Banknote, Smartphone, DollarSign,
   Clock, Wrench, Package, Tag, Percent,
   CalendarClock, Gauge, ReceiptText, TrendingUp,
-  CheckCircle2, Edit2, Send, Loader2
+  CheckCircle2, Edit2, Send, Loader2,
+  Flag, TriangleAlert, ClipboardList, Circle
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import {
@@ -337,7 +338,9 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
           <div className="space-y-2">
             {data.manutencao.map(os => (
               <button key={os.id} onClick={() => onOpenOS(os)}
-                className="w-full bg-white rounded-2xl border border-gray-100 p-3 flex items-center gap-3 text-left hover:border-blue-100 transition-colors">
+                className={`w-full bg-white rounded-2xl border p-3 flex items-center gap-3 text-left transition-colors ${
+                  os.urgente ? 'border-red-200 hover:border-red-300' : 'border-gray-100 hover:border-blue-100'
+                }`}>
                 <div className="relative shrink-0">
                   <PlateTag placa={os.vehicle?.placa || '???'} />
                   {os.aprovacaoStatus === 'aprovado' && (
@@ -347,8 +350,27 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-slate-900 text-sm truncate">{os.vehicle?.modelo}</p>
-                  <p className="text-xs text-slate-500 truncate">{os.client?.nome}</p>
+                  <div className="flex items-center gap-1.5">
+                    {os.urgente && <TriangleAlert className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+                    <p className="font-semibold text-slate-900 text-sm truncate">{os.vehicle?.modelo}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <p className="text-xs text-slate-500 truncate">{os.client?.nome}</p>
+                    {os.problemaFlag && <Flag className="w-3 h-3 text-amber-500 shrink-0" />}
+                  </div>
+                  {os.checklist?.length > 0 && (
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-indigo-400 rounded-full"
+                          style={{ width: `${Math.round((os.checklist.filter(t=>t.feito).length / os.checklist.length) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-slate-400 shrink-0">
+                        {os.checklist.filter(t=>t.feito).length}/{os.checklist.length}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <TecnicoAvatar nome={os.tecnico} />
                 <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
@@ -1013,6 +1035,54 @@ function OSDetailModal({ os, onClose, officeName }) {
   const [showTecnicoPicker, setShowTecnicoPicker] = useState(false)
   const [pickerPos, setPickerPos] = useState(null)
   const tecnicoButtonRef = useRef(null)
+  // Bloco 1 — novas funcionalidades do técnico
+  const [urgente, setUrgenteState] = useState(os.urgente || false)
+  const [problemaFlag] = useState(os.problemaFlag || false)
+  const [checklist, setChecklist]   = useState(os.checklist || [])
+  const [notasInternas, setNotasInternas] = useState(os.notasInternas || [])
+  const [novaTarefaGerente, setNovaTarefaGerente] = useState('')
+  const [notaGerenteText, setNotaGerenteText] = useState('')
+  const [sendingNotaGerente, setSendingNotaGerente] = useState(false)
+  const [showNotasSection, setShowNotasSection] = useState(false)
+  const [showChecklistSection, setShowChecklistSection] = useState(false)
+  const notasGerenteEndRef = useRef(null)
+
+  const toggleUrgente = async () => {
+    const novo = !urgente
+    setUrgenteState(novo)
+    await osStorage.setUrgente(os.id, novo)
+  }
+
+  const adicionarTarefaGerente = async () => {
+    if (!novaTarefaGerente.trim()) return
+    const nova = [...checklist, { id: crypto.randomUUID(), texto: novaTarefaGerente.trim(), feito: false }]
+    setChecklist(nova)
+    setNovaTarefaGerente('')
+    await osStorage.updateChecklist(os.id, nova)
+  }
+
+  const removerTarefaGerente = async (idx) => {
+    const nova = checklist.filter((_, i) => i !== idx)
+    setChecklist(nova)
+    await osStorage.updateChecklist(os.id, nova)
+  }
+
+  const enviarNotaGerente = async () => {
+    if (!notaGerenteText.trim()) return
+    setSendingNotaGerente(true)
+    const nota = {
+      autor: 'Gerente',
+      texto: notaGerenteText.trim(),
+      at: new Date().toISOString(),
+      tipo: 'gerente',
+    }
+    const novas = [...notasInternas, nota]
+    setNotasInternas(novas)
+    setNotaGerenteText('')
+    await osStorage.addNotaInterna(os.id, nota)
+    setSendingNotaGerente(false)
+    setTimeout(() => notasGerenteEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+  }
 
   const reload = async () => {
     const loaded = await itemStorage.getByOS(os.id)
@@ -1399,6 +1469,164 @@ function OSDetailModal({ os, onClose, officeName }) {
               )}
             </div>
           )}
+
+          {/* ── Urgente + Problema flag ─────────────────────── */}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={toggleUrgente}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold border transition-colors ${
+                urgente
+                  ? 'bg-red-50 border-red-200 text-red-700'
+                  : 'bg-white border-gray-200 text-slate-500 hover:bg-gray-50'
+              }`}
+            >
+              <TriangleAlert className={`w-3.5 h-3.5 ${urgente ? 'text-red-500' : 'text-slate-400'}`} />
+              {urgente ? 'Urgente (toque para remover)' : 'Marcar como urgente'}
+            </button>
+            {problemaFlag && (
+              <div className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200">
+                <Flag className="w-3.5 h-3.5 text-amber-600" />
+                <span className="text-xs font-semibold text-amber-700">Problema</span>
+              </div>
+            )}
+          </div>
+
+          {/* ── Tarefas (checklist) ─────────────────────────── */}
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowChecklistSection(p => !p)}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+            >
+              <ClipboardList className="w-4 h-4 text-slate-400 shrink-0" />
+              <span className="flex-1 text-sm font-semibold text-slate-700">Tarefas</span>
+              {checklist.length > 0 && (
+                <span className="text-xs text-indigo-600 font-semibold">
+                  {checklist.filter(t => t.feito).length}/{checklist.length}
+                </span>
+              )}
+              {showChecklistSection
+                ? <ChevronUp className="w-4 h-4 text-slate-400 shrink-0" />
+                : <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+              }
+            </button>
+            {showChecklistSection && (
+              <div className="border-t border-gray-100 px-4 py-3 space-y-2">
+                {checklist.length > 0 && (
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-3">
+                    <div
+                      className="h-full bg-indigo-500 rounded-full transition-all"
+                      style={{ width: `${Math.round((checklist.filter(t=>t.feito).length / checklist.length) * 100)}%` }}
+                    />
+                  </div>
+                )}
+                {checklist.map((task, i) => (
+                  <div key={task.id || i} className="flex items-center gap-2 group">
+                    <div className={`w-4 h-4 rounded shrink-0 flex items-center justify-center border ${task.feito ? 'bg-indigo-500 border-indigo-500' : 'border-gray-300'}`}>
+                      {task.feito && <Check className="w-2.5 h-2.5 text-white" />}
+                    </div>
+                    <span className={`flex-1 text-sm ${task.feito ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                      {task.texto}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removerTarefaGerente(i)}
+                      className="opacity-0 group-hover:opacity-100 p-1 text-red-400 rounded transition-all"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                {checklist.length === 0 && (
+                  <p className="text-xs text-slate-400 text-center py-1">Nenhuma tarefa</p>
+                )}
+                <div className="flex gap-2 pt-1">
+                  <input
+                    type="text"
+                    value={novaTarefaGerente}
+                    onChange={e => setNovaTarefaGerente(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && adicionarTarefaGerente()}
+                    placeholder="Adicionar tarefa..."
+                    className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:border-indigo-400 bg-gray-50"
+                  />
+                  <button
+                    type="button"
+                    onClick={adicionarTarefaGerente}
+                    disabled={!novaTarefaGerente.trim()}
+                    className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold disabled:opacity-40 hover:bg-indigo-700 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Notas internas ──────────────────────────────── */}
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowNotasSection(p => !p)}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+            >
+              <Flag className="w-4 h-4 text-slate-400 shrink-0" />
+              <span className="flex-1 text-sm font-semibold text-slate-700">Notas internas</span>
+              {notasInternas.length > 0 && (
+                <span className="text-xs text-slate-400">{notasInternas.length}</span>
+              )}
+              {problemaFlag && (
+                <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full mr-1">⚠ Problema</span>
+              )}
+              {showNotasSection
+                ? <ChevronUp className="w-4 h-4 text-slate-400 shrink-0" />
+                : <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+              }
+            </button>
+            {showNotasSection && (
+              <div className="border-t border-gray-100">
+                <div className="px-4 py-3 space-y-2 max-h-48 overflow-y-auto">
+                  {notasInternas.length === 0 && (
+                    <p className="text-xs text-slate-400 text-center py-2">Nenhuma nota ainda</p>
+                  )}
+                  {notasInternas.map((nota, i) => {
+                    const eh = nota.tipo === 'gerente'
+                    return (
+                      <div key={i} className={`flex flex-col ${eh ? 'items-end' : 'items-start'}`}>
+                        <div className={`max-w-[85%] px-3 py-2 rounded-xl text-xs ${
+                          eh ? 'bg-indigo-600 text-white rounded-tr-sm' : 'bg-gray-100 text-slate-800 rounded-tl-sm'
+                        }`}>
+                          {nota.texto}
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-0.5 px-1">
+                          {nota.autor} · {nota.at ? new Date(nota.at).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : ''}
+                        </p>
+                      </div>
+                    )
+                  })}
+                  <div ref={notasGerenteEndRef} />
+                </div>
+                <div className="px-4 pb-3 flex gap-2 border-t border-gray-50">
+                  <input
+                    type="text"
+                    value={notaGerenteText}
+                    onChange={e => setNotaGerenteText(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && enviarNotaGerente()}
+                    placeholder="Nota interna..."
+                    className="flex-1 px-3 py-2 text-xs rounded-lg border border-gray-200 focus:outline-none focus:border-indigo-400 bg-gray-50"
+                  />
+                  <button
+                    type="button"
+                    onClick={enviarNotaGerente}
+                    disabled={!notaGerenteText.trim() || sendingNotaGerente}
+                    className="w-9 h-9 bg-indigo-600 text-white rounded-lg flex items-center justify-center disabled:opacity-40 hover:bg-indigo-700 transition-colors"
+                  >
+                    {sendingNotaGerente ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Status */}
           <div className="bg-white rounded-2xl border border-gray-100 p-4">

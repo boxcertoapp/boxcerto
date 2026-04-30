@@ -53,6 +53,11 @@ const mapOS = (os) => !os ? null : ({
   aprovacaoToken: os.aprovacao_token || null,
   aprovacaoStatus: os.aprovacao_status || 'pendente',
   aprovadoEm: os.aprovado_em || null,
+  // Bloco 1 — técnico
+  notasInternas: os.notas_internas || [],
+  checklist:     os.checklist      || [],
+  urgente:       os.urgente        || false,
+  problemaFlag:  os.problema_flag  || false,
 })
 
 const mapItem = (i) => !i ? null : ({
@@ -305,6 +310,60 @@ export const osStorage = {
       tecnico: tecnico || null,
       updated_at: new Date().toISOString(),
     }).eq('id', id)
+  },
+
+  // ── Bloco 1: Técnico ──────────────────────────────────────
+  updateChecklist: async (id, checklist) => {
+    await supabase.from('service_orders').update({
+      checklist,
+      updated_at: new Date().toISOString(),
+    }).eq('id', id)
+  },
+
+  addNotaInterna: async (id, nota) => {
+    // nota: { autor, texto, at, tipo: 'tecnico'|'gerente' }
+    const { data } = await supabase.from('service_orders').select('notas_internas').eq('id', id).single()
+    const atuais = data?.notas_internas || []
+    await supabase.from('service_orders').update({
+      notas_internas: [...atuais, nota],
+      updated_at: new Date().toISOString(),
+    }).eq('id', id)
+  },
+
+  setUrgente: async (id, urgente) => {
+    await supabase.from('service_orders').update({
+      urgente,
+      updated_at: new Date().toISOString(),
+    }).eq('id', id)
+  },
+
+  setProblemaFlag: async (id, flag) => {
+    await supabase.from('service_orders').update({
+      problema_flag: flag,
+      updated_at: new Date().toISOString(),
+    }).eq('id', id)
+  },
+
+  getVehicleHistory: async (vehicleId, currentOsId) => {
+    const { data } = await supabase
+      .from('service_orders')
+      .select('*, service_items(*)')
+      .eq('vehicle_id', vehicleId)
+      .neq('id', currentOsId)
+      .order('created_at', { ascending: false })
+      .limit(8)
+    return (data || []).map(os => ({
+      id:         os.id,
+      status:     os.status,
+      createdAt:  os.created_at,
+      km:         os.km || '',
+      observacoes: os.observacoes || '',
+      items: (os.service_items || []).map(i => ({
+        descricao: i.descricao,
+        venda: Number(i.venda || 0),
+      })),
+      total: (os.service_items || []).reduce((s, i) => s + Number(i.venda || 0), 0),
+    }))
   },
 
   deliverOS: async (id, { deliveredAt, deliveryNotes, payments, desconto }) => {
