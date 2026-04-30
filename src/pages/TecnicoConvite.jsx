@@ -1,9 +1,9 @@
 /**
  * TecnicoConvite — Página de aceite de convite do técnico
- * URL: /tecnico-convite?m=MASTER_ID&n=NOME&e=EMAIL
+ * URL: /tecnico-convite?m=MASTER_ID&e=EMAIL (encodeURIComponent)
  *
- * O gerente gera este link e compartilha (WhatsApp / cópia).
- * O técnico acessa, define sua senha e já entra no app.
+ * O gerente gera este link e compartilha (WhatsApp / e-mail / cópia).
+ * O técnico acessa, informa seu nome, define senha e já entra no app.
  */
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -15,70 +15,65 @@ export default function TecnicoConvite() {
   const [params] = useSearchParams()
   const navigate  = useNavigate()
 
-  // Dados do convite vindos da URL
-  const masterId  = params.get('m') || ''
-  const nomeParam = (() => { try { return atob(params.get('n') || '') } catch { return '' } })()
-  const emailParam = (() => { try { return atob(params.get('e') || '') } catch { return '' } })()
+  // Dados do convite vindos da URL — encodeURIComponent simples
+  const masterId   = params.get('m') || ''
+  const emailParam = params.get('e') ? decodeURIComponent(params.get('e')) : ''
 
-  const [oficina, setOficina] = useState('')
-  const [loadingOficina, setLoadingOficina] = useState(true)
-  const [invalido, setInvalido] = useState(false)
+  const [oficina, setOficina]           = useState('')
+  const [loadingOficina, setLoading0]   = useState(true)
+  const [invalido, setInvalido]         = useState(false)
 
-  const [senha, setSenha] = useState('')
+  // Formulário
+  const [nome, setNome]           = useState('')
+  const [senha, setSenha]         = useState('')
   const [confirmar, setConfirmar] = useState('')
   const [showSenha, setShowSenha] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [erro, setErro] = useState('')
-  const [sucesso, setSucesso] = useState(false)
+  const [loading, setLoading]     = useState(false)
+  const [erro, setErro]           = useState('')
+  const [sucesso, setSucesso]     = useState(false)
 
   // Carrega nome da oficina para mostrar ao técnico
   useEffect(() => {
-    if (!masterId || !emailParam || !nomeParam) {
+    if (!masterId || !emailParam) {
       setInvalido(true)
-      setLoadingOficina(false)
+      setLoading0(false)
       return
     }
     const load = async () => {
       try {
         const { data } = await supabase
           .from('office_data')
-          .select('nome_fantasia, razao_social')
+          .select('nome')
           .eq('user_id', masterId)
           .maybeSingle()
-        setOficina(data?.nome_fantasia || data?.razao_social || 'sua oficina')
+        setOficina(data?.nome || 'sua oficina')
       } catch {
         setOficina('sua oficina')
       } finally {
-        setLoadingOficina(false)
+        setLoading0(false)
       }
     }
     load()
-  }, [masterId, emailParam, nomeParam])
+  }, [masterId, emailParam])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setErro('')
 
-    if (senha.length < 6) {
-      setErro('A senha deve ter pelo menos 6 caracteres.')
-      return
-    }
-    if (senha !== confirmar) {
-      setErro('As senhas não coincidem.')
-      return
-    }
+    if (!nome.trim()) { setErro('Informe seu nome.'); return }
+    if (senha.length < 6) { setErro('A senha deve ter pelo menos 6 caracteres.'); return }
+    if (senha !== confirmar) { setErro('As senhas não coincidem.'); return }
 
     setLoading(true)
     try {
-      // Registra o técnico com metadata especial
       const { error } = await supabase.auth.signUp({
         email: emailParam,
         password: senha,
         options: {
           data: {
-            tipo: 'tecnico',
+            tipo:      'tecnico',
             master_id: masterId,
-            nome: nomeParam,
+            nome:      nome.trim(),
           },
         },
       })
@@ -94,9 +89,8 @@ export default function TecnicoConvite() {
       }
 
       setSucesso(true)
-      // Aguarda um momento para mostrar sucesso e redireciona
-      setTimeout(() => navigate('/login?tecnico=1'), 2500)
-    } catch (err) {
+      setTimeout(() => navigate('/login?tecnico=1'), 2800)
+    } catch {
       setErro('Erro inesperado. Tente novamente.')
       setLoading(false)
     }
@@ -110,7 +104,8 @@ export default function TecnicoConvite() {
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
           <h2 className="text-lg font-semibold text-slate-800 mb-2">Link inválido</h2>
           <p className="text-sm text-slate-500">
-            Este link de convite está incompleto ou expirado. Peça ao gerente da oficina um novo link.
+            Este link de convite está incompleto ou expirado.<br />
+            Peça ao gerente da oficina um novo link.
           </p>
         </div>
       </div>
@@ -136,7 +131,7 @@ export default function TecnicoConvite() {
           </div>
           <h2 className="text-lg font-semibold text-slate-800 mb-2">Conta criada!</h2>
           <p className="text-sm text-slate-500 mb-1">
-            Bem-vindo(a), <strong>{nomeParam}</strong>!
+            Bem-vindo(a), <strong>{nome}</strong>!
           </p>
           <p className="text-sm text-slate-400">
             Verifique seu e-mail para confirmar a conta e depois faça login.
@@ -165,15 +160,20 @@ export default function TecnicoConvite() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Nome (read-only) */}
+          {/* Nome — editável */}
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Seu nome</label>
-            <div className="px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-slate-700 border border-gray-100">
-              {nomeParam}
-            </div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Seu nome completo</label>
+            <input
+              type="text"
+              value={nome}
+              onChange={e => setNome(e.target.value)}
+              placeholder="Ex.: João da Silva"
+              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              required
+            />
           </div>
 
-          {/* E-mail (read-only) */}
+          {/* E-mail — somente leitura */}
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1.5">E-mail</label>
             <div className="px-3.5 py-2.5 bg-gray-50 rounded-xl text-sm text-slate-500 border border-gray-100">
@@ -230,11 +230,10 @@ export default function TecnicoConvite() {
             disabled={loading}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl text-sm transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
           >
-            {loading ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Criando conta...</>
-            ) : (
-              'Criar minha conta'
-            )}
+            {loading
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Criando conta...</>
+              : 'Criar minha conta'
+            }
           </button>
         </form>
 

@@ -108,13 +108,13 @@ export default function TecnicoOficina() {
     const loadSettings = async () => {
       const { data } = await supabase
         .from('office_data')
-        .select('pode_assumir_os, nome_fantasia, razao_social')
+        .select('pode_assumir_os, nome')
         .eq('user_id', user.masterId)
         .maybeSingle()
       if (data) {
         setOfficeSettings({
           podeAssumir: data.pode_assumir_os || false,
-          oficinaNome: data.nome_fantasia || data.razao_social || '',
+          oficinaNome: data.nome || '',
         })
       }
     }
@@ -630,7 +630,7 @@ function OSDetailModal({ os, meNome, masterId, podeAssumir, onClose, onSave, onA
             PDF
           </button>
           <button
-            onClick={updateOS}
+            onClick={onSave}
             disabled={os._saving}
             className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-60"
           >
