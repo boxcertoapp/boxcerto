@@ -1959,7 +1959,7 @@ function OSDetailModal({ os, onClose, officeName }) {
           )}
         </div>
       </div>
-      </div>{/* /backdrop */}
+      </div>
 
       {showDelivery && (
         <DeliveryModal os={os} items={items} desconto={desconto}

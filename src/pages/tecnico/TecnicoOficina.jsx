@@ -701,7 +701,7 @@ function OSDetalhe({ os: osInicial, meNome, masterId, podeAssumir, onClose, onRe
       {/* Modal histórico */}
       {showHistory && <HistoricoModal os={os} onClose={() => setShowHistory(false)} />}
     </div>
-    </div>{/* /backdrop */}
+    </div>
   )
 }
 
