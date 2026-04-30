@@ -434,6 +434,7 @@ function HistoricoTab({ meNome }) {
 
 // ── Tab: Estoque ───────────────────────────────────────────────
 function EstoqueTab({ meNome }) {
+  const { user } = useAuth()
   const [estoque, setEstoque]   = useState([])
   const [loading, setLoading]   = useState(true)
   const [busca, setBusca]       = useState('')
@@ -446,10 +447,13 @@ function EstoqueTab({ meNome }) {
   useEffect(() => { loadEstoque() }, [])
 
   const loadEstoque = async () => {
-    const { data } = await supabase
+    // Filtra pelo masterId para garantir acesso mesmo sem RLS dedicada
+    const { data, error } = await supabase
       .from('inventory')
       .select('id, produto, quantidade, valor_venda')
+      .eq('user_id', user.masterId)
       .order('produto')
+    if (error) console.error('Estoque:', error.message)
     setEstoque((data || []).map(i => ({
       id: i.id,
       produto: i.produto,
@@ -1151,7 +1155,7 @@ export default function TecnicoOficina() {
     )
   }
 
-  // ── Layout principal com bottom nav ────────────────────────────
+  // ── Layout principal com nav responsiva ───────────────────────
   const NAV = [
     { key: 'oficina',   icon: Wrench,  label: 'Oficina'   },
     { key: 'historico', icon: Clock,   label: 'Histórico' },
@@ -1159,7 +1163,30 @@ export default function TecnicoOficina() {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
+
+      {/* ── Sidebar desktop (lg+) ── */}
+      <aside className="hidden lg:flex flex-col w-48 bg-white border-r border-gray-100 fixed top-[53px] left-0 bottom-0 z-30">
+        <nav className="flex-1 px-3 py-4 space-y-1">
+          {NAV.map(({ key, icon: Icon, label }) => (
+            <button
+              key={key}
+              onClick={() => setActiveScreen(key)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                activeScreen === key
+                  ? 'bg-indigo-50 text-indigo-600'
+                  : 'text-slate-500 hover:bg-gray-50 hover:text-slate-700'
+              }`}
+            >
+              <Icon className="w-4.5 h-4.5 shrink-0" />
+              {label}
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      {/* ── Conteúdo principal ── */}
+      <div className="flex-1 lg:ml-48">
 
       {/* ── Tela: Oficina (lista de OS) ── */}
       {activeScreen === 'oficina' && (
@@ -1236,9 +1263,9 @@ export default function TecnicoOficina() {
         <EstoqueTab meNome={meNome} />
       )}
 
-      {/* ── Bottom nav ── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-100 safe-area-bottom">
-        <div className="max-w-xl mx-auto flex">
+      {/* ── Bottom nav — só mobile ── */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-100">
+        <div className="flex">
           {NAV.map(({ key, icon: Icon, label }) => (
             <button
               key={key}
@@ -1253,6 +1280,8 @@ export default function TecnicoOficina() {
           ))}
         </div>
       </nav>
+
+      </div>{/* /conteúdo principal */}
     </div>
   )
 }
