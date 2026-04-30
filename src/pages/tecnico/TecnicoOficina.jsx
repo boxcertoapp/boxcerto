@@ -280,6 +280,7 @@ function HistoricoTab({ meNome }) {
   const [usaMes, setUsaMes]     = useState(false)
   const [mesFiltro, setMesFiltro] = useState(now.getMonth())
   const [anoFiltro, setAnoFiltro] = useState(now.getFullYear())
+  const [busca, setBusca]       = useState('')
   const PAGE = 10
 
   const prevMes = () => {
@@ -328,8 +329,16 @@ function HistoricoTab({ meNome }) {
     setLoading(false)
   }
 
-  const visivel = lista.slice(0, page * PAGE)
-  const totalVal = lista.reduce((s, os) => s + os.total, 0)
+  const listaBuscada = busca.trim()
+    ? lista.filter(os =>
+        os.placa.toLowerCase().includes(busca.toLowerCase()) ||
+        os.modelo.toLowerCase().includes(busca.toLowerCase()) ||
+        os.clienteNome.toLowerCase().includes(busca.toLowerCase()) ||
+        os.itens.some(it => it.toLowerCase().includes(busca.toLowerCase()))
+      )
+    : lista
+  const visivel  = listaBuscada.slice(0, page * PAGE)
+  const totalVal = listaBuscada.reduce((s, os) => s + os.total, 0)
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -362,11 +371,28 @@ function HistoricoTab({ meNome }) {
           )}
         </div>
 
+        {/* Campo de busca */}
+        <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2.5 mt-2">
+          <Search className="w-4 h-4 text-slate-400 shrink-0" />
+          <input
+            type="text"
+            value={busca}
+            onChange={e => { setBusca(e.target.value); setPage(1) }}
+            placeholder="Placa, veículo, cliente, serviço..."
+            className="flex-1 bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
+          />
+          {busca && (
+            <button onClick={() => setBusca('')} className="text-slate-400 hover:text-slate-600">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
         {/* Resumo */}
-        {!loading && lista.length > 0 && (
+        {!loading && listaBuscada.length > 0 && (
           <div className="flex gap-2 mt-2">
             <div className="flex-1 bg-indigo-50 rounded-xl px-3 py-2 text-center">
-              <p className="text-lg font-black text-indigo-700">{lista.length}</p>
+              <p className="text-lg font-black text-indigo-700">{listaBuscada.length}</p>
               <p className="text-[10px] font-semibold text-indigo-500">Serviços</p>
             </div>
             <div className="flex-1 bg-green-50 rounded-xl px-3 py-2 text-center">
@@ -381,11 +407,11 @@ function HistoricoTab({ meNome }) {
       <div className="px-4 py-4 space-y-3">
         {loading ? (
           <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 text-indigo-400 animate-spin" /></div>
-        ) : lista.length === 0 ? (
+        ) : listaBuscada.length === 0 ? (
           <div className="text-center py-16">
             <Clock className="w-12 h-12 text-slate-200 mx-auto mb-3" />
             <p className="text-sm font-semibold text-slate-400">
-              {usaMes ? `Nenhum serviço em ${MESES[mesFiltro]}/${anoFiltro}` : 'Nenhum serviço encontrado'}
+              {busca ? `Nenhum resultado para "${busca}"` : usaMes ? `Nenhum serviço em ${MESES[mesFiltro]}/${anoFiltro}` : 'Nenhum serviço encontrado'}
             </p>
           </div>
         ) : (
@@ -417,12 +443,12 @@ function HistoricoTab({ meNome }) {
                 )}
               </div>
             ))}
-            {visivel.length < lista.length && (
+            {visivel.length < listaBuscada.length && (
               <button
                 onClick={() => setPage(p => p + 1)}
                 className="w-full py-3 rounded-2xl border border-gray-200 text-sm font-semibold text-slate-500 hover:bg-gray-50 transition-colors"
               >
-                Carregar mais ({lista.length - visivel.length} restantes)
+                Carregar mais ({listaBuscada.length - visivel.length} restantes)
               </button>
             )}
           </>
@@ -433,11 +459,33 @@ function HistoricoTab({ meNome }) {
 }
 
 // ── Tab: Estoque ───────────────────────────────────────────────
+const SORT_OPTS = [
+  { key: 'az',        label: 'A→Z'       },
+  { key: 'za',        label: 'Z→A'       },
+  { key: 'val-desc',  label: 'Maior $'   },
+  { key: 'val-asc',   label: 'Menor $'   },
+  { key: 'qty-desc',  label: 'Mais un.'  },
+  { key: 'qty-asc',   label: 'Menos un.' },
+]
+
+function sortEstoque(lista, sort) {
+  const cmp = {
+    'az':       (a, b) => a.produto.localeCompare(b.produto),
+    'za':       (a, b) => b.produto.localeCompare(a.produto),
+    'val-desc': (a, b) => b.valorVenda  - a.valorVenda,
+    'val-asc':  (a, b) => a.valorVenda  - b.valorVenda,
+    'qty-desc': (a, b) => b.quantidade  - a.quantidade,
+    'qty-asc':  (a, b) => a.quantidade  - b.quantidade,
+  }
+  return [...lista].sort(cmp[sort] || cmp['az'])
+}
+
 function EstoqueTab({ meNome }) {
   const { user } = useAuth()
   const [estoque, setEstoque]   = useState([])
   const [loading, setLoading]   = useState(true)
   const [busca, setBusca]       = useState('')
+  const [sort, setSort]         = useState('az')
   const [addModal, setAddModal] = useState(null)   // item selecionado
   const [osAtivas, setOsAtivas] = useState([])
   const [osId, setOsId]         = useState('')
@@ -452,7 +500,6 @@ function EstoqueTab({ meNome }) {
       .from('inventory')
       .select('id, produto, quantidade, valor_venda')
       .eq('user_id', user.masterId)
-      .order('produto')
     if (error) console.error('Estoque:', error.message)
     setEstoque((data || []).map(i => ({
       id: i.id,
@@ -498,8 +545,9 @@ function EstoqueTab({ meNome }) {
     setAdding(false)
   }
 
-  const filtrado = estoque.filter(i =>
-    i.produto.toLowerCase().includes(busca.toLowerCase())
+  const filtrado = sortEstoque(
+    estoque.filter(i => i.produto.toLowerCase().includes(busca.toLowerCase())),
+    sort
   )
 
   return (
@@ -507,7 +555,9 @@ function EstoqueTab({ meNome }) {
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 pt-4 pb-3">
         <p className="text-base font-bold text-slate-900 mb-3">Consulta de Estoque</p>
-        <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2.5">
+
+        {/* Busca */}
+        <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2.5 mb-3">
           <Search className="w-4 h-4 text-slate-400 shrink-0" />
           <input
             type="text"
@@ -516,6 +566,23 @@ function EstoqueTab({ meNome }) {
             placeholder="Buscar produto..."
             className="flex-1 bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
           />
+        </div>
+
+        {/* Chips de ordenação */}
+        <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+          {SORT_OPTS.map(opt => (
+            <button
+              key={opt.key}
+              onClick={() => setSort(opt.key)}
+              className={`shrink-0 text-[11px] font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                sort === opt.key
+                  ? 'bg-indigo-600 text-white border-indigo-600'
+                  : 'bg-white text-slate-500 border-gray-200 hover:border-indigo-300 hover:text-indigo-600'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
       </div>
 
