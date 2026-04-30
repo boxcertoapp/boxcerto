@@ -200,7 +200,7 @@ export default function TecnicoOficina() {
       </div>
 
       {/* Grupos */}
-      {(['manutencao', 'orcamento', 'pronto'] as const).map(status => {
+      {['manutencao', 'orcamento', 'pronto'].map(status => {
         const grupo = grupos[status]
         if (grupo.length === 0) return null
         const info = STATUS_LABEL[status]
