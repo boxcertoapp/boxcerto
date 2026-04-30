@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import {
   CheckCircle2, MessageCircle, Clock, Car, Wrench,
-  Shield, Loader2, XCircle, ChevronDown, ChevronUp, Bell,
+  Shield, Loader2, XCircle, ChevronDown, ChevronUp, Bell, RefreshCw,
 } from 'lucide-react'
 import { osStorage, formatCurrency } from '../lib/storage'
 
@@ -14,12 +14,17 @@ const PASSOS = [
   { key: 'pronto',    label: 'Pronto'           },
 ]
 
-function getPassoAtivo(os) {
-  if (!os) return 0
-  if (os.aprovacao_status !== 'aprovado') return 0          // pendente
-  if (os.status === 'orcamento')          return 1          // aprovado, aguardando início
-  if (os.status === 'manutencao')         return 2          // em serviço
-  return 3                                                   // pronto / entregue
+// Retorna o passo atual (0-3) e se o orçamento foi atualizado após aprovação anterior
+function getEstado(os) {
+  if (!os) return { passo: 0, foiAtualizado: false }
+  const aprovado    = os.aprovacao_status === 'aprovado'
+  const temHistorico = !!os.aprovado_em   // já foi aprovado antes
+  if (!aprovado) {
+    return { passo: 0, foiAtualizado: temHistorico }  // pendente — 1ª vez ou re-aprovação
+  }
+  if (os.status === 'orcamento')  return { passo: 1, foiAtualizado: false }
+  if (os.status === 'manutencao') return { passo: 2, foiAtualizado: false }
+  return { passo: 3, foiAtualizado: false }
 }
 
 function Stepper({ ativo }) {
@@ -128,20 +133,32 @@ function OrcamentoAcordeon({ items, total, desconto, descontoValor }) {
 }
 
 // ── Conteúdo por passo ───────────────────────────────────────────
-function ConteudoPasso({ passo, os, items, total, desconto, descontoValor, onAprovar, aprovando, onWhatsApp }) {
+function ConteudoPasso({ passo, foiAtualizado, os, items, total, desconto, descontoValor, onAprovar, aprovando, onWhatsApp }) {
   if (passo === 0) {
     // Aguardando aprovação — exibe orçamento completo
     return (
       <>
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
-          <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
-            <Clock className="w-5 h-5 text-amber-600" />
+        {foiAtualizado ? (
+          <div className="bg-orange-50 border border-orange-300 rounded-2xl p-4 flex items-start gap-3">
+            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+              <RefreshCw className="w-5 h-5 text-orange-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-orange-800">Orçamento atualizado</p>
+              <p className="text-sm text-orange-600 mt-0.5">A oficina fez alterações no orçamento. Por favor, revise os valores e aprove novamente.</p>
+            </div>
           </div>
-          <div>
-            <p className="font-semibold text-amber-800">Aguardando sua aprovação</p>
-            <p className="text-sm text-amber-600 mt-0.5">Revise e aprove para iniciarmos o serviço.</p>
+        ) : (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-amber-800">Aguardando sua aprovação</p>
+              <p className="text-sm text-amber-600 mt-0.5">Revise e aprove para iniciarmos o serviço.</p>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Itens */}
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -340,13 +357,16 @@ export default function OrcamentoPublico() {
     if (!os) return
     const tel = (os.office?.telefone || '').replace(/\D/g, '')
     const passo = getPassoAtivo(os)
+    const { passo: p, foiAtualizado: atualizado } = getEstado(os)
     const msgs = [
-      `Olá! Tenho uma dúvida sobre o orçamento do ${os.vehicle?.modelo} (${os.vehicle?.placa}).`,
+      atualizado
+        ? `Olá! Vi que o orçamento do ${os.vehicle?.modelo} (${os.vehicle?.placa}) foi atualizado. Pode me explicar as alterações?`
+        : `Olá! Tenho uma dúvida sobre o orçamento do ${os.vehicle?.modelo} (${os.vehicle?.placa}).`,
       `Olá! Aprovei o orçamento do ${os.vehicle?.modelo} (${os.vehicle?.placa}) e gostaria de mais informações.`,
       `Olá! Gostaria de saber como está o serviço do ${os.vehicle?.modelo} (${os.vehicle?.placa}).`,
       `Olá! Vi que o ${os.vehicle?.modelo} (${os.vehicle?.placa}) está pronto. Quando posso retirar?`,
     ]
-    const texto = msgs[passo] || msgs[0]
+    const texto = msgs[p] || msgs[0]
     if (tel) {
       window.open(`https://wa.me/55${tel}?text=${encodeURIComponent(texto)}`, '_blank')
     } else {
@@ -393,7 +413,7 @@ export default function OrcamentoPublico() {
   })()
   const total = subtotal - descontoValor
 
-  const passo        = getPassoAtivo(os)
+  const { passo, foiAtualizado } = getEstado(os)
   const oficinaNome  = os.office?.nome    || 'Oficina'
   const oficinaTel   = os.office?.telefone || ''
   const oficinaLogo  = os.office?.logo    || ''
@@ -447,6 +467,7 @@ export default function OrcamentoPublico() {
         {/* Conteúdo dinâmico por passo */}
         <ConteudoPasso
           passo={passo}
+          foiAtualizado={foiAtualizado}
           os={os}
           items={items}
           total={total}
