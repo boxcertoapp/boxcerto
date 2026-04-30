@@ -1220,64 +1220,7 @@ function OSDetailModal({ os, onClose, officeName }) {
 
   return (
     <>
-      {showTecnicoPicker && createPortal(
-        <>
-          {/* Backdrop via portal — fora de qualquer stacking context */}
-          <div
-            style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
-            onClick={() => setShowTecnicoPicker(false)}
-          />
-          {/* Picker via portal — garante que fica acima de tudo */}
-          {pickerPos && (
-            <div
-              style={{
-                position: 'fixed',
-                top: pickerPos.bottom + 4,
-                left: pickerPos.left,
-                width: pickerPos.width,
-                zIndex: 9999,
-                background: 'white',
-                borderRadius: 16,
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-                overflow: 'hidden',
-              }}
-            >
-              <div style={{ padding: 6, display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 240, overflowY: 'auto' }}>
-                <button
-                  onClick={async () => {
-                    setTecnico(''); setShowTecnicoPicker(false)
-                    await osStorage.updateTecnico(os.id, '')
-                  }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-colors ${!tecnico ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-500 hover:bg-gray-50'}`}>
-                  <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                    <span className="text-slate-400 text-[10px]">—</span>
-                  </div>
-                  Sem técnico
-                </button>
-                {tecnicosList.map((t, i) => (
-                  <button key={i}
-                    onClick={async () => {
-                      setTecnico(t.nome); setShowTecnicoPicker(false)
-                      await osStorage.updateTecnico(os.id, t.nome)
-                    }}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-colors ${tecnico === t.nome ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-700 hover:bg-gray-50'}`}>
-                    <div className="w-7 h-7 bg-indigo-600 rounded-full flex items-center justify-center shrink-0">
-                      <span className="text-white text-[9px] font-bold">{iniciais(t.nome)}</span>
-                    </div>
-                    <div className="flex-1 min-w-0 text-left">
-                      <p className="truncate">{t.nome}</p>
-                      {t.email && <p className="text-xs text-slate-400 truncate">{t.email}</p>}
-                    </div>
-                    {tecnico === t.nome && <Check className="w-4 h-4 text-indigo-600 shrink-0" />}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </>,
-        document.body
-      )}
+{/* sem portal — picker controlado pelo estado showTecnicoPicker */}
       <div className="fixed inset-0 z-[60] bg-white flex flex-col max-w-lg mx-auto">
         {/* Header */}
         <div className="flex items-center gap-2 p-4 border-b border-gray-100 shrink-0">
@@ -1386,27 +1329,75 @@ function OSDetailModal({ os, onClose, officeName }) {
             )}
           </div>
 
-          {/* Técnico responsável */}
+          {/* Técnico responsável — lista inline, sem z-index */}
           {(tecnicosList.length > 0 || tecnico) && (
-            <button
-              ref={tecnicoButtonRef}
-              onClick={() => {
-                if (status === 'entregue') return
-                if (!showTecnicoPicker && tecnicoButtonRef.current) {
-                  setPickerPos(tecnicoButtonRef.current.getBoundingClientRect())
-                }
-                setShowTecnicoPicker(p => !p)
-              }}
-              className={`w-full flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2 text-left ${status !== 'entregue' ? 'hover:bg-gray-100 transition-colors' : ''}`}
-            >
-              <Wrench className="w-4 h-4 text-slate-400 shrink-0" />
-              <span className="text-xs text-slate-500 shrink-0">Técnico</span>
-              <span className={`flex-1 text-sm font-semibold ${tecnico ? 'text-slate-900' : 'text-slate-400'}`}>
-                {tecnico || 'Sem técnico'}
-              </span>
-              {tecnico && <TecnicoAvatar nome={tecnico} />}
-              {status !== 'entregue' && <Edit2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
-            </button>
+            <div className="bg-gray-50 rounded-xl overflow-hidden">
+              {/* Linha do técnico atual */}
+              <button
+                onClick={() => status !== 'entregue' && setShowTecnicoPicker(p => !p)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 text-left ${status !== 'entregue' ? 'hover:bg-gray-100 active:bg-gray-200 transition-colors cursor-pointer' : 'cursor-default'}`}
+              >
+                <Wrench className="w-4 h-4 text-slate-400 shrink-0" />
+                <span className="text-xs text-slate-500 shrink-0">Técnico</span>
+                <span className={`flex-1 text-sm font-semibold ${tecnico ? 'text-slate-900' : 'text-slate-400'}`}>
+                  {tecnico || 'Toque para atribuir'}
+                </span>
+                {tecnico && <TecnicoAvatar nome={tecnico} />}
+                {status !== 'entregue' && (showTecnicoPicker
+                  ? <ChevronUp className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  : <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                )}
+              </button>
+
+              {/* Lista expandida inline */}
+              {showTecnicoPicker && (
+                <div className="border-t border-gray-200 bg-white">
+                  {/* Sem técnico */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setTecnico('')
+                      setShowTecnicoPicker(false)
+                      await osStorage.updateTecnico(os.id, '')
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left border-b border-gray-100 active:bg-gray-50 ${!tecnico ? 'bg-indigo-50' : 'bg-white hover:bg-gray-50'}`}
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                      <span className="text-slate-400 text-xs">—</span>
+                    </div>
+                    <span className={`text-sm font-medium ${!tecnico ? 'text-indigo-700' : 'text-slate-500'}`}>
+                      Sem técnico
+                    </span>
+                    {!tecnico && <Check className="w-4 h-4 text-indigo-600 ml-auto shrink-0" />}
+                  </button>
+
+                  {/* Lista de técnicos */}
+                  {tecnicosList.map((t, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={async () => {
+                        setTecnico(t.nome)
+                        setShowTecnicoPicker(false)
+                        await osStorage.updateTecnico(os.id, t.nome)
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left border-b border-gray-100 last:border-0 active:bg-gray-50 ${tecnico === t.nome ? 'bg-indigo-50' : 'bg-white hover:bg-gray-50'}`}
+                    >
+                      <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center shrink-0">
+                        <span className="text-white text-[10px] font-bold">{iniciais(t.nome)}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-medium truncate ${tecnico === t.nome ? 'text-indigo-700' : 'text-slate-800'}`}>
+                          {t.nome}
+                        </p>
+                        {t.email && <p className="text-xs text-slate-400 truncate">{t.email}</p>}
+                      </div>
+                      {tecnico === t.nome && <Check className="w-4 h-4 text-indigo-600 shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Status */}
