@@ -106,6 +106,41 @@ const templates = {
 </div>`,
   }),
 
+  tecnico_invite: ({ nomeOficina, conviteLink }) => ({
+    subject: `Você foi convidado para ${nomeOficina} no BoxCerto 🔧`,
+    html: `
+<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#f8fafc">
+  <div style="background:#4f46e5;border-radius:14px;padding:28px;text-align:center;margin-bottom:24px">
+    <h1 style="color:white;margin:0;font-size:24px;letter-spacing:-0.5px">BoxCerto</h1>
+    <p style="color:#c7d2fe;margin:6px 0 0;font-size:13px">Sistema para Oficinas Mecânicas</p>
+  </div>
+
+  <div style="background:white;border-radius:14px;padding:28px;border:1px solid #e2e8f0;margin-bottom:16px">
+    <h2 style="color:#1e293b;margin:0 0 8px;font-size:20px">Olá, técnico! 👋</h2>
+    <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px">
+      Você foi convidado para acessar o sistema da oficina
+      <strong>${nomeOficina}</strong> como técnico.
+    </p>
+
+    <div style="text-align:center;margin-bottom:24px">
+      <a href="${conviteLink}"
+         style="background:#4f46e5;color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:bold;font-size:15px;display:inline-block">
+        Criar minha conta →
+      </a>
+    </div>
+
+    <p style="color:#64748b;font-size:13px;margin:0">
+      Ou copie e cole este link no navegador:<br>
+      <a href="${conviteLink}" style="color:#4f46e5;word-break:break-all">${conviteLink}</a>
+    </p>
+  </div>
+
+  <p style="color:#94a3b8;font-size:12px;text-align:center;margin:0">
+    BoxCerto · Se você não esperava este e-mail, pode ignorá-lo com segurança.
+  </p>
+</div>`,
+  }),
+
 }
 
 export default async function handler(req, res) {

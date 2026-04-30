@@ -5,7 +5,7 @@ import {
   Phone, Mail, MapPin, FileText, Camera, Check, Save,
   Users, Cake, Wrench, Calendar, ChevronDown, ChevronUp,
   UserX, MessageCircle, UserPlus, Trash2, HardHat, Tag,
-  Link2, Copy, CheckCheck, ToggleLeft, ToggleRight
+  Link2, Copy, CheckCheck, ToggleLeft, ToggleRight, Loader2
 } from 'lucide-react'
 
 // ── Máscaras ──────────────────────────────────────────────
@@ -475,7 +475,9 @@ export default function Menu() {
   const logoRef = useRef()
 
   const [officeData, setOfficeData] = useState({ nome: '', endereco: '', telefone: '', cnpj: '', logo: '', tecnicos: [], podeAssumir: false })
-  const [linkCopiado, setLinkCopiado] = useState(null) // índice do técnico cujo link foi copiado
+  const [linkCopiado, setLinkCopiado] = useState(null)  // índice do técnico cujo link foi copiado
+  const [emailEnviado, setEmailEnviado] = useState(null) // índice do técnico cujo e-mail foi enviado
+  const [emailEnviando, setEmailEnviando] = useState(null) // índice enviando
   const [editEmailIdx, setEditEmailIdx] = useState(null) // índice do técnico com e-mail sendo editado
   const [editEmailVal, setEditEmailVal] = useState('')
   const [savedFields, setSavedFields] = useState({ nome: '', endereco: '', telefone: '', cnpj: '' })
@@ -817,15 +819,42 @@ export default function Menu() {
                                 </svg>
                                 WPP
                               </a>
-                              {/* E-mail */}
-                              <a
-                                href={`mailto:${t.email}?subject=${encodeURIComponent('Convite de acesso ao sistema')}&body=${encodeURIComponent(conviteMsgEmail)}`}
-                                title="Enviar por e-mail"
-                                className="flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-indigo-200 bg-white text-indigo-600 hover:bg-indigo-50 transition-colors"
+                              {/* E-mail via API Resend */}
+                              <button
+                                type="button"
+                                title="Enviar convite por e-mail"
+                                disabled={emailEnviando === i}
+                                onClick={async () => {
+                                  setEmailEnviando(i)
+                                  try {
+                                    await fetch('/api/send-email', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        type: 'tecnico_invite',
+                                        to: t.email,
+                                        nomeOficina: officeData.nome || user.oficina || 'a oficina',
+                                        conviteLink,
+                                      }),
+                                    })
+                                    setEmailEnviado(i)
+                                    setTimeout(() => setEmailEnviado(null), 3000)
+                                  } catch { /* silencioso */ }
+                                  setEmailEnviando(null)
+                                }}
+                                className={`flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors disabled:opacity-60 ${
+                                  emailEnviado === i
+                                    ? 'bg-green-50 border-green-200 text-green-700'
+                                    : 'bg-white border-indigo-200 text-indigo-600 hover:bg-indigo-50'
+                                }`}
                               >
-                                <Mail className="w-3.5 h-3.5" />
-                                Email
-                              </a>
+                                {emailEnviando === i
+                                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  : emailEnviado === i
+                                    ? <><CheckCheck className="w-3.5 h-3.5" /> Enviado!</>
+                                    : <><Mail className="w-3.5 h-3.5" /> Email</>
+                                }
+                              </button>
                             </div>
                           )}
                         </div>
