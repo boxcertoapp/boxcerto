@@ -66,6 +66,13 @@ function AbaRelatorios({ user }) {
   const [sortClientes, setSortClientes] = useState('az')
   const [sortServicos, setSortServicos] = useState('date_desc')
 
+  // Técnicos
+  const [tecnicosData, setTecnicosData]     = useState([]) // [{ nome, entregues, emAndamento, totalVal }]
+  const [tecnicoExpandido, setTecnicoExpandido] = useState(null)
+  const [mesTec, setMesTec]   = useState(now.getMonth())
+  const [anoTec, setAnoTec]   = useState(now.getFullYear())
+  const [usaMesTec, setUsaMesTec] = useState(false)
+
   // Load on section change
   useEffect(() => {
     if (section === 'clientes') {
@@ -105,6 +112,37 @@ function AbaRelatorios({ user }) {
       })
     }
   }, [section, mesSrv, anoSrv])
+
+  useEffect(() => {
+    if (section !== 'tecnicos') return
+    osStorage.getAll(user.oficina).then(allOS => {
+      // Agrupar por técnico
+      const mapa = {}
+      allOS.forEach(os => {
+        const nome = os.tecnico?.trim()
+        if (!nome) return
+        if (!mapa[nome]) mapa[nome] = { nome, entregues: [], emAndamento: [] }
+        if (os.status === 'entregue') {
+          if (!usaMesTec) {
+            mapa[nome].entregues.push(os)
+          } else {
+            const d = new Date(os.deliveredAt || os.updatedAt)
+            if (d.getMonth() === mesTec && d.getFullYear() === anoTec)
+              mapa[nome].entregues.push(os)
+          }
+        } else {
+          mapa[nome].emAndamento.push(os)
+        }
+      })
+      const lista = Object.values(mapa)
+        .map(t => ({
+          ...t,
+          totalVal: t.entregues.reduce((s, os) => s + (os.totals?.venda || 0), 0),
+        }))
+        .sort((a, b) => b.entregues.length - a.entregues.length)
+      setTecnicosData(lista)
+    })
+  }, [section, mesTec, anoTec, usaMesTec])
 
   const totalServicos = servicosMes.reduce((s, os) => s + (os.totals?.venda || 0), 0)
   const prevMes = () => { if (mesSrv === 0) { setMesSrv(11); setAnoSrv(anoSrv-1) } else setMesSrv(mesSrv-1) }
@@ -396,6 +434,105 @@ function AbaRelatorios({ user }) {
                   </div>
                 )}
               </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── TÉCNICOS ── */}
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+        <SectionBtn id="tecnicos" icon={HardHat} iconColor="bg-indigo-50 text-indigo-600"
+          title="Relatório por Técnico" subtitle="Serviços entregues e em andamento por técnico" />
+        {section === 'tecnicos' && (
+          <div className="border-t border-gray-50 p-4 space-y-3">
+            {/* Filtro de mês */}
+            <div className="flex items-center gap-2">
+              <button onClick={() => setUsaMesTec(u => !u)}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${usaMesTec ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-500 border-gray-200'}`}>
+                Filtrar por mês
+              </button>
+              {usaMesTec && (
+                <div className="flex items-center gap-1 bg-gray-100 rounded-xl px-2 py-1 flex-1 justify-between">
+                  <button onClick={() => { if(mesTec===0){setMesTec(11);setAnoTec(a=>a-1)}else setMesTec(m=>m-1) }}
+                    className="w-6 h-6 flex items-center justify-center hover:bg-gray-200 rounded-full text-slate-600">‹</button>
+                  <span className="text-xs font-bold text-slate-800">{MESES[mesTec]} {anoTec}</span>
+                  <button onClick={() => { if(mesTec===11){setMesTec(0);setAnoTec(a=>a+1)}else setMesTec(m=>m+1) }}
+                    className="w-6 h-6 flex items-center justify-center hover:bg-gray-200 rounded-full text-slate-600">›</button>
+                </div>
+              )}
+            </div>
+
+            {tecnicosData.length === 0 ? (
+              <p className="text-center text-slate-400 text-sm py-6">Nenhum técnico com OS atribuída</p>
+            ) : (
+              tecnicosData.map(tec => (
+                <div key={tec.nome} className="rounded-2xl border border-gray-100 overflow-hidden">
+                  {/* Card do técnico */}
+                  <button
+                    onClick={() => setTecnicoExpandido(p => p === tec.nome ? null : tec.nome)}
+                    className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="w-9 h-9 bg-indigo-600 rounded-full flex items-center justify-center shrink-0">
+                      <span className="text-white text-xs font-bold">
+                        {tec.nome.trim().split(/\s+/).map(p => p[0]).join('').slice(0,2).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-900 truncate">{tec.nome}</p>
+                      <div className="flex gap-3 mt-0.5">
+                        <span className="text-xs text-green-600 font-medium">{tec.entregues.length} entregue{tec.entregues.length !== 1 ? 's' : ''}</span>
+                        {tec.emAndamento.length > 0 && (
+                          <span className="text-xs text-blue-500 font-medium">{tec.emAndamento.length} em andamento</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      {tec.totalVal > 0 && <p className="text-sm font-bold text-slate-800">{formatCurrency(tec.totalVal)}</p>}
+                      {tecnicoExpandido === tec.nome
+                        ? <ChevronUp className="w-4 h-4 text-slate-400 ml-auto mt-0.5" />
+                        : <ChevronDown className="w-4 h-4 text-slate-400 ml-auto mt-0.5" />}
+                    </div>
+                  </button>
+
+                  {/* Detalhe expandido */}
+                  {tecnicoExpandido === tec.nome && (
+                    <div className="border-t border-gray-100 bg-gray-50 px-3 py-2 space-y-1.5">
+                      {tec.emAndamento.length > 0 && (
+                        <>
+                          <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mt-1">Em andamento</p>
+                          {tec.emAndamento.map(os => (
+                            <div key={os.id} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
+                              <div>
+                                <span className="text-xs font-bold text-slate-800 font-mono">{os.vehicle?.placa}</span>
+                                <span className="text-xs text-slate-500 ml-2">{os.vehicle?.modelo}</span>
+                              </div>
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                                os.status === 'orcamento' ? 'bg-amber-100 text-amber-700' :
+                                os.status === 'manutencao' ? 'bg-blue-100 text-blue-700' :
+                                'bg-green-100 text-green-700'
+                              }`}>{os.status === 'orcamento' ? 'Orçamento' : os.status === 'manutencao' ? 'Em Serviço' : 'Pronto'}</span>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                      {tec.entregues.length > 0 && (
+                        <>
+                          <p className="text-[10px] font-bold text-green-600 uppercase tracking-wider mt-2">Entregues</p>
+                          {tec.entregues.map(os => (
+                            <div key={os.id} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
+                              <div>
+                                <span className="text-xs font-bold text-slate-800 font-mono">{os.vehicle?.placa}</span>
+                                <span className="text-xs text-slate-500 ml-2">{os.vehicle?.modelo}</span>
+                              </div>
+                              <span className="text-xs font-bold text-slate-700">{formatCurrency(os.totals?.venda || 0)}</span>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))
             )}
           </div>
         )}

@@ -17,10 +17,13 @@ import {
   MessageSquare, ClipboardList, Package, ChevronRight,
   Send, Plus, Trash2, Clock, History, Flag,
   TriangleAlert, UserCheck, ChevronDown, Check,
+  Search, ChevronLeft, ChevronUp,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { osStorage, formatCurrency, formatDate } from '../../lib/storage'
+import { osStorage, itemStorage, formatCurrency, formatDate } from '../../lib/storage'
+
+const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
 // ── Helpers ────────────────────────────────────────────────────
 const iniciais = (nome = '') =>
@@ -264,6 +267,360 @@ function HistoricoModal({ os, onClose }) {
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── Tab: Histórico de Serviços ─────────────────────────────────
+function HistoricoTab({ meNome }) {
+  const now = new Date()
+  const [lista, setLista]       = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [page, setPage]         = useState(1)
+  const [usaMes, setUsaMes]     = useState(false)
+  const [mesFiltro, setMesFiltro] = useState(now.getMonth())
+  const [anoFiltro, setAnoFiltro] = useState(now.getFullYear())
+  const PAGE = 10
+
+  const prevMes = () => {
+    if (mesFiltro === 0) { setMesFiltro(11); setAnoFiltro(a => a - 1) }
+    else setMesFiltro(m => m - 1)
+  }
+  const nextMes = () => {
+    if (mesFiltro === 11) { setMesFiltro(0); setAnoFiltro(a => a + 1) }
+    else setMesFiltro(m => m + 1)
+  }
+
+  useEffect(() => { load() }, [meNome, usaMes, mesFiltro, anoFiltro])
+
+  const load = async () => {
+    setLoading(true)
+    setPage(1)
+    const [osRes, vehiclesRes, clientsRes, itemsRes] = await Promise.all([
+      supabase.from('service_orders')
+        .select('*')
+        .in('status', ['pronto', 'entregue'])
+        .ilike('tecnico', meNome)
+        .order('updated_at', { ascending: false }),
+      supabase.from('vehicles').select('id, placa, modelo, client_id'),
+      supabase.from('clients').select('id, nome'),
+      supabase.from('service_items').select('os_id, descricao, venda'),
+    ])
+    const vehicles = vehiclesRes.data || []
+    const clients  = clientsRes.data  || []
+    const items    = itemsRes.data    || []
+    let data = (osRes.data || []).map(os => {
+      const v = vehicles.find(x => x.id === os.vehicle_id) || {}
+      const c = clients.find(x => x.id === v.client_id)   || {}
+      const it = items.filter(x => x.os_id === os.id)
+      const total = it.reduce((s, i) => s + Number(i.venda || 0), 0)
+      return { id: os.id, status: os.status, placa: v.placa || '---', modelo: v.modelo || '',
+        clienteNome: c.nome || '', updatedAt: os.updated_at, deliveredAt: os.delivered_at, total,
+        itens: it.map(i => i.descricao) }
+    })
+    if (usaMes) {
+      data = data.filter(os => {
+        const d = new Date(os.deliveredAt || os.updatedAt)
+        return d.getMonth() === mesFiltro && d.getFullYear() === anoFiltro
+      })
+    }
+    setLista(data)
+    setLoading(false)
+  }
+
+  const visivel = lista.slice(0, page * PAGE)
+  const totalVal = lista.reduce((s, os) => s + os.total, 0)
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-20">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-100 px-4 pt-4 pb-3">
+        <p className="text-base font-bold text-slate-900 mb-3">Meus Serviços</p>
+
+        {/* Toggle filtro de mês */}
+        <div className="flex items-center gap-2 mb-2">
+          <button
+            onClick={() => setUsaMes(u => !u)}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+              usaMes ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-500 border-gray-200'
+            }`}
+          >
+            Filtrar por mês
+          </button>
+          {usaMes && (
+            <div className="flex items-center gap-1 bg-gray-100 rounded-xl px-2 py-1">
+              <button onClick={prevMes} className="w-6 h-6 flex items-center justify-center hover:bg-gray-200 rounded-full">
+                <ChevronLeft className="w-3.5 h-3.5 text-slate-600" />
+              </button>
+              <span className="text-xs font-bold text-slate-800 min-w-[80px] text-center">
+                {MESES[mesFiltro]} {anoFiltro}
+              </span>
+              <button onClick={nextMes} className="w-6 h-6 flex items-center justify-center hover:bg-gray-200 rounded-full">
+                <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Resumo */}
+        {!loading && lista.length > 0 && (
+          <div className="flex gap-2 mt-2">
+            <div className="flex-1 bg-indigo-50 rounded-xl px-3 py-2 text-center">
+              <p className="text-lg font-black text-indigo-700">{lista.length}</p>
+              <p className="text-[10px] font-semibold text-indigo-500">Serviços</p>
+            </div>
+            <div className="flex-1 bg-green-50 rounded-xl px-3 py-2 text-center">
+              <p className="text-sm font-black text-green-700">{formatCurrency(totalVal)}</p>
+              <p className="text-[10px] font-semibold text-green-500">Total gerado</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Lista */}
+      <div className="px-4 py-4 space-y-3">
+        {loading ? (
+          <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 text-indigo-400 animate-spin" /></div>
+        ) : lista.length === 0 ? (
+          <div className="text-center py-16">
+            <Clock className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+            <p className="text-sm font-semibold text-slate-400">
+              {usaMes ? `Nenhum serviço em ${MESES[mesFiltro]}/${anoFiltro}` : 'Nenhum serviço encontrado'}
+            </p>
+          </div>
+        ) : (
+          <>
+            {visivel.map(os => (
+              <div key={os.id} className="bg-white rounded-2xl border border-gray-100 p-4">
+                <div className="flex items-start justify-between gap-2 mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-black text-slate-900 font-mono tracking-wider">{os.placa}</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      os.status === 'entregue' ? 'bg-gray-100 text-gray-500' : 'bg-green-100 text-green-700'
+                    }`}>{os.status === 'entregue' ? 'Entregue' : 'Pronto'}</span>
+                  </div>
+                  <span className="text-sm font-bold text-slate-900 shrink-0">{formatCurrency(os.total)}</span>
+                </div>
+                <p className="text-xs text-slate-500 truncate">{os.modelo} · {os.clienteNome}</p>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  {new Date(os.deliveredAt || os.updatedAt).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' })}
+                </p>
+                {os.itens.length > 0 && (
+                  <div className="mt-2 space-y-0.5">
+                    {os.itens.slice(0,3).map((it, i) => (
+                      <p key={i} className="text-xs text-slate-400">· {it}</p>
+                    ))}
+                    {os.itens.length > 3 && (
+                      <p className="text-xs text-slate-300">+{os.itens.length - 3} itens</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+            {visivel.length < lista.length && (
+              <button
+                onClick={() => setPage(p => p + 1)}
+                className="w-full py-3 rounded-2xl border border-gray-200 text-sm font-semibold text-slate-500 hover:bg-gray-50 transition-colors"
+              >
+                Carregar mais ({lista.length - visivel.length} restantes)
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Tab: Estoque ───────────────────────────────────────────────
+function EstoqueTab({ meNome }) {
+  const [estoque, setEstoque]   = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [busca, setBusca]       = useState('')
+  const [addModal, setAddModal] = useState(null)   // item selecionado
+  const [osAtivas, setOsAtivas] = useState([])
+  const [osId, setOsId]         = useState('')
+  const [qty, setQty]           = useState(1)
+  const [adding, setAdding]     = useState(false)
+
+  useEffect(() => { loadEstoque() }, [])
+
+  const loadEstoque = async () => {
+    const { data } = await supabase
+      .from('inventory')
+      .select('id, produto, quantidade, valor_venda')
+      .order('produto')
+    setEstoque((data || []).map(i => ({
+      id: i.id,
+      produto: i.produto,
+      quantidade: Number(i.quantidade),
+      valorVenda: Number(i.valor_venda || 0),
+    })))
+    setLoading(false)
+  }
+
+  const abrirAddModal = async (item) => {
+    // Carrega OS do técnico em orcamento ou manutencao
+    const [osRes, vehiclesRes] = await Promise.all([
+      supabase.from('service_orders')
+        .select('id, vehicle_id, status')
+        .in('status', ['orcamento', 'manutencao'])
+        .ilike('tecnico', meNome),
+      supabase.from('vehicles').select('id, placa, modelo'),
+    ])
+    const vehicles = vehiclesRes.data || []
+    const lista = (osRes.data || []).map(os => {
+      const v = vehicles.find(x => x.id === os.vehicle_id) || {}
+      return { id: os.id, label: `${v.placa || '?'} — ${v.modelo || ''}`, status: os.status }
+    })
+    setOsAtivas(lista)
+    setOsId(lista[0]?.id || '')
+    setQty(1)
+    setAddModal(item)
+  }
+
+  const confirmarAdd = async () => {
+    if (!osId || !addModal) return
+    setAdding(true)
+    const qtdInt = Math.max(1, parseInt(qty) || 1)
+    await itemStorage.add({
+      osId,
+      descricao: qtdInt > 1 ? `${addModal.produto} (x${qtdInt})` : addModal.produto,
+      custo: '',
+      venda: addModal.valorVenda * qtdInt,
+      garantia: '',
+    })
+    setAddModal(null)
+    setAdding(false)
+  }
+
+  const filtrado = estoque.filter(i =>
+    i.produto.toLowerCase().includes(busca.toLowerCase())
+  )
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-20">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-100 px-4 pt-4 pb-3">
+        <p className="text-base font-bold text-slate-900 mb-3">Consulta de Estoque</p>
+        <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2.5">
+          <Search className="w-4 h-4 text-slate-400 shrink-0" />
+          <input
+            type="text"
+            value={busca}
+            onChange={e => setBusca(e.target.value)}
+            placeholder="Buscar produto..."
+            className="flex-1 bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
+          />
+        </div>
+      </div>
+
+      {/* Lista */}
+      <div className="px-4 py-4 space-y-2">
+        {loading ? (
+          <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 text-indigo-400 animate-spin" /></div>
+        ) : filtrado.length === 0 ? (
+          <div className="text-center py-16">
+            <Package className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+            <p className="text-sm font-semibold text-slate-400">
+              {busca ? 'Produto não encontrado' : 'Nenhum produto no estoque'}
+            </p>
+          </div>
+        ) : (
+          filtrado.map(item => (
+            <div key={item.id} className="bg-white rounded-2xl border border-gray-100 px-4 py-3 flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-900 truncate">{item.produto}</p>
+                <div className="flex items-center gap-3 mt-0.5">
+                  <span className={`text-xs font-bold ${item.quantidade <= 0 ? 'text-red-500' : item.quantidade <= 3 ? 'text-amber-600' : 'text-green-600'}`}>
+                    {item.quantidade <= 0 ? '⚠ Sem estoque' : `${item.quantidade} un.`}
+                  </span>
+                  {item.valorVenda > 0 && (
+                    <span className="text-xs text-slate-400">{formatCurrency(item.valorVenda)}/un.</span>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => abrirAddModal(item)}
+                disabled={item.quantidade <= 0}
+                className="flex items-center gap-1.5 bg-indigo-600 text-white text-xs font-semibold px-3 py-2 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" /> OS
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Modal: selecionar OS */}
+      {addModal && (
+        <div className="fixed inset-0 z-[80] bg-black/50 flex items-end justify-center" onClick={() => setAddModal(null)}>
+          <div className="bg-white rounded-t-3xl w-full max-w-lg p-5" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="font-bold text-slate-900">Adicionar à OS</p>
+                <p className="text-xs text-slate-400 mt-0.5">{addModal.produto}</p>
+              </div>
+              <button onClick={() => setAddModal(null)} className="p-2 hover:bg-gray-100 rounded-full">
+                <X className="w-4 h-4 text-slate-500" />
+              </button>
+            </div>
+
+            {/* Quantidade */}
+            <div className="mb-4">
+              <p className="text-xs font-semibold text-slate-500 mb-1.5">Quantidade</p>
+              <div className="flex items-center gap-3">
+                <button onClick={() => setQty(q => Math.max(1, q - 1))}
+                  className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-slate-600 hover:bg-gray-50 text-xl font-bold">−</button>
+                <span className="text-xl font-black text-slate-900 min-w-[32px] text-center">{qty}</span>
+                <button onClick={() => setQty(q => Math.min(addModal.quantidade, q + 1))}
+                  className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-slate-600 hover:bg-gray-50 text-xl font-bold">+</button>
+                <span className="text-xs text-slate-400 ml-1">
+                  {addModal.valorVenda > 0 && `= ${formatCurrency(addModal.valorVenda * qty)}`}
+                </span>
+              </div>
+            </div>
+
+            {/* Selecionar OS */}
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-slate-500 mb-1.5">Selecionar OS</p>
+              {osAtivas.length === 0 ? (
+                <p className="text-sm text-slate-400 bg-gray-50 rounded-xl px-4 py-3">
+                  Nenhuma OS sua em andamento (orçamento ou manutenção)
+                </p>
+              ) : (
+                <div className="space-y-1.5">
+                  {osAtivas.map(os => (
+                    <button key={os.id} onClick={() => setOsId(os.id)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-colors ${
+                        osId === os.id ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'
+                      }`}>
+                      <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                        osId === os.id ? 'border-indigo-600' : 'border-gray-300'
+                      }`}>
+                        {osId === os.id && <div className="w-2 h-2 rounded-full bg-indigo-600" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{os.label}</p>
+                        <p className="text-xs text-slate-400">{os.status === 'orcamento' ? 'Orçamento' : 'Em Serviço'}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={confirmarAdd}
+              disabled={!osId || adding}
+              className="w-full py-3.5 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+            >
+              {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              {adding ? 'Adicionando...' : 'Adicionar ao orçamento'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -708,11 +1065,12 @@ function OSDetalhe({ os: osInicial, meNome, masterId, podeAssumir, onClose, onRe
 // ── Componente principal ───────────────────────────────────────
 export default function TecnicoOficina() {
   const { user } = useAuth()
-  const [osList, setOsList]     = useState([])
-  const [loading, setLoading]   = useState(true)
+  const [osList, setOsList]       = useState([])
+  const [loading, setLoading]     = useState(true)
   const [filtroMinha, setFiltroMinha] = useState(false)
   const [selectedOS, setSelectedOS]   = useState(null)
   const [officeSettings, setOfficeSettings] = useState({ podeAssumir: false, oficinaNome: '' })
+  const [activeScreen, setActiveScreen] = useState('oficina') // 'oficina' | 'historico' | 'estoque'
 
   const reload = useCallback(async () => {
     try {
@@ -793,81 +1151,108 @@ export default function TecnicoOficina() {
     )
   }
 
-  // ── Lista principal ─────────────────────────────────────────
+  // ── Layout principal com bottom nav ────────────────────────────
+  const NAV = [
+    { key: 'oficina',   icon: Wrench,  label: 'Oficina'   },
+    { key: 'historico', icon: Clock,   label: 'Histórico' },
+    { key: 'estoque',   icon: Package, label: 'Estoque'   },
+  ]
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 pt-4 pb-3">
-        <p className="text-xs text-slate-400 mb-0.5">Bem-vindo,</p>
-        <p className="text-lg font-bold text-slate-900">{meNome}</p>
 
-        {/* Stats rápidas */}
-        <div className="flex gap-2 mt-3">
-          <div className="flex-1 bg-indigo-50 rounded-xl px-3 py-2 text-center">
-            <p className="text-xl font-black text-indigo-700">{minhasCount}</p>
-            <p className="text-[10px] font-semibold text-indigo-500">Minhas OS</p>
+      {/* ── Tela: Oficina (lista de OS) ── */}
+      {activeScreen === 'oficina' && (
+        <div className="pb-20">
+          {/* Header */}
+          <div className="bg-white border-b border-gray-100 px-4 pt-4 pb-3">
+            <p className="text-xs text-slate-400 mb-0.5">Bem-vindo,</p>
+            <p className="text-lg font-bold text-slate-900">{meNome}</p>
+
+            {/* Stats rápidas */}
+            <div className="flex gap-2 mt-3">
+              <div className="flex-1 bg-indigo-50 rounded-xl px-3 py-2 text-center">
+                <p className="text-xl font-black text-indigo-700">{minhasCount}</p>
+                <p className="text-[10px] font-semibold text-indigo-500">Minhas OS</p>
+              </div>
+              {urgenteCount > 0 && (
+                <div className="flex-1 bg-red-50 rounded-xl px-3 py-2 text-center">
+                  <p className="text-xl font-black text-red-600">{urgenteCount}</p>
+                  <p className="text-[10px] font-semibold text-red-400">Urgentes</p>
+                </div>
+              )}
+              {problemaCount > 0 && (
+                <div className="flex-1 bg-amber-50 rounded-xl px-3 py-2 text-center">
+                  <p className="text-xl font-black text-amber-600">{problemaCount}</p>
+                  <p className="text-[10px] font-semibold text-amber-400">Problemas</p>
+                </div>
+              )}
+              <div className="flex-1 bg-gray-50 rounded-xl px-3 py-2 text-center border border-gray-100">
+                <p className="text-xl font-black text-slate-600">{osExibidas.length}</p>
+                <p className="text-[10px] font-semibold text-slate-400">Visíveis</p>
+              </div>
+            </div>
+
+            {/* Filtro */}
+            <div className="flex gap-2 mt-3">
+              <button onClick={() => setFiltroMinha(false)}
+                className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-colors ${!filtroMinha ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-slate-500'}`}>
+                Todas disponíveis
+              </button>
+              <button onClick={() => setFiltroMinha(true)}
+                className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-colors ${filtroMinha ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-slate-500'}`}>
+                Minhas OS {minhasCount > 0 ? `(${minhasCount})` : ''}
+              </button>
+            </div>
           </div>
-          {urgenteCount > 0 && (
-            <div className="flex-1 bg-red-50 rounded-xl px-3 py-2 text-center">
-              <p className="text-xl font-black text-red-600">{urgenteCount}</p>
-              <p className="text-[10px] font-semibold text-red-400">Urgentes</p>
-            </div>
-          )}
-          {problemaCount > 0 && (
-            <div className="flex-1 bg-amber-50 rounded-xl px-3 py-2 text-center">
-              <p className="text-xl font-black text-amber-600">{problemaCount}</p>
-              <p className="text-[10px] font-semibold text-amber-400">Problemas</p>
-            </div>
-          )}
-          <div className="flex-1 bg-gray-50 rounded-xl px-3 py-2 text-center">
-            <p className="text-xl font-black text-slate-600">{osExibidas.length}</p>
-            <p className="text-[10px] font-semibold text-slate-400">Visíveis</p>
+
+          {/* Lista */}
+          <div className="px-4 py-4 space-y-3">
+            {osExibidas.length === 0 ? (
+              <div className="text-center py-16">
+                <Wrench className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                <p className="text-sm font-semibold text-slate-400">
+                  {filtroMinha ? 'Nenhuma OS atribuída a você' : 'Nenhuma OS disponível'}
+                </p>
+              </div>
+            ) : (
+              osExibidas.map(os => (
+                <OSCard key={os.id} os={os} meNome={meNome}
+                  podeAssumir={officeSettings.podeAssumir}
+                  onOpen={setSelectedOS} onAssumir={assumir} />
+              ))
+            )}
           </div>
         </div>
+      )}
 
-        {/* Filtro */}
-        <div className="flex gap-2 mt-3">
-          <button
-            onClick={() => setFiltroMinha(false)}
-            className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-colors ${
-              !filtroMinha ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-slate-500'
-            }`}
-          >
-            Todas disponíveis
-          </button>
-          <button
-            onClick={() => setFiltroMinha(true)}
-            className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-colors ${
-              filtroMinha ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-slate-500'
-            }`}
-          >
-            Minhas OS {minhasCount > 0 ? `(${minhasCount})` : ''}
-          </button>
+      {/* ── Tela: Histórico ── */}
+      {activeScreen === 'historico' && (
+        <HistoricoTab meNome={meNome} />
+      )}
+
+      {/* ── Tela: Estoque ── */}
+      {activeScreen === 'estoque' && (
+        <EstoqueTab meNome={meNome} />
+      )}
+
+      {/* ── Bottom nav ── */}
+      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-100 safe-area-bottom">
+        <div className="max-w-xl mx-auto flex">
+          {NAV.map(({ key, icon: Icon, label }) => (
+            <button
+              key={key}
+              onClick={() => setActiveScreen(key)}
+              className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors ${
+                activeScreen === key ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              <Icon className="w-5 h-5" />
+              <span className="text-[10px] font-semibold">{label}</span>
+            </button>
+          ))}
         </div>
-      </div>
-
-      {/* Lista */}
-      <div className="px-4 py-4 space-y-3">
-        {osExibidas.length === 0 ? (
-          <div className="text-center py-16">
-            <Wrench className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-            <p className="text-sm font-semibold text-slate-400">
-              {filtroMinha ? 'Nenhuma OS atribuída a você' : 'Nenhuma OS disponível'}
-            </p>
-          </div>
-        ) : (
-          osExibidas.map(os => (
-            <OSCard
-              key={os.id}
-              os={os}
-              meNome={meNome}
-              podeAssumir={officeSettings.podeAssumir}
-              onOpen={setSelectedOS}
-              onAssumir={assumir}
-            />
-          ))
-        )}
-      </div>
+      </nav>
     </div>
   )
 }
