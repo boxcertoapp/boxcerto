@@ -1067,6 +1067,12 @@ function OSDetailModal({ os, onClose, officeName }) {
     await osStorage.updateChecklist(os.id, nova)
   }
 
+  const toggleTarefaGerente = async (idx) => {
+    const nova = checklist.map((t, i) => i === idx ? { ...t, feito: !t.feito } : t)
+    setChecklist(nova)
+    await osStorage.updateChecklist(os.id, nova)
+  }
+
   const enviarNotaGerente = async () => {
     if (!notaGerenteText.trim()) return
     setSendingNotaGerente(true)
@@ -1430,15 +1436,15 @@ function OSDetailModal({ os, onClose, officeName }) {
                       setShowTecnicoPicker(false)
                       await osStorage.updateTecnico(os.id, '')
                     }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-left border-b border-gray-100 active:bg-gray-50 ${!tecnico ? 'bg-indigo-50' : 'bg-white hover:bg-gray-50'}`}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-left border-b border-gray-100 active:bg-gray-50 ${!tecnico ? 'bg-indigo-50' : 'bg-white hover:bg-gray-50'}`}
                   >
-                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                      <span className="text-slate-400 text-xs">—</span>
+                    <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                      <span className="text-slate-400 text-[10px]">—</span>
                     </div>
-                    <span className={`text-sm font-medium ${!tecnico ? 'text-indigo-700' : 'text-slate-500'}`}>
+                    <span className={`text-xs font-medium flex-1 ${!tecnico ? 'text-indigo-700' : 'text-slate-500'}`}>
                       Sem técnico
                     </span>
-                    {!tecnico && <Check className="w-4 h-4 text-indigo-600 ml-auto shrink-0" />}
+                    {!tecnico && <Check className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
                   </button>
 
                   {/* Lista de técnicos */}
@@ -1451,18 +1457,15 @@ function OSDetailModal({ os, onClose, officeName }) {
                         setShowTecnicoPicker(false)
                         await osStorage.updateTecnico(os.id, t.nome)
                       }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left border-b border-gray-100 last:border-0 active:bg-gray-50 ${tecnico === t.nome ? 'bg-indigo-50' : 'bg-white hover:bg-gray-50'}`}
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-left border-b border-gray-100 last:border-0 active:bg-gray-50 ${tecnico === t.nome ? 'bg-indigo-50' : 'bg-white hover:bg-gray-50'}`}
                     >
-                      <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center shrink-0">
-                        <span className="text-white text-[10px] font-bold">{iniciais(t.nome)}</span>
+                      <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center shrink-0">
+                        <span className="text-white text-[9px] font-bold">{iniciais(t.nome)}</span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium truncate ${tecnico === t.nome ? 'text-indigo-700' : 'text-slate-800'}`}>
-                          {t.nome}
-                        </p>
-                        {t.email && <p className="text-xs text-slate-400 truncate">{t.email}</p>}
-                      </div>
-                      {tecnico === t.nome && <Check className="w-4 h-4 text-indigo-600 shrink-0" />}
+                      <span className={`flex-1 text-xs font-medium truncate ${tecnico === t.nome ? 'text-indigo-700' : 'text-slate-800'}`}>
+                        {t.nome}
+                      </span>
+                      {tecnico === t.nome && <Check className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
                     </button>
                   ))}
                 </div>
@@ -1475,18 +1478,18 @@ function OSDetailModal({ os, onClose, officeName }) {
             <button
               type="button"
               onClick={toggleUrgente}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold border transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
                 urgente
-                  ? 'bg-red-50 border-red-200 text-red-700'
+                  ? 'bg-red-50 border-red-300 text-red-700'
                   : 'bg-white border-gray-200 text-slate-500 hover:bg-gray-50'
               }`}
             >
-              <TriangleAlert className={`w-3.5 h-3.5 ${urgente ? 'text-red-500' : 'text-slate-400'}`} />
-              {urgente ? 'Urgente (toque para remover)' : 'Marcar como urgente'}
+              <TriangleAlert className={`w-3 h-3 ${urgente ? 'text-red-500' : 'text-slate-400'}`} />
+              {urgente ? 'Urgente ✕' : 'Urgente'}
             </button>
             {problemaFlag && (
-              <div className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200">
-                <Flag className="w-3.5 h-3.5 text-amber-600" />
+              <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200">
+                <Flag className="w-3 h-3 text-amber-600" />
                 <span className="text-xs font-semibold text-amber-700">Problema</span>
               </div>
             )}
@@ -1523,9 +1526,13 @@ function OSDetailModal({ os, onClose, officeName }) {
                 )}
                 {checklist.map((task, i) => (
                   <div key={task.id || i} className="flex items-center gap-2 group">
-                    <div className={`w-4 h-4 rounded shrink-0 flex items-center justify-center border ${task.feito ? 'bg-indigo-500 border-indigo-500' : 'border-gray-300'}`}>
+                    <button
+                      type="button"
+                      onClick={() => toggleTarefaGerente(i)}
+                      className={`w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-colors ${task.feito ? 'bg-indigo-500 border-indigo-500' : 'border-gray-300 hover:border-indigo-400'}`}
+                    >
                       {task.feito && <Check className="w-2.5 h-2.5 text-white" />}
-                    </div>
+                    </button>
                     <span className={`flex-1 text-sm ${task.feito ? 'line-through text-slate-400' : 'text-slate-700'}`}>
                       {task.texto}
                     </span>

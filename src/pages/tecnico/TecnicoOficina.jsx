@@ -359,9 +359,13 @@ function OSDetalhe({ os: osInicial, meNome, masterId, podeAssumir, onClose, onRe
   }
 
   // ── Assumir OS ───────────────────────────────────────────────
+  // Usa update direto (tech tem RLS UPDATE) — evita RPC que exige pode_assumir_os
   const assumir = async () => {
     setAssumindo(true)
-    await supabase.rpc('tecnico_assumir_os', { p_os_id: os.id, p_nome: meNome })
+    await supabase.from('service_orders').update({
+      tecnico:    meNome,
+      updated_at: new Date().toISOString(),
+    }).eq('id', os.id)
     setOs(p => ({ ...p, tecnico: meNome }))
     setAssumindo(false)
   }
@@ -378,8 +382,8 @@ function OSDetalhe({ os: osInicial, meNome, masterId, podeAssumir, onClose, onRe
     setSavingStatus(false)
   }
 
-  const ehMinha   = os.tecnico?.toLowerCase() === meNome?.toLowerCase()
   const semTecnico = !os.tecnico
+  const ehMinha   = !semTecnico && os.tecnico?.toLowerCase() === meNome?.toLowerCase()
   const totalFeitas = os.checklist.filter(t => t.feito).length
 
   return (
@@ -426,7 +430,7 @@ function OSDetalhe({ os: osInicial, meNome, masterId, podeAssumir, onClose, onRe
             {savingStatus ? <Loader2 className="w-3 h-3 animate-spin" /> : st.label}
             {os.status !== 'entregue' && <ChevronDown className="w-3 h-3" />}
           </button>
-          {!ehMinha && semTecnico && podeAssumir && (
+          {semTecnico && (
             <button
               onClick={assumir}
               disabled={assumindo}
@@ -712,15 +716,17 @@ export default function TecnicoOficina() {
     try {
       const data = await fetchOS()
       setOsList(data)
-      // Atualiza OS selecionada se estiver aberta
-      if (selectedOS) {
-        const updated = data.find(o => o.id === selectedOS.id)
-        if (updated) setSelectedOS(updated)
-      }
+      // Usa functional updater para não capturar selectedOS na closure
+      // Se o modal já foi fechado (null), permanece null
+      setSelectedOS(prev => {
+        if (!prev) return null
+        const updated = data.find(o => o.id === prev.id)
+        return updated ?? prev
+      })
     } finally {
       setLoading(false)
     }
-  }, [selectedOS?.id])
+  }, []) // sem deps — functional updater garante acesso ao state atual
 
   useEffect(() => {
     reload()
@@ -741,25 +747,25 @@ export default function TecnicoOficina() {
     loadSettings()
   }, [])
 
-  // ── Filtro inteligente ──────────────────────────────────────
-  // Exibe: minhas OS + sem técnico (OS de outro técnico ficam ocultas)
+  // ── Filtro ─────────────────────────────────────────────────
+  // RLS já garante que só chegam OS do master — mostramos todas
+  // Toggle "Minhas OS" filtra apenas as atribuídas ao técnico logado
   const meNome = user.nome || user.email || ''
-  const osVisiveis = osList.filter(os => {
-    if (!os.tecnico) return true // sem técnico: sempre visível
-    if (os.tecnico.toLowerCase() === meNome.toLowerCase()) return true // minha OS
-    return officeSettings.podeAssumir // outro técnico: só se pode assumir
-  })
   const osExibidas = filtroMinha
-    ? osVisiveis.filter(os => os.tecnico?.toLowerCase() === meNome.toLowerCase())
-    : osVisiveis
+    ? osList.filter(os => os.tecnico?.toLowerCase() === meNome.toLowerCase())
+    : osList
 
   // Estatísticas
-  const minhasCount    = osVisiveis.filter(o => o.tecnico?.toLowerCase() === meNome.toLowerCase()).length
-  const urgenteCount   = osVisiveis.filter(o => o.urgente).length
-  const problemaCount  = osVisiveis.filter(o => o.problemaFlag).length
+  const minhasCount   = osList.filter(o => o.tecnico?.toLowerCase() === meNome.toLowerCase()).length
+  const urgenteCount  = osList.filter(o => o.urgente).length
+  const problemaCount = osList.filter(o => o.problemaFlag).length
 
   const assumir = async (os) => {
-    await supabase.rpc('tecnico_assumir_os', { p_os_id: os.id, p_nome: meNome })
+    // Update direto — tech tem RLS UPDATE, sem depender do RPC
+    await supabase.from('service_orders').update({
+      tecnico:    meNome,
+      updated_at: new Date().toISOString(),
+    }).eq('id', os.id)
     reload()
   }
 
