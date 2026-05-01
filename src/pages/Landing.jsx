@@ -111,7 +111,7 @@ function Calculadora({ onCTA }) {
 
           <div className="bg-slate-700/50 rounded-xl p-4 mb-6 text-center">
             <p className="text-slate-300 text-sm">
-              O BoxCerto custa <span className="text-white font-bold">R$47,90/mês</span>.
+              O BoxCerto custa <span className="text-white font-bold">R$97/mês</span>.
               Com apenas <span className="text-indigo-400 font-bold">1 cliente recuperado</span> você já paga o ano inteiro.
             </p>
           </div>
@@ -158,7 +158,7 @@ export default function Landing() {
     { q: 'Preciso instalar algum programa?', a: 'Não. O BoxCerto funciona direto no navegador — no celular, no tablet ou no computador. Só entrar e usar. Sem instalação, sem complicação.' },
     { q: 'Funciona para quem trabalha sozinho?', a: 'Foi feito exatamente para isso. Um mecânico solo consegue usar sem treinamento nenhum. Se você sabe usar o WhatsApp, sabe usar o BoxCerto.' },
     { q: 'Funciona para pintura, auto elétrica, ar condicionado e moto?', a: 'Sim. O BoxCerto foi pensado para qualquer negócio automotivo — mecânica geral, funilaria e pintura, auto elétrica, ar condicionado automotivo e mecânica de motos. Qualquer operação que receba veículo, faça serviço e precise de aprovação do cliente.' },
-    { q: 'É muito caro para uma oficina pequena?', a: 'R$47,90 por mês é menos do que uma hora de mão de obra. Se você recuperar 1 cliente por mês ou deixar de perder 1 orçamento por semana, o sistema já se pagou — e sobra dinheiro.' },
+    { q: 'É muito caro para uma oficina pequena?', a: 'R$97 por mês é menos que 1% do faturamento de qualquer oficina que fatura R$10k ou mais. Se você fechar 1 OS a mais por mês por causa do sistema, ele já se pagou — e sobra dinheiro.' },
     { q: 'Já uso planilha, por que mudar?', a: 'Planilha não avisa quando peça está acabando, não envia WhatsApp ao cliente, não registra aprovação de orçamento com data e hora, não mostra o lucro real separando custo de peça. O BoxCerto faz tudo isso — e roda no celular.' },
     { q: 'O BoxCerto emite nota fiscal?', a: 'Não, e é uma escolha intencional. O BoxCerto é desenhado para ser leve, rápido e sem burocracia. Sistemas fiscais adicionam complexidade e custo que a maioria das oficinas pequenas não precisa no dia a dia. Foco total na sua operação — do orçamento à entrega.' },
     { q: 'Meus dados ficam seguros?', a: 'Sim. Todos os dados ficam em servidores seguros e protegidos. Nenhuma informação sua ou dos seus clientes é compartilhada com ninguém.' },
@@ -712,7 +712,7 @@ export default function Landing() {
         <div className="max-w-4xl mx-auto px-5">
           <div className="text-center mb-14">
             <p className="text-indigo-600 font-semibold text-sm uppercase tracking-wider mb-3">Preços</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">R$1,60 por dia. Menos que um café.</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">Menos de R$100 por mês. Controle total da oficina.</h2>
             <p className="text-slate-500 max-w-xl mx-auto mb-3">Comece grátis por 7 dias. Sem cartão. Sem compromisso.</p>
             <p className="text-slate-400 text-sm italic">Recupere 1 cliente por mês e já se paga — o resto é lucro puro.</p>
           </div>
@@ -723,7 +723,7 @@ export default function Landing() {
               <h3 className="text-lg font-bold text-slate-900 mb-1">Plano Mensal</h3>
               <p className="text-slate-400 text-sm mb-6">Flexibilidade total, cancele quando quiser</p>
               <div className="flex items-end gap-1 mb-8">
-                <span className="text-5xl font-bold text-slate-900">R$47,90</span>
+                <span className="text-5xl font-bold text-slate-900">R$97</span>
                 <span className="text-slate-400 mb-1.5">/mês</span>
               </div>
               <ul className="space-y-3 mb-8 flex-1">
@@ -752,15 +752,15 @@ export default function Landing() {
             {/* Anual — botão verde para guiar o olho */}
             <div className="bg-indigo-600 rounded-3xl p-8 relative flex flex-col shadow-xl shadow-indigo-200">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-xs font-black px-4 py-1.5 rounded-full whitespace-nowrap shadow-sm">
-                ⭐ MAIS POPULAR — ECONOMIZE R$156/ANO
+                ⭐ MAIS POPULAR — 2 MESES GRÁTIS
               </div>
               <h3 className="text-lg font-bold text-white mb-1 mt-2">Plano Anual</h3>
               <p className="text-indigo-200 text-sm mb-2">Pague uma vez, use o ano todo</p>
               <div className="flex items-end gap-1">
-                <span className="text-5xl font-bold text-white">R$34,90</span>
+                <span className="text-5xl font-bold text-white">R$79,90</span>
                 <span className="text-indigo-200 mb-1.5">/mês</span>
               </div>
-              <p className="text-indigo-300 text-sm mt-1 mb-6">Cobrado R$418,80 uma vez por ano</p>
+              <p className="text-indigo-300 text-sm mt-1 mb-6">Cobrado R$958,80 uma vez por ano · Economize R$205</p>
               <ul className="space-y-3 mb-8 flex-1">
                 {[
                   'Tudo do plano mensal',
