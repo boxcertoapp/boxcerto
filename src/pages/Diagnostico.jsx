@@ -53,9 +53,17 @@ const PERGUNTAS = [
 
 // ── Resultado personalizado ───────────────────────────────────────────────────
 function gerarResultado({ volume, orcamento, dor, equipe }) {
-  const economia = volume === 'grande' ? 'R$1.800' : volume === 'media' ? 'R$900' : 'R$450'
-  const horas    = volume === 'grande' ? '18 horas' : volume === 'media' ? '10 horas' : '5 horas'
-  const os       = volume === 'grande' ? '50+' : volume === 'media' ? '20–50' : 'até 20'
+  // Estimativa de perda mensal por faixa de volume
+  // Base: OS médias × 15% abandono × ticket médio + estoque + tempo
+  const perdaFaixa = {
+    pequena: { min: 'R$800',   max: 'R$1.500',  liq_min: 'R$700',   liq_max: 'R$1.400'  },
+    media:   { min: 'R$1.800', max: 'R$3.000',  liq_min: 'R$1.700', liq_max: 'R$2.900'  },
+    grande:  { min: 'R$3.500', max: 'R$6.000',  liq_min: 'R$3.400', liq_max: 'R$5.900'  },
+  }
+  const perda = perdaFaixa[volume] || perdaFaixa.media
+
+  const horas = volume === 'grande' ? '18 horas' : volume === 'media' ? '10 horas' : '5 horas'
+  const os    = volume === 'grande' ? '50+' : volume === 'media' ? '20–50' : 'até 20'
 
   const doresMapa = {
     aprovacao: {
@@ -102,7 +110,7 @@ function gerarResultado({ volume, orcamento, dor, equipe }) {
   }
 
   return {
-    economia,
+    perda,
     dor: doresMapa[dor],
     orcamentoMsg: orcamentoMapa[orcamento],
     equipeMsg: equipeMapa[equipe],
@@ -163,7 +171,7 @@ function OpcaoCard({ opcao, selecionada, onClick }) {
   )
 }
 
-function ResultadoCard({ dor, orcamentoMsg, equipeMsg, economia }) {
+function ResultadoCard({ dor, orcamentoMsg, equipeMsg, perda }) {
   const c = COR[dor.cor]
   const DorIcon = dor.icon
 
@@ -213,11 +221,32 @@ function ResultadoCard({ dor, orcamentoMsg, equipeMsg, economia }) {
         </div>
       </div>
 
-      {/* Economia estimada */}
-      <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-2xl p-5 text-white text-center">
-        <p className="text-xs font-semibold text-indigo-200 uppercase tracking-wide mb-1">Potencial de economia mensal</p>
-        <p className="text-4xl font-extrabold mb-1">{economia}</p>
-        <p className="text-indigo-200 text-sm">com automação de processos e controle de estoque</p>
+      {/* Bloco de perda × recuperação */}
+      <div className="rounded-2xl overflow-hidden border-2 border-rose-200">
+        {/* Topo — o que está perdendo */}
+        <div className="bg-rose-50 px-5 py-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-rose-500 mb-1">⚠️ Sua oficina provavelmente está perdendo</p>
+          <div className="flex items-end gap-2">
+            <span className="text-3xl font-extrabold text-rose-600">{perda.min} a {perda.max}</span>
+            <span className="text-rose-400 font-semibold mb-0.5">/ mês</span>
+          </div>
+          <p className="text-xs text-rose-400 mt-1">em orçamentos abandonados, estoque descontrolado e tempo em burocracia</p>
+        </div>
+        {/* Divisor */}
+        <div className="bg-white px-5 py-3 border-t border-b border-gray-100 flex items-center gap-2">
+          <div className="flex-1 h-px bg-gray-100" />
+          <span className="text-xs text-slate-400 font-semibold">Com BoxCerto (R$97/mês) você recupera</span>
+          <div className="flex-1 h-px bg-gray-100" />
+        </div>
+        {/* Base — o que ganha líquido */}
+        <div className="bg-emerald-50 px-5 py-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-emerald-600 mb-1">✅ Ganho líquido estimado</p>
+          <div className="flex items-end gap-2">
+            <span className="text-3xl font-extrabold text-emerald-600">+{perda.liq_min} a +{perda.liq_max}</span>
+            <span className="text-emerald-400 font-semibold mb-0.5">/ mês</span>
+          </div>
+          <p className="text-xs text-emerald-500 mt-1">já descontado o custo da assinatura</p>
+        </div>
       </div>
 
       {/* Depoimento */}
