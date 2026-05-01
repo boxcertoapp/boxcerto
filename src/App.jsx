@@ -19,6 +19,10 @@ const Termos          = lazy(() => import('./pages/Termos'))
 const Privacidade     = lazy(() => import('./pages/Privacidade'))
 const LandingAds      = lazy(() => import('./pages/LandingAds'))
 const LandingAds2     = lazy(() => import('./pages/LandingAds2'))
+const Diagnostico     = lazy(() => import('./pages/Diagnostico'))
+const LandingOficinaP = lazy(() => import('./pages/LandingOficinaP'))
+const LandingOrcamento= lazy(() => import('./pages/LandingOrcamento'))
+const LandingVsPlanilha = lazy(() => import('./pages/LandingVsPlanilha'))
 
 // ── App (carregado apenas após login) ─────────────────────────────────────
 const AppLayout  = lazy(() => import('./pages/app/AppLayout'))
@@ -64,6 +68,10 @@ export default function App() {
             <Route path="/privacidade"    element={<Privacidade />} />
             <Route path="/lp"             element={<LandingAds />} />
             <Route path="/lp2"            element={<LandingAds2 />} />
+            <Route path="/diagnostico"                      element={<Diagnostico />} />
+            <Route path="/sistema-para-oficina-pequena"     element={<LandingOficinaP />} />
+            <Route path="/orcamento-online-oficina"         element={<LandingOrcamento />} />
+            <Route path="/boxcerto-vs-planilha"             element={<LandingVsPlanilha />} />
 
             {/* Admin */}
             <Route path="/admin" element={<AdminPanel />} />
