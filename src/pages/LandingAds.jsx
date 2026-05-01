@@ -314,32 +314,34 @@ export default function LandingAds() {
 
       {/* HERO */}
       <section className="px-4 pt-10 pb-14 text-center bg-gradient-to-b from-slate-900 to-indigo-950">
-        <div className="inline-flex items-center gap-2 bg-amber-400/10 border border-amber-400/20 text-amber-300 text-xs font-bold px-3 py-1.5 rounded-full mb-6">
-          <Zap className="w-3.5 h-3.5" /> +347 oficinas já pararam de perder orçamento
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight mb-4 max-w-xs mx-auto">
-          Sua oficina perde em média{' '}
-          <span className="text-amber-400">R$&nbsp;1.800 por mês</span>{' '}
-          sem perceber
-        </h1>
-        <p className="text-slate-300 text-base leading-relaxed mb-3 max-w-xs mx-auto">
-          Orçamento no zap sem resposta. Serviço feito, cliente negou. Caixa no papel que não fecha.
-          <strong className="text-white"> O BoxCerto resolve isso hoje.</strong>
-        </p>
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="flex -space-x-2">
-            {['J','R','A','L','C','T'].map((l,i) => (
-              <div key={i} className="w-7 h-7 rounded-full border-2 border-indigo-950 flex items-center justify-center text-white text-xs font-bold"
-                style={{ background: AVATAR_COLORS[i][0] }}>{l}</div>
-            ))}
+        <div className="max-w-2xl mx-auto">
+          <div className="inline-flex items-center gap-2 bg-amber-400/10 border border-amber-400/20 text-amber-300 text-xs font-bold px-3 py-1.5 rounded-full mb-6">
+            <Zap className="w-3.5 h-3.5" /> +347 oficinas já pararam de perder orçamento
           </div>
-          <p className="text-slate-400 text-xs"><span className="text-white font-bold">+347 oficinas</span> já resolveram</p>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white leading-tight mb-4 max-w-xl mx-auto">
+            Sua oficina perde em média{' '}
+            <span className="text-amber-400">R$&nbsp;1.800 por mês</span>{' '}
+            sem perceber
+          </h1>
+          <p className="text-slate-300 text-base leading-relaxed mb-3 max-w-lg mx-auto">
+            Orçamento no zap sem resposta. Serviço feito, cliente negou. Caixa no papel que não fecha.
+            <strong className="text-white"> O BoxCerto resolve isso hoje.</strong>
+          </p>
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <div className="flex -space-x-2">
+              {['J','R','A','L','C','T'].map((l,i) => (
+                <div key={i} className="w-7 h-7 rounded-full border-2 border-indigo-950 flex items-center justify-center text-white text-xs font-bold"
+                  style={{ background: AVATAR_COLORS[i][0] }}>{l}</div>
+              ))}
+            </div>
+            <p className="text-slate-400 text-xs"><span className="text-white font-bold">+347 oficinas</span> já resolveram</p>
+          </div>
+          <button onClick={goRegister}
+            className="w-full max-w-sm mx-auto flex items-center justify-center gap-2 bg-emerald-500 text-white font-extrabold py-4 rounded-2xl hover:bg-emerald-400 transition-colors shadow-2xl shadow-emerald-900 text-base mb-3">
+            Começar grátis por 7 dias <ArrowRight className="w-5 h-5" />
+          </button>
+          <p className="text-slate-500 text-xs">Sem cartão · Cancele quando quiser · 2 minutos para configurar</p>
         </div>
-        <button onClick={goRegister}
-          className="w-full max-w-xs mx-auto flex items-center justify-center gap-2 bg-emerald-500 text-white font-extrabold py-4 rounded-2xl hover:bg-emerald-400 transition-colors shadow-2xl shadow-emerald-900 text-base mb-3">
-          Começar grátis por 7 dias <ArrowRight className="w-5 h-5" />
-        </button>
-        <p className="text-slate-500 text-xs">Sem cartão · Cancele quando quiser · 2 minutos para configurar</p>
       </section>
 
       {/* BARRA DE CONFIANÇA */}
@@ -353,31 +355,33 @@ export default function LandingAds() {
       </section>
 
       {/* DOR */}
-      <section className="px-4 py-14 max-w-md mx-auto">
-        <div className="flex items-center gap-2 justify-center mb-2">
-          <AlertTriangle className="w-5 h-5 text-amber-500" />
-          <h2 className="text-2xl font-extrabold text-slate-900">Isso acontece na sua oficina?</h2>
-        </div>
-        <p className="text-slate-500 text-sm text-center mb-8">Se você se identificar em 2 ou mais, você está perdendo dinheiro todo dia.</p>
-        <div className="space-y-4">
-          {[
-            { icon: <MessageCircle className="w-5 h-5 text-red-500" />, t: '"Mandei o orçamento no zap e o cliente sumiu"', d: 'Você digita, manda, fica esperando. O cliente abre, vê — e ignora. Sem como cobrar, sem registro.' },
-            { icon: <ShieldCheck className="w-5 h-5 text-red-500" />,  t: '"Fiz o serviço e o cliente disse que não autorizou"', d: 'Acontece mais do que você imagina. Sem prova de aprovação, você fica no prejuízo ou perde o cliente.' },
-            { icon: <DollarSign className="w-5 h-5 text-red-500" />,  t: '"Não sei exatamente quanto entrou esse mês"', d: 'O dinheiro passa pela mão e some. No fim do mês você não sabe se teve lucro ou prejuízo.' },
-            { icon: <Clock className="w-5 h-5 text-red-500" />,       t: '"Fico ligando para cliente confirmar e ninguém atende"', d: 'Você poderia estar trabalhando no carro. Em vez disso, fica caçando aprovação no telefone.' },
-          ].map((item, i) => (
-            <div key={i} className="bg-red-50 border border-red-100 rounded-2xl p-4 flex gap-3">
-              <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-sm">{item.icon}</div>
-              <div>
-                <p className="font-bold text-slate-900 text-sm mb-1">{item.t}</p>
-                <p className="text-slate-600 text-xs leading-relaxed">{item.d}</p>
+      <section className="px-4 py-14">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-center gap-2 justify-center mb-2">
+            <AlertTriangle className="w-5 h-5 text-amber-500" />
+            <h2 className="text-2xl font-extrabold text-slate-900">Isso acontece na sua oficina?</h2>
+          </div>
+          <p className="text-slate-500 text-sm text-center mb-8">Se você se identificar em 2 ou mais, você está perdendo dinheiro todo dia.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { icon: <MessageCircle className="w-5 h-5 text-red-500" />, t: '"Mandei o orçamento no zap e o cliente sumiu"', d: 'Você digita, manda, fica esperando. O cliente abre, vê — e ignora. Sem como cobrar, sem registro.' },
+              { icon: <ShieldCheck className="w-5 h-5 text-red-500" />,  t: '"Fiz o serviço e o cliente disse que não autorizou"', d: 'Acontece mais do que você imagina. Sem prova de aprovação, você fica no prejuízo ou perde o cliente.' },
+              { icon: <DollarSign className="w-5 h-5 text-red-500" />,  t: '"Não sei exatamente quanto entrou esse mês"', d: 'O dinheiro passa pela mão e some. No fim do mês você não sabe se teve lucro ou prejuízo.' },
+              { icon: <Clock className="w-5 h-5 text-red-500" />,       t: '"Fico ligando para cliente confirmar e ninguém atende"', d: 'Você poderia estar trabalhando no carro. Em vez disso, fica caçando aprovação no telefone.' },
+            ].map((item, i) => (
+              <div key={i} className="bg-red-50 border border-red-100 rounded-2xl p-4 flex gap-3">
+                <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-sm">{item.icon}</div>
+                <div>
+                  <p className="font-bold text-slate-900 text-sm mb-1">{item.t}</p>
+                  <p className="text-slate-600 text-xs leading-relaxed">{item.d}</p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-8 bg-slate-900 rounded-2xl p-5 text-center">
-          <p className="text-white font-bold mb-1">Cada problema desses tem um custo real.</p>
-          <p className="text-slate-400 text-sm">Calcule o quanto você perde por mês 👇</p>
+            ))}
+          </div>
+          <div className="mt-8 bg-slate-900 rounded-2xl p-5 text-center">
+            <p className="text-white font-bold mb-1">Cada problema desses tem um custo real.</p>
+            <p className="text-slate-400 text-sm">Calcule o quanto você perde por mês 👇</p>
+          </div>
         </div>
       </section>
 
@@ -386,7 +390,7 @@ export default function LandingAds() {
 
       {/* APROVAÇÃO POR LINK */}
       <section className="bg-gradient-to-b from-indigo-950 to-indigo-900 px-4 py-14">
-        <div className="max-w-md mx-auto">
+        <div className="max-w-2xl mx-auto">
           <div className="text-center mb-10">
             <span className="inline-block bg-emerald-500 text-white text-xs font-extrabold px-3 py-1 rounded-full mb-3 tracking-wide">EXCLUSIVO BOXCERTO</span>
             <h2 className="text-2xl font-extrabold text-white mb-3">Aprovação de orçamento em 1 clique</h2>
@@ -407,22 +411,24 @@ export default function LandingAds() {
       </section>
 
       {/* ANTES / DEPOIS */}
-      <section className="px-4 py-14 max-w-md mx-auto">
-        <h2 className="text-2xl font-extrabold text-slate-900 text-center mb-2">A diferença no dia a dia</h2>
-        <p className="text-slate-500 text-sm text-center mb-6">Cada linha é uma situação real que acontece nas oficinas.</p>
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          <div className="bg-red-100 text-red-600 text-xs font-bold text-center py-2 rounded-xl">Sem BoxCerto</div>
-          <div className="bg-emerald-100 text-emerald-700 text-xs font-bold text-center py-2 rounded-xl">Com BoxCerto</div>
+      <section className="px-4 py-14">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-2xl font-extrabold text-slate-900 text-center mb-2">A diferença no dia a dia</h2>
+          <p className="text-slate-500 text-sm text-center mb-6">Cada linha é uma situação real que acontece nas oficinas.</p>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <div className="bg-red-100 text-red-600 text-xs font-bold text-center py-2 rounded-xl">Sem BoxCerto</div>
+            <div className="bg-emerald-100 text-emerald-700 text-xs font-bold text-center py-2 rounded-xl">Com BoxCerto</div>
+          </div>
+          <AntesDepois />
         </div>
-        <AntesDepois />
       </section>
 
       {/* DEPOIMENTOS */}
       <section className="bg-slate-50 px-4 py-14">
-        <div className="max-w-md mx-auto">
+        <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl font-extrabold text-slate-900 text-center mb-2">O que estão falando</h2>
           <p className="text-slate-500 text-sm text-center mb-10">Prints reais de clientes que entraram em contato com a gente.</p>
-          <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <WppPrint
               avatarIdx={0}
               nome="João Batista R."
@@ -474,7 +480,7 @@ export default function LandingAds() {
 
       {/* OFERTA */}
       <section className="bg-slate-900 px-4 py-14">
-        <div className="max-w-sm mx-auto text-center">
+        <div className="max-w-xl mx-auto text-center">
           <span className="inline-block bg-emerald-500 text-white text-xs font-extrabold px-3 py-1 rounded-full mb-4 tracking-wide">OFERTA DE LANÇAMENTO</span>
           <h2 className="text-2xl font-extrabold text-white mb-1">Comece hoje por R$ 0</h2>
           <p className="text-slate-400 text-sm mb-6">7 dias grátis, sem cartão. Depois só <strong className="text-white">R$ 79,90/mês</strong> no plano anual.</p>
@@ -495,7 +501,7 @@ export default function LandingAds() {
 
       {/* GARANTIA */}
       <section className="px-4 py-12 bg-white border-b border-gray-100 text-center">
-        <div className="max-w-sm mx-auto">
+        <div className="max-w-xl mx-auto">
           <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <ShieldCheck className="w-8 h-8 text-emerald-600" />
           </div>
@@ -508,7 +514,7 @@ export default function LandingAds() {
 
       {/* CTA FINAL */}
       <section className="px-4 py-14 bg-gradient-to-b from-white to-indigo-50 text-center">
-        <div className="max-w-sm mx-auto">
+        <div className="max-w-xl mx-auto">
           <h2 className="text-2xl font-extrabold text-slate-900 mb-3">Todo dia sem BoxCerto é dinheiro deixado na mesa.</h2>
           <p className="text-slate-500 text-sm mb-8 leading-relaxed">São 2 minutos para configurar. Já no primeiro orçamento você entende por que +347 oficinas não voltam para o jeito antigo.</p>
           <button onClick={goRegister}

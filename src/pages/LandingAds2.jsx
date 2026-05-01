@@ -175,24 +175,25 @@ export default function LandingAds2() {
 
       {/* HERO — FOMO COMPETITIVO */}
       <section className="px-4 pt-10 pb-12 text-center bg-gradient-to-b from-indigo-50 to-white">
+        <div className="max-w-2xl mx-auto">
         <div className="inline-flex items-center gap-2 bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-full mb-5">
           <Users className="w-3.5 h-3.5" />
           +347 oficinas já deixaram o caos para trás
         </div>
 
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 leading-tight mb-4 max-w-xs mx-auto">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 leading-tight mb-4 max-w-xl mx-auto">
           Enquanto você pensa,{' '}
           <span className="text-indigo-600">outro mecânico da sua cidade</span>{' '}
           está aprovando orçamento pelo link
         </h1>
 
-        <p className="text-slate-500 text-base leading-relaxed mb-6 max-w-xs mx-auto">
+        <p className="text-slate-500 text-base leading-relaxed mb-6 max-w-lg mx-auto">
           Eles pararam de perder orçamento, de levar calote e de trabalhar sem saber se estão lucrando.
           <strong className="text-slate-700"> Agora é a sua vez.</strong>
         </p>
 
         {/* depoimento rápido no hero */}
-        <div className="bg-white border border-gray-100 rounded-2xl p-4 max-w-xs mx-auto shadow-sm mb-6 text-left">
+        <div className="bg-white border border-gray-100 rounded-2xl p-4 max-w-sm mx-auto shadow-sm mb-6 text-left">
           <div className="flex items-center gap-3 mb-2">
             <div className="flex -space-x-2">
               {['J','R','A','L','C','T'].map((l,i) => (
@@ -211,10 +212,11 @@ export default function LandingAds2() {
         </div>
 
         <button onClick={goRegister}
-          className="w-full max-w-xs mx-auto flex items-center justify-center gap-2 bg-emerald-500 text-white font-extrabold py-4 rounded-2xl hover:bg-emerald-400 transition-colors shadow-xl shadow-emerald-100 text-base">
+          className="w-full max-w-sm mx-auto flex items-center justify-center gap-2 bg-emerald-500 text-white font-extrabold py-4 rounded-2xl hover:bg-emerald-400 transition-colors shadow-xl shadow-emerald-100 text-base">
           Quero entrar agora — grátis <ArrowRight className="w-5 h-5" />
         </button>
         <p className="text-xs text-slate-400 mt-2">7 dias grátis · Sem cartão · Pronto em 2 min</p>
+        </div>
       </section>
 
       {/* MÉTRICAS */}
@@ -222,7 +224,7 @@ export default function LandingAds2() {
         <p className="text-slate-400 text-xs font-bold uppercase tracking-widest text-center mb-5">
           Números das oficinas que usam
         </p>
-        <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl mx-auto">
           <MetricCard valor="+347" label="Oficinas ativas" sub="em todo o Brasil" />
           <MetricCard valor="4,9★" label="Avaliação média" sub="dos usuários" />
           <MetricCard valor="68%" label="Mais aprovações" sub="no primeiro mês" />
@@ -231,7 +233,8 @@ export default function LandingAds2() {
       </section>
 
       {/* DEPOIMENTOS */}
-      <section className="px-4 py-14 max-w-md mx-auto">
+      <section className="px-4 py-14">
+        <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-2 justify-center mb-2">
           <Award className="w-5 h-5 text-indigo-600" />
           <h2 className="text-2xl font-extrabold text-slate-900">Resultados reais</h2>
@@ -239,7 +242,7 @@ export default function LandingAds2() {
         <p className="text-slate-500 text-sm text-center mb-10">
           Prints do WhatsApp de quem entrou em contato com a gente.
         </p>
-        <div className="space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <WppPrint
             avatarIdx={0}
             nome="João Batista R."
@@ -277,11 +280,12 @@ export default function LandingAds2() {
             resultado="Aprovações mesmo fora do horário comercial"
           />
         </div>
+        </div>
       </section>
 
       {/* TRANSFORMAÇÃO */}
       <section className="bg-slate-50 px-4 py-14">
-        <div className="max-w-md mx-auto">
+        <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-extrabold text-slate-900 text-center mb-2">
             Como fica o dia a dia
           </h2>
@@ -298,7 +302,7 @@ export default function LandingAds2() {
 
       {/* CTA INTERMEDIÁRIO */}
       <section className="px-4 py-10 bg-indigo-600 text-center">
-        <div className="max-w-sm mx-auto">
+        <div className="max-w-xl mx-auto">
           <Zap className="w-8 h-8 text-white mx-auto mb-3" />
           <h3 className="text-xl font-extrabold text-white mb-2">Você já sabia que precisava disso.</h3>
           <p className="text-indigo-200 text-sm mb-5">
@@ -313,7 +317,8 @@ export default function LandingAds2() {
       </section>
 
       {/* OBJEÇÕES */}
-      <section className="px-4 py-14 max-w-md mx-auto">
+      <section className="px-4 py-14">
+        <div className="max-w-2xl mx-auto">
         <h2 className="text-2xl font-extrabold text-slate-900 text-center mb-2">O que ainda te impede?</h2>
         <p className="text-slate-500 text-sm text-center mb-8">Respostas diretas para as dúvidas mais comuns.</p>
         <div className="space-y-3">
@@ -338,11 +343,12 @@ export default function LandingAds2() {
             r="Funciona para mecânica geral, auto elétrica, funilaria, estofaria, mecânica de motos, centro automotivo e qualquer negócio automotivo que emite orçamento e precisa de aprovação do cliente."
           />
         </div>
+        </div>
       </section>
 
       {/* OFERTA FINAL */}
       <section className="bg-slate-900 px-4 py-14">
-        <div className="max-w-sm mx-auto text-center">
+        <div className="max-w-xl mx-auto text-center">
           <span className="inline-block bg-emerald-500 text-white text-xs font-extrabold px-3 py-1 rounded-full mb-4 tracking-wide">
             OFERTA DE LANÇAMENTO
           </span>
@@ -376,7 +382,7 @@ export default function LandingAds2() {
 
       {/* GARANTIA */}
       <section className="px-4 py-12 bg-white border-b border-gray-100 text-center">
-        <div className="max-w-sm mx-auto">
+        <div className="max-w-xl mx-auto">
           <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <ShieldCheck className="w-8 h-8 text-emerald-600" />
           </div>
@@ -390,7 +396,7 @@ export default function LandingAds2() {
 
       {/* CTA FINAL */}
       <section className="px-4 py-14 bg-gradient-to-b from-white to-indigo-50 text-center">
-        <div className="max-w-sm mx-auto">
+        <div className="max-w-xl mx-auto">
           <h2 className="text-2xl font-extrabold text-slate-900 mb-3">
             Você vai continuar perdendo orçamento amanhã também?
           </h2>
