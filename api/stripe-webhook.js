@@ -1,6 +1,28 @@
 const Stripe = require('stripe')
 const { createClient } = require('@supabase/supabase-js')
 
+// ── Envia email transacional via API interna ──────────────
+const sendEmail = async (type, to, data) => {
+  try {
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'https://boxcerto.com'
+    const res = await fetch(`${baseUrl}/api/send-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, to, ...data }),
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      console.error(`Email [${type}] falhou:`, err.error)
+    } else {
+      console.log(`📧 Email [${type}] enviado para ${to}`)
+    }
+  } catch (err) {
+    console.error(`Email [${type}] erro:`, err.message)
+  }
+}
+
 // Lê o body como Buffer bruto (necessário para verificação de assinatura Stripe)
 const getRawBody = (req) =>
   new Promise((resolve, reject) => {
@@ -86,6 +108,23 @@ module.exports = async (req, res) => {
           canceled_at:           null,
         })
         console.log('✅ Pagamento confirmado:', email, plan)
+
+        // Busca nome e oficina para o email
+        if (email) {
+          try {
+            const { data: profile } = await supabase
+              .from('profiles').select('responsavel, oficina').eq('email', email).single()
+            const proximaCobranca = nextBilling
+              ? new Date(nextBilling).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+              : null
+            await sendEmail('payment_success', email, {
+              nome:            profile?.responsavel || email.split('@')[0],
+              oficina:         profile?.oficina     || 'sua oficina',
+              plano:           plan,
+              proximaCobranca,
+            })
+          } catch (e) { console.error('Erro ao buscar perfil para email:', e.message) }
+        }
         break
       }
 
@@ -118,6 +157,18 @@ module.exports = async (req, res) => {
         const customerId = invoice.customer
         await updateByCustomerId(customerId, { status: 'inadimplente' })
         console.log('❌ Pagamento falhou:', customerId)
+
+        // Envia email de falha de pagamento
+        try {
+          const { data: profile } = await supabase
+            .from('profiles').select('email, responsavel, oficina').eq('stripe_customer_id', customerId).single()
+          if (profile?.email) {
+            await sendEmail('payment_failed', profile.email, {
+              nome:    profile.responsavel || profile.email.split('@')[0],
+              oficina: profile.oficina     || 'sua oficina',
+            })
+          }
+        } catch (e) { console.error('Erro ao enviar email de falha:', e.message) }
         break
       }
 
