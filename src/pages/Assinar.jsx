@@ -5,8 +5,8 @@ import { useAuth } from '../contexts/AuthContext'
 // ── COLE AQUI OS LINKS DO STRIPE APÓS CRIAR EM:
 // Stripe Dashboard → Produtos → Payment Links → + Novo link de pagamento
 // Em cada link, configure a URL de sucesso como: https://seudominio.com/sucesso
-const LINK_MENSAL = 'https://buy.stripe.com/00waEZ3Xk7P16h44N363K01'
-const LINK_ANUAL  = 'https://buy.stripe.com/5kQ7sN79w7P1dJw4N363K00'
+const LINK_MENSAL = 'https://buy.stripe.com/dRm5kF3Xkglx0WK2EV63K03'
+const LINK_ANUAL  = 'https://buy.stripe.com/4gM6oJ8dAc5h48Wdjz63K02'
 
 const features = [
   'Ordens de serviço ilimitadas',
