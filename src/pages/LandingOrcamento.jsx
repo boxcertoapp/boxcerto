@@ -3,6 +3,7 @@ import {
   CheckCircle, ArrowRight, Zap, Star, MessageCircle, Shield,
   Clock, Smartphone, FileText, ThumbsUp, Eye, Bell, Link2
 } from 'lucide-react'
+import { usePageMeta } from '../hooks/usePageMeta'
 
 const CADASTRO = 'https://www.boxcerto.com/cadastro'
 const WPP_NUM  = '5553997065725'
@@ -169,6 +170,12 @@ const DEPOIMENTOS = [
 ]
 
 export default function LandingOrcamento() {
+  usePageMeta({
+    title: 'Orçamento Online para Oficina | Envie Link pelo WhatsApp — BoxCerto',
+    description: 'Crie orçamentos profissionais, envie por link no WhatsApp e registre a aprovação do cliente com data e hora. Sem ligação, sem conversa perdida. Teste grátis.',
+    canonical: 'https://boxcerto.com/orcamento-online-oficina',
+  })
+
   return (
     <div className="min-h-screen bg-white">
 

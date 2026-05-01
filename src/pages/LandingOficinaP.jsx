@@ -3,6 +3,7 @@ import {
   CheckCircle, ArrowRight, Zap, Star, MessageCircle, Shield,
   Clock, Smartphone, TrendingUp, FileText, ChevronRight, Package
 } from 'lucide-react'
+import { usePageMeta } from '../hooks/usePageMeta'
 
 const CADASTRO = 'https://www.boxcerto.com/cadastro'
 const WPP_NUM  = '5553997065725'
@@ -73,6 +74,12 @@ const DEPOIMENTOS = [
 ]
 
 export default function LandingOficinaP() {
+  usePageMeta({
+    title: 'Sistema para Oficina Pequena | Controle OS, Orçamentos e Lucro — BoxCerto',
+    description: 'Sistema simples para oficina pequena controlar clientes, veículos, ordens de serviço, orçamentos e lucro pelo celular. Sem treinamento. Teste grátis por 7 dias.',
+    canonical: 'https://boxcerto.com/sistema-para-oficina-pequena',
+  })
+
   const [tabAtiva, setTabAtiva] = useState('antes')
 
   return (
@@ -148,6 +155,43 @@ export default function LandingOficinaP() {
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-indigo-500" />
               <span>Suporte via WhatsApp incluso</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ISSO É PARA VOCÊ SE */}
+      <section className="py-14 bg-white border-b border-gray-100">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-xl font-extrabold text-slate-900 mb-6 text-center">
+              Essa página é para você se…
+            </h2>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {[
+                'Você controla os serviços pelo WhatsApp',
+                'Anota orçamento em caderno ou papel',
+                'Não sabe quantos orçamentos ficaram sem resposta essa semana',
+                'Esquece de ligar pro cliente quando o carro fica pronto',
+                'Não sabe exatamente quanto lucrou esse mês',
+                'Acha que sistema de gestão é complicado demais para sua oficina',
+                'Já perdeu o histórico de algum cliente ou veículo',
+                'Fica sem peça porque não controla o estoque direito',
+              ].map((item, i) => (
+                <div key={i} className="flex items-start gap-3 bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3">
+                  <CheckCircle className="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-slate-700">{item}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 text-center">
+              <p className="text-sm text-slate-500 mb-4">Se você marcou pelo menos 2 desses pontos, o BoxCerto foi feito para você.</p>
+              <a
+                href="https://www.boxcerto.com/cadastro"
+                className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-xl transition-colors"
+              >
+                Testar grátis por 7 dias <ArrowRight className="w-4 h-4" />
+              </a>
             </div>
           </div>
         </div>
