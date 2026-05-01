@@ -330,8 +330,8 @@ export default function LandingAds2() {
             r="Sim. Usamos infraestrutura com criptografia e autenticação segura. Seus dados de clientes pertencem a você — não vendemos e não compartilhamos com ninguém. CNPJ 52.354.481/0001-37."
           />
           <Objecao
-            p='"R$ 34,90 por mês cabe no orçamento de oficina pequena?"'
-            r="Se você fechar um orçamento a mais por mês por causa do sistema, você pagou a assinatura anual inteira. A maioria das oficinas recupera o valor na primeira semana."
+            p='"R$ 97 por mês cabe no orçamento de oficina pequena?"'
+            r="Se você fechar um orçamento a mais por mês por causa do sistema, você pagou mais de uma assinatura inteira. A maioria das oficinas recupera o valor na primeira semana. No anual fica R$ 79,90/mês — menos de R$ 3 por dia."
           />
           <Objecao
             p='"Funciona para minha tipo de oficina?"'
@@ -348,7 +348,7 @@ export default function LandingAds2() {
           </span>
           <h2 className="text-2xl font-extrabold text-white mb-1">Comece hoje por R$ 0</h2>
           <p className="text-slate-400 text-sm mb-6">
-            7 dias grátis, sem cartão. Depois só <strong className="text-white">R$ 34,90/mês</strong> no plano anual.
+            7 dias grátis, sem cartão. Depois só <strong className="text-white">R$ 79,90/mês</strong> no plano anual.
           </p>
           <div className="text-left space-y-3 mb-8 bg-white/5 rounded-2xl p-5">
             {[

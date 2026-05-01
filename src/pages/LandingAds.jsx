@@ -477,7 +477,7 @@ export default function LandingAds() {
         <div className="max-w-sm mx-auto text-center">
           <span className="inline-block bg-emerald-500 text-white text-xs font-extrabold px-3 py-1 rounded-full mb-4 tracking-wide">OFERTA DE LANÇAMENTO</span>
           <h2 className="text-2xl font-extrabold text-white mb-1">Comece hoje por R$ 0</h2>
-          <p className="text-slate-400 text-sm mb-6">7 dias grátis, sem cartão. Depois só <strong className="text-white">R$ 34,90/mês</strong> no plano anual.</p>
+          <p className="text-slate-400 text-sm mb-6">7 dias grátis, sem cartão. Depois só <strong className="text-white">R$ 79,90/mês</strong> no plano anual.</p>
           <div className="text-left space-y-3 mb-8 bg-white/5 rounded-2xl p-5">
             {['Orçamentos ilimitados','Aprovação por link (exclusivo)','Histórico de clientes e veículos','Controle financeiro completo','Gestão de estoque','Suporte humano via WhatsApp','Sem fidelidade — cancele quando quiser'].map((item, i) => (
               <div key={i} className="flex items-center gap-3">

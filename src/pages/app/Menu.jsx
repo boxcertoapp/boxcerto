@@ -689,7 +689,7 @@ export default function Menu() {
   }
 
   const handleLogout = () => { logout(); navigate('/') }
-  const planLabel = user?.plan === 'annual' ? 'Plano Anual — R$418,80/ano' : 'Plano Mensal — R$47,90/mês'
+  const planLabel = user?.plan === 'annual' ? 'Plano Anual — R$958,80/ano' : 'Plano Mensal — R$97/mês'
   const isTrial = user?.status === 'trial'
   const [portalLoading, setPortalLoading] = useState(false)
 
@@ -1171,8 +1171,8 @@ export default function Menu() {
                 <div className="bg-indigo-50 rounded-xl p-4 mb-3">
                   <p className="text-sm text-indigo-700 font-medium mb-2">Assine e continue usando após o trial</p>
                   <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => navigate('/assinar')} className="bg-white border border-indigo-200 text-indigo-700 text-xs font-semibold py-2 rounded-lg hover:bg-indigo-50 transition-colors">R$47,90/mês</button>
-                    <button onClick={() => navigate('/assinar')} className="bg-indigo-600 text-white text-xs font-semibold py-2 rounded-lg hover:bg-indigo-700 transition-colors">R$34,90/mês ⭐</button>
+                    <button onClick={() => navigate('/assinar')} className="bg-white border border-indigo-200 text-indigo-700 text-xs font-semibold py-2 rounded-lg hover:bg-indigo-50 transition-colors">R$97/mês</button>
+                    <button onClick={() => navigate('/assinar')} className="bg-indigo-600 text-white text-xs font-semibold py-2 rounded-lg hover:bg-indigo-700 transition-colors">R$79,90/mês ⭐</button>
                   </div>
                 </div>
               )}

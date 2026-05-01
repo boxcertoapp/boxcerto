@@ -221,11 +221,11 @@ export default function Receita({ users }) {
             {[
               {
                 label: 'Plano Mensal', count: ativos.filter(u => u.plan !== 'annual').length,
-                valor: mrrMensal, preco: 'R$47,90/mês', color: 'bg-indigo-500', pct: mrr > 0 ? (mrrMensal/mrr)*100 : 0
+                valor: mrrMensal, preco: 'R$97/mês', color: 'bg-indigo-500', pct: mrr > 0 ? (mrrMensal/mrr)*100 : 0
               },
               {
                 label: 'Plano Anual', count: ativos.filter(u => u.plan === 'annual').length,
-                valor: mrrAnual, preco: 'R$34,90/mês', color: 'bg-green-500', pct: mrr > 0 ? (mrrAnual/mrr)*100 : 0
+                valor: mrrAnual, preco: 'R$79,90/mês', color: 'bg-green-500', pct: mrr > 0 ? (mrrAnual/mrr)*100 : 0
               },
             ].map(p => (
               <div key={p.label}>
@@ -294,7 +294,7 @@ export default function Receita({ users }) {
                     <p className="text-xs text-slate-400">{formatDate(u.nextBillingAt)}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-slate-700">R${u.plan === 'annual' ? '418,80' : '47,90'}</span>
+                    <span className="text-xs font-bold text-slate-700">R${u.plan === 'annual' ? '958,80' : '97'}</span>
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${diasAte <= 3 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                       {diasAte <= 0 ? 'Hoje' : `em ${diasAte}d`}
                     </span>

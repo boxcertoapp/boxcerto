@@ -42,7 +42,7 @@ function PlanosConfig() {
           <label className="block text-xs font-medium text-slate-600 mb-1.5">Preço mensal (R$)</label>
           <input value={config.precoMensal} onChange={e => setConfig({...config, precoMensal: e.target.value})}
             className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
-          <p className="text-xs text-slate-400 mt-1">Atual: R$47,90/mês</p>
+          <p className="text-xs text-slate-400 mt-1">Atual: R$97/mês</p>
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-600 mb-1.5">Preço anual (R$)</label>

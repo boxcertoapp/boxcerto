@@ -10,10 +10,14 @@ const LINK_ANUAL  = 'https://buy.stripe.com/5kQ7sN79w7P1dJw4N363K00'
 
 const features = [
   'Ordens de serviço ilimitadas',
+  'Aprovação de orçamento por link (com rastreio do status)',
   'Histórico completo de clientes e veículos',
   'Controle financeiro e despesas',
   'Gestão de estoque com alertas',
   'Impressão de OS e recibos',
+  'Modo técnico — acesso limitado para funcionários',
+  'Múltiplos técnicos na mesma conta',
+  'Checklist e notas internas por OS',
   'Relatórios de clientes inativos',
   'Aniversariantes do mês',
   'Suporte via WhatsApp',
@@ -66,8 +70,7 @@ export default function Assinar() {
             <div className="mb-4">
               <p className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-1">Mensal</p>
               <div className="flex items-end gap-1">
-                <span className="text-4xl font-extrabold text-slate-900">R$47</span>
-                <span className="text-2xl font-bold text-slate-900">,90</span>
+                <span className="text-4xl font-extrabold text-slate-900">R$97</span>
                 <span className="text-slate-400 text-sm mb-1">/mês</span>
               </div>
               <p className="text-xs text-slate-400 mt-1">Cobrado mensalmente · Cancele quando quiser</p>
@@ -95,11 +98,11 @@ export default function Assinar() {
             <div className="mb-4">
               <p className="text-sm font-semibold text-indigo-200 uppercase tracking-wide mb-1">Anual</p>
               <div className="flex items-end gap-1">
-                <span className="text-4xl font-extrabold text-white">R$34</span>
+                <span className="text-4xl font-extrabold text-white">R$79</span>
                 <span className="text-2xl font-bold text-white">,90</span>
                 <span className="text-indigo-300 text-sm mb-1">/mês</span>
               </div>
-              <p className="text-xs text-indigo-300 mt-1">R$418,80 cobrado anualmente · Economize R$155</p>
+              <p className="text-xs text-indigo-300 mt-1">R$958,80 cobrado anualmente · Economize R$205</p>
             </div>
             <ul className="space-y-2 mb-6 flex-1">
               {features.map(f => (
