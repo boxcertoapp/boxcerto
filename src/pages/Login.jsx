@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Eye, EyeOff, AlertCircle } from 'lucide-react'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth, hasAccess } from '../contexts/AuthContext'
 import Logo from '../components/Logo'
 
 export default function Login() {
@@ -24,8 +24,7 @@ export default function Login() {
     const u = result.user
     if (u.isAdmin) return navigate('/admin')
     if (u.isTecnico) return navigate('/tecnico')
-    if (u.status === 'rejected') return navigate('/pendente')
-    if (u.status === 'inactive') return navigate('/renovar')
+    if (!hasAccess(u)) return navigate('/renovar')
     navigate('/app/oficina')
   }
 

@@ -8,7 +8,6 @@ import Login      from './pages/Login'
 import Register   from './pages/Register'
 
 // ── Lazy: tudo que o visitante NÃO vê na primeira visita ──────────────────
-const Pending         = lazy(() => import('./pages/Pending'))
 const Assinar         = lazy(() => import('./pages/Assinar'))
 const Sucesso         = lazy(() => import('./pages/Sucesso'))
 const Renovar         = lazy(() => import('./pages/Renovar'))
@@ -57,7 +56,6 @@ export default function App() {
             <Route path="/"               element={<Landing />} />
             <Route path="/login"          element={<Login />} />
             <Route path="/cadastro"       element={<Register />} />
-            <Route path="/pendente"       element={<Pending />} />
             <Route path="/renovar"        element={<Renovar />} />
             <Route path="/assinar"        element={<Assinar />} />
             <Route path="/sucesso"        element={<Sucesso />} />

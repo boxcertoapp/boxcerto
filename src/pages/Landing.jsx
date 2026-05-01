@@ -138,9 +138,9 @@ export default function Landing() {
     if (loading) return
     if (!user) return
     if (user.isAdmin) { navigate('/admin', { replace: true }); return }
+    if (user.isTecnico) { navigate('/tecnico', { replace: true }); return }
     if (hasAccess(user)) { navigate('/app/oficina', { replace: true }); return }
-    if (user.status === 'inactive') { navigate('/renovar', { replace: true }); return }
-    navigate('/pendente', { replace: true })
+    navigate('/renovar', { replace: true })
   }, [user, loading, navigate])
 
   useEffect(() => {
