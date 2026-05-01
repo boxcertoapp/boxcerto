@@ -4,72 +4,160 @@ import {
   CheckCircle, Loader2, Send, Clock, Wrench,
   Package, TrendingUp, FileText, X, LifeBuoy,
   AlertCircle, Lightbulb, HelpCircle, CreditCard,
-  Search, ArrowRight, Star
+  Search, ArrowRight, Users, Smartphone, Bell, ClipboardList,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 
 const WPP = 'https://wa.me/5553997065725?text=Ol%C3%A1%2C%20tenho%20uma%20urg%C3%AAncia%20no%20BoxCerto%20e%20preciso%20de%20ajuda%20imediata.'
 
-// ── Guias visuais ─────────────────────────────────────────────
+// ── Guias passo a passo ────────────────────────────────────────
 const GUIAS = [
   {
-    icon: Wrench, color: 'bg-indigo-50 text-indigo-600', titulo: 'Criar uma Ordem de Serviço',
+    icon: Wrench,
+    color: 'bg-indigo-50 text-indigo-600',
+    titulo: 'Criar uma Ordem de Serviço',
     passos: [
       'Na aba Oficina, toque em "Nova OS"',
-      'Digite a placa do veículo — se já cadastrado, aparece automaticamente',
+      'Digite a placa — se o veículo já existir, aparece automaticamente',
       'Preencha o modelo, KM e observações do serviço',
-      'Adicione os itens (peças e serviços) com preço de custo e venda',
-      'Altere o status: Orçamento → Em serviço → Pronto → Entregue',
-    ]
+      'Adicione itens (peças e serviços) com preço de custo e venda',
+      'Mude o status conforme o andamento: Orçamento → Em Serviço → Pronto → Entregue',
+    ],
   },
   {
-    icon: FileText, color: 'bg-emerald-50 text-emerald-600', titulo: 'Enviar orçamento ao cliente',
+    icon: FileText,
+    color: 'bg-emerald-50 text-emerald-600',
+    titulo: 'Enviar orçamento e acompanhamento ao cliente',
     passos: [
-      'Abra a OS desejada em Histórico ou Oficina',
-      'Toque no ícone de compartilhar (canto superior)',
-      'Escolha "Enviar por WhatsApp" — cliente recebe link com o orçamento',
-      'O cliente pode aprovar diretamente pelo link',
-      'Você é notificado quando ele aprovar',
-    ]
+      'Abra a OS e toque no ícone de compartilhar',
+      'Envie o link pelo WhatsApp — o cliente abre sem precisar de conta',
+      'O cliente vê os itens, valores e pode aprovar com um toque',
+      'Após aprovação, o link vira uma página de acompanhamento: Aprovado → Em Serviço → Pronto',
+      'Se você alterar itens após a aprovação, o cliente é solicitado a aprovar novamente',
+    ],
   },
   {
-    icon: Package, color: 'bg-amber-50 text-amber-600', titulo: 'Controlar o estoque de peças',
+    icon: ClipboardList,
+    color: 'bg-violet-50 text-violet-600',
+    titulo: 'Usar checklist e notas internas na OS',
+    passos: [
+      'Abra qualquer OS e acesse a aba "Tarefas"',
+      'Adicione tarefas específicas do serviço e marque conforme conclui',
+      'A barra de progresso mostra o avanço automaticamente',
+      'Na aba "Notas" você tem um chat interno — só você e os técnicos veem',
+      'Para chamar atenção do gerente, toque em "Sinalizar problema" — aparece uma flag laranja na OS',
+    ],
+  },
+  {
+    icon: Bell,
+    color: 'bg-red-50 text-red-600',
+    titulo: 'Marcar uma OS como urgente',
+    passos: [
+      'Abra a OS desejada',
+      'Toque no botão "Urgente" ao lado do campo de KM',
+      'A OS recebe um banner vermelho e sobe para o topo da lista',
+      'Técnicos também veem o destaque urgente na área deles',
+      'Para remover, toque em "Urgente" novamente',
+    ],
+  },
+  {
+    icon: Users,
+    color: 'bg-sky-50 text-sky-600',
+    titulo: 'Adicionar técnicos à oficina',
+    passos: [
+      'Acesse Menu → Configurações → Técnicos',
+      'Toque em "Gerar Convite" e copie o link gerado',
+      'Envie o link para o técnico pelo WhatsApp',
+      'O técnico abre o link, cria a conta e já fica vinculado à sua oficina',
+      'Você pode atribuir uma OS a um técnico ao abrir o detalhe dela',
+    ],
+  },
+  {
+    icon: Smartphone,
+    color: 'bg-teal-50 text-teal-600',
+    titulo: 'Área do técnico — o que ele pode fazer',
+    passos: [
+      'O técnico acessa pelo mesmo site, com a conta dele',
+      'Ele vê todas as OS da oficina e pode assumir as que estiverem sem técnico',
+      'Na aba Tarefas ele atualiza o checklist e registra notas internas',
+      'Na aba Estoque ele consulta peças disponíveis e adiciona ao orçamento da OS',
+      'No Histórico ele vê todas as OS que concluiu, com filtro por mês e busca',
+      'O técnico não acessa financeiro, clientes nem configurações da oficina',
+    ],
+  },
+  {
+    icon: Package,
+    color: 'bg-amber-50 text-amber-600',
+    titulo: 'Controlar o estoque de peças',
     passos: [
       'Acesse a aba Estoque',
-      'Toque em "+" para cadastrar uma peça com quantidade e preço',
-      'Ative "Alertar quando acabar" para avisos de estoque baixo',
-      'Ao adicionar uma peça numa OS, o estoque baixa automaticamente',
-      'O painel mostra em vermelho os itens com estoque crítico',
-    ]
+      'Toque em "+" para cadastrar uma peça com quantidade, custo e preço de venda',
+      'Itens com quantidade zero ficam destacados em vermelho',
+      'Técnicos podem consultar o estoque e adicionar peças diretamente nas OS deles',
+      'O estoque é descontado quando o gerente marca a OS como Entregue',
+    ],
   },
   {
-    icon: TrendingUp, color: 'bg-blue-50 text-blue-600', titulo: 'Acompanhar o financeiro',
+    icon: TrendingUp,
+    color: 'bg-blue-50 text-blue-600',
+    titulo: 'Acompanhar financeiro e relatórios',
     passos: [
-      'Acesse a aba Financeiro',
-      'Veja o faturamento do mês e compare com meses anteriores',
-      'Adicione despesas (aluguel, ferramentas, luz) para ver o lucro real',
-      'Em Menu → Relatórios → Serviços do Mês você pode imprimir um relatório',
-    ]
-  },
-  {
-    icon: MessageCircle, color: 'bg-pink-50 text-pink-600', titulo: 'Recuperar clientes inativos',
-    passos: [
-      'Acesse Menu → Relatórios → Clientes Inativos',
-      'Escolha o período (3, 6, 9 meses ou mais de 1 ano)',
-      'Veja quem não voltou à oficina nesse período',
-      'Toque em "WPP" para enviar mensagem automática pelo WhatsApp',
-    ]
+      'Acesse a aba Financeiro para ver faturamento do mês',
+      'Adicione despesas (aluguel, ferramentas, luz) para calcular o lucro real',
+      'Em Menu → Relatórios → Serviços do Mês você filtra por período e imprime',
+      'Em Menu → Relatórios → Técnicos você vê quantas OS cada técnico concluiu e o valor gerado',
+      'Em Menu → Relatórios → Clientes Inativos, toque em "WPP" para mandar mensagem de retorno',
+    ],
   },
 ]
 
+// ── Perguntas frequentes ───────────────────────────────────────
 const FAQS = [
-  { q: 'Perdi minha senha. O que faço?', a: 'Na tela de login, clique em "Esqueci minha senha". Vamos enviar um link para o seu e-mail para criar uma nova senha.' },
-  { q: 'Meus dados ficam salvos mesmo se eu fechar o app?', a: 'Sim. Tudo é salvo automaticamente em nuvem em tempo real. Pode fechar, mudar de dispositivo ou usar em vários aparelhos — seus dados estarão lá.' },
-  { q: 'Posso usar em mais de um celular ao mesmo tempo?', a: 'Sim! Você pode acessar pelo celular, tablet e computador simultaneamente. Todos verão os mesmos dados atualizados.' },
-  { q: 'Como imprimir uma OS ou recibo?', a: 'Abra a OS e toque no ícone de impressora ou compartilhamento. Você pode gerar um PDF para imprimir ou enviar pelo WhatsApp.' },
-  { q: 'Como cancelar minha assinatura?', a: 'Acesse Menu → Minha Conta → Gerenciar assinatura. Lá você cancela direto pelo portal do Stripe, sem precisar falar com ninguém.' },
-  { q: 'O BoxCerto funciona sem internet?', a: 'Não — o app precisa de conexão para salvar e buscar dados. Recomendamos Wi-Fi ou 4G para melhor experiência.' },
+  {
+    q: 'Perdi minha senha. O que faço?',
+    a: 'Na tela de login, clique em "Esqueci minha senha". Você receberá um link no e-mail para criar uma nova.',
+  },
+  {
+    q: 'Meus dados ficam salvos mesmo fechando o app?',
+    a: 'Sim. Tudo é salvo automaticamente em nuvem em tempo real. Pode fechar, trocar de dispositivo ou usar em vários aparelhos — seus dados sempre estarão lá.',
+  },
+  {
+    q: 'Posso usar em mais de um celular ao mesmo tempo?',
+    a: 'Sim! Você pode acessar pelo celular, tablet e computador simultaneamente. Todos verão os mesmos dados atualizados na hora.',
+  },
+  {
+    q: 'Como imprimir uma OS ou recibo?',
+    a: 'Abra a OS e toque no ícone de impressora ou compartilhamento. Você pode gerar um PDF para imprimir ou enviar pelo WhatsApp diretamente.',
+  },
+  {
+    q: 'O técnico pode ver o financeiro da oficina?',
+    a: 'Não. O técnico acessa somente as OS, o checklist de tarefas, as notas internas e a consulta de estoque. Valores de custo, lucro, despesas e relatórios financeiros são visíveis apenas para o gerente.',
+  },
+  {
+    q: 'O cliente precisa criar uma conta para aprovar o orçamento?',
+    a: 'Não. O cliente recebe um link e abre diretamente no navegador, sem precisar baixar nada ou criar cadastro. Qualquer pessoa com o link consegue aprovar e acompanhar o status do veículo.',
+  },
+  {
+    q: 'O que acontece se eu alterar o orçamento depois que o cliente aprovou?',
+    a: 'O sistema cancela a aprovação automaticamente. O cliente abre o link e vê um aviso em laranja informando que o orçamento foi atualizado, e precisa aprovar novamente os novos valores.',
+  },
+  {
+    q: 'Posso ter mais de um técnico na minha oficina?',
+    a: 'Sim, sem limite de técnicos. Cada um recebe um convite individual, cria sua própria conta e acessa a área de técnico com o login dele.',
+  },
+  {
+    q: 'O estoque baixa quando adiciono uma peça na OS?',
+    a: 'Não imediatamente. A baixa no estoque acontece quando você marca a OS como Entregue, garantindo que o cliente realmente recebeu o veículo antes de debitar o item.',
+  },
+  {
+    q: 'Como cancelar minha assinatura?',
+    a: 'Acesse Menu → Minha Conta → Gerenciar assinatura. Lá você cancela direto pelo portal, sem precisar falar com ninguém.',
+  },
+  {
+    q: 'O BoxCerto funciona sem internet?',
+    a: 'Não — o app precisa de conexão para salvar e buscar dados. Recomendamos Wi-Fi ou 4G para melhor experiência.',
+  },
 ]
 
 const CATEGORIAS = [
@@ -86,14 +174,16 @@ function FaqItem({ q, a }) {
     <div className="border-b border-gray-100 last:border-0">
       <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between py-4 text-left gap-3">
         <span className="text-sm font-semibold text-slate-800">{q}</span>
-        {open ? <ChevronUp className="w-4 h-4 text-slate-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />}
+        {open
+          ? <ChevronUp   className="w-4 h-4 text-slate-400 shrink-0" />
+          : <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />}
       </button>
       {open && <p className="text-sm text-slate-500 pb-4 leading-relaxed">{a}</p>}
     </div>
   )
 }
 
-// ── Formulário de ticket ──────────────────────────────────────
+// ── Formulário de ticket ───────────────────────────────────────
 function FormTicket({ user, onEnviado }) {
   const [cat, setCat]         = useState('')
   const [titulo, setTitulo]   = useState('')
@@ -121,7 +211,6 @@ function FormTicket({ user, onEnviado }) {
 
   return (
     <div className="space-y-4">
-      {/* Tempo de resposta */}
       <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2.5">
         <Clock className="w-4 h-4 text-indigo-500 shrink-0" />
         <p className="text-xs text-indigo-700 font-medium">Respondemos em até <strong>24h úteis</strong> diretamente aqui no app.</p>
@@ -137,9 +226,11 @@ function FormTicket({ user, onEnviado }) {
             return (
               <button key={c.key} onClick={() => setCat(c.key)}
                 className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
-                  sel ? 'border-indigo-400 bg-indigo-50' : `border-gray-200 bg-gray-50 hover:bg-gray-100`
+                  sel ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
                 }`}>
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${sel ? 'bg-indigo-100 text-indigo-600' : c.color.split(' ').slice(0, 2).join(' ')}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                  sel ? 'bg-indigo-100 text-indigo-600' : c.color.split(' ').slice(0, 2).join(' ')
+                }`}>
                   <Icon className="w-4 h-4" />
                 </div>
                 <span className={`text-sm font-medium ${sel ? 'text-indigo-700' : 'text-slate-700'}`}>{c.label}</span>
@@ -180,7 +271,6 @@ function FormTicket({ user, onEnviado }) {
         {loading ? 'Enviando...' : 'Enviar chamado'}
       </button>
 
-      {/* WhatsApp — secundário, discreto */}
       <div className="pt-1 border-t border-gray-100 text-center">
         <p className="text-xs text-slate-400 mb-1.5">Prefere falar diretamente?</p>
         <a href={WPP} target="_blank" rel="noreferrer"
@@ -193,7 +283,7 @@ function FormTicket({ user, onEnviado }) {
   )
 }
 
-// ── Meus tickets ──────────────────────────────────────────────
+// ── Meus tickets ───────────────────────────────────────────────
 function MeusTickets({ user }) {
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
@@ -206,11 +296,15 @@ function MeusTickets({ user }) {
 
   const SC = {
     aberto:         { label: 'Aberto',         color: 'bg-amber-100 text-amber-700' },
-    em_atendimento: { label: 'Em atendimento', color: 'bg-blue-100 text-blue-700' },
+    em_atendimento: { label: 'Em atendimento', color: 'bg-blue-100 text-blue-700'   },
     resolvido:      { label: 'Resolvido',       color: 'bg-green-100 text-green-700' },
   }
 
-  if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-slate-400" /></div>
+  if (loading) return (
+    <div className="flex justify-center py-8">
+      <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+    </div>
+  )
 
   if (tickets.length === 0) return (
     <div className="text-center py-12">
@@ -225,7 +319,7 @@ function MeusTickets({ user }) {
   return (
     <div className="space-y-2">
       {tickets.map(t => {
-        const sc = SC[t.status] || SC.aberto
+        const sc  = SC[t.status] || SC.aberto
         const exp = expandedId === t.id
         return (
           <div key={t.id} className={`bg-white rounded-2xl border overflow-hidden ${
@@ -236,11 +330,15 @@ function MeusTickets({ user }) {
                 <div className="flex items-center gap-2 mb-1">
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${sc.color}`}>{sc.label}</span>
                   <span className="text-[10px] text-slate-400">{new Date(t.created_at).toLocaleDateString('pt-BR')}</span>
-                  {t.resposta && <span className="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-semibold">Nova resposta</span>}
+                  {t.resposta && (
+                    <span className="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-semibold">Nova resposta</span>
+                  )}
                 </div>
                 <p className="text-sm font-semibold text-slate-800 truncate">{t.titulo}</p>
               </div>
-              {exp ? <ChevronUp className="w-4 h-4 text-slate-400 mt-1 shrink-0" /> : <ChevronDown className="w-4 h-4 text-slate-400 mt-1 shrink-0" />}
+              {exp
+                ? <ChevronUp   className="w-4 h-4 text-slate-400 mt-1 shrink-0" />
+                : <ChevronDown className="w-4 h-4 text-slate-400 mt-1 shrink-0" />}
             </button>
             {exp && (
               <div className="border-t border-gray-50 px-4 pb-4 space-y-3">
@@ -254,7 +352,7 @@ function MeusTickets({ user }) {
                     <p className="text-sm text-indigo-800 leading-relaxed">{t.resposta}</p>
                     {t.respondido_em && (
                       <p className="text-[10px] text-indigo-400 mt-2">
-                        {new Date(t.respondido_em).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}
+                        {new Date(t.respondido_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                       </p>
                     )}
                   </div>
@@ -273,33 +371,38 @@ function MeusTickets({ user }) {
   )
 }
 
-// ── Principal ─────────────────────────────────────────────────
+// ── Principal ──────────────────────────────────────────────────
 export default function Suporte() {
   const { user } = useAuth()
-  const [aba, setAba]           = useState('ajuda')
+  const [aba, setAba]               = useState('ajuda')
   const [guiaAberto, setGuiaAberto] = useState(null)
-  const [enviado, setEnviado]   = useState(false)
-  const [busca, setBusca]       = useState('')
+  const [enviado, setEnviado]       = useState(false)
+  const [busca, setBusca]           = useState('')
 
   const ABAS = [
-    { key: 'ajuda',   label: '📚 Ajuda' },
-    { key: 'chamado', label: '🎫 Abrir Chamado' },
-    { key: 'meus',    label: '📬 Meus Chamados' },
+    { key: 'ajuda',   label: '📚 Ajuda'         },
+    { key: 'chamado', label: '🎫 Abrir Chamado'  },
+    { key: 'meus',    label: '📬 Meus Chamados'  },
   ]
 
   const guiasFiltrados = busca.trim()
-    ? GUIAS.filter(g => g.titulo.toLowerCase().includes(busca.toLowerCase()) ||
-        g.passos.some(p => p.toLowerCase().includes(busca.toLowerCase())))
+    ? GUIAS.filter(g =>
+        g.titulo.toLowerCase().includes(busca.toLowerCase()) ||
+        g.passos.some(p => p.toLowerCase().includes(busca.toLowerCase()))
+      )
     : GUIAS
 
   const faqsFiltrados = busca.trim()
-    ? FAQS.filter(f => f.q.toLowerCase().includes(busca.toLowerCase()) || f.a.toLowerCase().includes(busca.toLowerCase()))
+    ? FAQS.filter(f =>
+        f.q.toLowerCase().includes(busca.toLowerCase()) ||
+        f.a.toLowerCase().includes(busca.toLowerCase())
+      )
     : FAQS
 
   return (
     <div className="p-4 pb-36 space-y-4">
 
-      {/* Header limpo — sem destaque para WhatsApp */}
+      {/* Header */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-11 h-11 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0">
@@ -310,8 +413,6 @@ export default function Suporte() {
             <p className="text-xs text-slate-400">Respostas em até 24h úteis</p>
           </div>
         </div>
-
-        {/* Busca */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input value={busca} onChange={e => setBusca(e.target.value)}
@@ -329,7 +430,9 @@ export default function Suporte() {
       <div className="flex bg-gray-100 rounded-2xl p-1 gap-1">
         {ABAS.map(t => (
           <button key={t.key} onClick={() => { setAba(t.key); setEnviado(false) }}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all ${aba === t.key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>
+            className={`flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+              aba === t.key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+            }`}>
             {t.label}
           </button>
         ))}
@@ -339,7 +442,6 @@ export default function Suporte() {
       {aba === 'ajuda' && (
         <div className="space-y-4">
 
-          {/* Resultado de busca vazio */}
           {busca && guiasFiltrados.length === 0 && faqsFiltrados.length === 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
               <Search className="w-8 h-8 text-slate-200 mx-auto mb-2" />
@@ -351,7 +453,6 @@ export default function Suporte() {
             </div>
           )}
 
-          {/* Guias */}
           {guiasFiltrados.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Guias passo a passo</p>
@@ -366,14 +467,18 @@ export default function Suporte() {
                           <Icon className="w-5 h-5" />
                         </div>
                         <p className="flex-1 text-sm font-semibold text-slate-800">{g.titulo}</p>
-                        {open ? <ChevronUp className="w-4 h-4 text-slate-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />}
+                        {open
+                          ? <ChevronUp   className="w-4 h-4 text-slate-400 shrink-0" />
+                          : <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />}
                       </button>
                       {open && (
                         <div className="border-t border-gray-50 px-4 pb-4">
                           <ol className="space-y-3 mt-3">
                             {g.passos.map((p, j) => (
                               <li key={j} className="flex items-start gap-3">
-                                <span className="w-5 h-5 bg-indigo-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center shrink-0 mt-0.5">{j+1}</span>
+                                <span className="w-5 h-5 bg-indigo-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                                  {j + 1}
+                                </span>
                                 <p className="text-sm text-slate-600 leading-relaxed">{p}</p>
                               </li>
                             ))}
@@ -387,7 +492,6 @@ export default function Suporte() {
             </div>
           )}
 
-          {/* FAQ */}
           {faqsFiltrados.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Perguntas frequentes</p>
@@ -397,7 +501,6 @@ export default function Suporte() {
             </div>
           )}
 
-          {/* CTA para ticket — destaque, sem mencionar WhatsApp */}
           {!busca && (
             <div className="bg-indigo-600 rounded-2xl p-5 text-white">
               <div className="flex items-start gap-3 mb-4">
@@ -428,7 +531,7 @@ export default function Suporte() {
               </div>
               <h2 className="text-lg font-extrabold text-slate-900 mb-2">Chamado enviado!</h2>
               <p className="text-sm text-slate-500 mb-1">Respondemos em até <strong>24h úteis</strong>.</p>
-              <p className="text-sm text-slate-400 mb-6">Você acompanha a resposta em <strong>Meus Chamados</strong>.</p>
+              <p className="text-sm text-slate-400 mb-6">Acompanhe a resposta em <strong>Meus Chamados</strong>.</p>
               <div className="flex gap-2">
                 <button onClick={() => setEnviado(false)}
                   className="flex-1 py-3 border border-gray-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-gray-50">
