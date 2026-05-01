@@ -73,7 +73,7 @@ function MiniCalc({ onCTA }) {
   const perda = Math.round(carros * ticket * 0.18)
 
   return (
-    <div className="bg-white border-2 border-indigo-100 rounded-3xl p-6 shadow-lg max-w-sm mx-auto">
+    <div className="bg-white border-2 border-indigo-100 rounded-3xl p-6 shadow-lg max-w-lg mx-auto">
       <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-5 text-center">
         📊 Calculadora de perdas
       </p>
@@ -203,7 +203,7 @@ function WppPrint({ nome, tipo, cidade, msg, hora, resultado, avatarIdx = 0, log
 function AprovacaoMock() {
   const [aprovado, setAprovado] = useState(false)
   return (
-    <div className="space-y-4 max-w-xs mx-auto">
+    <div className="md:grid md:grid-cols-2 md:gap-8 md:items-start space-y-4 md:space-y-0 max-w-2xl mx-auto">
       <p className="text-xs font-bold text-indigo-300 uppercase tracking-widest text-center">
         Passo 1 — você envia o link
       </p>
@@ -227,12 +227,13 @@ function AprovacaoMock() {
         </div>
       </div>
 
-      <div className="flex justify-center flex-col items-center gap-1">
+      <div className="flex justify-center flex-col items-center gap-1 md:hidden">
         <ArrowRight className="w-5 h-5 text-indigo-400 rotate-90" />
         <p className="text-indigo-400 text-[10px]">cliente abre no celular</p>
       </div>
 
-      <p className="text-xs font-bold text-indigo-300 uppercase tracking-widest text-center">
+      <div>
+      <p className="text-xs font-bold text-indigo-300 uppercase tracking-widest text-center mb-4">
         Passo 2 — cliente aprova no celular
       </p>
       <div className="rounded-2xl overflow-hidden shadow border border-white/10 bg-white">
@@ -262,6 +263,7 @@ function AprovacaoMock() {
         </div>
       </div>
       {!aprovado && <p className="text-center text-[11px] text-indigo-300 animate-pulse">👆 Clique em "Aprovar" para ver como funciona</p>}
+      </div>
     </div>
   )
 }
@@ -277,7 +279,7 @@ const COMPARATIVO = [
 
 function AntesDepois() {
   return (
-    <div className="max-w-sm mx-auto space-y-2">
+    <div className="space-y-2">
       {COMPARATIVO.map(([a, d], i) => (
         <div key={i} className="grid grid-cols-2 gap-2 text-xs">
           <div className="bg-red-50 border border-red-100 rounded-xl p-2.5 flex gap-1.5 items-start">
@@ -407,6 +409,36 @@ export default function LandingAds() {
             </button>
             <p className="text-indigo-400 text-xs mt-2">7 dias grátis · Sem cartão</p>
           </div>
+        </div>
+      </section>
+
+      {/* RASTREIO DE STATUS */}
+      <section className="px-4 py-14 bg-indigo-50">
+        <div className="max-w-2xl mx-auto text-center">
+          <span className="inline-block bg-indigo-600 text-white text-xs font-extrabold px-3 py-1 rounded-full mb-3 tracking-wide">NOVO — RASTREIO DE STATUS</span>
+          <h2 className="text-2xl font-extrabold text-slate-900 mb-3">O mesmo link mostra onde está o carro</h2>
+          <p className="text-slate-500 text-sm mb-8 max-w-lg mx-auto">
+            Depois de aprovar, o cliente pode abrir o link a qualquer hora e ver o status do serviço em tempo real. Zero ligação desnecessária para a sua oficina.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-0 sm:gap-0 mb-6">
+            {[
+              { label: 'Orçamento', desc: 'enviado', color: 'bg-slate-200 text-slate-600', active: false, done: true },
+              { label: 'Aprovado', desc: 'pelo cliente', color: 'bg-indigo-600 text-white', active: false, done: true },
+              { label: 'Em serviço', desc: 'mãos na massa', color: 'bg-amber-500 text-white', active: true, done: false },
+              { label: 'Pronto', desc: 'para retirada', color: 'bg-emerald-500 text-white', active: false, done: false },
+            ].map((step, i, arr) => (
+              <div key={i} className="flex flex-col sm:flex-row items-center">
+                <div className={`flex flex-col items-center px-4 py-3 rounded-2xl min-w-[110px] ${step.active ? 'ring-4 ring-amber-300 shadow-lg scale-105' : ''} ${step.color}`}>
+                  <span className="text-xs font-bold">{step.label}</span>
+                  <span className={`text-[10px] mt-0.5 ${step.active ? 'text-amber-100' : step.done ? 'text-indigo-200' : 'text-slate-400'}`}>{step.desc}</span>
+                </div>
+                {i < arr.length - 1 && (
+                  <div className="w-px h-4 sm:h-px sm:w-6 bg-slate-300 mx-0 sm:mx-1 my-1 sm:my-0" />
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="text-slate-400 text-xs">O cliente vê isso no celular — sem precisar ligar para saber se o carro está pronto.</p>
         </div>
       </section>
 

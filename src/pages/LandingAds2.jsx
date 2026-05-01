@@ -123,7 +123,7 @@ const LINHA = [
 
 function Timeline() {
   return (
-    <div className="max-w-sm mx-auto space-y-2">
+    <div className="space-y-2">
       {LINHA.map(([a, d], i) => (
         <div key={i} className="grid grid-cols-2 gap-2">
           <div className="bg-red-50 border border-red-100 rounded-xl p-2.5 flex items-start gap-1.5">
@@ -280,6 +280,36 @@ export default function LandingAds2() {
             resultado="Aprovações mesmo fora do horário comercial"
           />
         </div>
+        </div>
+      </section>
+
+      {/* RASTREIO DE STATUS */}
+      <section className="px-4 py-14 bg-indigo-50">
+        <div className="max-w-2xl mx-auto text-center">
+          <span className="inline-block bg-indigo-600 text-white text-xs font-extrabold px-3 py-1 rounded-full mb-3 tracking-wide">NOVO — RASTREIO DE STATUS</span>
+          <h2 className="text-2xl font-extrabold text-slate-900 mb-3">O mesmo link mostra onde está o carro</h2>
+          <p className="text-slate-500 text-sm mb-8 max-w-lg mx-auto">
+            Depois de aprovar, o cliente pode abrir o link a qualquer hora e ver o status do serviço em tempo real. Zero ligação desnecessária para a sua oficina.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-0 sm:gap-0 mb-6">
+            {[
+              { label: 'Orçamento', desc: 'enviado', color: 'bg-slate-200 text-slate-600', active: false, done: true },
+              { label: 'Aprovado', desc: 'pelo cliente', color: 'bg-indigo-600 text-white', active: false, done: true },
+              { label: 'Em serviço', desc: 'mãos na massa', color: 'bg-amber-500 text-white', active: true, done: false },
+              { label: 'Pronto', desc: 'para retirada', color: 'bg-emerald-500 text-white', active: false, done: false },
+            ].map((step, i, arr) => (
+              <div key={i} className="flex flex-col sm:flex-row items-center">
+                <div className={`flex flex-col items-center px-4 py-3 rounded-2xl min-w-[110px] ${step.active ? 'ring-4 ring-amber-300 shadow-lg scale-105' : ''} ${step.color}`}>
+                  <span className="text-xs font-bold">{step.label}</span>
+                  <span className={`text-[10px] mt-0.5 ${step.active ? 'text-amber-100' : step.done ? 'text-indigo-200' : 'text-slate-400'}`}>{step.desc}</span>
+                </div>
+                {i < arr.length - 1 && (
+                  <div className="w-px h-4 sm:h-px sm:w-6 bg-slate-300 mx-0 sm:mx-1 my-1 sm:my-0" />
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="text-slate-400 text-xs">O cliente vê isso no celular — sem precisar ligar para saber se o carro está pronto.</p>
         </div>
       </section>
 
