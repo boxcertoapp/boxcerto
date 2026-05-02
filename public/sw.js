@@ -4,7 +4,7 @@
 // Cache de fallback para assets estáticos
 // ============================================================
 
-const CACHE_NAME = 'boxcerto-v1'
+const CACHE_NAME = 'boxcerto-v3'
 
 // Assets estáticos que podem ser cacheados offline
 const STATIC_ASSETS = [
