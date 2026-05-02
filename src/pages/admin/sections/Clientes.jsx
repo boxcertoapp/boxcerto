@@ -224,8 +224,7 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
     reload()
   }
 
-  const approve   = (id, plan = 'monthly') => updateProfile(id, { status: 'active', plan, activated_at: new Date().toISOString() })
-  const reject    = (id) => updateProfile(id, { status: 'rejected' })
+  const activate   = (id, plan = 'monthly') => updateProfile(id, { status: 'active', plan, activated_at: new Date().toISOString() })
   const deactivate = (id) => updateProfile(id, { status: 'inactive' })
   const saveTrial = async (id) => {
     if (!trialDate) return
@@ -391,14 +390,8 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
 
                   {/* Ações rápidas */}
                   <div className="flex items-center gap-1.5 flex-shrink-0">
-                    {(u.status === 'pending' || u.status === 'trial') && (
-                      <button onClick={() => approve(u.id)}
-                        className="text-xs bg-green-600 text-white font-semibold px-2.5 py-1.5 rounded-lg hover:bg-green-700 transition-colors">
-                        Aprovar
-                      </button>
-                    )}
                     {(u.status === 'inactive' || u.status === 'rejected' || u.status === 'cancelado' || u.status === 'inadimplente') && (
-                      <button onClick={() => approve(u.id)}
+                      <button onClick={() => activate(u.id)}
                         className="text-xs bg-indigo-600 text-white font-semibold px-2.5 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors">
                         Reativar
                       </button>
@@ -473,11 +466,10 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
                       {u.status === 'active' && (
                         <button onClick={() => deactivate(u.id)} className="text-sm bg-gray-100 text-gray-700 px-3 py-1.5 rounded-xl hover:bg-gray-200">Desativar</button>
                       )}
-                      {(u.status === 'pending' || u.status === 'trial') && (
+                      {u.status === 'trial' && (
                         <>
-                          <button onClick={() => approve(u.id, 'monthly')} className="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-xl border border-indigo-100 hover:bg-indigo-100">+ Mensal</button>
-                          <button onClick={() => approve(u.id, 'annual')}  className="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-xl border border-indigo-100 hover:bg-indigo-100">+ Anual</button>
-                          <button onClick={() => reject(u.id)} className="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-xl border border-red-100 hover:bg-red-100">Rejeitar</button>
+                          <button onClick={() => activate(u.id, 'monthly')} className="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-xl border border-indigo-100 hover:bg-indigo-100">Ativar Mensal</button>
+                          <button onClick={() => activate(u.id, 'annual')}  className="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-xl border border-indigo-100 hover:bg-indigo-100">Ativar Anual</button>
                         </>
                       )}
                       <button onClick={() => toggleAdmin(u)}

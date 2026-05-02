@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { ArrowRight, CheckCircle, Zap, Star, Clock, TrendingUp, Package, FileText, ChevronRight, MessageCircle } from 'lucide-react'
+import { usePageMeta } from '../hooks/usePageMeta'
+import { useConfig } from '../hooks/useConfig'
 
 const CADASTRO  = 'https://www.boxcerto.com/cadastro'
 const WPP_NUM   = '5553997065725'
@@ -235,7 +237,7 @@ function ResultadoCard({ dor, orcamentoMsg, equipeMsg, perda }) {
         {/* Divisor */}
         <div className="bg-white px-5 py-3 border-t border-b border-gray-100 flex items-center gap-2">
           <div className="flex-1 h-px bg-gray-100" />
-          <span className="text-xs text-slate-400 font-semibold">Com BoxCerto (R$97/mês) você recupera</span>
+          <span className="text-xs text-slate-400 font-semibold">Com BoxCerto (R${cfg_pm % 1 === 0 ? cfg_pm.toFixed(0) : cfg_pm.toFixed(2).replace('.',','  )}/mês) você recupera</span>
           <div className="flex-1 h-px bg-gray-100" />
         </div>
         {/* Base — o que ganha líquido */}
@@ -291,6 +293,14 @@ function ResultadoCard({ dor, orcamentoMsg, equipeMsg, perda }) {
 
 // ── Página principal ──────────────────────────────────────────────────────────
 export default function Diagnostico() {
+  usePageMeta({
+    title: 'Diagnóstico Gratuito para Oficina | Veja Seu Nível de Controle — BoxCerto',
+    description: 'Faça um diagnóstico rápido e descubra se sua oficina está perdendo dinheiro com orçamentos perdidos, planilha e falta de controle. Resultado imediato.',
+    canonical: 'https://boxcerto.com/diagnostico',
+  })
+  const cfg = useConfig()
+  const cfg_pm = parseFloat(cfg.price_monthly) || 97
+
   const [etapa, setEtapa]           = useState(0)         // 0 = intro, 1–4 = perguntas, 5 = resultado
   const [respostas, setRespostas]   = useState({})
   const [selecionada, setSelecionada] = useState(null)

@@ -225,6 +225,28 @@ const templates = {
     `),
   }),
 
+  // ── Resposta de chamado de suporte ──────────────────────
+  ticket_reply: ({ nome, titulo, resposta, status }) => ({
+    subject: `BoxCerto respondeu seu chamado: ${titulo}`,
+    html: base(`
+      ${card(`
+        <h2 style="color:#1e293b;margin:0 0 12px">Olá, ${nome}! Seu chamado foi respondido ✅</h2>
+        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 16px">
+          Respondemos ao seu chamado <strong>"${titulo}"</strong>. Confira abaixo:
+        </p>
+        <div style="background:#eef2ff;border-radius:12px;padding:18px;border-left:4px solid #4f46e5;margin-bottom:20px">
+          <p style="color:#6b7280;font-size:12px;font-weight:600;text-transform:uppercase;margin:0 0 8px;letter-spacing:.05em">Resposta da nossa equipe</p>
+          <p style="color:#1e293b;font-size:14px;line-height:1.7;margin:0;white-space:pre-wrap">${resposta}</p>
+        </div>
+        ${status === 'resolvido'
+          ? notice('#065f46','#ecfdf5','#6ee7b7', '✅ <strong>Chamado resolvido.</strong> Se o problema persistir, abra um novo chamado no app.')
+          : notice('#1e40af','#eff6ff','#bfdbfe', '🔵 <strong>Em atendimento.</strong> Podemos entrar em contato novamente se necessário.')
+        }
+        ${btn(`${APP_URL}/app/suporte`, 'Ver meu chamado →')}
+      `)}
+    `),
+  }),
+
   // ── Convite de técnico ───────────────────────────────────
   tecnico_invite: ({ nomeOficina, conviteLink }) => ({
     subject: `Você foi convidado para ${nomeOficina} no BoxCerto 🔧`,

@@ -5,6 +5,7 @@ import {
   Clock, AlertCircle
 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
+import { CONFIG_DEFAULTS, invalidateConfig } from '../../../hooks/useConfig'
 
 // ── Seção wrapper ────────────────────────────────────────────
 function Section({ title, icon: Icon, children }) {
@@ -22,18 +23,55 @@ function Section({ title, icon: Icon, children }) {
 // ── Planos e preços ──────────────────────────────────────────
 function PlanosConfig() {
   const [config, setConfig] = useState({
-    precoMensal: '47.90',
-    precoAnual: '418.80',
-    trialDias: '7',
-    mensagemTrial: 'Experimente grátis por 7 dias, sem cartão necessário.',
+    precoMensal:   CONFIG_DEFAULTS.price_monthly,
+    precoAnual:    CONFIG_DEFAULTS.price_annual,
+    trialDias:     CONFIG_DEFAULTS.trial_days,
+    mensagemTrial: CONFIG_DEFAULTS.trial_message,
   })
-  const [saved, setSaved] = useState(false)
+  const [saved, setSaved]     = useState(false)
+  const [saving, setSaving]   = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    supabase.from('app_config').select('key, value').then(({ data }) => {
+      if (data?.length) {
+        const map = Object.fromEntries(data.map(r => [r.key, r.value]))
+        setConfig({
+          precoMensal:   map.price_monthly         || CONFIG_DEFAULTS.price_monthly,
+          precoAnual:    map.price_annual          || CONFIG_DEFAULTS.price_annual,
+          trialDias:     map.trial_days            || CONFIG_DEFAULTS.trial_days,
+          mensagemTrial: map.trial_message         || CONFIG_DEFAULTS.trial_message,
+        })
+      }
+      setLoading(false)
+    })
+  }, [])
 
   const save = async () => {
-    // Salva em app_config ou similar — por ora apenas visual
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    setSaving(true)
+    const upserts = [
+      { key: 'price_monthly',        value: config.precoMensal,   updated_at: new Date().toISOString() },
+      { key: 'price_annual',         value: config.precoAnual,    updated_at: new Date().toISOString() },
+      { key: 'price_annual_monthly', value: String((parseFloat(config.precoAnual) / 12).toFixed(2)), updated_at: new Date().toISOString() },
+      { key: 'trial_days',           value: config.trialDias,     updated_at: new Date().toISOString() },
+      { key: 'trial_message',        value: config.mensagemTrial, updated_at: new Date().toISOString() },
+    ]
+    const { error } = await supabase.from('app_config').upsert(upserts, { onConflict: 'key' })
+    setSaving(false)
+    if (!error) {
+      invalidateConfig() // força reload do cache global
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } else {
+      alert('Erro ao salvar: ' + error.message)
+    }
   }
+
+  if (loading) return (
+    <Section title="Planos e Preços" icon={CreditCard}>
+      <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-slate-400" /></div>
+    </Section>
+  )
 
   return (
     <Section title="Planos e Preços" icon={CreditCard}>
@@ -42,13 +80,13 @@ function PlanosConfig() {
           <label className="block text-xs font-medium text-slate-600 mb-1.5">Preço mensal (R$)</label>
           <input value={config.precoMensal} onChange={e => setConfig({...config, precoMensal: e.target.value})}
             className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
-          <p className="text-xs text-slate-400 mt-1">Atual: R$97/mês</p>
+          <p className="text-xs text-slate-400 mt-1">Exibido nas landing pages e emails</p>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">Preço anual (R$)</label>
+          <label className="block text-xs font-medium text-slate-600 mb-1.5">Preço anual total (R$)</label>
           <input value={config.precoAnual} onChange={e => setConfig({...config, precoAnual: e.target.value})}
             className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
-          <p className="text-xs text-slate-400 mt-1">Equivale a R${(parseFloat(config.precoAnual)/12).toFixed(2)}/mês</p>
+          <p className="text-xs text-slate-400 mt-1">Equivale a R${(parseFloat(config.precoAnual)||0).toFixed(2).replace('.',',')} → R${((parseFloat(config.precoAnual)||0)/12).toFixed(2).replace('.',',')}/mês</p>
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-600 mb-1.5">Duração do trial (dias)</label>
@@ -61,17 +99,18 @@ function PlanosConfig() {
             className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
         </div>
       </div>
-      <div className="flex gap-3 items-center">
-        <button onClick={save}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${saved ? 'bg-green-600 text-white' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
-          <Save className="w-4 h-4" />{saved ? '✓ Salvo' : 'Salvar configurações'}
+      <div className="flex gap-3 items-center flex-wrap">
+        <button onClick={save} disabled={saving}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors disabled:opacity-60 ${saved ? 'bg-green-600 text-white' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {saving ? 'Salvando...' : saved ? '✓ Salvo e aplicado' : 'Salvar e aplicar em todo o site'}
         </button>
         <a href="https://dashboard.stripe.com/products" target="_blank" rel="noreferrer"
           className="flex items-center gap-1.5 text-sm text-indigo-600 font-medium hover:underline">
-          Editar preços no Stripe <ExternalLink className="w-3.5 h-3.5" />
+          Editar cobrança no Stripe <ExternalLink className="w-3.5 h-3.5" />
         </a>
       </div>
-      <p className="text-xs text-slate-400 mt-2">⚠️ Para alterar preços de cobrança recorrente, edite diretamente no Stripe. Os valores acima são apenas para exibição.</p>
+      <p className="text-xs text-slate-400 mt-2">⚠️ Os valores acima são para exibição (landing pages, emails, cálculos de MRR). Para alterar o valor cobrado no cartão, edite diretamente no Stripe.</p>
     </Section>
   )
 }

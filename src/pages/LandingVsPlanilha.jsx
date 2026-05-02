@@ -4,6 +4,7 @@ import {
   Shield, TrendingUp, AlertTriangle, Calculator
 } from 'lucide-react'
 import { usePageMeta } from '../hooks/usePageMeta'
+import { useConfig } from '../hooks/useConfig'
 
 const CADASTRO = 'https://www.boxcerto.com/cadastro'
 const WPP_NUM  = '5553997065725'
@@ -93,7 +94,7 @@ function Calculadora() {
         </div>
         <div className="flex justify-between items-center py-2 border-b border-gray-100">
           <span className="text-sm text-slate-500">Custo do BoxCerto/mês</span>
-          <span className="text-sm font-bold text-slate-700">R$97</span>
+          <span className="text-sm font-bold text-slate-700">R${cfg_pm % 1 === 0 ? cfg_pm.toFixed(0) : cfg_pm.toFixed(2).replace('.',',')}</span>
         </div>
         <div className={`flex justify-between items-center py-3 px-3 rounded-xl mt-1 ${ganhoLiq > 0 ? 'bg-emerald-50 border border-emerald-200' : 'bg-amber-50 border border-amber-200'}`}>
           <span className="text-sm font-bold text-slate-700">Ganho líquido estimado</span>
@@ -140,6 +141,8 @@ export default function LandingVsPlanilha() {
     description: 'Veja por que controlar oficina por planilha faz você perder orçamento, histórico e lucro. Calculadora de perda + comparativo completo. Migre grátis por 7 dias.',
     canonical: 'https://boxcerto.com/boxcerto-vs-planilha',
   })
+  const cfg = useConfig()
+  const cfg_pm = parseFloat(cfg.price_monthly) || 97
 
   return (
     <div className="min-h-screen bg-white">
@@ -248,7 +251,7 @@ export default function LandingVsPlanilha() {
                   <td className="py-4 px-4 text-sm font-bold text-slate-800">Custo mensal</td>
                   <td className="py-4 px-3 text-center text-sm font-semibold text-slate-600">R$0</td>
                   <td className="py-4 px-3 text-center text-sm font-semibold text-slate-600">R$0–30</td>
-                  <td className="py-4 px-3 bg-indigo-50/50 text-center text-sm font-extrabold text-indigo-700">R$97/mês</td>
+                  <td className="py-4 px-3 bg-indigo-50/50 text-center text-sm font-extrabold text-indigo-700">R${cfg_pm % 1 === 0 ? cfg_pm.toFixed(0) : cfg_pm.toFixed(2).replace('.',',')}/mês</td>
                 </tr>
                 <tr>
                   <td className="py-3 px-4 text-sm text-rose-600 font-medium">Custo oculto (orçamentos perdidos)</td>

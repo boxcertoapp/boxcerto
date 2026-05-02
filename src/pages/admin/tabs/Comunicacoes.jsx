@@ -47,7 +47,7 @@ const TEMPLATES = [
       Que tal dar uma nova chance? Temos novidades desde sua última visita!
     </p>
     <div style="text-align:center;margin:24px 0">
-      <a href="https://appboxcerto.vercel.app/assinar"
+      <a href="https://www.boxcerto.com/assinar"
          style="background:#4f46e5;color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:bold;font-size:15px;display:inline-block">
         Voltar ao BoxCerto →
       </a>
@@ -73,7 +73,7 @@ const TEMPLATES = [
       [Descreva a novidade aqui]
     </p>
     <div style="text-align:center;margin:24px 0">
-      <a href="https://appboxcerto.vercel.app/app/oficina"
+      <a href="https://www.boxcerto.com/app/oficina"
          style="background:#4f46e5;color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:bold;font-size:15px;display:inline-block">
         Ver agora →
       </a>
@@ -102,7 +102,7 @@ const TEMPLATES = [
       <p style="color:#92400e;font-weight:bold;font-size:18px;margin:0">[CUPOM ou DESCONTO]</p>
     </div>
     <div style="text-align:center;margin:16px 0">
-      <a href="https://appboxcerto.vercel.app/assinar"
+      <a href="https://www.boxcerto.com/assinar"
          style="background:#4f46e5;color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:bold;font-size:15px;display:inline-block">
         Aproveitar oferta →
       </a>
@@ -363,10 +363,10 @@ export default function Comunicacoes({ users }) {
       } else if (canal === 'whatsapp' && u.whatsapp) {
         const nome = u.responsavel || u.oficina || 'Cliente'
         const msg = template.key === 'reativacao'
-          ? `Olá ${nome}! 👋 Sentimos falta da *${u.oficina}* no BoxCerto. Sua conta ainda está aqui! Acesse: https://appboxcerto.vercel.app/login`
+          ? `Olá ${nome}! 👋 Sentimos falta da *${u.oficina}* no BoxCerto. Sua conta ainda está aqui! Acesse: https://www.boxcerto.com/login`
           : template.key === 'trial_ending'
-          ? `Olá ${nome}! ⏳ Seu trial do BoxCerto expira em breve. Não perca seus dados — assine agora: https://appboxcerto.vercel.app/assinar`
-          : `Olá ${nome}! 👋 Temos novidades no BoxCerto para você: https://appboxcerto.vercel.app/app/oficina`
+          ? `Olá ${nome}! ⏳ Seu trial do BoxCerto expira em breve. Não perca seus dados — assine agora: https://www.boxcerto.com/assinar`
+          : `Olá ${nome}! 👋 Temos novidades no BoxCerto para você: https://www.boxcerto.com/app/oficina`
         wppLinks.push({
           nome,
           link: `https://wa.me/55${u.whatsapp.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`

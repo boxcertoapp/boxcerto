@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { TrendingUp, TrendingDown, DollarSign, RefreshCw, ArrowUp, ArrowDown, CreditCard } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { formatDate } from '../../../lib/storage'
+import { useConfig } from '../../../hooks/useConfig'
 
 // ── Gráfico de linha SVG ─────────────────────────────────────
 function LineChart({ data, height = 120, color = '#6366f1' }) {
@@ -62,19 +63,23 @@ export default function Receita({ users }) {
   const [snapshots, setSnapshots] = useState([])
   const [loading, setLoading] = useState(true)
   const [periodo, setPeriodo] = useState('6m') // 3m | 6m | 12m
+  const cfg = useConfig()
 
   const now = new Date()
   const ativos     = users.filter(u => u.status === 'active')
   const inadimpl   = users.filter(u => u.status === 'inadimplente')
   const cancelados = users.filter(u => ['cancelado','inactive'].includes(u.status))
 
+  const pMensal = parseFloat(cfg.price_monthly) || 97
+  const pAnual  = parseFloat(cfg.price_annual)  || 958.80
+
   // MRR atual
-  const mrrMensal = ativos.filter(u => u.plan !== 'annual').length * 47.90
-  const mrrAnual  = ativos.filter(u => u.plan === 'annual').length * (418.80 / 12)
+  const mrrMensal = ativos.filter(u => u.plan !== 'annual').length * pMensal
+  const mrrAnual  = ativos.filter(u => u.plan === 'annual').length * (pAnual / 12)
   const mrr       = mrrMensal + mrrAnual
   const arr       = mrr * 12
   const ticketMedio = ativos.length > 0 ? mrr / ativos.length : 0
-  const mrrEmRisco = inadimpl.length * 47.90
+  const mrrEmRisco = inadimpl.length * pMensal
 
   // Previsão (crescimento médio estimado 8%)
   const previsao3m = mrr * 1.08
@@ -85,8 +90,8 @@ export default function Receita({ users }) {
     .map(u => ({
       ...u,
       ltv: u.plan === 'annual'
-        ? (u.activatedAt ? Math.ceil((now - new Date(u.activatedAt)) / (30*24*3600*1000)) : 1) * (418.80/12)
-        : (u.activatedAt ? Math.ceil((now - new Date(u.activatedAt)) / (30*24*3600*1000)) : 1) * 47.90
+        ? (u.activatedAt ? Math.ceil((now - new Date(u.activatedAt)) / (30*24*3600*1000)) : 1) * (pAnual/12)
+        : (u.activatedAt ? Math.ceil((now - new Date(u.activatedAt)) / (30*24*3600*1000)) : 1) * pMensal
     }))
     .sort((a, b) => b.ltv - a.ltv)
     .slice(0, 8)
@@ -294,7 +299,7 @@ export default function Receita({ users }) {
                     <p className="text-xs text-slate-400">{formatDate(u.nextBillingAt)}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-slate-700">R${u.plan === 'annual' ? '958,80' : '97'}</span>
+                    <span className="text-xs font-bold text-slate-700">R${u.plan === 'annual' ? pAnual.toFixed(2).replace('.',',') : pMensal.toFixed(0)}</span>
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${diasAte <= 3 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                       {diasAte <= 0 ? 'Hoje' : `em ${diasAte}d`}
                     </span>
@@ -304,7 +309,7 @@ export default function Receita({ users }) {
             })}
             <div className="pt-3 flex justify-between text-sm font-semibold">
               <span className="text-slate-600">Total previsto:</span>
-              <span className="text-green-600">R${proximas.reduce((s, u) => s + (u.plan === 'annual' ? 418.80 : 47.90), 0).toFixed(2)}</span>
+              <span className="text-green-600">R${proximas.reduce((s, u) => s + (u.plan === 'annual' ? pAnual : pMensal), 0).toFixed(2)}</span>
             </div>
           </div>
         )}

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { formatDate } from '../../../lib/storage'
+import { useConfig } from '../../../hooks/useConfig'
 
 // ── Gráfico SVG de barras simples ────────────────────────────
 function BarChart({ data, height = 80 }) {
@@ -52,6 +53,7 @@ export default function Dashboard({ users, loadingUsers, reload, onNavigate }) {
   const [activity, setActivity] = useState([])
   const [mrrHistory, setMrrHistory] = useState([])
   const [loadingActivity, setLoadingActivity] = useState(true)
+  const cfg = useConfig()
 
   const now = new Date()
   const in3d  = new Date(now.getTime() + 3  * 24 * 60 * 60 * 1000)
@@ -68,8 +70,10 @@ export default function Dashboard({ users, loadingUsers, reload, onNavigate }) {
   const trialsExp3d  = trials.filter(u => u.trialEnd && new Date(u.trialEnd) <= in3d && new Date(u.trialEnd) >= now)
   const trialsExp1d  = trials.filter(u => u.trialEnd && new Date(u.trialEnd) <= in1d && new Date(u.trialEnd) >= now)
 
-  const mrrMensal = ativos.filter(u => u.plan !== 'annual').length * 47.90
-  const mrrAnual  = ativos.filter(u => u.plan === 'annual').length * (418.80 / 12)
+  const pMensal   = parseFloat(cfg.price_monthly) || 97
+  const pAnual    = parseFloat(cfg.price_annual)  || 958.80
+  const mrrMensal = ativos.filter(u => u.plan !== 'annual').length * pMensal
+  const mrrAnual  = ativos.filter(u => u.plan === 'annual').length * (pAnual / 12)
   const mrr       = mrrMensal + mrrAnual
 
   const alertas = [
@@ -185,7 +189,7 @@ export default function Dashboard({ users, loadingUsers, reload, onNavigate }) {
           icon={Clock} color="text-amber-600" bg="bg-amber-100"
           onClick={() => onNavigate('clientes')} />
         <KpiCard label="Inadimplentes" value={inadimpl.length}
-          sub={inadimpl.length > 0 ? `R$${(inadimpl.length * 47.90).toFixed(0)} em risco` : 'Nenhum'}
+          sub={inadimpl.length > 0 ? `R$${(inadimpl.length * pMensal).toFixed(0)} em risco` : 'Nenhum'}
           icon={AlertCircle} color="text-orange-600" bg="bg-orange-100"
           onClick={() => onNavigate('clientes')} />
         <KpiCard label="Novos (7 dias)" value={novos7d.length}

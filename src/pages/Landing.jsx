@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, hasAccess } from '../contexts/AuthContext'
+import { useConfig } from '../hooks/useConfig'
 import Logo from '../components/Logo'
 import {
   Wrench, CheckCircle, ChevronDown, ChevronUp,
@@ -130,6 +131,11 @@ function Calculadora({ onCTA }) {
 export default function Landing() {
   const navigate = useNavigate()
   const { user, loading } = useAuth()
+  const cfg = useConfig()
+  const pMensal = parseFloat(cfg.price_monthly)        || 97
+  const pAnual  = parseFloat(cfg.price_annual)         || 958.80
+  const pAnualM = parseFloat(cfg.price_annual_monthly) || 79.90
+  const economia = Math.round(pMensal * 12 - pAnual)
   const [faqOpen, setFaqOpen] = useState(null)
   const [scrolled, setScrolled] = useState(false)
   const [showSticky, setShowSticky] = useState(false)
@@ -723,7 +729,7 @@ export default function Landing() {
               <h3 className="text-lg font-bold text-slate-900 mb-1">Plano Mensal</h3>
               <p className="text-slate-400 text-sm mb-6">Flexibilidade total, cancele quando quiser</p>
               <div className="flex items-end gap-1 mb-8">
-                <span className="text-5xl font-bold text-slate-900">R$97</span>
+                <span className="text-5xl font-bold text-slate-900">R${pMensal % 1 === 0 ? pMensal.toFixed(0) : pMensal.toFixed(2).replace('.',',')}</span>
                 <span className="text-slate-400 mb-1.5">/mês</span>
               </div>
               <ul className="space-y-3 mb-8 flex-1">
@@ -757,10 +763,10 @@ export default function Landing() {
               <h3 className="text-lg font-bold text-white mb-1 mt-2">Plano Anual</h3>
               <p className="text-indigo-200 text-sm mb-2">Pague uma vez, use o ano todo</p>
               <div className="flex items-end gap-1">
-                <span className="text-5xl font-bold text-white">R$79,90</span>
+                <span className="text-5xl font-bold text-white">R${pAnualM.toFixed(2).replace('.',',')}</span>
                 <span className="text-indigo-200 mb-1.5">/mês</span>
               </div>
-              <p className="text-indigo-300 text-sm mt-1 mb-6">Cobrado R$958,80 uma vez por ano · Economize R$205</p>
+              <p className="text-indigo-300 text-sm mt-1 mb-6">Cobrado R${pAnual.toFixed(2).replace('.',',')} uma vez por ano · Economize R${economia}</p>
               <ul className="space-y-3 mb-8 flex-1">
                 {[
                   'Tudo do plano mensal',

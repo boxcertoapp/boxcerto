@@ -1,4 +1,5 @@
 import { TrendingUp, TrendingDown, Users, DollarSign, RefreshCw, Clock, AlertCircle, CheckCircle, Brain } from 'lucide-react'
+import { useConfig } from '../../../hooks/useConfig'
 
 // ── Funil de conversão ───────────────────────────────────────
 function FunnelChart({ steps }) {
@@ -98,7 +99,7 @@ function AIInsights({ users }) {
   const inadimpl = users.filter(u => u.status === 'inadimplente')
   if (inadimpl.length > 0)
     insights.push({ icon: '💳', c: 'bg-orange-50 border-orange-200 text-orange-800',
-      text: `${inadimpl.length} pagamento${inadimpl.length > 1 ? 's' : ''} falhou — R$${(inadimpl.length * 47.90).toFixed(0)} em risco. Entre em contato via WhatsApp.` })
+      text: `${inadimpl.length} pagamento${inadimpl.length > 1 ? 's' : ''} falhou — R$${(inadimpl.length * pMensal).toFixed(0)} em risco. Entre em contato via WhatsApp.` })
 
   const ativos  = users.filter(u => u.status === 'active')
   const anuais  = ativos.filter(u => u.plan === 'annual')
@@ -126,6 +127,7 @@ function AIInsights({ users }) {
 }
 
 export default function Analytics({ users }) {
+  const cfg   = useConfig()
   const now   = new Date()
   const in3d  = new Date(now.getTime() + 3  * 24 * 60 * 60 * 1000)
   const ago30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
@@ -139,8 +141,10 @@ export default function Analytics({ users }) {
   const novos30d   = users.filter(u => u.createdAt && new Date(u.createdAt) >= ago30)
   const trialsEnd3d = trials.filter(u => u.trialEnd && new Date(u.trialEnd) <= in3d && new Date(u.trialEnd) >= now)
 
-  const mrrMensal = ativos.filter(u => u.plan !== 'annual').length * 47.90
-  const mrrAnual  = ativos.filter(u => u.plan === 'annual').length * (418.80 / 12)
+  const pMensal   = parseFloat(cfg.price_monthly) || 97
+  const pAnual    = parseFloat(cfg.price_annual)  || 958.80
+  const mrrMensal = ativos.filter(u => u.plan !== 'annual').length * pMensal
+  const mrrAnual  = ativos.filter(u => u.plan === 'annual').length * (pAnual / 12)
   const mrr = mrrMensal + mrrAnual
   const arr = mrr * 12
 

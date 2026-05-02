@@ -188,6 +188,56 @@ module.exports = async (req, res) => {
   }
 
   console.log('[cron] Concluído:', resultados)
+
+  // ── Snapshot de MRR (uma vez por dia) ────────────────────
+  try {
+    const hoje = agora.toISOString().split('T')[0] // 'YYYY-MM-DD'
+
+    // Verifica se já existe snapshot de hoje
+    const { data: snapExist } = await supabase
+      .from('mrr_snapshots')
+      .select('id')
+      .eq('data', hoje)
+      .limit(1)
+
+    if (!snapExist || snapExist.length === 0) {
+      // Busca preços do app_config
+      const { data: cfgRows } = await supabase
+        .from('app_config')
+        .select('key, value')
+        .in('key', ['price_monthly', 'price_annual_monthly'])
+
+      const cfg = Object.fromEntries((cfgRows || []).map(r => [r.key, parseFloat(r.value)]))
+      const pMensal = cfg.price_monthly        || 97
+      const pAnualM = cfg.price_annual_monthly || 79.90
+
+      // Busca contagens de usuários por status
+      const { data: allUsers } = await supabase
+        .from('profiles')
+        .select('status, plan')
+        .in('status', ['active', 'trial', 'inadimplente'])
+
+      const ativos       = (allUsers || []).filter(u => u.status === 'active')
+      const ativos_m     = ativos.filter(u => u.plan !== 'annual').length
+      const ativos_a     = ativos.filter(u => u.plan === 'annual').length
+      const trial_count  = (allUsers || []).filter(u => u.status === 'trial').length
+      const inadimp      = (allUsers || []).filter(u => u.status === 'inadimplente').length
+      const mrr          = Math.round((ativos_m * pMensal + ativos_a * pAnualM) * 100) / 100
+
+      await supabase.from('mrr_snapshots').insert({
+        data:          hoje,
+        mrr,
+        ativos:        ativos.length,
+        trial:         trial_count,
+        inadimplentes: inadimp,
+      })
+
+      console.log(`[cron] 📊 MRR snapshot: R$${mrr} | ativos: ${ativos.length} | trial: ${trial_count}`)
+    }
+  } catch (e) {
+    console.error('[cron] Erro ao salvar MRR snapshot:', e.message)
+  }
+
   return res.status(200).json({
     ok: true,
     processados: usuarios.length,

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { Check, Zap, ArrowLeft, Shield, Star } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { useConfig } from '../hooks/useConfig'
 
 // ── COLE AQUI OS LINKS DO STRIPE APÓS CRIAR EM:
 // Stripe Dashboard → Produtos → Payment Links → + Novo link de pagamento
@@ -26,6 +27,11 @@ const features = [
 export default function Assinar() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const cfg = useConfig()
+  const pMensal  = parseFloat(cfg.price_monthly)        || 97
+  const pAnual   = parseFloat(cfg.price_annual)         || 958.80
+  const pAnualM  = parseFloat(cfg.price_annual_monthly) || 79.90
+  const economia = Math.round(pMensal * 12 - pAnual)
 
   const abrirStripe = (url) => {
     // Pré-preenche o email do cliente no checkout
@@ -70,7 +76,7 @@ export default function Assinar() {
             <div className="mb-4">
               <p className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-1">Mensal</p>
               <div className="flex items-end gap-1">
-                <span className="text-4xl font-extrabold text-slate-900">R$97</span>
+                <span className="text-4xl font-extrabold text-slate-900">R${pMensal % 1 === 0 ? pMensal.toFixed(0) : pMensal.toFixed(2).replace('.',',')}</span>
                 <span className="text-slate-400 text-sm mb-1">/mês</span>
               </div>
               <p className="text-xs text-slate-400 mt-1">Cobrado mensalmente · Cancele quando quiser</p>
@@ -98,11 +104,11 @@ export default function Assinar() {
             <div className="mb-4">
               <p className="text-sm font-semibold text-indigo-200 uppercase tracking-wide mb-1">Anual</p>
               <div className="flex items-end gap-1">
-                <span className="text-4xl font-extrabold text-white">R$79</span>
-                <span className="text-2xl font-bold text-white">,90</span>
+                <span className="text-4xl font-extrabold text-white">R${String(pAnualM.toFixed(2)).split(',')[0].split('.')[0]}</span>
+                <span className="text-2xl font-bold text-white">,{pAnualM.toFixed(2).split('.')[1]}</span>
                 <span className="text-indigo-300 text-sm mb-1">/mês</span>
               </div>
-              <p className="text-xs text-indigo-300 mt-1">R$958,80 cobrado anualmente · Economize R$205</p>
+              <p className="text-xs text-indigo-300 mt-1">R${pAnual.toFixed(2).replace('.',',')} cobrado anualmente · Economize R${economia}</p>
             </div>
             <ul className="space-y-2 mb-6 flex-1">
               {features.map(f => (

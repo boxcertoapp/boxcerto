@@ -32,14 +32,35 @@ function TicketCard({ ticket, onUpdate }) {
   const CatIcon = cat.icon
 
   const salvarResposta = async (novoStatus) => {
+    if (!resposta.trim()) return
     setSaving(true)
+    const status = novoStatus || ticket.status
     const { error } = await supabase.rpc('admin_responder_ticket', {
       p_id:       ticket.id,
       p_resposta: resposta,
-      p_status:   novoStatus || ticket.status,
+      p_status:   status,
     })
+    if (!error) {
+      // Dispara email de notificação para o cliente
+      try {
+        await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type:     'ticket_reply',
+            to:       ticket.email,
+            nome:     ticket.oficina || ticket.email,
+            titulo:   ticket.titulo,
+            resposta: resposta,
+            status,
+          }),
+        })
+      } catch { /* silencia — email é melhor-esforço */ }
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+      onUpdate()
+    }
     setSaving(false)
-    if (!error) { setSaved(true); setTimeout(() => setSaved(false), 2000); onUpdate() }
   }
 
   const mudarStatus = async (status) => {

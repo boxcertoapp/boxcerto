@@ -4,6 +4,7 @@ import {
   Clock, Smartphone, TrendingUp, FileText, ChevronRight, Package
 } from 'lucide-react'
 import { usePageMeta } from '../hooks/usePageMeta'
+import { useConfig } from '../hooks/useConfig'
 
 const CADASTRO = 'https://www.boxcerto.com/cadastro'
 const WPP_NUM  = '5553997065725'
@@ -79,6 +80,9 @@ export default function LandingOficinaP() {
     description: 'Sistema simples para oficina pequena controlar clientes, veículos, ordens de serviço, orçamentos e lucro pelo celular. Sem treinamento. Teste grátis por 7 dias.',
     canonical: 'https://boxcerto.com/sistema-para-oficina-pequena',
   })
+  const cfg = useConfig()
+  const cfg_pm  = parseFloat(cfg.price_monthly)        || 97
+  const cfg_pam = parseFloat(cfg.price_annual_monthly) || 79.90
 
   const [tabAtiva, setTabAtiva] = useState('antes')
 
@@ -396,10 +400,10 @@ export default function LandingOficinaP() {
             <div className="bg-indigo-600 rounded-2xl p-8 text-white mb-4">
               <p className="text-indigo-200 text-sm font-semibold uppercase tracking-wide mb-2">Plano único · Tudo incluído</p>
               <div className="flex items-end justify-center gap-1 mb-1">
-                <span className="text-5xl font-extrabold">R$97</span>
+                <span className="text-5xl font-extrabold">R${cfg_pm % 1 === 0 ? cfg_pm.toFixed(0) : cfg_pm.toFixed(2).replace('.',',')}</span>
                 <span className="text-indigo-300 mb-1">/mês</span>
               </div>
-              <p className="text-indigo-200 text-sm mb-6">ou R$79,90/mês no plano anual</p>
+              <p className="text-indigo-200 text-sm mb-6">ou R${cfg_pam.toFixed(2).replace('.',',')}/mês no plano anual</p>
               <a
                 href={CADASTRO}
                 className="flex items-center justify-center gap-2 w-full bg-white text-indigo-700 font-bold py-3.5 rounded-xl hover:bg-indigo-50 transition-colors"
