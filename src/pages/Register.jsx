@@ -3,9 +3,11 @@ import { useNavigate, Link } from 'react-router-dom'
 import { Eye, EyeOff, AlertCircle } from 'lucide-react'
 import Logo from '../components/Logo'
 import { useAuth } from '../contexts/AuthContext'
+import { usePageView } from '../hooks/usePageView'
 
 export default function Register() {
   const { register } = useAuth()
+  usePageView('/cadastro')
   const navigate = useNavigate()
 
   const [form, setForm] = useState({

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useConfig } from '../hooks/useConfig'
+import { usePageView } from '../hooks/usePageView'
 
 const CADASTRO = 'https://www.boxcerto.com/cadastro'
 const WPP_NUM  = '5553997065725'
@@ -136,6 +137,7 @@ const DEPOIMENTOS = [
 ]
 
 export default function LandingVsPlanilha() {
+  usePageView('/boxcerto-vs-planilha')
   usePageMeta({
     title: 'BoxCerto vs Planilha | Por que sua Oficina Perde Dinheiro Controlando no Excel',
     description: 'Veja por que controlar oficina por planilha faz você perder orçamento, histórico e lucro. Calculadora de perda + comparativo completo. Migre grátis por 7 dias.',

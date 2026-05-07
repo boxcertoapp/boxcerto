@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useConfig } from '../hooks/useConfig'
+import { usePageView } from '../hooks/usePageView'
 
 const CADASTRO = 'https://www.boxcerto.com/cadastro'
 const WPP_NUM  = '5553997065725'
@@ -75,6 +76,7 @@ const DEPOIMENTOS = [
 ]
 
 export default function LandingOficinaP() {
+  usePageView('/sistema-para-oficina-pequena')
   usePageMeta({
     title: 'Sistema para Oficina Pequena | Controle OS, Orçamentos e Lucro — BoxCerto',
     description: 'Sistema simples para oficina pequena controlar clientes, veículos, ordens de serviço, orçamentos e lucro pelo celular. Sem treinamento. Teste grátis por 7 dias.',

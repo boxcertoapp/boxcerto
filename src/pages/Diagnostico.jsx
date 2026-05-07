@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { ArrowRight, CheckCircle, Zap, Star, Clock, TrendingUp, Package, FileText, ChevronRight, MessageCircle } from 'lucide-react'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useConfig } from '../hooks/useConfig'
+import { usePageView } from '../hooks/usePageView'
 
 const CADASTRO  = 'https://www.boxcerto.com/cadastro'
 const WPP_NUM   = '5553997065725'
@@ -293,6 +294,7 @@ function ResultadoCard({ dor, orcamentoMsg, equipeMsg, perda }) {
 
 // ── Página principal ──────────────────────────────────────────────────────────
 export default function Diagnostico() {
+  usePageView('/diagnostico')
   usePageMeta({
     title: 'Diagnóstico Gratuito para Oficina | Veja Seu Nível de Controle — BoxCerto',
     description: 'Faça um diagnóstico rápido e descubra se sua oficina está perdendo dinheiro com orçamentos perdidos, planilha e falta de controle. Resultado imediato.',

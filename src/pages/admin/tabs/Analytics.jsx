@@ -1,5 +1,7 @@
-import { TrendingUp, TrendingDown, Users, DollarSign, RefreshCw, Clock, AlertCircle, CheckCircle, Brain } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { TrendingUp, TrendingDown, Users, DollarSign, RefreshCw, Clock, AlertCircle, CheckCircle, Brain, Globe, MousePointerClick, ExternalLink } from 'lucide-react'
 import { useConfig } from '../../../hooks/useConfig'
+import { supabase } from '../../../lib/supabase'
 
 // ── Funil de conversão ───────────────────────────────────────
 function FunnelChart({ steps }) {
@@ -126,6 +128,183 @@ function AIInsights({ users }) {
   )
 }
 
+// ── Tráfego do site ──────────────────────────────────────
+const PAGE_LABELS = {
+  '/landing':                      'Landing principal',
+  '/sistema-para-oficina-pequena': 'Oficina Pequena',
+  '/boxcerto-vs-planilha':         'BoxCerto vs Planilha',
+  '/diagnostico':                  'Diagnóstico',
+  '/assinar':                      'Página de planos',
+  '/cadastro':                     'Cadastro',
+}
+
+function TrafegoSite() {
+  const [views, setViews]     = useState([])
+  const [loading, setLoading] = useState(true)
+  const [periodo, setPeriodo] = useState(7) // dias
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      const since = new Date(Date.now() - periodo * 24 * 60 * 60 * 1000).toISOString()
+      const { data } = await supabase
+        .from('page_views')
+        .select('page, session_id, referrer, created_at')
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+      setViews(data || [])
+      setLoading(false)
+    }
+    load()
+  }, [periodo])
+
+  const totalVisitas   = views.length
+  const sessoesUnicas  = new Set(views.map(v => v.session_id)).size
+
+  // Visitas por página
+  const porPagina = Object.entries(
+    views.reduce((acc, v) => { acc[v.page] = (acc[v.page] || 0) + 1; return acc }, {})
+  ).sort((a, b) => b[1] - a[1])
+
+  // Top referrers
+  const porReferrer = Object.entries(
+    views.reduce((acc, v) => { acc[v.referrer || 'direto'] = (acc[v.referrer || 'direto'] || 0) + 1; return acc }, {})
+  ).sort((a, b) => b[1] - a[1]).slice(0, 5)
+
+  // Visitas por dia (últimos N dias)
+  const porDia = []
+  for (let i = periodo - 1; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i)
+    const label = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+    const count = views.filter(v => {
+      const vd = new Date(v.created_at)
+      return vd.toDateString() === d.toDateString()
+    }).length
+    porDia.push({ label, count })
+  }
+  const maxDia = Math.max(...porDia.map(d => d.count), 1)
+
+  if (loading) return (
+    <div className="flex justify-center py-8">
+      <div className="w-5 h-5 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" />
+    </div>
+  )
+
+  return (
+    <div className="space-y-5">
+
+      {/* Seletor de período + KPIs */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex gap-1.5">
+          {[7, 14, 30].map(d => (
+            <button key={d} onClick={() => setPeriodo(d)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                periodo === d ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-slate-600'
+              }`}>
+              {d} dias
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-3">
+          <div className="bg-white rounded-xl border border-gray-100 px-4 py-2 text-center">
+            <p className="text-lg font-extrabold text-slate-900">{totalVisitas}</p>
+            <p className="text-[10px] text-slate-400 uppercase tracking-wide">Visitas</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-100 px-4 py-2 text-center">
+            <p className="text-lg font-extrabold text-slate-900">{sessoesUnicas}</p>
+            <p className="text-[10px] text-slate-400 uppercase tracking-wide">Visitantes únicos</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Gráfico de visitas por dia */}
+      {totalVisitas > 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <p className="text-sm font-bold text-slate-800 mb-4">Visitas por dia</p>
+          <div className="flex items-end gap-1 h-24">
+            {porDia.map((d, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                <div className="w-full bg-indigo-500 rounded-t-sm transition-all"
+                  style={{ height: `${Math.max((d.count / maxDia) * 80, d.count > 0 ? 4 : 0)}px` }}
+                  title={`${d.count} visitas`} />
+                {porDia.length <= 14 && (
+                  <span className="text-[9px] text-slate-400 whitespace-nowrap">{d.label}</span>
+                )}
+              </div>
+            ))}
+          </div>
+          {porDia.length > 14 && (
+            <div className="flex justify-between text-[9px] text-slate-400 mt-1">
+              <span>{porDia[0].label}</span><span>{porDia[porDia.length - 1].label}</span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+          <Globe className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+          <p className="text-sm text-slate-400">Nenhuma visita registrada neste período.</p>
+          <p className="text-xs text-slate-300 mt-1">Os dados aparecerão aqui assim que visitantes acessarem o site.</p>
+        </div>
+      )}
+
+      {/* Visitas por página + Referrers */}
+      {totalVisitas > 0 && (
+        <div className="grid md:grid-cols-2 gap-4">
+
+          {/* Por página */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <p className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+              <MousePointerClick className="w-4 h-4 text-indigo-500" /> Páginas mais visitadas
+            </p>
+            <div className="space-y-2">
+              {porPagina.map(([page, count]) => {
+                const pct = Math.round((count / totalVisitas) * 100)
+                return (
+                  <div key={page}>
+                    <div className="flex justify-between text-xs text-slate-600 mb-1">
+                      <span className="font-medium truncate">{PAGE_LABELS[page] || page}</span>
+                      <span className="shrink-0 ml-2">{count} ({pct}%)</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-indigo-400 rounded-full" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Referrers */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <p className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+              <ExternalLink className="w-4 h-4 text-green-500" /> Origem dos visitantes
+            </p>
+            <div className="space-y-2">
+              {porReferrer.map(([ref, count]) => {
+                const pct = Math.round((count / totalVisitas) * 100)
+                const isGoogle = ref.includes('google')
+                const color = ref === 'direto' ? 'bg-slate-400'
+                  : isGoogle ? 'bg-green-400' : 'bg-blue-400'
+                return (
+                  <div key={ref}>
+                    <div className="flex justify-between text-xs text-slate-600 mb-1">
+                      <span className="font-medium truncate">{ref}</span>
+                      <span className="shrink-0 ml-2">{count} ({pct}%)</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className={`h-full ${color} rounded-full`} style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Analytics({ users }) {
   const cfg   = useConfig()
   const now   = new Date()
@@ -177,6 +356,15 @@ export default function Analytics({ users }) {
 
   return (
     <div className="space-y-6">
+
+      {/* Tráfego do site */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Globe className="w-4 h-4 text-indigo-600" />
+          <p className="text-sm font-bold text-slate-800">Tráfego do site</p>
+        </div>
+        <TrafegoSite />
+      </div>
 
       {/* Auto-insights */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">

@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { Check, Zap, ArrowLeft, Shield, Star } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useConfig } from '../hooks/useConfig'
+import { usePageView } from '../hooks/usePageView'
 
 // ── COLE AQUI OS LINKS DO STRIPE APÓS CRIAR EM:
 // Stripe Dashboard → Produtos → Payment Links → + Novo link de pagamento
@@ -28,6 +29,7 @@ export default function Assinar() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const cfg = useConfig()
+  usePageView('/assinar')
   const pMensal  = parseFloat(cfg.price_monthly)        || 97
   const pAnual   = parseFloat(cfg.price_annual)         || 958.80
   const pAnualM  = parseFloat(cfg.price_annual_monthly) || 79.90

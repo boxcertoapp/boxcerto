@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, hasAccess } from '../contexts/AuthContext'
 import { useConfig } from '../hooks/useConfig'
+import { usePageView } from '../hooks/usePageView'
 import Logo from '../components/Logo'
 import {
   Wrench, CheckCircle, ChevronDown, ChevronUp,
@@ -132,6 +133,7 @@ export default function Landing() {
   const navigate = useNavigate()
   const { user, loading } = useAuth()
   const cfg = useConfig()
+  usePageView('/landing')
   const pMensal = parseFloat(cfg.price_monthly)        || 97
   const pAnual  = parseFloat(cfg.price_annual)         || 958.80
   const pAnualM = parseFloat(cfg.price_annual_monthly) || 79.90
