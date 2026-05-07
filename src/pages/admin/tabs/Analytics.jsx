@@ -138,10 +138,29 @@ const PAGE_LABELS = {
   '/cadastro':                     'Cadastro',
 }
 
-function TrafegoSite() {
+const DEVICE_ICON  = { mobile: '📱', desktop: '🖥️', tablet: '📟' }
+const DEVICE_COLOR = { mobile: 'bg-blue-400', desktop: 'bg-indigo-500', tablet: 'bg-purple-400' }
+const BROWSER_COLOR = { Chrome: 'bg-green-400', Safari: 'bg-blue-400', Firefox: 'bg-orange-400', Edge: 'bg-indigo-400', Opera: 'bg-red-400', Outro: 'bg-gray-400' }
+
+function BarraSimples({ label, count, total, color = 'bg-indigo-400', prefix = '' }) {
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0
+  return (
+    <div>
+      <div className="flex justify-between text-xs text-slate-600 mb-1">
+        <span className="font-medium truncate">{prefix}{label}</span>
+        <span className="shrink-0 ml-2 tabular-nums">{count} <span className="text-slate-400">({pct}%)</span></span>
+      </div>
+      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  )
+}
+
+function TrafegoSite({ users }) {
   const [views, setViews]     = useState([])
   const [loading, setLoading] = useState(true)
-  const [periodo, setPeriodo] = useState(7) // dias
+  const [periodo, setPeriodo] = useState(7)
 
   useEffect(() => {
     const load = async () => {
@@ -149,7 +168,7 @@ function TrafegoSite() {
       const since = new Date(Date.now() - periodo * 24 * 60 * 60 * 1000).toISOString()
       const { data } = await supabase
         .from('page_views')
-        .select('page, session_id, referrer, created_at')
+        .select('page, session_id, referrer, device, browser, created_at')
         .gte('created_at', since)
         .order('created_at', { ascending: false })
       setViews(data || [])
@@ -158,31 +177,50 @@ function TrafegoSite() {
     load()
   }, [periodo])
 
-  const totalVisitas   = views.length
-  const sessoesUnicas  = new Set(views.map(v => v.session_id)).size
+  const totalVisitas  = views.length
+  const sessoesUnicas = new Set(views.map(v => v.session_id)).size
 
-  // Visitas por página
-  const porPagina = Object.entries(
-    views.reduce((acc, v) => { acc[v.page] = (acc[v.page] || 0) + 1; return acc }, {})
-  ).sort((a, b) => b[1] - a[1])
+  // Helpers
+  const groupBy = (arr, key) => arr.reduce((acc, v) => {
+    const k = v[key] || 'Outro'
+    acc[k] = (acc[k] || 0) + 1
+    return acc
+  }, {})
+  const toSorted = (obj) => Object.entries(obj).sort((a, b) => b[1] - a[1])
 
-  // Top referrers
-  const porReferrer = Object.entries(
-    views.reduce((acc, v) => { acc[v.referrer || 'direto'] = (acc[v.referrer || 'direto'] || 0) + 1; return acc }, {})
-  ).sort((a, b) => b[1] - a[1]).slice(0, 5)
+  const porPagina   = toSorted(groupBy(views, 'page'))
+  const porReferrer = toSorted(groupBy(views, 'referrer')).slice(0, 6)
+  const porDevice   = toSorted(groupBy(views, 'device'))
+  const porBrowser  = toSorted(groupBy(views, 'browser')).slice(0, 4)
 
-  // Visitas por dia (últimos N dias)
+  // Taxa de bounce: sessões com apenas 1 visita
+  const sessionCounts = views.reduce((acc, v) => { acc[v.session_id] = (acc[v.session_id]||0)+1; return acc }, {})
+  const bounces = Object.values(sessionCounts).filter(c => c === 1).length
+  const taxaBounce = sessoesUnicas > 0 ? Math.round((bounces / sessoesUnicas) * 100) : 0
+
+  // Pico de horário (hora local do visitante não temos, mas usamos hora do servidor)
+  const porHora = Array(24).fill(0)
+  views.forEach(v => { porHora[new Date(v.created_at).getHours()]++ })
+  const picaHora = porHora.indexOf(Math.max(...porHora))
+
+  // Visitas por dia
   const porDia = []
   for (let i = periodo - 1; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i)
     const label = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-    const count = views.filter(v => {
-      const vd = new Date(v.created_at)
-      return vd.toDateString() === d.toDateString()
-    }).length
+    const count = views.filter(v => new Date(v.created_at).toDateString() === d.toDateString()).length
     porDia.push({ label, count })
   }
   const maxDia = Math.max(...porDia.map(d => d.count), 1)
+
+  // Device dos usuários ativos do app
+  const ativos = users.filter(u => u.status === 'active' || u.status === 'trial')
+  const appDevices = { mobile: 0, desktop: 0, tablet: 0, '—': 0 }
+  ativos.forEach(u => {
+    const d = u.lastDevice || '—'
+    appDevices[d] = (appDevices[d] || 0) + 1
+  })
+  const appDeviceTotal = ativos.length
 
   if (loading) return (
     <div className="flex justify-center py-8">
@@ -190,117 +228,143 @@ function TrafegoSite() {
     </div>
   )
 
+  const SemDados = () => (
+    <div className="bg-slate-50 rounded-xl p-8 text-center">
+      <Globe className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+      <p className="text-sm text-slate-400">Nenhuma visita registrada neste período.</p>
+      <p className="text-xs text-slate-300 mt-1">Os dados aparecem aqui assim que visitantes acessarem o site.</p>
+    </div>
+  )
+
   return (
     <div className="space-y-5">
 
-      {/* Seletor de período + KPIs */}
+      {/* Seletor de período */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex gap-1.5">
           {[7, 14, 30].map(d => (
             <button key={d} onClick={() => setPeriodo(d)}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                periodo === d ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-slate-600'
+                periodo === d ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-slate-600 hover:border-indigo-300'
               }`}>
               {d} dias
             </button>
           ))}
         </div>
-        <div className="flex gap-3">
-          <div className="bg-white rounded-xl border border-gray-100 px-4 py-2 text-center">
-            <p className="text-lg font-extrabold text-slate-900">{totalVisitas}</p>
-            <p className="text-[10px] text-slate-400 uppercase tracking-wide">Visitas</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-100 px-4 py-2 text-center">
-            <p className="text-lg font-extrabold text-slate-900">{sessoesUnicas}</p>
-            <p className="text-[10px] text-slate-400 uppercase tracking-wide">Visitantes únicos</p>
-          </div>
-        </div>
       </div>
 
-      {/* Gráfico de visitas por dia */}
-      {totalVisitas > 0 ? (
+      {totalVisitas === 0 ? <SemDados /> : <>
+
+        {/* KPIs principais */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: 'Visitas',          value: totalVisitas,          sub: `${periodo} dias`,               color: 'text-indigo-600', bg: 'bg-indigo-50' },
+            { label: 'Visitantes únicos',value: sessoesUnicas,         sub: 'sessões distintas',             color: 'text-blue-600',   bg: 'bg-blue-50' },
+            { label: 'Taxa de bounce',   value: `${taxaBounce}%`,      sub: `${bounces} saíram sem navegar`, color: taxaBounce > 70 ? 'text-red-600' : 'text-green-600', bg: taxaBounce > 70 ? 'bg-red-50' : 'bg-green-50' },
+            { label: 'Pico de acessos',  value: `${picaHora}h`,        sub: `${porHora[picaHora]} visitas`,  color: 'text-amber-600',  bg: 'bg-amber-50' },
+          ].map(k => (
+            <div key={k.label} className="bg-white rounded-2xl border border-gray-100 p-4">
+              <p className={`text-2xl font-extrabold ${k.color}`}>{k.value}</p>
+              <p className="text-xs font-semibold text-slate-600 mt-0.5">{k.label}</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">{k.sub}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Gráfico por dia */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <p className="text-sm font-bold text-slate-800 mb-4">Visitas por dia</p>
-          <div className="flex items-end gap-1 h-24">
+          <div className="flex items-end gap-1 h-20">
             {porDia.map((d, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                <div className="w-full bg-indigo-500 rounded-t-sm transition-all"
-                  style={{ height: `${Math.max((d.count / maxDia) * 80, d.count > 0 ? 4 : 0)}px` }}
-                  title={`${d.count} visitas`} />
-                {porDia.length <= 14 && (
-                  <span className="text-[9px] text-slate-400 whitespace-nowrap">{d.label}</span>
-                )}
+              <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                  {d.count} visitas
+                </div>
+                <div className="w-full bg-indigo-500 rounded-t-sm"
+                  style={{ height: `${Math.max((d.count / maxDia) * 72, d.count > 0 ? 3 : 0)}px` }} />
+                {periodo <= 14 && <span className="text-[9px] text-slate-400">{d.label}</span>}
               </div>
             ))}
           </div>
-          {porDia.length > 14 && (
+          {periodo > 14 && (
             <div className="flex justify-between text-[9px] text-slate-400 mt-1">
-              <span>{porDia[0].label}</span><span>{porDia[porDia.length - 1].label}</span>
+              <span>{porDia[0].label}</span><span>{porDia[porDia.length-1].label}</span>
             </div>
           )}
         </div>
-      ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
-          <Globe className="w-8 h-8 text-slate-200 mx-auto mb-2" />
-          <p className="text-sm text-slate-400">Nenhuma visita registrada neste período.</p>
-          <p className="text-xs text-slate-300 mt-1">Os dados aparecerão aqui assim que visitantes acessarem o site.</p>
-        </div>
-      )}
 
-      {/* Visitas por página + Referrers */}
-      {totalVisitas > 0 && (
+        {/* Dispositivos + Browser (visitantes do site) */}
         <div className="grid md:grid-cols-2 gap-4">
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <p className="text-sm font-bold text-slate-800 mb-3">📱 Dispositivo — visitantes do site</p>
+            <div className="space-y-2.5">
+              {porDevice.map(([dev, count]) => (
+                <BarraSimples key={dev} label={dev} count={count} total={totalVisitas}
+                  color={DEVICE_COLOR[dev] || 'bg-gray-400'}
+                  prefix={DEVICE_ICON[dev] ? DEVICE_ICON[dev] + ' ' : ''} />
+              ))}
+            </div>
+          </div>
 
-          {/* Por página */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <p className="text-sm font-bold text-slate-800 mb-3">🌐 Browser — visitantes do site</p>
+            <div className="space-y-2.5">
+              {porBrowser.map(([browser, count]) => (
+                <BarraSimples key={browser} label={browser} count={count} total={totalVisitas}
+                  color={BROWSER_COLOR[browser] || 'bg-gray-400'} />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Dispositivo dos usuários do APP */}
+        {appDeviceTotal > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <p className="text-sm font-bold text-slate-800 mb-1">📊 Dispositivo — usuários do app (ativos + trial)</p>
+            <p className="text-xs text-slate-400 mb-3">Último device detectado no login de cada usuário</p>
+            <div className="grid grid-cols-3 gap-3">
+              {Object.entries(appDevices).filter(([k]) => k !== '—').map(([dev, count]) => {
+                const pct = appDeviceTotal > 0 ? Math.round((count / appDeviceTotal) * 100) : 0
+                return (
+                  <div key={dev} className={`rounded-xl p-3 text-center ${dev === 'mobile' ? 'bg-blue-50' : dev === 'desktop' ? 'bg-indigo-50' : 'bg-purple-50'}`}>
+                    <p className="text-2xl">{DEVICE_ICON[dev]}</p>
+                    <p className="text-lg font-extrabold text-slate-900 mt-1">{pct}%</p>
+                    <p className="text-xs text-slate-500 capitalize">{dev}</p>
+                    <p className="text-[10px] text-slate-400">{count} usuários</p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Páginas + Referrers */}
+        <div className="grid md:grid-cols-2 gap-4">
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
             <p className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
               <MousePointerClick className="w-4 h-4 text-indigo-500" /> Páginas mais visitadas
             </p>
-            <div className="space-y-2">
-              {porPagina.map(([page, count]) => {
-                const pct = Math.round((count / totalVisitas) * 100)
-                return (
-                  <div key={page}>
-                    <div className="flex justify-between text-xs text-slate-600 mb-1">
-                      <span className="font-medium truncate">{PAGE_LABELS[page] || page}</span>
-                      <span className="shrink-0 ml-2">{count} ({pct}%)</span>
-                    </div>
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-indigo-400 rounded-full" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                )
-              })}
+            <div className="space-y-2.5">
+              {porPagina.map(([page, count]) => (
+                <BarraSimples key={page} label={PAGE_LABELS[page] || page} count={count} total={totalVisitas} color="bg-indigo-400" />
+              ))}
             </div>
           </div>
 
-          {/* Referrers */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
             <p className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
               <ExternalLink className="w-4 h-4 text-green-500" /> Origem dos visitantes
             </p>
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {porReferrer.map(([ref, count]) => {
-                const pct = Math.round((count / totalVisitas) * 100)
-                const isGoogle = ref.includes('google')
-                const color = ref === 'direto' ? 'bg-slate-400'
-                  : isGoogle ? 'bg-green-400' : 'bg-blue-400'
-                return (
-                  <div key={ref}>
-                    <div className="flex justify-between text-xs text-slate-600 mb-1">
-                      <span className="font-medium truncate">{ref}</span>
-                      <span className="shrink-0 ml-2">{count} ({pct}%)</span>
-                    </div>
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div className={`h-full ${color} rounded-full`} style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                )
+                const color = ref === 'direto' ? 'bg-slate-400' : ref.includes('google') ? 'bg-green-400' : ref.includes('instagram') || ref.includes('facebook') ? 'bg-pink-400' : 'bg-blue-400'
+                return <BarraSimples key={ref} label={ref} count={count} total={totalVisitas} color={color} />
               })}
             </div>
           </div>
         </div>
-      )}
+
+      </>}
     </div>
   )
 }

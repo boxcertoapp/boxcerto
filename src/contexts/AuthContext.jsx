@@ -77,9 +77,19 @@ export function AuthProvider({ children }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       loadProfile(session?.user ?? null)
-      // Atualiza last_seen_at no login (RPC é "thenable", não Promise nativo — usar async IIFE)
       if (session?.user) {
-        ;(async () => { try { await supabase.rpc('touch_last_seen') } catch {} })()
+        ;(async () => {
+          try { await supabase.rpc('touch_last_seen') } catch {}
+          // Registra device do usuário logado
+          try {
+            const ua = navigator.userAgent
+            const w  = window.innerWidth
+            const isTablet = /iPad|Android/i.test(ua) && w >= 768
+            const isMobile = /iPhone|iPod|Android/i.test(ua) && w < 768 || w < 768
+            const device = isTablet ? 'tablet' : isMobile ? 'mobile' : 'desktop'
+            await supabase.from('profiles').update({ last_device: device }).eq('id', session.user.id)
+          } catch {}
+        })()
       }
     })
 
