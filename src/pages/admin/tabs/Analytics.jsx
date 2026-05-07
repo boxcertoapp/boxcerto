@@ -427,7 +427,7 @@ export default function Analytics({ users }) {
           <Globe className="w-4 h-4 text-indigo-600" />
           <p className="text-sm font-bold text-slate-800">Tráfego do site</p>
         </div>
-        <TrafegoSite />
+        <TrafegoSite users={users} />
       </div>
 
       {/* Auto-insights */}
