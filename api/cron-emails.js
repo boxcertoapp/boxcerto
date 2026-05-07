@@ -115,6 +115,30 @@ module.exports = async (req, res) => {
 
     let enviou = false
 
+    // ── Qualquer dia do trial: parabéns pela 1ª OS ─────────
+    // Dispara assim que detectar a 1ª OS criada (uma vez só)
+    if (diasSince >= 1 && diasSince <= 7 && diasLeft > 0) {
+      if (!(await jaEnviou(u.email, 'primeira_os'))) {
+        const hasOS = await temOS(u.id)
+        if (hasOS) {
+          enviou = await enviarEmail('primeira_os', u.email, { nome, oficina })
+          enviou ? resultados.enviados++ : resultados.erros++
+          continue
+        }
+      }
+    }
+
+    // ── Dia 3: descoberta de funcionalidade ────────────────
+    if (diasSince >= 3 && diasSince < 4) {
+      if (!(await jaEnviou(u.email, 'feature_discovery'))) {
+        enviou = await enviarEmail('feature_discovery', u.email, { nome, oficina })
+        enviou ? resultados.enviados++ : resultados.erros++
+      } else {
+        resultados.pulados++
+      }
+      continue
+    }
+
     // ── Dia 2: nudge de ativação (se não criou OS) ─────────
     if (diasSince >= 2 && diasSince < 3) {
       if (!(await jaEnviou(u.email, 'activation_nudge'))) {
@@ -184,6 +208,85 @@ module.exports = async (req, res) => {
         resultados.pulados++
       }
       continue
+    }
+
+    // ── Win-back: 15 dias após expiração ───────────────────
+    if (diasLeft <= -14 && diasLeft > -16) {
+      if (!(await jaEnviou(u.email, 'win_back_15d'))) {
+        enviou = await enviarEmail('win_back', u.email, { nome, oficina, diasPassados: 15 })
+        if (enviou) {
+          await registrarLog(u.email, 'win_back_15d')
+          resultados.enviados++
+        } else {
+          resultados.erros++
+        }
+      } else {
+        resultados.pulados++
+      }
+      continue
+    }
+
+    // ── Win-back: 30 dias após expiração ───────────────────
+    if (diasLeft <= -29 && diasLeft > -31) {
+      if (!(await jaEnviou(u.email, 'win_back_30d'))) {
+        enviou = await enviarEmail('win_back', u.email, { nome, oficina, diasPassados: 30 })
+        if (enviou) {
+          await registrarLog(u.email, 'win_back_30d')
+          resultados.enviados++
+        } else {
+          resultados.erros++
+        }
+      } else {
+        resultados.pulados++
+      }
+      continue
+    }
+  }
+
+  // ── Inadimplentes: cobrança de reativação ─────────────────
+  const { data: inadimplentes } = await supabase
+    .from('profiles')
+    .select('id, email, responsavel, oficina')
+    .eq('status', 'inadimplente')
+    .not('email', 'is', null)
+
+  for (const u of (inadimplentes || [])) {
+    if (!u.email) continue
+    const nome    = u.responsavel || u.oficina || 'dono da oficina'
+    const oficina = u.oficina || 'sua oficina'
+
+    // 1º aviso: dispara uma vez por inadimplência (deduplicado por email_logs)
+    if (!(await jaEnviou(u.email, 'reativacao_inadimplente_1'))) {
+      const ok = await enviarEmail('reativacao_inadimplente', u.email, { nome, oficina })
+      if (ok) {
+        await registrarLog(u.email, 'reativacao_inadimplente_1')
+        resultados.enviados++
+      } else {
+        resultados.erros++
+      }
+      continue
+    }
+
+    // 2º aviso: 7 dias depois, se ainda inadimplente
+    const { data: log1 } = await supabase
+      .from('email_logs')
+      .select('enviado_em')
+      .eq('destinatario_email', u.email)
+      .eq('template', 'reativacao_inadimplente_1')
+      .limit(1)
+      .maybeSingle()
+
+    if (log1?.enviado_em) {
+      const diasSince1 = Math.floor((agora - new Date(log1.enviado_em)) / (1000 * 60 * 60 * 24))
+      if (diasSince1 >= 7 && !(await jaEnviou(u.email, 'reativacao_inadimplente_2'))) {
+        const ok = await enviarEmail('reativacao_inadimplente', u.email, { nome, oficina })
+        if (ok) {
+          await registrarLog(u.email, 'reativacao_inadimplente_2')
+          resultados.enviados++
+        } else {
+          resultados.erros++
+        }
+      }
     }
   }
 

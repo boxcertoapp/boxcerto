@@ -247,6 +247,119 @@ const templates = {
     `),
   }),
 
+  // ── Parabéns primeira OS criada ─────────────────────────
+  primeira_os: ({ nome, oficina }) => ({
+    subject: `${nome}, você criou sua primeira OS no BoxCerto! 🎉`,
+    html: base(`
+      ${card(`
+        <h2 style="color:#1e293b;margin:0 0 12px">Primeira OS criada — parabéns, ${nome}! 🔧</h2>
+        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 16px">
+          A <strong>${oficina}</strong> acabou de dar o primeiro passo para organizar tudo digitalmente.
+          Agora vem a parte que os seus clientes vão adorar:
+          <strong>enviar o orçamento por link para aprovação.</strong>
+        </p>
+        <div style="background:#eef2ff;border-radius:10px;padding:16px;margin-bottom:20px;border:1px solid #c7d2fe">
+          <p style="color:#3730a3;font-size:13px;font-weight:600;margin:0 0 10px">Próximo passo — envie o orçamento pro cliente:</p>
+          <p style="color:#4338ca;font-size:13px;margin:4px 0">1. Abra a OS que você criou</p>
+          <p style="color:#4338ca;font-size:13px;margin:4px 0">2. Clique em <strong>"Gerar link de aprovação"</strong></p>
+          <p style="color:#4338ca;font-size:13px;margin:4px 0">3. Mande o link no WhatsApp do cliente</p>
+          <p style="color:#4338ca;font-size:13px;margin:4px 0">4. Veja a aprovação chegar em tempo real ✅</p>
+        </div>
+        ${btn(`${APP_URL}/app/oficina`, 'Ver minha OS →')}
+      `)}
+      ${notice('#065f46','#ecfdf5','#6ee7b7',
+        '💡 <strong>Dica:</strong> Clientes que recebem orçamento por link aprovam muito mais rápido — e você tem tudo registrado com data e hora.')}
+    `),
+  }),
+
+  // ── Descoberta de funcionalidade (dia 3) ─────────────────
+  feature_discovery: ({ nome, oficina }) => ({
+    subject: `${nome}, você conhece o controle financeiro da ${oficina}? 📊`,
+    html: base(`
+      ${card(`
+        <h2 style="color:#1e293b;margin:0 0 12px">Tem um recurso que a maioria descobre tarde demais, ${nome}</h2>
+        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 16px">
+          Além das ordens de serviço, o BoxCerto tem um <strong>controle financeiro completo</strong>
+          integrado à sua oficina — sem precisar de planilha nenhuma.
+        </p>
+        <div style="background:#f0fdf4;border-radius:10px;padding:16px;margin-bottom:16px;border:1px solid #bbf7d0">
+          <p style="color:#166534;font-size:13px;font-weight:600;margin:0 0 10px">O que você consegue ver:</p>
+          <p style="color:#15803d;font-size:13px;margin:5px 0">💰 Receita do mês em tempo real</p>
+          <p style="color:#15803d;font-size:13px;margin:5px 0">📋 Cada OS quitada vira uma entrada automática</p>
+          <p style="color:#15803d;font-size:13px;margin:5px 0">🔧 Controle de estoque com alerta de peças baixas</p>
+          <p style="color:#15803d;font-size:13px;margin:5px 0">📅 Histórico completo de clientes e veículos</p>
+        </div>
+        ${btn(`${APP_URL}/app/financeiro`, 'Explorar o financeiro →')}
+        <p style="color:#64748b;font-size:13px;text-align:center;margin:8px 0 0">
+          Precisa de ajuda para configurar? <a href="https://wa.me/5553997065725" style="color:#4f46e5">Fale conosco</a>
+        </p>
+      `)}
+    `),
+  }),
+
+  // ── Win-back: reengajamento pós-trial ────────────────────
+  win_back: ({ nome, oficina, diasPassados }) => ({
+    subject: diasPassados >= 28
+      ? `${nome}, última chance — seus dados da ${oficina} ainda estão aqui`
+      : `${nome}, sentimos sua falta — volte para a ${oficina} com oferta especial`,
+    html: base(`
+      ${card(`
+        <h2 style="color:#1e293b;margin:0 0 12px">
+          ${diasPassados >= 28 ? `⏰ Última chance, ${nome}` : `Sentimos sua falta, ${nome} 👋`}
+        </h2>
+        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 16px">
+          ${diasPassados >= 28
+            ? `Os dados da <strong>${oficina}</strong> ainda estão salvos no BoxCerto, mas em breve serão removidos.
+               Assine agora e retome de onde parou — sem perder nada.`
+            : `O trial da <strong>${oficina}</strong> encerrou há pouco.
+               Sabemos que avaliar um novo sistema leva tempo — por isso queremos facilitar sua decisão.`
+          }
+        </p>
+        ${diasPassados < 28 ? `
+        <div style="background:#fefce8;border-radius:12px;padding:20px;border:2px solid #fde68a;margin-bottom:20px;text-align:center">
+          <p style="color:#92400e;font-size:13px;font-weight:600;margin:0 0 6px;text-transform:uppercase;letter-spacing:.05em">Oferta especial para você</p>
+          <p style="color:#78350f;font-size:28px;font-weight:800;margin:0">30% OFF</p>
+          <p style="color:#92400e;font-size:13px;margin:6px 0 0">no primeiro mês — use o cupom <strong>VOLTEI30</strong> no checkout</p>
+        </div>` : ''}
+        ${btn(`${APP_URL}/assinar`, diasPassados >= 28 ? 'Recuperar minha conta →' : 'Reativar com desconto →')}
+        <p style="color:#94a3b8;font-size:12px;text-align:center;margin:8px 0 0">
+          Plano mensal a partir de R$97 · Anual por R$79,90/mês
+        </p>
+      `)}
+      ${notice('#7c3aed','#f5f3ff','#ddd6fe',
+        diasPassados >= 28
+          ? '⚠️ <strong>Atenção:</strong> dados armazenados por até 30 dias após encerramento. Após isso, são removidos permanentemente.'
+          : '🔒 <strong>Seus dados estão salvos.</strong> Clientes, veículos e histórico de OS preservados. Assine e retome em segundos.'
+      )}
+    `),
+  }),
+
+  // ── Reativação de inadimplente ───────────────────────────
+  reativacao_inadimplente: ({ nome, oficina }) => ({
+    subject: `⚠️ Acesso da ${oficina} suspenso — resolva em 1 minuto, ${nome}`,
+    html: base(`
+      ${card(`
+        <h2 style="color:#1e293b;margin:0 0 12px">Sua conta está temporariamente suspensa</h2>
+        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 16px">
+          Olá, ${nome}. Identificamos uma falha no pagamento da assinatura da <strong>${oficina}</strong>.
+          O acesso foi suspenso, mas <strong>todos os seus dados estão preservados</strong>.
+        </p>
+        <div style="background:#fef2f2;border-radius:10px;padding:16px;margin-bottom:20px;border:1px solid #fecaca">
+          <p style="color:#991b1b;font-size:13px;font-weight:600;margin:0 0 8px">Para reativar agora:</p>
+          <p style="color:#b91c1c;font-size:13px;margin:4px 0">1. Clique no botão abaixo para acessar o portal de pagamento</p>
+          <p style="color:#b91c1c;font-size:13px;margin:4px 0">2. Atualize ou troque o cartão de crédito</p>
+          <p style="color:#b91c1c;font-size:13px;margin:4px 0">3. O acesso é liberado automaticamente em instantes</p>
+        </div>
+        ${btn(`${APP_URL}/app/menu`, 'Atualizar pagamento e reativar →')}
+        <p style="color:#64748b;font-size:13px;text-align:center;margin:8px 0 0">
+          Prefere ajuda? <a href="https://wa.me/5553997065725" style="color:#4f46e5">Fale conosco no WhatsApp</a>
+        </p>
+      `)}
+      ${notice('#92400e','#fefce8','#fde68a',
+        '⏳ <strong>Importante:</strong> o acesso permanece suspenso até a regularização do pagamento. Seus dados ficam seguros durante esse período.')}
+    `),
+  }),
+
   // ── Convite de técnico ───────────────────────────────────
   tecnico_invite: ({ nomeOficina, conviteLink }) => ({
     subject: `Você foi convidado para ${nomeOficina} no BoxCerto 🔧`,
