@@ -42,6 +42,12 @@ export default function Register() {
     setLoading(false)
     if (!result.ok) return setError(result.error)
 
+    // Conversão Google Analytics — cadastro concluído
+    if (typeof gtag === 'function') {
+      gtag('event', 'sign_up', { method: 'email' })
+      gtag('event', 'conversion', { send_to: 'G-HQNZQ5PHFB' })
+    }
+
     // Envia email de boas-vindas em background (não bloqueia o redirecionamento)
     fetch('/api/send-email', {
       method: 'POST',
