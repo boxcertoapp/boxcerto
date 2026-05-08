@@ -12,6 +12,11 @@ export default function Sucesso() {
   // para que o status 'active' seja refletido imediatamente.
   useEffect(() => {
     refreshUser()
+    // Conversão Google Ads — assinatura concluída
+    if (typeof gtag === 'function') {
+      gtag('event', 'ads_conversion_PURCHASE_1')
+      gtag('event', 'purchase')
+    }
   }, [])
 
   return (
