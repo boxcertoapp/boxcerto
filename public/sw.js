@@ -4,7 +4,7 @@
 // Cache de fallback para assets estáticos
 // ============================================================
 
-const CACHE_NAME = 'boxcerto-v3'
+const CACHE_NAME = 'boxcerto-v4'
 
 // Assets estáticos que podem ser cacheados offline
 const STATIC_ASSETS = [
@@ -42,12 +42,15 @@ self.addEventListener('activate', (event) => {
 
 // ── Fetch: Network First, fallback para cache ────────────
 self.addEventListener('fetch', (event) => {
-  // Ignora requisições para APIs externas e Supabase
+  // Ignora requisições para APIs externas, Supabase e rotas /api/*
   const url = new URL(event.request.url)
   if (
     url.hostname.includes('supabase.co') ||
     url.hostname.includes('stripe.com') ||
     url.hostname.includes('resend.com') ||
+    url.hostname.includes('googletagmanager.com') ||
+    url.hostname.includes('google-analytics.com') ||
+    url.pathname.startsWith('/api/') ||
     event.request.method !== 'GET'
   ) {
     return
