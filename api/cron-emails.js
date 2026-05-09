@@ -113,134 +113,83 @@ module.exports = async (req, res) => {
     const diasSince = Math.floor((agora - criadoEm) / (1000 * 60 * 60 * 24))
     const diasLeft  = Math.ceil((trialEnd - agora) / (1000 * 60 * 60 * 24))
 
-    let enviou = false
+    // ── Sequência baseada em "pelo menos N dias + ainda não enviou"
+    // Deduplicação garantida pelo email_logs — não depende de janela exata de 24h
 
-    // ── Qualquer dia do trial: parabéns pela 1ª OS ─────────
-    // Dispara assim que detectar a 1ª OS criada (uma vez só)
-    if (diasSince >= 1 && diasSince <= 7 && diasLeft > 0) {
-      if (!(await jaEnviou(u.email, 'primeira_os'))) {
-        const hasOS = await temOS(u.id)
-        if (hasOS) {
-          enviou = await enviarEmail('primeira_os', u.email, { nome, oficina })
-          enviou ? resultados.enviados++ : resultados.erros++
-          continue
-        }
-      }
-    }
-
-    // ── Dia 3: descoberta de funcionalidade ────────────────
-    if (diasSince >= 3 && diasSince < 4) {
-      if (!(await jaEnviou(u.email, 'feature_discovery'))) {
-        enviou = await enviarEmail('feature_discovery', u.email, { nome, oficina })
-        enviou ? resultados.enviados++ : resultados.erros++
-      } else {
-        resultados.pulados++
-      }
-      continue
-    }
-
-    // ── Dia 2: nudge de ativação (se não criou OS) ─────────
-    if (diasSince >= 2 && diasSince < 3) {
-      if (!(await jaEnviou(u.email, 'activation_nudge'))) {
-        const hasOS = await temOS(u.id)
-        if (!hasOS) {
-          enviou = await enviarEmail('activation_nudge', u.email, { nome, oficina })
-          enviou ? resultados.enviados++ : resultados.erros++
-        } else {
-          console.log(`[cron] ${u.email} já tem OS — pulando activation_nudge`)
-          resultados.pulados++
-        }
+    // 1. Parabéns pela 1ª OS (qualquer dia do trial, assim que criar)
+    if (diasSince >= 1 && diasLeft > 0 && !(await jaEnviou(u.email, 'primeira_os'))) {
+      if (await temOS(u.id)) {
+        const ok = await enviarEmail('primeira_os', u.email, { nome, oficina })
+        ok ? resultados.enviados++ : resultados.erros++
         continue
       }
-      resultados.pulados++
-      continue
     }
 
-    // ── Dia 4: dica de aprovação por link ──────────────────
-    if (diasSince >= 4 && diasSince < 5) {
-      if (!(await jaEnviou(u.email, 'tip_aprovacao'))) {
-        enviou = await enviarEmail('tip_aprovacao', u.email, { nome, oficina })
-        enviou ? resultados.enviados++ : resultados.erros++
+    // 2. Nudge de ativação — dia 2+ sem OS
+    if (diasSince >= 2 && diasLeft > 0 && !(await jaEnviou(u.email, 'activation_nudge'))) {
+      if (!(await temOS(u.id))) {
+        const ok = await enviarEmail('activation_nudge', u.email, { nome, oficina })
+        ok ? resultados.enviados++ : resultados.erros++
       } else {
+        await registrarLog(u.email, 'activation_nudge') // marca como "pulado" para não checar novamente
         resultados.pulados++
       }
       continue
     }
 
-    // ── Dia 5 (2 dias restantes): aviso de trial ───────────
-    if (diasLeft === 2) {
-      if (!(await jaEnviou(u.email, 'trial_ending_2d'))) {
-        enviou = await enviarEmail('trial_ending', u.email, { nome, oficina, diasRestantes: 2 })
-        if (enviou) {
-          await registrarLog(u.email, 'trial_ending_2d') // tag extra p/ deduplicação
-          resultados.enviados++
-        } else {
-          resultados.erros++
-        }
-      } else {
-        resultados.pulados++
-      }
+    // 3. Descoberta de funcionalidade — dia 3+
+    if (diasSince >= 3 && diasLeft > 0 && !(await jaEnviou(u.email, 'feature_discovery'))) {
+      const ok = await enviarEmail('feature_discovery', u.email, { nome, oficina })
+      ok ? resultados.enviados++ : resultados.erros++
       continue
     }
 
-    // ── Dia 6 (1 dia restante): aviso urgente ──────────────
-    if (diasLeft <= 1 && diasLeft >= 0) {
-      if (!(await jaEnviou(u.email, 'trial_ending_1d'))) {
-        enviou = await enviarEmail('trial_ending', u.email, { nome, oficina, diasRestantes: 1 })
-        if (enviou) {
-          await registrarLog(u.email, 'trial_ending_1d')
-          resultados.enviados++
-        } else {
-          resultados.erros++
-        }
-      } else {
-        resultados.pulados++
-      }
+    // 4. Dica de aprovação por link — dia 4+
+    if (diasSince >= 4 && diasLeft > 0 && !(await jaEnviou(u.email, 'tip_aprovacao'))) {
+      const ok = await enviarEmail('tip_aprovacao', u.email, { nome, oficina })
+      ok ? resultados.enviados++ : resultados.erros++
       continue
     }
 
-    // ── Dia 8+: trial expirado, dados aguardando ───────────
-    if (diasLeft < 0 && diasLeft >= -3) {
-      if (!(await jaEnviou(u.email, 'trial_expired'))) {
-        enviou = await enviarEmail('trial_expired', u.email, { nome, oficina })
-        enviou ? resultados.enviados++ : resultados.erros++
-      } else {
-        resultados.pulados++
-      }
+    // 5. Aviso 2 dias restantes
+    if (diasLeft <= 2 && diasLeft > 1 && !(await jaEnviou(u.email, 'trial_ending_2d'))) {
+      const ok = await enviarEmail('trial_ending', u.email, { nome, oficina, diasRestantes: 2 })
+      if (ok) { await registrarLog(u.email, 'trial_ending_2d'); resultados.enviados++ }
+      else resultados.erros++
       continue
     }
 
-    // ── Win-back: 15 dias após expiração ───────────────────
-    if (diasLeft <= -14 && diasLeft > -16) {
-      if (!(await jaEnviou(u.email, 'win_back_15d'))) {
-        enviou = await enviarEmail('win_back', u.email, { nome, oficina, diasPassados: 15 })
-        if (enviou) {
-          await registrarLog(u.email, 'win_back_15d')
-          resultados.enviados++
-        } else {
-          resultados.erros++
-        }
-      } else {
-        resultados.pulados++
-      }
+    // 6. Aviso último dia
+    if (diasLeft <= 1 && diasLeft >= 0 && !(await jaEnviou(u.email, 'trial_ending_1d'))) {
+      const ok = await enviarEmail('trial_ending', u.email, { nome, oficina, diasRestantes: diasLeft < 1 ? 0 : 1 })
+      if (ok) { await registrarLog(u.email, 'trial_ending_1d'); resultados.enviados++ }
+      else resultados.erros++
       continue
     }
 
-    // ── Win-back: 30 dias após expiração ───────────────────
-    if (diasLeft <= -29 && diasLeft > -31) {
-      if (!(await jaEnviou(u.email, 'win_back_30d'))) {
-        enviou = await enviarEmail('win_back', u.email, { nome, oficina, diasPassados: 30 })
-        if (enviou) {
-          await registrarLog(u.email, 'win_back_30d')
-          resultados.enviados++
-        } else {
-          resultados.erros++
-        }
-      } else {
-        resultados.pulados++
-      }
+    // 7. Trial expirado (até 30 dias após)
+    if (diasLeft < 0 && diasLeft >= -30 && !(await jaEnviou(u.email, 'trial_expired'))) {
+      const ok = await enviarEmail('trial_expired', u.email, { nome, oficina })
+      ok ? resultados.enviados++ : resultados.erros++
       continue
     }
+
+    // 8. Win-back: 15 dias após expiração
+    if (diasLeft <= -14 && !(await jaEnviou(u.email, 'win_back_15d'))) {
+      const ok = await enviarEmail('win_back', u.email, { nome, oficina, diasPassados: 15 })
+      if (ok) { await registrarLog(u.email, 'win_back_15d'); resultados.enviados++ }
+      else resultados.erros++
+      continue
+    }
+
+    // 9. Win-back: 30 dias após expiração
+    if (diasLeft <= -29 && !(await jaEnviou(u.email, 'win_back_30d'))) {
+      const ok = await enviarEmail('win_back', u.email, { nome, oficina, diasPassados: 30 })
+      if (ok) { await registrarLog(u.email, 'win_back_30d'); resultados.enviados++ }
+      else resultados.erros++
+      continue
+    }
+
   }
 
   // ── Inadimplentes: cobrança de reativação ─────────────────
