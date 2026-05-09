@@ -71,11 +71,17 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
+    // Flag que garante que onAuthStateChange não sobrescreve a sessão
+    // antes do getSession() terminar — evita logout falso no reload do iPhone/PWA
+    let initialized = false
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       loadProfile(session?.user ?? null)
+      initialized = true
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!initialized) return // aguarda getSession() completar primeiro
       loadProfile(session?.user ?? null)
       if (session?.user) {
         ;(async () => {
