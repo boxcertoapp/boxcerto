@@ -22,6 +22,7 @@ const Diagnostico     = lazy(() => import('./pages/Diagnostico'))
 const LandingOficinaP = lazy(() => import('./pages/LandingOficinaP'))
 const LandingOrcamento= lazy(() => import('./pages/LandingOrcamento'))
 const LandingVsPlanilha = lazy(() => import('./pages/LandingVsPlanilha'))
+const BemVindo          = lazy(() => import('./pages/BemVindo'))
 
 // ── App (carregado apenas após login) ─────────────────────────────────────
 const AppLayout  = lazy(() => import('./pages/app/AppLayout'))
@@ -70,6 +71,7 @@ export default function App() {
             <Route path="/sistema-para-oficina-pequena"     element={<LandingOficinaP />} />
             <Route path="/orcamento-online-oficina"         element={<LandingOrcamento />} />
             <Route path="/boxcerto-vs-planilha"             element={<LandingVsPlanilha />} />
+            <Route path="/bem-vindo"                        element={<BemVindo />} />
 
             {/* Admin */}
             <Route path="/admin" element={<AdminPanel />} />

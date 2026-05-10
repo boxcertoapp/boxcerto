@@ -61,7 +61,7 @@ export default function Register() {
       }),
     }).catch(() => {}) // silencia erros — não impede o cadastro
 
-    navigate('/app/oficina')
+    navigate(`/bem-vindo?nome=${encodeURIComponent(form.responsavel.trim())}&oficina=${encodeURIComponent(form.oficina.trim())}`)
   }
 
   return (
