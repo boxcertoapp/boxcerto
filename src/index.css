@@ -9,6 +9,13 @@
   body {
     @apply bg-gray-50 text-slate-900 antialiased;
   }
+
+  /* Impede zoom automático do iOS ao focar em inputs (Safari dá zoom em font-size < 16px) */
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
 }
 
 @layer utilities {
