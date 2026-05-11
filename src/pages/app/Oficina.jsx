@@ -11,6 +11,7 @@ import {
   Flag, TriangleAlert, ClipboardList, Circle
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import FipeSeletor from '../../components/FipeSeletor'
 import {
   osStorage, itemStorage, clientStorage, vehicleStorage,
   STATUS_LABELS, STATUS_COLORS, formatCurrency, formatDate,
@@ -507,6 +508,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
   const [allClients, setAllClients] = useState([]) // pre-loaded for suggestions
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showFipe, setShowFipe] = useState(false)
 
   useEffect(() => {
     clientStorage.getAll(officeName).then(setAllClients)
@@ -784,8 +786,23 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider pt-1">Veículo</p>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">Modelo *</label>
-                    <input type="text" placeholder="Fiat Strada 2022" value={newClient.modelo}
-                      onChange={e => setNewClient(p => ({...p, modelo: e.target.value}))} className={inp} />
+                    {showFipe ? (
+                      <FipeSeletor
+                        onSelect={modelo => { setNewClient(p => ({ ...p, modelo })); setShowFipe(false) }}
+                        onCancel={() => setShowFipe(false)}
+                      />
+                    ) : (
+                      <div className="flex gap-2">
+                        <input type="text" placeholder="Ex: Honda CG 160 2022 Gasolina"
+                          value={newClient.modelo}
+                          onChange={e => setNewClient(p => ({ ...p, modelo: e.target.value }))}
+                          className={`${inp} flex-1`} />
+                        <button type="button" onClick={() => setShowFipe(true)}
+                          className="shrink-0 px-3 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50 text-xs text-indigo-600 font-semibold hover:bg-indigo-100 transition-colors">
+                          Buscar FIPE
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <button onClick={createAndOpen} disabled={loading}
                     className="w-full bg-indigo-600 text-white font-semibold py-3.5 rounded-xl hover:bg-indigo-700 transition-colors mt-2 disabled:opacity-60">
