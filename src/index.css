@@ -16,6 +16,15 @@
   select {
     font-size: 16px !important;
   }
+
+  /* Impede campos de data/hora de estourarem o container no iOS Safari */
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"],
+  input[type="month"] {
+    max-width: 100%;
+    min-width: 0;
+  }
 }
 
 @layer utilities {
