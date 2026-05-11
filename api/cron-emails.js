@@ -64,9 +64,9 @@ async function enviarEmail(type, to, data) {
 // ── Verifica se usuário tem ao menos 1 OS criada ──────────
 async function temOS(userId) {
   const { count } = await supabase
-    .from('os')
+    .from('service_orders')
     .select('id', { count: 'exact', head: true })
-    .eq('oficina_id', userId)
+    .eq('user_id', userId)
   return (count || 0) > 0
 }
 
