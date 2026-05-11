@@ -74,11 +74,12 @@ async function temOS(userId) {
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json')
 
-  // Segurança: Vercel envia Authorization: Bearer <CRON_SECRET>
+  // Segurança: aceita secret via header Authorization ou query param ?secret=
   const cronSecret = process.env.CRON_SECRET
   if (cronSecret) {
-    const auth = (req.headers.authorization || '').replace('Bearer ', '')
-    if (auth !== cronSecret) {
+    const authHeader = (req.headers.authorization || '').replace('Bearer ', '')
+    const authQuery  = (req.query && req.query.secret) || ''
+    if (authHeader !== cronSecret && authQuery !== cronSecret) {
       return res.status(401).json({ error: 'Não autorizado' })
     }
   }
