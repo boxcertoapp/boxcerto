@@ -5,7 +5,7 @@ import {
   Bell, BellOff, Printer, Edit2, Check, ArrowUpDown
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
-import { inventoryStorage, formatCurrency, officeDataStorage } from '../../lib/storage'
+import { inventoryStorage, formatCurrency, officeDataStorage, norm } from '../../lib/storage'
 
 // ── RELATÓRIO DE ESTOQUE ──────────────────────────────────
 function printEstoque({ items, officeData, formatCurrencyFn }) {
@@ -177,8 +177,8 @@ export default function Estoque() {
     return 0
   }
   const filtered = items.filter(i => {
-    const match = i.produto.toLowerCase().includes(search.toLowerCase()) ||
-      (i.fornecedor || '').toLowerCase().includes(search.toLowerCase())
+    const match = norm(i.produto).includes(norm(search)) ||
+      norm(i.fornecedor).includes(norm(search))
     if (showAlertOnly) return match && i.alertaAtivo && i.quantidade <= i.quantidadeMin
     return match
   }).sort(sortFn)

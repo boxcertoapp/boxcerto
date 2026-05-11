@@ -16,7 +16,7 @@ import {
   osStorage, itemStorage, clientStorage, vehicleStorage,
   STATUS_LABELS, STATUS_COLORS, formatCurrency, formatDate,
   SERVICOS_COMUNS, GARANTIA_OPTIONS, officeDataStorage,
-  printOS, printReceipt, downloadOsPDF, downloadReceiptPDF, buildDescontoLabel, inventoryStorage
+  printOS, printReceipt, downloadOsPDF, downloadReceiptPDF, buildDescontoLabel, inventoryStorage, norm
 } from '../../lib/storage'
 
 // ── HELPERS ───────────────────────────────────────────────
@@ -583,7 +583,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
     setNewClient(p => ({ ...p, nome: val }))
     setExistingClient(null)
     if (val.length >= 4) {
-      const matches = allClients.filter(c => c.nome.toLowerCase().includes(val.toLowerCase())).slice(0, 5)
+      const matches = allClients.filter(c => norm(c.nome).includes(norm(val))).slice(0, 5)
       setClientSuggestions(matches)
     } else {
       setClientSuggestions([])

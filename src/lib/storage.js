@@ -3,6 +3,10 @@
 // ============================================================
 import { supabase } from './supabase'
 
+// Helper: normaliza string removendo acentos para busca insensível a acento
+export const norm = str =>
+  (str || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+
 // Helper: obtém o ID do usuário autenticado atual (usa sessão em cache, sem network)
 const getCurrentUserId = async () => {
   const { data: { session } } = await supabase.auth.getSession()
@@ -126,12 +130,12 @@ export const clientStorage = {
   },
 
   search: async (_officeName, query) => {
-    const q = query.toLowerCase()
-    const qDigits = q.replace(/\D/g, '') // só dígitos para busca por CPF/telefone
+    const q = norm(query)
+    const qDigits = query.replace(/\D/g, '') // só dígitos para busca por CPF/telefone
     const { data } = await supabase.from('clients').select('*')
     return (data || [])
       .filter(c =>
-        c.nome?.toLowerCase().includes(q) ||
+        norm(c.nome).includes(q) ||
         (qDigits.length > 0 && (c.cpf || '').replace(/\D/g, '').includes(qDigits)) ||
         (qDigits.length > 0 && (c.whatsapp || '').replace(/\D/g, '').includes(qDigits))
       )
@@ -212,16 +216,16 @@ export const vehicleStorage = {
   },
 
   search: async (_officeName, query) => {
-    const q = query.toLowerCase()
-    const qDigits = q.replace(/\D/g, '') // só dígitos para busca por CPF
+    const q = norm(query)
+    const qDigits = query.replace(/\D/g, '') // só dígitos para busca por CPF
     const { data } = await supabase
       .from('vehicles')
       .select('*, clients(*)')
     return (data || [])
       .filter(v =>
-        v.placa?.toLowerCase().includes(q) ||
-        v.modelo?.toLowerCase().includes(q) ||
-        v.clients?.nome?.toLowerCase().includes(q) ||
+        norm(v.placa).includes(q) ||
+        norm(v.modelo).includes(q) ||
+        norm(v.clients?.nome).includes(q) ||
         (qDigits.length > 0 && (v.clients?.cpf || '').replace(/\D/g, '').includes(qDigits))
       )
       .map(v => ({ ...mapVehicle(v), client: mapClient(v.clients) }))

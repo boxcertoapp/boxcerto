@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { osStorage, itemStorage, formatCurrency, formatDate } from '../../lib/storage'
+import { osStorage, itemStorage, formatCurrency, formatDate, norm } from '../../lib/storage'
 
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
@@ -331,10 +331,10 @@ function HistoricoTab({ meNome }) {
 
   const listaBuscada = busca.trim()
     ? lista.filter(os =>
-        os.placa.toLowerCase().includes(busca.toLowerCase()) ||
-        os.modelo.toLowerCase().includes(busca.toLowerCase()) ||
-        os.clienteNome.toLowerCase().includes(busca.toLowerCase()) ||
-        os.itens.some(it => it.toLowerCase().includes(busca.toLowerCase()))
+        norm(os.placa).includes(norm(busca)) ||
+        norm(os.modelo).includes(norm(busca)) ||
+        norm(os.clienteNome).includes(norm(busca)) ||
+        os.itens.some(it => norm(it).includes(norm(busca)))
       )
     : lista
   const visivel  = listaBuscada.slice(0, page * PAGE)
@@ -546,7 +546,7 @@ function EstoqueTab({ meNome }) {
   }
 
   const filtrado = sortEstoque(
-    estoque.filter(i => i.produto.toLowerCase().includes(busca.toLowerCase())),
+    estoque.filter(i => norm(i.produto).includes(norm(busca))),
     sort
   )
 

@@ -153,8 +153,10 @@ export default function FipeSeletor({ onSelect, onManual }) {
       })
     : modelos
 
+  const norm = str => (str || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+
   const modelosVisiveis = modelosFiltradosAno.filter(m =>
-    m.nome.toLowerCase().includes(filtro.toLowerCase())
+    norm(m.nome).includes(norm(filtro))
   )
 
   const preview = modelo && combSel
