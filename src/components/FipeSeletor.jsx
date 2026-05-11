@@ -1,18 +1,18 @@
 // ── FipeSeletor.jsx ────────────────────────────────────────
 // Busca assistida de veículos via API FIPE (parallelum)
-// Fluxo: Tipo → Marca → Ano → Modelo (busca) → [Combustível se ambíguo]
+// Fluxo: Tipo → Marca → Modelo (busca) → Ano/Combustível
 // Props:
 //   onSelect(string) — ex: "Honda CG 160 Fan 2022 Gasolina"
-//   onCancel()       — usuário prefere digitar manualmente
+//   onManual()       — usuário prefere digitar manualmente
 import { useState, useEffect, useRef } from 'react'
 import { Loader2, RotateCcw, Car, Bike, Truck } from 'lucide-react'
 
 const FIPE_BASE = 'https://parallelum.com.br/fipe/api/v1'
 
 const TIPOS = [
-  { id: 'motos',     label: 'Moto',    Icon: Bike  },
-  { id: 'carros',    label: 'Carro',   Icon: Car   },
-  { id: 'caminhoes', label: 'Caminhão',Icon: Truck },
+  { id: 'carros',    label: 'Carro',    Icon: Car   },
+  { id: 'motos',     label: 'Moto',     Icon: Bike  },
+  { id: 'caminhoes', label: 'Caminhão', Icon: Truck },
 ]
 
 const cache = {}
@@ -25,87 +25,60 @@ async function fipeGet(path) {
   return json
 }
 
-// extrai ano numérico de strings como "2022 Gasolina" ou "32000-0 Zero KM"
-function extrairAno(nome) {
-  const match = nome.match(/^(\d{4})/)
-  return match ? match[1] : null
-}
-
-export default function FipeSeletor({ onSelect, onCancel }) {
-  const [tipo,        setTipo]        = useState('motos')
-  const [marcas,      setMarcas]      = useState([])
-  const [marca,       setMarca]       = useState(null)
-  const [anosDisp,    setAnosDisp]    = useState([])   // anos únicos da marca
-  const [todosModelos,setTodosModelos]= useState([])   // todos os modelos da marca
-  const [anoSel,      setAnoSel]      = useState('')   // ex: "2022"
-  const [filtro,      setFiltro]      = useState('')
-  const [modelo,      setModelo]      = useState(null)
-  const [combDisp,    setCombDisp]    = useState([])   // combustíveis para o ano+modelo
-  const [combSel,     setCombSel]     = useState(null)
-  const [loading,     setLoading]     = useState(false)
-  const [erro,        setErro]        = useState('')
+export default function FipeSeletor({ onSelect, onManual }) {
+  const [tipo,    setTipo]    = useState('carros')
+  const [marcas,  setMarcas]  = useState([])
+  const [marca,   setMarca]   = useState(null)
+  const [modelos, setModelos] = useState([])
+  const [filtro,  setFiltro]  = useState('')
+  const [modelo,  setModelo]  = useState(null)
+  const [anos,    setAnos]    = useState([])
+  const [ano,     setAno]     = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [erro,    setErro]    = useState('')
   const filtroRef = useRef(null)
 
-  // ── 1. Carrega marcas ao mudar tipo ──────────────────────
+  // ── Carrega marcas ao mudar tipo ──────────────────────────
   useEffect(() => {
     setLoading(true); setErro('')
-    setMarca(null); setAnosDisp([]); setTodosModelos([])
-    setAnoSel(''); setFiltro(''); setModelo(null)
-    setCombDisp([]); setCombSel(null)
+    setMarca(null); setModelos([]); setModelo(null)
+    setFiltro(''); setAnos([]); setAno(null)
     fipeGet(`/${tipo}/marcas`)
       .then(setMarcas)
       .catch(() => setErro('Não foi possível carregar as marcas.'))
       .finally(() => setLoading(false))
   }, [tipo])
 
-  // ── 2. Carrega modelos + anos da marca ────────────────────
+  // ── Carrega modelos ao selecionar marca ───────────────────
   useEffect(() => {
     if (!marca) return
     setLoading(true); setErro('')
-    setAnosDisp([]); setTodosModelos([])
-    setAnoSel(''); setFiltro(''); setModelo(null)
-    setCombDisp([]); setCombSel(null)
+    setModelos([]); setModelo(null)
+    setFiltro(''); setAnos([]); setAno(null)
     fipeGet(`/${tipo}/marcas/${marca.codigo}/modelos`)
       .then(data => {
-        setTodosModelos(data.modelos || [])
-        // extrai anos únicos e ordena do mais recente
-        const anosUnicos = [...new Set(
-          (data.anos || [])
-            .map(a => extrairAno(a.nome))
-            .filter(Boolean)
-        )].sort((a, b) => b - a)
-        setAnosDisp(anosUnicos)
+        setModelos(data.modelos || [])
+        setTimeout(() => filtroRef.current?.focus(), 50)
       })
       .catch(() => setErro('Não foi possível carregar os modelos.'))
       .finally(() => setLoading(false))
   }, [marca])
 
-  // ── 3. Ao selecionar modelo, busca anos daquele modelo ───
+  // ── Carrega anos ao selecionar modelo ─────────────────────
+  // Apenas anos reais daquele modelo — sem possibilidade de escolha inválida
   useEffect(() => {
-    if (!modelo || !marca || !anoSel) return
+    if (!modelo || !marca) return
     setLoading(true); setErro('')
-    setCombDisp([]); setCombSel(null)
+    setAnos([]); setAno(null)
     fipeGet(`/${tipo}/marcas/${marca.codigo}/modelos/${modelo.codigo}/anos`)
-      .then(anosModelo => {
-        // filtra apenas entradas do ano selecionado
-        const matches = anosModelo.filter(a => a.nome.startsWith(anoSel))
-        if (matches.length === 0) {
-          setErro(`Modelo "${modelo.nome}" não disponível em ${anoSel}. Escolha outro modelo.`)
-          setModelo(null); setFiltro('')
-        } else if (matches.length === 1) {
-          setCombSel(matches[0]) // único combustível → confirma direto
-        } else {
-          setCombDisp(matches) // mais de um combustível → mostra select
-        }
-      })
-      .catch(() => setErro('Não foi possível validar o ano/combustível.'))
+      .then(setAnos)
+      .catch(() => setErro('Não foi possível carregar os anos.'))
       .finally(() => setLoading(false))
   }, [modelo])
 
   const confirmar = () => {
-    const comb = combSel || combDisp.find(c => c.codigo === combSel?.codigo)
-    if (!marca || !modelo || !comb) return
-    const partes  = comb.nome.split(' ')
+    if (!marca || !modelo || !ano) return
+    const partes  = ano.nome.split(' ')
     const anoStr  = partes[0]
     const combStr = partes.slice(1).join(' ')
     onSelect(`${marca.nome} ${modelo.nome} ${anoStr}${combStr ? ' ' + combStr : ''}`)
@@ -113,16 +86,21 @@ export default function FipeSeletor({ onSelect, onCancel }) {
 
   const resetModelo = () => {
     setModelo(null); setFiltro('')
-    setCombDisp([]); setCombSel(null); setErro('')
+    setAnos([]); setAno(null); setErro('')
     setTimeout(() => filtroRef.current?.focus(), 50)
   }
 
-  // filtra modelos pelo texto digitado
-  const filtrados = todosModelos.filter(m =>
+  const filtrados = modelos.filter(m =>
     m.nome.toLowerCase().includes(filtro.toLowerCase())
   )
 
-  const podeConfirmar = marca && modelo && (combSel || combDisp.length === 0)
+  // Prévia do resultado selecionado
+  const preview = modelo && ano
+    ? (() => {
+        const p = ano.nome.split(' ')
+        return `${marca.nome} ${modelo.nome} ${p[0]}${p.length > 1 ? ' ' + p.slice(1).join(' ') : ''}`
+      })()
+    : null
 
   const sel = 'w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 text-sm bg-white'
   const inp = 'w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 text-sm'
@@ -130,7 +108,7 @@ export default function FipeSeletor({ onSelect, onCancel }) {
   return (
     <div className="space-y-3 bg-indigo-50/60 rounded-2xl p-3 border border-indigo-100">
 
-      {/* Tipo */}
+      {/* Tipo: Carro > Moto > Caminhão */}
       <div className="flex gap-1.5">
         {TIPOS.map(({ id, label, Icon }) => (
           <button key={id} type="button" onClick={() => setTipo(id)}
@@ -156,28 +134,14 @@ export default function FipeSeletor({ onSelect, onCancel }) {
         </select>
       </div>
 
-      {/* Ano — aparece após carregar modelos da marca */}
-      {anosDisp.length > 0 && (
-        <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Ano</label>
-          <select value={anoSel}
-            onChange={e => {
-              setAnoSel(e.target.value)
-              setModelo(null); setFiltro('')
-              setCombDisp([]); setCombSel(null); setErro('')
-              if (e.target.value) setTimeout(() => filtroRef.current?.focus(), 50)
-            }} className={sel}>
-            <option value="">Selecione o ano...</option>
-            {anosDisp.map(a => <option key={a} value={a}>{a}</option>)}
-          </select>
-        </div>
-      )}
-
-      {/* Modelo — aparece após selecionar ano */}
-      {anoSel && todosModelos.length > 0 && (
+      {/* Modelo — busca com autocomplete */}
+      {marca && (
         <div>
           <label className="block text-xs font-medium text-slate-600 mb-1">
-            Modelo <span className="text-slate-400 font-normal">({todosModelos.length} disponíveis)</span>
+            Modelo
+            {modelos.length > 0 && (
+              <span className="text-slate-400 font-normal ml-1">({modelos.length} disponíveis)</span>
+            )}
           </label>
           {modelo ? (
             <div className="flex items-center justify-between bg-white rounded-xl border border-indigo-300 px-3 py-2.5">
@@ -192,10 +156,11 @@ export default function FipeSeletor({ onSelect, onCancel }) {
               <input
                 ref={filtroRef}
                 type="text"
-                placeholder="Digite para filtrar modelos..."
+                placeholder={modelos.length ? 'Digite para filtrar...' : 'Carregando...'}
                 value={filtro}
                 onChange={e => setFiltro(e.target.value)}
                 className={inp}
+                disabled={!modelos.length}
               />
               {filtro.length > 0 && (
                 filtrados.length > 0 ? (
@@ -224,35 +189,28 @@ export default function FipeSeletor({ onSelect, onCancel }) {
         </div>
       )}
 
-      {/* Combustível — só aparece quando há mais de uma opção */}
-      {combDisp.length > 1 && (
+      {/* Ano / Combustível — apenas anos reais daquele modelo */}
+      {anos.length > 0 && (
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Combustível</label>
-          <select value={combSel?.codigo || ''}
+          <label className="block text-xs font-medium text-slate-600 mb-1">Ano / Combustível</label>
+          <select value={ano?.codigo || ''}
             onChange={e => {
-              const c = combDisp.find(c => c.codigo === e.target.value)
-              setCombSel(c || null)
+              const a = anos.find(a => a.codigo === e.target.value)
+              setAno(a || null)
             }} className={sel}>
-            <option value="">Selecione o combustível...</option>
-            {combDisp.map(c => (
-              <option key={c.codigo} value={c.codigo}>{c.nome.split(' ').slice(1).join(' ')}</option>
-            ))}
+            <option value="">Selecione o ano...</option>
+            {anos.map(a => <option key={a.codigo} value={a.codigo}>{a.nome}</option>)}
           </select>
         </div>
       )}
 
-      {/* Prévia do resultado */}
-      {modelo && (combSel || combDisp.length === 1) && (() => {
-        const comb = combSel || combDisp[0]
-        const partes = comb?.nome.split(' ') || []
-        const preview = `${marca?.nome} ${modelo.nome} ${partes[0] || anoSel}${partes.length > 1 ? ' ' + partes.slice(1).join(' ') : ''}`
-        return (
-          <div className="bg-green-50 border border-green-200 rounded-xl px-3 py-2">
-            <p className="text-xs text-green-600 font-medium">✓ Veículo selecionado</p>
-            <p className="text-sm font-bold text-green-800 truncate">{preview}</p>
-          </div>
-        )
-      })()}
+      {/* Prévia */}
+      {preview && (
+        <div className="bg-green-50 border border-green-200 rounded-xl px-3 py-2">
+          <p className="text-xs text-green-600 font-medium">✓ Veículo selecionado</p>
+          <p className="text-sm font-bold text-green-800 truncate">{preview}</p>
+        </div>
+      )}
 
       {/* Loading */}
       {loading && (
@@ -269,11 +227,11 @@ export default function FipeSeletor({ onSelect, onCancel }) {
 
       {/* Ações */}
       <div className="flex gap-2 pt-1">
-        <button type="button" onClick={onCancel}
+        <button type="button" onClick={onManual}
           className="flex-1 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-slate-600 font-medium hover:bg-gray-50 transition-colors">
           Digitar manualmente
         </button>
-        <button type="button" onClick={confirmar} disabled={!podeConfirmar}
+        <button type="button" onClick={confirmar} disabled={!marca || !modelo || !ano}
           className="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold disabled:opacity-40 hover:bg-indigo-700 transition-colors">
           Confirmar
         </button>

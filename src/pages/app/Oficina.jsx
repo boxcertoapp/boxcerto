@@ -508,7 +508,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
   const [allClients, setAllClients] = useState([]) // pre-loaded for suggestions
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [showFipe, setShowFipe] = useState(false)
+  const [showFipe, setShowFipe] = useState(true)
 
   useEffect(() => {
     clientStorage.getAll(officeName).then(setAllClients)
@@ -789,17 +789,17 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
                     {showFipe ? (
                       <FipeSeletor
                         onSelect={modelo => { setNewClient(p => ({ ...p, modelo })); setShowFipe(false) }}
-                        onCancel={() => setShowFipe(false)}
+                        onManual={() => setShowFipe(false)}
                       />
                     ) : (
-                      <div className="flex gap-2">
+                      <div className="space-y-1.5">
                         <input type="text" placeholder="Ex: Honda CG 160 2022 Gasolina"
                           value={newClient.modelo}
                           onChange={e => setNewClient(p => ({ ...p, modelo: e.target.value }))}
-                          className={`${inp} flex-1`} />
-                        <button type="button" onClick={() => setShowFipe(true)}
-                          className="shrink-0 px-3 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50 text-xs text-indigo-600 font-semibold hover:bg-indigo-100 transition-colors">
-                          Buscar FIPE
+                          className={inp} />
+                        <button type="button" onClick={() => { setNewClient(p => ({ ...p, modelo: '' })); setShowFipe(true) }}
+                          className="w-full py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-xs text-indigo-600 font-semibold hover:bg-indigo-100 transition-colors">
+                          🔍 Busca fácil por marca e modelo
                         </button>
                       </div>
                     )}
