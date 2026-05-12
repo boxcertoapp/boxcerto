@@ -145,7 +145,6 @@ function agendaGroup(os) {
 function AgendaCard({ os, onOpen }) {
   const grupo = agendaGroup(os)
   const d = new Date(os.agendadoPara)
-  const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   const dia  = d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })
 
   const isAtrasado = grupo === 'atrasado'
@@ -164,8 +163,7 @@ function AgendaCard({ os, onOpen }) {
         <p className="text-xs text-slate-500 truncate">{os.client?.nome}</p>
       </div>
       <div className="text-right shrink-0">
-        <p className={`text-xs font-bold ${isAtrasado ? 'text-red-600' : isHoje ? 'text-amber-600' : 'text-indigo-600'}`}>{hora}</p>
-        <p className="text-[10px] text-slate-400 capitalize">{dia}</p>
+        <p className={`text-xs font-bold capitalize ${isAtrasado ? 'text-red-600' : isHoje ? 'text-amber-600' : 'text-indigo-600'}`}>{dia}</p>
       </div>
     </button>
   )
@@ -654,7 +652,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
         ? existingClient
         : await clientStorage.create({ officeName, ...newClient, dataNascimento: dataBRtoISO(newClient.dataNascimento) || newClient.dataNascimento })
       const v = await vehicleStorage.create({ officeName, clientId: c.id, placa, modelo: newClient.modelo })
-      await osStorage.create({ officeName, vehicleId: v.id, km, agendadoPara: dataHoraBRtoISO(agendadoPara) || null })
+      await osStorage.create({ officeName, vehicleId: v.id, km, agendadoPara: dataBRtoISO(agendadoPara) ? dataBRtoISO(agendadoPara) + 'T12:00' : null })
       onClose()
     } catch (e) {
       setError(e.message || 'Erro ao criar OS.')
@@ -665,7 +663,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
   const openOS = async () => {
     setLoading(true)
     try {
-      await osStorage.create({ officeName, vehicleId: vehicle.id, km, agendadoPara: dataHoraBRtoISO(agendadoPara) || null })
+      await osStorage.create({ officeName, vehicleId: vehicle.id, km, agendadoPara: dataBRtoISO(agendadoPara) ? dataBRtoISO(agendadoPara) + 'T12:00' : null })
       onClose()
     } catch (e) {
       setError(e.message || 'Erro ao criar OS.')
@@ -717,10 +715,25 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1 flex items-center gap-1"><CalendarClock className="w-3 h-3" />Agendar entrada</label>
-                    <input type="text" inputMode="numeric" placeholder="DD/MM/AAAA HH:MM"
+                    <input type="text" inputMode="numeric" placeholder="DD/MM/AAAA"
                       value={agendadoPara}
-                      onChange={e => setAgendadoPara(formatDataHora(e.target.value))}
-                      maxLength={16} className={inp} />
+                      onChange={e => {
+                        const val = formatData(e.target.value)
+                        // Bloqueia datas anteriores a hoje
+                        if (val.length === 10) {
+                          const iso = dataBRtoISO(val)
+                          const hoje = new Date(); hoje.setHours(0,0,0,0)
+                          if (iso && new Date(iso + 'T12:00') < hoje) return
+                        }
+                        setAgendadoPara(val)
+                      }}
+                      maxLength={10} className={inp} />
+                    {agendadoPara.length === 10 && (() => {
+                      const iso = dataBRtoISO(agendadoPara)
+                      const hoje = new Date(); hoje.setHours(0,0,0,0)
+                      if (iso && new Date(iso + 'T12:00') < hoje)
+                        return <p className="text-xs text-red-500 mt-1">Data não pode ser anterior a hoje.</p>
+                    })()}
                   </div>
                 </div>
               </div>
@@ -1431,7 +1444,7 @@ function OSDetailModal({ os, onClose, officeName }) {
                     {isAtrasado ? '⚠ Agendamento em atraso' : 'Agendado para:'}
                   </p>
                   <p className={`text-sm font-semibold ${isAtrasado ? 'text-red-900' : 'text-amber-900'}`}>
-                    {d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })} às {d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    {d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}
                   </p>
                 </div>
                 <button
