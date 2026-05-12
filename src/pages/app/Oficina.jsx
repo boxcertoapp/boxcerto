@@ -680,7 +680,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
                     <input type="number" placeholder="Ex: 85000" value={km}
                       onChange={e => setKm(e.target.value)} className={inp} min="0" />
                   </div>
-                  <div>
+                  <div className="overflow-hidden min-w-0">
                     <label className="block text-xs font-medium text-slate-600 mb-1 flex items-center gap-1"><CalendarClock className="w-3 h-3" />Agendar entrada</label>
                     <input type="datetime-local" value={agendadoPara}
                       onChange={e => setAgendadoPara(e.target.value)} className={inp} />
@@ -737,7 +737,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
                       <input type="text" placeholder="000.000.000-00" value={newClient.cpf}
                         onChange={e => setNewClient(p => ({...p, cpf: formatCPF(e.target.value)}))} className={inp} />
                     </div>
-                    <div>
+                    <div className="overflow-hidden min-w-0">
                       <label className="block text-xs font-medium text-slate-600 mb-1">Nascimento</label>
                       <input type="date" value={newClient.dataNascimento}
                         onChange={e => setNewClient(p => ({...p, dataNascimento: e.target.value}))} className={inp} />

@@ -22,7 +22,18 @@
   input[type="datetime-local"],
   input[type="time"],
   input[type="month"] {
-    max-width: 100%;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Garante que o div pai de inputs de data não estoure em grids no iOS */
+  div:has(> input[type="date"]),
+  div:has(> input[type="datetime-local"]),
+  div:has(> input[type="time"]),
+  div:has(> input[type="month"]) {
+    overflow: hidden;
     min-width: 0;
   }
 }
