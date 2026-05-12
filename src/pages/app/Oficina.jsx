@@ -674,17 +674,15 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
               {/* Seção KM + Agendamento */}
               <div className="bg-indigo-50 rounded-xl p-3 space-y-2">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Entrada do Veículo</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1 flex items-center gap-1"><Gauge className="w-3 h-3" />KM atual</label>
-                    <input type="number" placeholder="Ex: 85000" value={km}
-                      onChange={e => setKm(e.target.value)} className={inp} min="0" />
-                  </div>
-                  <div className="overflow-hidden min-w-0">
-                    <label className="block text-xs font-medium text-slate-600 mb-1 flex items-center gap-1"><CalendarClock className="w-3 h-3" />Agendar entrada</label>
-                    <input type="datetime-local" value={agendadoPara}
-                      onChange={e => setAgendadoPara(e.target.value)} className={inp} />
-                  </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1 flex items-center gap-1"><Gauge className="w-3 h-3" />KM atual</label>
+                  <input type="number" placeholder="Ex: 85000" value={km}
+                    onChange={e => setKm(e.target.value)} className={inp} min="0" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1 flex items-center gap-1"><CalendarClock className="w-3 h-3" />Agendar entrada</label>
+                  <input type="datetime-local" value={agendadoPara}
+                    onChange={e => setAgendadoPara(e.target.value)} className={inp} />
                 </div>
               </div>
 
@@ -731,17 +729,15 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
                       </div>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">CPF</label>
-                      <input type="text" placeholder="000.000.000-00" value={newClient.cpf}
-                        onChange={e => setNewClient(p => ({...p, cpf: formatCPF(e.target.value)}))} className={inp} />
-                    </div>
-                    <div className="overflow-hidden min-w-0">
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Nascimento</label>
-                      <input type="date" value={newClient.dataNascimento}
-                        onChange={e => setNewClient(p => ({...p, dataNascimento: e.target.value}))} className={inp} />
-                    </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">CPF</label>
+                    <input type="text" placeholder="000.000.000-00" value={newClient.cpf}
+                      onChange={e => setNewClient(p => ({...p, cpf: formatCPF(e.target.value)}))} className={inp} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Nascimento</label>
+                    <input type="date" value={newClient.dataNascimento}
+                      onChange={e => setNewClient(p => ({...p, dataNascimento: e.target.value}))} className={inp} />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">WhatsApp *</label>
