@@ -80,6 +80,41 @@ const PAYMENT_METHODS = [
   { key: 'outros',  label: 'Outros',  icon: DollarSign },
 ]
 
+// ── HELPERS DE DATA (máscara BR / ISO) ──────────────────────
+const formatData = (val) => {
+  const d = val.replace(/\D/g, '').slice(0, 8)
+  if (d.length <= 2) return d
+  if (d.length <= 4) return `${d.slice(0,2)}/${d.slice(2)}`
+  return `${d.slice(0,2)}/${d.slice(2,4)}/${d.slice(4)}`
+}
+const formatDataHora = (val) => {
+  const d = val.replace(/\D/g, '').slice(0, 12)
+  let r = d.slice(0, 2)
+  if (d.length > 2) r += '/' + d.slice(2, 4)
+  if (d.length > 4) r += '/' + d.slice(4, 8)
+  if (d.length > 8) r += ' ' + d.slice(8, 10)
+  if (d.length > 10) r += ':' + d.slice(10, 12)
+  return r
+}
+const dataBRtoISO = (br) => {
+  if (!br || br.length < 10) return ''
+  const [d, m, y] = br.split('/')
+  if (!d || !m || !y || y.length < 4) return ''
+  return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
+}
+const isoToDataBR = (iso) => {
+  if (!iso) return ''
+  const p = iso.split('-')
+  if (p.length < 3) return ''
+  return `${p[2].slice(0,2)}/${p[1]}/${p[0]}`
+}
+const dataHoraBRtoISO = (br) => {
+  if (!br) return ''
+  const [datePart, timePart] = br.split(' ')
+  const iso = dataBRtoISO(datePart)
+  return iso ? `${iso}T${timePart || '00:00'}` : ''
+}
+
 // ── HELPERS DE AGENDA ─────────────────────────────────────
 function startOfDay(d) { const x = new Date(d); x.setHours(0,0,0,0); return x }
 function endOfDay(d)   { const x = new Date(d); x.setHours(23,59,59,999); return x }
@@ -597,7 +632,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
       nome: c.nome,
       whatsapp: c.whatsapp || '',
       cpf: c.cpf || '',
-      dataNascimento: c.dataNascimento || '',
+      dataNascimento: isoToDataBR(c.dataNascimento) || c.dataNascimento || '',
       cep: c.cep || '',
       endereco: c.endereco || '',
       numero: c.numero || '',
@@ -617,9 +652,9 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
     try {
       const c = existingClient
         ? existingClient
-        : await clientStorage.create({ officeName, ...newClient })
+        : await clientStorage.create({ officeName, ...newClient, dataNascimento: dataBRtoISO(newClient.dataNascimento) || newClient.dataNascimento })
       const v = await vehicleStorage.create({ officeName, clientId: c.id, placa, modelo: newClient.modelo })
-      await osStorage.create({ officeName, vehicleId: v.id, km, agendadoPara: agendadoPara || null })
+      await osStorage.create({ officeName, vehicleId: v.id, km, agendadoPara: dataHoraBRtoISO(agendadoPara) || null })
       onClose()
     } catch (e) {
       setError(e.message || 'Erro ao criar OS.')
@@ -630,7 +665,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
   const openOS = async () => {
     setLoading(true)
     try {
-      await osStorage.create({ officeName, vehicleId: vehicle.id, km, agendadoPara: agendadoPara || null })
+      await osStorage.create({ officeName, vehicleId: vehicle.id, km, agendadoPara: dataHoraBRtoISO(agendadoPara) || null })
       onClose()
     } catch (e) {
       setError(e.message || 'Erro ao criar OS.')
@@ -674,15 +709,19 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
               {/* Seção KM + Agendamento */}
               <div className="bg-indigo-50 rounded-xl p-3 space-y-2">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Entrada do Veículo</p>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1 flex items-center gap-1"><Gauge className="w-3 h-3" />KM atual</label>
-                  <input type="number" placeholder="Ex: 85000" value={km}
-                    onChange={e => setKm(e.target.value)} className={inp} min="0" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1 flex items-center gap-1"><CalendarClock className="w-3 h-3" />Agendar entrada</label>
-                  <input type="datetime-local" value={agendadoPara}
-                    onChange={e => setAgendadoPara(e.target.value)} className={inp} />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1 flex items-center gap-1"><Gauge className="w-3 h-3" />KM atual</label>
+                    <input type="text" inputMode="numeric" placeholder="Ex: 85000" value={km}
+                      onChange={e => setKm(e.target.value.replace(/\D/g, ''))} className={inp} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1 flex items-center gap-1"><CalendarClock className="w-3 h-3" />Agendar entrada</label>
+                    <input type="text" inputMode="numeric" placeholder="DD/MM/AAAA HH:MM"
+                      value={agendadoPara}
+                      onChange={e => setAgendadoPara(formatDataHora(e.target.value))}
+                      maxLength={16} className={inp} />
+                  </div>
                 </div>
               </div>
 
@@ -729,15 +768,19 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
                       </div>
                     )}
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">CPF</label>
-                    <input type="text" placeholder="000.000.000-00" value={newClient.cpf}
-                      onChange={e => setNewClient(p => ({...p, cpf: formatCPF(e.target.value)}))} className={inp} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Nascimento</label>
-                    <input type="date" value={newClient.dataNascimento}
-                      onChange={e => setNewClient(p => ({...p, dataNascimento: e.target.value}))} className={inp} />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">CPF</label>
+                      <input type="text" inputMode="numeric" placeholder="000.000.000-00" value={newClient.cpf}
+                        onChange={e => setNewClient(p => ({...p, cpf: formatCPF(e.target.value)}))} className={inp} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Nascimento</label>
+                      <input type="text" inputMode="numeric" placeholder="DD/MM/AAAA"
+                        value={newClient.dataNascimento}
+                        onChange={e => setNewClient(p => ({...p, dataNascimento: formatData(e.target.value)}))}
+                        maxLength={10} className={inp} />
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">WhatsApp *</label>
@@ -1031,7 +1074,7 @@ function OSDetailModal({ os, onClose, officeName }) {
     clienteNome: os.client?.nome || '',
     clienteWhatsapp: os.client?.whatsapp || '',
     clienteCpf: os.client?.cpf || '',
-    clienteNascimento: os.client?.dataNascimento || '',
+    clienteNascimento: isoToDataBR(os.client?.dataNascimento) || '',
     clienteCep: os.client?.cep || '',
     clienteEndereco: os.client?.endereco || '',
     clienteNumero: os.client?.numero || '',
@@ -1167,7 +1210,7 @@ function OSDetailModal({ os, onClose, officeName }) {
         nome: editForm.clienteNome,
         whatsapp: editForm.clienteWhatsapp,
         cpf: editForm.clienteCpf,
-        dataNascimento: editForm.clienteNascimento,
+        dataNascimento: dataBRtoISO(editForm.clienteNascimento) || editForm.clienteNascimento,
         cep: editForm.clienteCep,
         endereco: editForm.clienteEndereco,
         numero: editForm.clienteNumero,
@@ -2057,8 +2100,10 @@ function OSDetailModal({ os, onClose, officeName }) {
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Data de Nascimento</label>
-                <input type="date" value={editForm.clienteNascimento}
-                  onChange={e => setEditForm(p => ({...p, clienteNascimento: e.target.value}))}
+                <input type="text" inputMode="numeric" placeholder="DD/MM/AAAA"
+                  value={editForm.clienteNascimento}
+                  onChange={e => setEditForm(p => ({...p, clienteNascimento: formatData(e.target.value)}))}
+                  maxLength={10}
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400" />
               </div>
 
