@@ -48,6 +48,15 @@ export default function Register() {
       gtag('event', 'conversion', { send_to: 'G-HQNZQ5PHFB' })
     }
 
+    // Evento Meta — dispara para rastreio de cadastro com dados do usuário
+    window.dataLayer = window.dataLayer || []
+    window.dataLayer.push({
+      event: 'iniciou_teste_gratis',
+      user_name: form.responsavel.trim(),
+      user_whatsapp: '55' + form.whatsapp.replace(/\D/g, ''),
+      user_email: form.email.trim(),
+    })
+
     // Envia email de boas-vindas em background (não bloqueia o redirecionamento)
     fetch('/api/send-email', {
       method: 'POST',

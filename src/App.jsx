@@ -67,10 +67,15 @@ export default function App() {
             <Route path="/privacidade"    element={<Privacidade />} />
             <Route path="/lp"             element={<LandingAds />} />
             <Route path="/lp2"            element={<LandingAds2 />} />
-            <Route path="/diagnostico"                      element={<Diagnostico />} />
-            <Route path="/sistema-para-oficina-pequena"     element={<LandingOficinaP />} />
-            <Route path="/orcamento-online-oficina"         element={<LandingOrcamento />} />
-            <Route path="/boxcerto-vs-planilha"             element={<LandingVsPlanilha />} />
+            <Route path="/lpdiagnostico"                        element={<Diagnostico />} />
+            <Route path="/lpsistema-para-oficina-pequena"       element={<LandingOficinaP />} />
+            <Route path="/lporcamento-online-oficina"           element={<LandingOrcamento />} />
+            <Route path="/lpboxcerto-vs-planilha"               element={<LandingVsPlanilha />} />
+            {/* Redirecionamentos das URLs antigas */}
+            <Route path="/diagnostico"                      element={<Navigate to="/lpdiagnostico" replace />} />
+            <Route path="/sistema-para-oficina-pequena"     element={<Navigate to="/lpsistema-para-oficina-pequena" replace />} />
+            <Route path="/orcamento-online-oficina"         element={<Navigate to="/lporcamento-online-oficina" replace />} />
+            <Route path="/boxcerto-vs-planilha"             element={<Navigate to="/lpboxcerto-vs-planilha" replace />} />
             <Route path="/bem-vindo"                        element={<BemVindo />} />
 
             {/* Admin */}
