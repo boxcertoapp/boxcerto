@@ -1069,6 +1069,19 @@ export const vendaStorage = {
     return (data || []).map(mapVenda)
   },
 
+  reverter: async (vendaId) => {
+    const { data: venda } = await supabase.from('vendas').select('*').eq('id', vendaId).single()
+    if (!venda) throw new Error('Venda não encontrada')
+    // Devolver itens ao estoque
+    for (const item of (venda.items || [])) {
+      if (item.inventoryId) {
+        const { data: inv } = await supabase.from('inventory').select('quantidade').eq('id', item.inventoryId).single()
+        if (inv) await supabase.from('inventory').update({ quantidade: inv.quantidade + item.quantidade }).eq('id', item.inventoryId)
+      }
+    }
+    await supabase.from('vendas').delete().eq('id', vendaId)
+  },
+
   // Retorna { [clientId]: { count, total } } para mostrar no card do cliente
   getClientStats: async () => {
     const { data } = await supabase

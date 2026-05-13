@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, Plus, Trash2, X, AlertCircle, Printer, RotateCcw, ShoppingCart } from 'lucide-react'
+import { TrendingUp, TrendingDown, Plus, Trash2, X, AlertCircle, Printer, RotateCcw, ShoppingCart, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import {
   osStorage, expenseStorage, officeDataStorage, vendaStorage,
@@ -105,6 +105,9 @@ export default function Financeiro() {
   const [officeData, setOfficeData] = useState({})
   const [revertingId, setRevertingId] = useState(null)
   const [showRevertConfirm, setShowRevertConfirm] = useState(null) // os object
+  const [vendaExpandida, setVendaExpandida] = useState(null)        // vendaId
+  const [revertingVendaId, setRevertingVendaId] = useState(null)
+  const [showRevertVenda, setShowRevertVenda] = useState(null)      // venda object
 
   const getPrevMonth = (m, y) => m === 0 ? { mes: 11, ano: y - 1 } : { mes: m - 1, ano: y }
 
@@ -184,6 +187,17 @@ export default function Financeiro() {
     await osStorage.revertDelivery(os.id)
     setShowRevertConfirm(null)
     setRevertingId(null)
+    await reload()
+  }
+
+  const handleRevertVenda = async (venda) => {
+    setRevertingVendaId(venda.id)
+    try {
+      await vendaStorage.reverter(venda.id)
+    } catch (e) { /* silencia */ }
+    setShowRevertVenda(null)
+    setRevertingVendaId(null)
+    setVendaExpandida(null)
     await reload()
   }
 
@@ -335,26 +349,79 @@ export default function Financeiro() {
             </div>
             <span className="text-xs text-slate-400">{vendas.length} venda{vendas.length !== 1 ? 's' : ''}</span>
           </div>
-          <div className="space-y-2">
-            {vendas.map(v => (
-              <div key={v.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-700 truncate">
-                    {v.cliente || 'Venda anônima'}
-                    {v.items.length > 0 && (
-                      <span className="text-slate-400"> · {v.items.map(i => i.produto).join(', ')}</span>
-                    )}
-                  </p>
-                  <p className="text-xs text-slate-400">{v.pagamentos?.[0]?.method?.toUpperCase() || ''}</p>
+          <div className="space-y-1">
+            {vendas.map(v => {
+              const expanded = vendaExpandida === v.id
+              const lucroV   = v.total - v.items.reduce((s, i) => s + (i.custo || 0) * i.quantidade, 0)
+              const PLABELS  = { pix:'PIX', dinheiro:'Dinheiro', debito:'Débito', credito:'Crédito' }
+              return (
+                <div key={v.id} className="border border-gray-100 rounded-xl overflow-hidden">
+                  {/* Linha resumo — clicável */}
+                  <button type="button" onClick={() => setVendaExpandida(expanded ? null : v.id)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 transition-colors text-left">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 truncate">
+                        {v.cliente || 'Venda anônima'}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {new Date(v.createdAt).toLocaleDateString('pt-BR')}
+                        {v.pagamentos?.[0] ? ` · ${PLABELS[v.pagamentos[0].method] || v.pagamentos[0].method}` : ''}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold text-slate-900">{formatCurrency(v.total)}</p>
+                      <p className="text-xs text-green-600">+{formatCurrency(lucroV)}</p>
+                    </div>
+                    {expanded
+                      ? <ChevronUp className="w-4 h-4 text-slate-300 shrink-0" />
+                      : <ChevronDown className="w-4 h-4 text-slate-300 shrink-0" />}
+                  </button>
+
+                  {/* Detalhe expandido */}
+                  {expanded && (
+                    <div className="px-3 pb-3 pt-1 bg-gray-50 border-t border-gray-100 space-y-2">
+                      {/* Itens */}
+                      <div className="space-y-1">
+                        {v.items.map((i, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-sm">
+                            <span className="text-slate-700 truncate flex-1">{i.produto}</span>
+                            <span className="text-slate-400 mx-3">x{i.quantidade}</span>
+                            <span className="font-semibold text-slate-900">{formatCurrency(i.valorUnitario * i.quantidade)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Desconto se houver */}
+                      {v.desconto?.valor > 0 && (
+                        <div className="flex justify-between text-xs text-slate-500 border-t border-gray-200 pt-1">
+                          <span>Desconto</span>
+                          <span className="text-red-500">− {formatCurrency(v.desconto.tipo === 'percent'
+                            ? v.items.reduce((s,i)=>s+i.valorUnitario*i.quantidade,0) * v.desconto.valor / 100
+                            : v.desconto.valor)}</span>
+                        </div>
+                      )}
+                      {/* Pagamentos */}
+                      {v.pagamentos.length > 1 && (
+                        <div className="space-y-0.5 border-t border-gray-200 pt-1">
+                          {v.pagamentos.map((p, idx) => (
+                            <div key={idx} className="flex justify-between text-xs text-slate-500">
+                              <span>{PLABELS[p.method] || p.method}</span>
+                              <span>{formatCurrency(Number(p.amount))}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {/* Estornar */}
+                      <button onClick={() => setShowRevertVenda(v)}
+                        className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors pt-1">
+                        <RotateCcw className="w-3 h-3" /> Estornar venda
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div className="text-right shrink-0 ml-3">
-                  <p className="text-sm font-bold text-slate-900">{formatCurrency(v.total)}</p>
-                  <p className="text-xs text-green-600">+{formatCurrency(v.total - v.items.reduce((s, i) => s + (i.custo || 0) * i.quantidade, 0))}</p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
-          <div className="flex items-center justify-between pt-3 mt-1 border-t border-gray-100">
+          <div className="flex items-center justify-between pt-3 mt-2 border-t border-gray-100">
             <p className="text-xs text-slate-500 font-medium">Total vendas</p>
             <p className="text-sm font-bold text-slate-900">{formatCurrency(vendasReceita)}</p>
           </div>
@@ -416,6 +483,36 @@ export default function Financeiro() {
               <button onClick={() => handleRevert(showRevertConfirm)} disabled={!!revertingId}
                 className="flex-1 py-3 rounded-xl bg-red-500 text-white font-semibold text-sm hover:bg-red-600 transition-colors disabled:opacity-60">
                 {revertingId ? 'Estornando...' : 'Sim, estornar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Estorno de venda */}
+      {showRevertVenda && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 px-6">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center shrink-0">
+                <RotateCcw className="w-5 h-5 text-red-500" />
+              </div>
+              <h3 className="font-bold text-slate-900">Estornar venda?</h3>
+            </div>
+            <p className="text-sm text-slate-500 mb-1">
+              <strong>{showRevertVenda.cliente || 'Venda anônima'}</strong> · {formatCurrency(showRevertVenda.total)}
+            </p>
+            <p className="text-sm text-slate-500 mb-5">
+              Os produtos voltam ao estoque e o valor sai do financeiro deste mês.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowRevertVenda(null)}
+                className="flex-1 py-3 rounded-xl border border-gray-200 text-slate-600 font-semibold text-sm hover:bg-gray-50 transition-colors">
+                Cancelar
+              </button>
+              <button onClick={() => handleRevertVenda(showRevertVenda)} disabled={!!revertingVendaId}
+                className="flex-1 py-3 rounded-xl bg-red-500 text-white font-semibold text-sm hover:bg-red-600 transition-colors disabled:opacity-60">
+                {revertingVendaId ? 'Estornando...' : 'Sim, estornar'}
               </button>
             </div>
           </div>
