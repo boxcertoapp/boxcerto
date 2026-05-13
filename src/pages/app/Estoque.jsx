@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import {
   Package, Plus, Trash2, X, AlertTriangle,
-  BarChart2, Search, ChevronDown, ChevronUp,
-  Bell, BellOff, Printer, Edit2, Check, ArrowUpDown
+  Search, Bell, Printer, Edit2, Check, ArrowUpDown,
+  ShoppingCart, UserPlus, CheckCircle2
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
-import { inventoryStorage, formatCurrency, officeDataStorage, norm } from '../../lib/storage'
+import { inventoryStorage, vendaStorage, formatCurrency, officeDataStorage, norm } from '../../lib/storage'
 
 // ── RELATÓRIO DE ESTOQUE ──────────────────────────────────
 function printEstoque({ items, officeData, formatCurrencyFn }) {
@@ -55,6 +55,214 @@ function printEstoque({ items, officeData, formatCurrencyFn }) {
   win.document.write(html)
   win.document.close()
   win.onload = () => { win.focus(); win.print() }
+}
+
+// ── MODAL DE VENDA ────────────────────────────────────────
+const PAGAMENTOS_VENDA = [
+  { key: 'pix',     label: 'PIX'     },
+  { key: 'dinheiro',label: 'Dinheiro'},
+  { key: 'debito',  label: 'Débito'  },
+  { key: 'credito', label: 'Crédito' },
+]
+
+function VendaModal({ inventory, onClose, onVendaCompleta }) {
+  const [busca,        setBusca]        = useState('')
+  const [carrinho,     setCarrinho]     = useState([])
+  const [showCliente,  setShowCliente]  = useState(false)
+  const [cliente,      setCliente]      = useState('')
+  const [pagamento,    setPagamento]    = useState(null)
+  const [loading,      setLoading]      = useState(false)
+  const [sucesso,      setSucesso]      = useState(false)
+  const [erro,         setErro]         = useState('')
+
+  const disponiveis = inventory.filter(i => i.quantidade > 0)
+  const filtrados   = disponiveis.filter(i => norm(i.produto).includes(norm(busca)))
+
+  const total = carrinho.reduce((s, i) => s + i.valorUnitario * i.quantidade, 0)
+
+  const addItem = (item) => {
+    setCarrinho(prev => {
+      const exists = prev.find(c => c.inventoryId === item.id)
+      if (exists) {
+        const maxQty = item.quantidade
+        return prev.map(c => c.inventoryId === item.id
+          ? { ...c, quantidade: Math.min(c.quantidade + 1, maxQty) }
+          : c)
+      }
+      return [...prev, {
+        inventoryId:   item.id,
+        produto:       item.produto,
+        quantidade:    1,
+        valorUnitario: item.valorVenda,
+        custo:         item.valorCompra,
+      }]
+    })
+    setBusca('')
+  }
+
+  const updateQty = (inventoryId, delta) => {
+    setCarrinho(prev =>
+      prev.map(c => c.inventoryId === inventoryId
+        ? { ...c, quantidade: Math.max(0, c.quantidade + delta) }
+        : c
+      ).filter(c => c.quantidade > 0)
+    )
+  }
+
+  const confirmar = async () => {
+    if (carrinho.length === 0) return setErro('Adicione pelo menos um produto.')
+    if (!pagamento)            return setErro('Selecione a forma de pagamento.')
+    setErro(''); setLoading(true)
+    try {
+      await vendaStorage.create({
+        items:      carrinho,
+        cliente,
+        pagamentos: [{ method: pagamento, amount: total }],
+        total,
+      })
+      setSucesso(true)
+      setTimeout(() => { onVendaCompleta(); onClose() }, 1200)
+    } catch (e) {
+      setErro(e.message || 'Erro ao registrar venda.')
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40">
+      <div className="bg-white rounded-t-3xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-x-hidden">
+
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 pb-3 shrink-0">
+          <div className="flex items-center gap-2">
+            <ShoppingCart className="w-5 h-5 text-green-600" />
+            <h2 className="text-lg font-bold text-slate-900">Nova Venda</h2>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+            <X className="w-5 h-5 text-slate-500" />
+          </button>
+        </div>
+
+        {sucesso ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-3 pb-10">
+            <CheckCircle2 className="w-16 h-16 text-green-500" />
+            <p className="text-lg font-bold text-slate-900">Venda registrada!</p>
+            <p className="text-sm text-slate-400">Estoque atualizado</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-4">
+
+              {/* Busca */}
+              <div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input value={busca} onChange={e => setBusca(e.target.value)}
+                    placeholder="Buscar produto do estoque..."
+                    autoFocus
+                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-50" />
+                </div>
+
+                {busca.length > 0 && (
+                  filtrados.length > 0 ? (
+                    <div className="mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                      {filtrados.slice(0, 6).map(item => (
+                        <button key={item.id} type="button"
+                          onMouseDown={e => { e.preventDefault(); addItem(item) }}
+                          className="w-full text-left px-4 py-3 hover:bg-green-50 transition-colors flex items-center justify-between border-b border-gray-50 last:border-0">
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900">{item.produto}</p>
+                            <p className="text-xs text-slate-400">{item.quantidade} em estoque</p>
+                          </div>
+                          <p className="text-sm font-bold text-green-700">{formatCurrency(item.valorVenda)}</p>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400 mt-2 px-1">Nenhum produto encontrado.</p>
+                  )
+                )}
+              </div>
+
+              {/* Carrinho */}
+              {carrinho.length > 0 && (
+                <div className="space-y-2">
+                  {carrinho.map(item => (
+                    <div key={item.inventoryId}
+                      className="bg-gray-50 rounded-xl px-3 py-2.5 flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{item.produto}</p>
+                        <p className="text-xs text-slate-400">{formatCurrency(item.valorUnitario)} un.</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button onClick={() => updateQty(item.inventoryId, -1)}
+                          className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center font-bold text-slate-500 hover:bg-gray-100 transition-colors">−</button>
+                        <span className="w-5 text-center text-sm font-bold text-slate-900">{item.quantidade}</span>
+                        <button onClick={() => updateQty(item.inventoryId, 1)}
+                          className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center font-bold text-slate-500 hover:bg-gray-100 transition-colors">+</button>
+                      </div>
+                      <p className="text-sm font-bold text-slate-900 w-16 text-right shrink-0">
+                        {formatCurrency(item.valorUnitario * item.quantidade)}
+                      </p>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between px-1 pt-1 border-t border-gray-100">
+                    <p className="text-sm text-slate-500 font-medium">Total</p>
+                    <p className="text-xl font-bold text-slate-900">{formatCurrency(total)}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Cliente opcional */}
+              {!showCliente ? (
+                <button type="button" onClick={() => setShowCliente(true)}
+                  className="text-xs text-slate-400 hover:text-indigo-600 flex items-center gap-1.5 transition-colors">
+                  <UserPlus className="w-3.5 h-3.5" />Adicionar cliente (opcional)
+                </button>
+              ) : (
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Nome do cliente</label>
+                  <input value={cliente} onChange={e => setCliente(e.target.value)}
+                    placeholder="Ex: João Silva" autoFocus
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50" />
+                </div>
+              )}
+
+              {/* Pagamento */}
+              <div>
+                <p className="text-xs font-medium text-slate-600 mb-2">Pagamento</p>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {PAGAMENTOS_VENDA.map(p => (
+                    <button key={p.key} type="button" onClick={() => { setPagamento(p.key); setErro('') }}
+                      className={`py-2.5 rounded-xl text-xs font-semibold border transition-colors ${
+                        pagamento === p.key
+                          ? 'bg-green-600 text-white border-green-600 shadow-sm'
+                          : 'bg-white text-slate-600 border-gray-200 hover:border-green-300'
+                      }`}>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {erro && (
+                <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-xl border border-red-100">{erro}</p>
+              )}
+            </div>
+
+            {/* Footer fixo */}
+            <div className="px-5 pb-6 pt-3 shrink-0 border-t border-gray-100">
+              <button onClick={confirmar}
+                disabled={loading || carrinho.length === 0 || !pagamento}
+                className="w-full py-3.5 rounded-xl bg-green-600 text-white font-bold text-sm disabled:opacity-40 hover:bg-green-700 transition-colors">
+                {loading ? 'Registrando...' : `Confirmar Venda${total > 0 ? ` · ${formatCurrency(total)}` : ''}`}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
 }
 
 // ── FORM DE PRODUTO ───────────────────────────────────────
@@ -147,6 +355,7 @@ export default function Estoque() {
   const [showAdd, setShowAdd] = useState(false)
   const [editId, setEditId] = useState(null)
   const [showAlertOnly, setShowAlertOnly] = useState(false)
+  const [showVenda, setShowVenda] = useState(false)
   const [sortBy, setSortBy] = useState('az') // az | qty_asc | qty_desc | val_asc | val_desc
   const [showSortMenu, setShowSortMenu] = useState(false)
 
@@ -366,13 +575,29 @@ export default function Estoque() {
         </div>
       )}
 
-      {/* FAB */}
+      {/* FABs */}
+      <button
+        onClick={() => setShowVenda(true)}
+        className="fixed bottom-24 right-20 h-12 px-4 bg-green-600 rounded-full shadow-lg shadow-green-200 flex items-center gap-2 hover:bg-green-700 transition-all active:scale-95 z-40"
+      >
+        <ShoppingCart className="w-4 h-4 text-white" />
+        <span className="text-white text-sm font-bold">Vender</span>
+      </button>
       <button
         onClick={() => { setShowAdd(true); setEditId(null) }}
         className="fixed bottom-24 right-4 w-14 h-14 bg-indigo-600 rounded-full shadow-lg shadow-indigo-200 flex items-center justify-center hover:bg-indigo-700 transition-all active:scale-95 z-40"
       >
         <Plus className="w-7 h-7 text-white" />
       </button>
+
+      {/* Modal de Venda */}
+      {showVenda && (
+        <VendaModal
+          inventory={items}
+          onClose={() => setShowVenda(false)}
+          onVendaCompleta={() => { reload(); setShowVenda(false) }}
+        />
+      )}
     </div>
   )
 }

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, Plus, Trash2, X, AlertCircle, Printer, RotateCcw } from 'lucide-react'
+import { TrendingUp, TrendingDown, Plus, Trash2, X, AlertCircle, Printer, RotateCcw, ShoppingCart } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import {
-  osStorage, expenseStorage, officeDataStorage,
+  osStorage, expenseStorage, officeDataStorage, vendaStorage,
   formatCurrency, formatDate
 } from '../../lib/storage'
 
@@ -97,6 +97,7 @@ export default function Financeiro() {
   const [ano, setAno] = useState(now.getFullYear())
   const [expenses, setExpenses] = useState([])
   const [deliveredOS, setDeliveredOS] = useState([])
+  const [vendas, setVendas] = useState([])
   const [prevLucro, setPrevLucro] = useState(null) // previous month net profit
   const [showAddExp, setShowAddExp] = useState(false)
   const [newExp, setNewExp] = useState({ descricao: '', valor: '' })
@@ -109,14 +110,17 @@ export default function Financeiro() {
 
   const reload = async () => {
     const { mes: pm, ano: py } = getPrevMonth(mes, ano)
-    const [exp, allOS, prevExp, od] = await Promise.all([
+    const [exp, allOS, prevExp, od, vendasMes, prevVendas] = await Promise.all([
       expenseStorage.getByMonth(user.oficina, mes, ano),
       osStorage.getAll(user.oficina),
       expenseStorage.getByMonth(user.oficina, pm, py),
       officeDataStorage.get(user.oficina),
+      vendaStorage.getByMonth(mes, ano),
+      vendaStorage.getByMonth(pm, py),
     ])
     setOfficeData(od || {})
     setExpenses(exp)
+    setVendas(vendasMes)
 
     const filterByMonth = (osList, m, y) => osList.filter(os => {
       if (os.status !== 'entregue' || !os.deliveredAt) return false
@@ -127,20 +131,28 @@ export default function Financeiro() {
     const delivered = filterByMonth(allOS, mes, ano)
     setDeliveredOS(delivered)
 
-    // Previous month comparison
+    // Previous month comparison (OS + vendas)
     const prevDelivered = filterByMonth(allOS, pm, py)
     const prevReceitas = prevDelivered.reduce((s, os) => s + os.totals.venda, 0)
     const prevCustos   = prevDelivered.reduce((s, os) => s + os.totals.custo, 0)
     const prevLucroOS  = prevReceitas - prevCustos
     const prevDespesas = prevExp.reduce((s, e) => s + e.valor, 0)
-    setPrevLucro(prevLucroOS - prevDespesas)
+    const prevVendasReceita = prevVendas.reduce((s, v) => s + v.total, 0)
+    const prevVendasCusto   = prevVendas.reduce((s, v) => s + v.items.reduce((si, i) => si + (i.custo || 0) * i.quantidade, 0), 0)
+    const prevVendasLucro   = prevVendasReceita - prevVendasCusto
+    setPrevLucro(prevLucroOS + prevVendasLucro - prevDespesas)
   }
 
   useEffect(() => { reload() }, [mes, ano, user.oficina])
 
-  const totalReceitas = deliveredOS.reduce((s, os) => s + os.totals.venda, 0)
+  const osReceitas    = deliveredOS.reduce((s, os) => s + os.totals.venda, 0)
   const totalCustos   = deliveredOS.reduce((s, os) => s + os.totals.custo, 0)
-  const totalLucroOS  = deliveredOS.reduce((s, os) => s + os.totals.lucro, 0)
+  const osLucro       = deliveredOS.reduce((s, os) => s + os.totals.lucro, 0)
+  const vendasReceita = vendas.reduce((s, v) => s + v.total, 0)
+  const vendasCusto   = vendas.reduce((s, v) => s + v.items.reduce((si, i) => si + (i.custo || 0) * i.quantidade, 0), 0)
+  const vendasLucro   = vendasReceita - vendasCusto
+  const totalReceitas = osReceitas + vendasReceita
+  const totalLucroOS  = osLucro + vendasLucro
   const totalDespesas = expenses.reduce((s, e) => s + e.valor, 0)
   const lucroLiquido  = totalLucroOS - totalDespesas
 
@@ -232,10 +244,10 @@ export default function Financeiro() {
         <div className="bg-white rounded-2xl border border-gray-100 p-4">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-4 h-4 text-green-500" />
-            <span className="text-xs text-slate-500 font-medium">Lucro Bruto OS</span>
+            <span className="text-xs text-slate-500 font-medium">Lucro Bruto</span>
           </div>
           <p className="text-xl font-bold text-slate-900">{formatCurrency(totalLucroOS)}</p>
-          <p className="text-xs text-slate-400 mt-1">{deliveredOS.length} carros entregues</p>
+          <p className="text-xs text-slate-400 mt-1">{deliveredOS.length} OS · {vendas.length} venda{vendas.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 p-4">
           <div className="flex items-center gap-2 mb-2">
@@ -312,6 +324,42 @@ export default function Financeiro() {
           </div>
         )}
       </div>
+
+      {/* Vendas Avulsas */}
+      {vendas.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <ShoppingCart className="w-4 h-4 text-green-600" />
+              <p className="text-sm font-bold text-slate-900">Vendas de Estoque</p>
+            </div>
+            <span className="text-xs text-slate-400">{vendas.length} venda{vendas.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div className="space-y-2">
+            {vendas.map(v => (
+              <div key={v.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-slate-700 truncate">
+                    {v.cliente || 'Venda anônima'}
+                    {v.items.length > 0 && (
+                      <span className="text-slate-400"> · {v.items.map(i => i.produto).join(', ')}</span>
+                    )}
+                  </p>
+                  <p className="text-xs text-slate-400">{v.pagamentos?.[0]?.method?.toUpperCase() || ''}</p>
+                </div>
+                <div className="text-right shrink-0 ml-3">
+                  <p className="text-sm font-bold text-slate-900">{formatCurrency(v.total)}</p>
+                  <p className="text-xs text-green-600">+{formatCurrency(v.total - v.items.reduce((s, i) => s + (i.custo || 0) * i.quantidade, 0))}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-between pt-3 mt-1 border-t border-gray-100">
+            <p className="text-xs text-slate-500 font-medium">Total vendas</p>
+            <p className="text-sm font-bold text-slate-900">{formatCurrency(vendasReceita)}</p>
+          </div>
+        </div>
+      )}
 
       {/* OS Entregues */}
       <div className="bg-white rounded-2xl border border-gray-100 p-4">
