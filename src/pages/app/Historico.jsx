@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import {
-  vehicleStorage, clientStorage, osStorage,
+  vehicleStorage, clientStorage, osStorage, vendaStorage,
   formatCurrency, formatDate, STATUS_LABELS, STATUS_COLORS
 } from '../../lib/storage'
 
@@ -374,18 +374,21 @@ export default function Historico() {
   const [clientModal, setClientModal] = useState(null) // null | { mode, client? }
   const [sortClientes, setSortClientes] = useState('az')
   const [sortVeiculos, setSortVeiculos] = useState('recent')
+  const [clienteVendasMap, setClienteVendasMap] = useState({}) // clientId → { count, total }
 
   const loadData = async () => {
     setShowMoreClients(false)
     setShowMoreVehicles(false)
 
     if (tab === 'clientes') {
-      const [clients, vehicles] = await Promise.all([
+      const [clients, vehicles, vendasStats] = await Promise.all([
         clientStorage.getAll(user.oficina),
         vehicleStorage.getAll(user.oficina),
+        vendaStorage.getClientStats().catch(() => ({})),
       ])
       setAllClients(clients)
       setClientVehicles(vehicles)
+      setClienteVendasMap(vendasStats)
     }
     if (tab === 'veiculos') {
       const [vehicles, clients, allOS] = await Promise.all([
@@ -525,6 +528,7 @@ export default function Historico() {
               />
               {(showMoreClients ? sortedClients : sortedClients.slice(0, LIMIT)).map(c => {
                 const veiculos = clientVehicles.filter(v => v.clientId === c.id)
+                const vendas   = clienteVendasMap[c.id]
                 return (
                   <div key={c.id}
                     onClick={() => setClientModal({ mode: 'edit', client: c })}
@@ -547,6 +551,12 @@ export default function Historico() {
                           </p>
                         )}
                       </div>
+                      {vendas && (
+                        <div className="shrink-0 text-right">
+                          <p className="text-xs font-bold text-green-700">{formatCurrency(vendas.total)}</p>
+                          <p className="text-xs text-slate-400">{vendas.count} venda{vendas.count !== 1 ? 's' : ''}</p>
+                        </div>
+                      )}
                     </div>
                     {veiculos.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-50">

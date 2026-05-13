@@ -1023,6 +1023,7 @@ export const downloadReceiptPDF = async ({ os, client, vehicle, items, officeDat
 // ── VENDAS AVULSAS ────────────────────────────────────────
 const mapVenda = (v) => !v ? null : ({
   id:         v.id,
+  clientId:   v.client_id  || null,
   items:      v.items      || [],
   cliente:    v.cliente    || '',
   pagamentos: v.pagamentos || [],
@@ -1032,16 +1033,14 @@ const mapVenda = (v) => !v ? null : ({
 })
 
 export const vendaStorage = {
-  create: async ({ items, cliente, pagamentos, desconto, total }) => {
+  create: async ({ items, cliente, clientId, pagamentos, desconto, total }) => {
     const user_id = await getCurrentUserId()
-    // Baixa cada item do estoque
     for (const item of items) {
-      if (item.inventoryId) {
-        await inventoryStorage.baixar(item.inventoryId, item.quantidade)
-      }
+      if (item.inventoryId) await inventoryStorage.baixar(item.inventoryId, item.quantidade)
     }
     const { data, error } = await supabase.from('vendas').insert({
       user_id,
+      client_id:  clientId   || null,
       items,
       cliente:    cliente    || '',
       pagamentos: pagamentos || [],
@@ -1056,13 +1055,182 @@ export const vendaStorage = {
     const from = new Date(ano, mes, 1).toISOString()
     const to   = new Date(ano, mes + 1, 0, 23, 59, 59, 999).toISOString()
     const { data } = await supabase
-      .from('vendas')
-      .select('*')
-      .gte('created_at', from)
-      .lte('created_at', to)
+      .from('vendas').select('*')
+      .gte('created_at', from).lte('created_at', to)
       .order('created_at', { ascending: false })
     return (data || []).map(mapVenda)
   },
+
+  getByClientId: async (clientId) => {
+    const { data } = await supabase
+      .from('vendas').select('*')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false })
+    return (data || []).map(mapVenda)
+  },
+
+  // Retorna { [clientId]: { count, total } } para mostrar no card do cliente
+  getClientStats: async () => {
+    const { data } = await supabase
+      .from('vendas').select('client_id,total')
+      .not('client_id', 'is', null)
+    const stats = {}
+    ;(data || []).forEach(v => {
+      if (!v.client_id) return
+      if (!stats[v.client_id]) stats[v.client_id] = { count: 0, total: 0 }
+      stats[v.client_id].count++
+      stats[v.client_id].total += Number(v.total)
+    })
+    return stats
+  },
+}
+
+// ── RECIBO DE VENDA ───────────────────────────────────────
+const PLABELS_VENDA = { pix: 'PIX', dinheiro: 'Dinheiro', debito: 'Cartão Débito', credito: 'Cartão Crédito' }
+
+export const printVendaReceipt = ({ venda, clienteNome, officeData, formatCurrencyFn }) => {
+  const data = new Date(venda.createdAt).toLocaleDateString('pt-BR')
+  const pagRows = (venda.pagamentos || []).map(p =>
+    `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9">
+      <span style="color:#475569;font-size:13px">${PLABELS_VENDA[p.method] || p.method}</span>
+      <span style="font-weight:600;font-size:13px">${formatCurrencyFn(Number(p.amount))}</span>
+    </div>`).join('')
+  const itemRows = (venda.items || []).map(i =>
+    `<tr>
+      <td style="padding:8px 4px;border-bottom:1px solid #f8fafc;font-size:12px">${i.produto}</td>
+      <td style="padding:8px 4px;border-bottom:1px solid #f8fafc;font-size:12px;text-align:center">${i.quantidade}</td>
+      <td style="padding:8px 4px;border-bottom:1px solid #f8fafc;font-size:12px;text-align:right">${formatCurrencyFn(i.valorUnitario)}</td>
+      <td style="padding:8px 4px;border-bottom:1px solid #f8fafc;font-size:12px;text-align:right;font-weight:600">${formatCurrencyFn(i.valorUnitario * i.quantidade)}</td>
+    </tr>`).join('')
+  const logoHtml = officeData.logo
+    ? `<img src="${officeData.logo}" style="max-height:44px;max-width:110px;object-fit:contain"/>`
+    : `<div style="width:32px;height:32px;background:#16a34a;border-radius:8px;display:flex;align-items:center;justify-content:center"><span style="color:white;font-size:16px;font-weight:bold">V</span></div>`
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/>
+<title>recibo-venda.pdf</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#1e293b;padding:24px;max-width:420px;margin:0 auto}@media print{body{padding:12px}}</style>
+</head><body>
+  <div style="text-align:center;margin-bottom:20px;padding-bottom:16px;border-bottom:2px dashed #e2e8f0">
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px">
+      ${logoHtml}
+      <div style="text-align:left">
+        <div style="font-size:16px;font-weight:800">${officeData.nome || 'Minha Oficina'}</div>
+        ${officeData.telefone ? `<div style="font-size:11px;color:#64748b">${officeData.telefone}</div>` : ''}
+      </div>
+    </div>
+    <div style="display:inline-block;background:#16a34a;color:white;font-size:10px;font-weight:700;padding:3px 12px;border-radius:20px;letter-spacing:.5px;text-transform:uppercase">Recibo de Venda</div>
+  </div>
+  <div style="display:flex;justify-content:space-between;margin-bottom:16px;font-size:12px;color:#64748b">
+    <span>Data: <strong style="color:#1e293b">${data}</strong></span>
+    <span>Cliente: <strong style="color:#1e293b">${clienteNome || 'Anônimo'}</strong></span>
+  </div>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+    <thead><tr style="background:#f8fafc">
+      <th style="padding:8px 4px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Produto</th>
+      <th style="padding:8px 4px;text-align:center;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Qtd</th>
+      <th style="padding:8px 4px;text-align:right;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Unit.</th>
+      <th style="padding:8px 4px;text-align:right;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Total</th>
+    </tr></thead>
+    <tbody>${itemRows}</tbody>
+  </table>
+  <div style="border-top:1px solid #e2e8f0;padding-top:12px;margin-bottom:12px">
+    <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:8px">Pagamento</div>
+    ${pagRows}
+  </div>
+  <div style="background:#16a34a;color:white;border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
+    <span style="font-weight:600;font-size:13px">Total Pago</span>
+    <span style="font-weight:800;font-size:20px">${formatCurrencyFn(venda.total)}</span>
+  </div>
+  <div style="text-align:center;color:#94a3b8;font-size:10px;margin-top:20px">Gerado por BoxCerto &bull; boxcerto.com</div>
+</body></html>`
+
+  const win = window.open('', '_blank', 'width=520,height=700')
+  if (!win) { alert('Permita pop-ups para imprimir'); return }
+  win.document.write(html)
+  win.document.close()
+  win.onload = () => { win.focus(); win.print() }
+}
+
+export const downloadVendaPDF = async ({ venda, clienteNome, officeData, formatCurrencyFn }) => {
+  const { jsPDF } = await import('jspdf')
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const W = 210, ml = 30, mr = 30, cW = 150
+  let y = 20
+
+  const C = { main: [30,41,59], med: [100,116,139], light: [148,163,184], line: [226,232,240], green: [22,163,74], bg: [248,250,252] }
+  const txt = (t, x, yy, { size=9, bold=false, color=C.main, align='left' }={}) => {
+    doc.setFontSize(size); doc.setFont('helvetica', bold ? 'bold' : 'normal')
+    doc.setTextColor(...color); doc.text(String(t||''), x, yy, { align })
+  }
+  const hline = (yy) => { doc.setDrawColor(...C.line); doc.setLineWidth(0.3); doc.line(ml, yy, W-mr, yy) }
+
+  // Header
+  let rX = ml + 13
+  if (officeData.logo) {
+    try {
+      const dims = await logoImgDims(officeData.logo, 30, 10)
+      if (dims) {
+        const fmt = (officeData.logo.match(/data:image\/(\w+)/i)||[])[1]?.toUpperCase().replace('JPG','JPEG')||'PNG'
+        doc.addImage(officeData.logo, fmt, ml, y, dims.w, dims.h); rX = ml + dims.w + 3
+      } else rX = null
+    } catch(_) { rX = null }
+  }
+  if (rX === null || !officeData.logo) {
+    doc.setFillColor(...C.green); doc.roundedRect(ml, y, 10, 10, 2, 2, 'F')
+    txt('V', ml+3.3, y+7, { size:9, bold:true, color:[255,255,255] }); rX = ml+13
+  }
+  txt(officeData.nome || 'Minha Oficina', rX, y+5, { size:12, bold:true })
+  if (officeData.telefone) txt(officeData.telefone, rX, y+10, { size:7, color:C.med })
+
+  doc.setFillColor(...C.bg); doc.roundedRect(ml, y+14, cW, 7, 2, 2, 'F')
+  txt('RECIBO DE VENDA', W/2, y+19, { size:8, bold:true, color:C.med, align:'center' })
+  y += 27; hline(y); y += 8
+
+  // Info
+  const data = new Date(venda.createdAt).toLocaleDateString('pt-BR')
+  txt('Cliente', ml, y, { size:8, bold:true, color:C.light })
+  txt(clienteNome || 'Venda Anônima', W-mr, y, { size:8, bold:true, align:'right' }); y += 6
+  txt('Data', ml, y, { size:8, bold:true, color:C.light })
+  txt(data, W-mr, y, { size:8, bold:true, align:'right' }); y += 8
+  hline(y); y += 8
+
+  // Itens
+  doc.setFillColor(...C.bg); doc.rect(ml, y, cW, 7, 'F')
+  txt('PRODUTO', ml+3, y+5, { size:7, bold:true, color:C.light })
+  txt('QTD', ml+80, y+5, { size:7, bold:true, color:C.light, align:'center' })
+  txt('UNIT.', W-mr-20, y+5, { size:7, bold:true, color:C.light, align:'right' })
+  txt('TOTAL', W-mr-3, y+5, { size:7, bold:true, color:C.light, align:'right' })
+  y += 7
+
+  ;(venda.items||[]).forEach(i => {
+    if (y > 255) { doc.addPage(); y = 20 }
+    const nome = (i.produto||'').length > 45 ? (i.produto||'').slice(0,42)+'...' : (i.produto||'')
+    txt(nome, ml+3, y+5)
+    txt(String(i.quantidade), ml+80, y+5, { align:'center' })
+    txt(formatCurrencyFn(i.valorUnitario), W-mr-20, y+5, { align:'right' })
+    txt(formatCurrencyFn(i.valorUnitario*i.quantidade), W-mr-3, y+5, { bold:true, align:'right' })
+    hline(y+8); y += 9
+  })
+  y += 4
+
+  // Pagamentos
+  txt('FORMAS DE PAGAMENTO', ml, y, { size:7, bold:true, color:C.light }); y += 6
+  ;(venda.pagamentos||[]).forEach(p => {
+    txt(PLABELS_VENDA[p.method]||p.method, ml, y, { size:9 })
+    txt(formatCurrencyFn(Number(p.amount)), W-mr, y, { size:9, bold:true, align:'right' }); y += 7
+  })
+  y += 2; hline(y); y += 6
+
+  // Total
+  doc.setFillColor(...C.green); doc.roundedRect(ml, y, cW, 12, 3, 3, 'F')
+  txt('TOTAL PAGO', ml+6, y+7.5, { size:9, bold:true, color:[255,255,255] })
+  txt(formatCurrencyFn(venda.total), W-mr-3, y+7.5, { size:13, bold:true, color:[255,255,255], align:'right' })
+  y += 18
+
+  txt('Gerado por BoxCerto · boxcerto.com', W/2, y, { size:7, color:C.light, align:'center' })
+
+  const nomeClean = (clienteNome||'anonimo').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'')
+  doc.save(`recibo-venda-${nomeClean}-${data.replace(/\//g,'-')}.pdf`)
 }
 
 // ── HELPERS ───────────────────────────────────────────────

@@ -5,7 +5,11 @@ import {
   ShoppingCart, UserPlus, CheckCircle2
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
-import { inventoryStorage, vendaStorage, formatCurrency, officeDataStorage, norm } from '../../lib/storage'
+import {
+  inventoryStorage, vendaStorage, clientStorage,
+  officeDataStorage, formatCurrency, norm,
+  printVendaReceipt, downloadVendaPDF,
+} from '../../lib/storage'
 
 // ── RELATÓRIO DE ESTOQUE ──────────────────────────────────
 function printEstoque({ items, officeData, formatCurrencyFn }) {
@@ -65,67 +69,105 @@ const PAGAMENTOS_VENDA = [
   { key: 'credito', label: 'Crédito' },
 ]
 
-function VendaModal({ inventory, onClose, onVendaCompleta }) {
-  const [busca,        setBusca]        = useState('')
-  const [carrinho,     setCarrinho]     = useState([])
-  const [showCliente,  setShowCliente]  = useState(false)
-  const [cliente,      setCliente]      = useState('')
-  const [pagamento,    setPagamento]    = useState(null)
-  const [loading,      setLoading]      = useState(false)
-  const [sucesso,      setSucesso]      = useState(false)
-  const [erro,         setErro]         = useState('')
+function VendaModal({ inventory, officeData, onClose, onVendaCompleta }) {
+  const { user } = useAuth()
+
+  // Produto
+  const [busca,    setBusca]    = useState('')
+  const [carrinho, setCarrinho] = useState([])
+
+  // Cliente
+  const [clienteQuery,    setClienteQuery]    = useState('')
+  const [clienteSugeridos,setClienteSugeridos]= useState([])
+  const [clienteSelecionado, setClienteSelecionado] = useState(null) // { id, nome, whatsapp }
+  const [showClienteForm, setShowClienteForm] = useState(false)     // cadastrar novo
+  const [novoCliente,     setNovoCliente]     = useState({ nome: '', whatsapp: '' })
+  const [showCliente,     setShowCliente]     = useState(false)      // seção visível
+
+  // Pagamento
+  const [pagamento, setPagamento] = useState(null)
+
+  // Estado geral
+  const [loading, setLoading]     = useState(false)
+  const [erro,    setErro]        = useState('')
+  const [vendaFeita, setVendaFeita] = useState(null) // venda object após confirmação
 
   const disponiveis = inventory.filter(i => i.quantidade > 0)
   const filtrados   = disponiveis.filter(i => norm(i.produto).includes(norm(busca)))
+  const total       = carrinho.reduce((s, i) => s + i.valorUnitario * i.quantidade, 0)
+  const clienteNome = clienteSelecionado?.nome || novoCliente.nome || ''
 
-  const total = carrinho.reduce((s, i) => s + i.valorUnitario * i.quantidade, 0)
+  // Busca de clientes ao digitar
+  useEffect(() => {
+    if (!showCliente || clienteQuery.trim().length < 1) { setClienteSugeridos([]); return }
+    clientStorage.search(user.oficina, clienteQuery).then(setClienteSugeridos)
+  }, [clienteQuery, showCliente])
 
   const addItem = (item) => {
     setCarrinho(prev => {
       const exists = prev.find(c => c.inventoryId === item.id)
-      if (exists) {
-        const maxQty = item.quantidade
-        return prev.map(c => c.inventoryId === item.id
-          ? { ...c, quantidade: Math.min(c.quantidade + 1, maxQty) }
-          : c)
-      }
+      if (exists) return prev.map(c => c.inventoryId === item.id
+        ? { ...c, quantidade: Math.min(c.quantidade + 1, item.quantidade) } : c)
       return [...prev, {
-        inventoryId:   item.id,
-        produto:       item.produto,
-        quantidade:    1,
-        valorUnitario: item.valorVenda,
-        custo:         item.valorCompra,
+        inventoryId: item.id, produto: item.produto,
+        quantidade: 1, valorUnitario: item.valorVenda, custo: item.valorCompra,
       }]
     })
     setBusca('')
   }
 
-  const updateQty = (inventoryId, delta) => {
-    setCarrinho(prev =>
-      prev.map(c => c.inventoryId === inventoryId
-        ? { ...c, quantidade: Math.max(0, c.quantidade + delta) }
-        : c
-      ).filter(c => c.quantidade > 0)
-    )
-  }
+  const updateQty = (inventoryId, delta) =>
+    setCarrinho(prev => prev.map(c => c.inventoryId === inventoryId
+      ? { ...c, quantidade: Math.max(0, c.quantidade + delta) } : c
+    ).filter(c => c.quantidade > 0))
 
   const confirmar = async () => {
     if (carrinho.length === 0) return setErro('Adicione pelo menos um produto.')
     if (!pagamento)            return setErro('Selecione a forma de pagamento.')
     setErro(''); setLoading(true)
     try {
-      await vendaStorage.create({
-        items:      carrinho,
-        cliente,
+      let clienteId = clienteSelecionado?.id || null
+      let nomeCliente = clienteSelecionado?.nome || ''
+
+      // Cadastrar novo cliente se preencheu o form
+      if (!clienteSelecionado && novoCliente.nome.trim()) {
+        const novo = await clientStorage.create({
+          officeName: user.oficina,
+          nome: novoCliente.nome.trim(),
+          whatsapp: novoCliente.whatsapp.trim(),
+        })
+        clienteId   = novo.id
+        nomeCliente = novo.nome
+        setClienteSelecionado(novo)
+      }
+
+      const venda = await vendaStorage.create({
+        items:    carrinho,
+        cliente:  nomeCliente,
+        clientId: clienteId,
         pagamentos: [{ method: pagamento, amount: total }],
         total,
       })
-      setSucesso(true)
-      setTimeout(() => { onVendaCompleta(); onClose() }, 1200)
+      setVendaFeita({ ...venda, clienteNome: nomeCliente, whatsapp: clienteSelecionado?.whatsapp || novoCliente.whatsapp })
+      onVendaCompleta()
     } catch (e) {
       setErro(e.message || 'Erro ao registrar venda.')
       setLoading(false)
     }
+  }
+
+  const handlePDF = () =>
+    downloadVendaPDF({ venda: vendaFeita, clienteNome: vendaFeita.clienteNome, officeData, formatCurrencyFn: formatCurrency })
+
+  const handleWhatsApp = () => {
+    const wpp = vendaFeita.whatsapp?.replace(/\D/g,'')
+    const itens = vendaFeita.items.map(i => `• ${i.produto} x${i.quantidade} — ${formatCurrency(i.valorUnitario * i.quantidade)}`).join('\n')
+    const pag   = PAGAMENTOS_VENDA.find(p => p.key === pagamento)?.label || pagamento
+    const msg = `🧾 *Recibo de Compra*\n🏪 *${officeData.nome || 'Oficina'}*\n📅 ${new Date().toLocaleDateString('pt-BR')}\n\n🛒 *Itens:*\n${itens}\n\n💰 *Total: ${formatCurrency(vendaFeita.total)}*\n💳 Pagamento: ${pag}\n\nObrigado pela preferência! 🙏`
+    const url = wpp
+      ? `https://api.whatsapp.com/send?phone=55${wpp}&text=${encodeURIComponent(msg)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`
+    window.open(url, '_blank')
   }
 
   return (
@@ -143,26 +185,41 @@ function VendaModal({ inventory, onClose, onVendaCompleta }) {
           </button>
         </div>
 
-        {sucesso ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-3 pb-10">
+        {/* ── TELA DE SUCESSO ── */}
+        {vendaFeita ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 pb-10">
             <CheckCircle2 className="w-16 h-16 text-green-500" />
-            <p className="text-lg font-bold text-slate-900">Venda registrada!</p>
-            <p className="text-sm text-slate-400">Estoque atualizado</p>
+            <div className="text-center">
+              <p className="text-lg font-bold text-slate-900">Venda registrada!</p>
+              <p className="text-sm text-slate-400 mt-1">Estoque atualizado · {formatCurrency(vendaFeita.total)}</p>
+            </div>
+            <div className="w-full space-y-2 mt-2">
+              <button onClick={handlePDF}
+                className="w-full py-3 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
+                <Printer className="w-4 h-4" /> Baixar PDF / Imprimir recibo
+              </button>
+              <button onClick={handleWhatsApp}
+                className="w-full py-3 rounded-xl bg-green-500 text-white font-semibold text-sm hover:bg-green-600 transition-colors flex items-center justify-center gap-2">
+                <span className="text-base">💬</span> Enviar pelo WhatsApp
+              </button>
+              <button onClick={onClose}
+                className="w-full py-2.5 rounded-xl text-slate-400 text-sm hover:text-slate-600 transition-colors">
+                Fechar sem recibo
+              </button>
+            </div>
           </div>
         ) : (
           <>
             <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-4">
 
-              {/* Busca */}
+              {/* ── Busca de produto ── */}
               <div>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input value={busca} onChange={e => setBusca(e.target.value)}
-                    placeholder="Buscar produto do estoque..."
-                    autoFocus
+                    placeholder="Buscar produto do estoque..." autoFocus
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-50" />
                 </div>
-
                 {busca.length > 0 && (
                   filtrados.length > 0 ? (
                     <div className="mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
@@ -178,18 +235,15 @@ function VendaModal({ inventory, onClose, onVendaCompleta }) {
                         </button>
                       ))}
                     </div>
-                  ) : (
-                    <p className="text-xs text-slate-400 mt-2 px-1">Nenhum produto encontrado.</p>
-                  )
+                  ) : <p className="text-xs text-slate-400 mt-2 px-1">Nenhum produto encontrado.</p>
                 )}
               </div>
 
-              {/* Carrinho */}
+              {/* ── Carrinho ── */}
               {carrinho.length > 0 && (
                 <div className="space-y-2">
                   {carrinho.map(item => (
-                    <div key={item.inventoryId}
-                      className="bg-gray-50 rounded-xl px-3 py-2.5 flex items-center gap-3">
+                    <div key={item.inventoryId} className="bg-gray-50 rounded-xl px-3 py-2.5 flex items-center gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-slate-800 truncate">{item.produto}</p>
                         <p className="text-xs text-slate-400">{formatCurrency(item.valorUnitario)} un.</p>
@@ -213,22 +267,75 @@ function VendaModal({ inventory, onClose, onVendaCompleta }) {
                 </div>
               )}
 
-              {/* Cliente opcional */}
+              {/* ── Cliente ── */}
               {!showCliente ? (
                 <button type="button" onClick={() => setShowCliente(true)}
                   className="text-xs text-slate-400 hover:text-indigo-600 flex items-center gap-1.5 transition-colors">
-                  <UserPlus className="w-3.5 h-3.5" />Adicionar cliente (opcional)
+                  <UserPlus className="w-3.5 h-3.5" /> Adicionar cliente (opcional)
                 </button>
-              ) : (
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Nome do cliente</label>
-                  <input value={cliente} onChange={e => setCliente(e.target.value)}
-                    placeholder="Ex: João Silva" autoFocus
+              ) : clienteSelecionado ? (
+                /* Cliente selecionado — badge */
+                <div className="flex items-center justify-between bg-indigo-50 rounded-xl px-3 py-2.5">
+                  <div>
+                    <p className="text-sm font-semibold text-indigo-900">{clienteSelecionado.nome}</p>
+                    {clienteSelecionado.whatsapp && <p className="text-xs text-indigo-400">{clienteSelecionado.whatsapp}</p>}
+                  </div>
+                  <button onClick={() => { setClienteSelecionado(null); setClienteQuery(''); setShowClienteForm(false) }}
+                    className="p-1 hover:bg-indigo-100 rounded-lg transition-colors">
+                    <X className="w-4 h-4 text-indigo-400" />
+                  </button>
+                </div>
+              ) : showClienteForm ? (
+                /* Formulário de cadastro rápido */
+                <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                  <p className="text-xs font-semibold text-slate-700">Cadastrar cliente</p>
+                  <input value={novoCliente.nome} onChange={e => setNovoCliente(p => ({ ...p, nome: e.target.value }))}
+                    placeholder="Nome *" autoFocus
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50" />
+                  <input value={novoCliente.whatsapp} onChange={e => setNovoCliente(p => ({ ...p, whatsapp: e.target.value }))}
+                    placeholder="WhatsApp (opcional)" inputMode="tel"
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50" />
+                  <div className="flex gap-2">
+                    <button onClick={() => { setShowClienteForm(false); setNovoCliente({ nome: '', whatsapp: '' }) }}
+                      className="flex-1 py-2 rounded-xl border border-gray-200 text-slate-500 text-xs font-semibold hover:bg-gray-100 transition-colors">Cancelar</button>
+                    <button onClick={() => {
+                      if (!novoCliente.nome.trim()) return
+                      setClienteSelecionado({ id: null, nome: novoCliente.nome.trim(), whatsapp: novoCliente.whatsapp.trim() })
+                      setShowClienteForm(false)
+                    }} className="flex-1 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors">OK</button>
+                  </div>
+                </div>
+              ) : (
+                /* Campo de busca de cliente */
+                <div>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                    <input value={clienteQuery} onChange={e => setClienteQuery(e.target.value)}
+                      placeholder="Buscar cliente cadastrado..." autoFocus
+                      className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50" />
+                  </div>
+                  {clienteQuery.length > 0 && (
+                    <div className="mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                      {clienteSugeridos.slice(0, 5).map(c => (
+                        <button key={c.id} type="button"
+                          onMouseDown={e => { e.preventDefault(); setClienteSelecionado(c); setClienteQuery(''); setClienteSugeridos([]) }}
+                          className="w-full text-left px-4 py-2.5 hover:bg-indigo-50 transition-colors border-b border-gray-50 last:border-0">
+                          <p className="text-sm font-semibold text-slate-900">{c.nome}</p>
+                          {c.whatsapp && <p className="text-xs text-slate-400">{c.whatsapp}</p>}
+                        </button>
+                      ))}
+                      <button type="button"
+                        onMouseDown={e => { e.preventDefault(); setNovoCliente({ nome: clienteQuery, whatsapp: '' }); setShowClienteForm(true); setClienteQuery('') }}
+                        className="w-full text-left px-4 py-2.5 hover:bg-green-50 transition-colors flex items-center gap-2 text-green-700">
+                        <UserPlus className="w-3.5 h-3.5" />
+                        <span className="text-sm font-semibold">Cadastrar "{clienteQuery}"</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Pagamento */}
+              {/* ── Pagamento ── */}
               <div>
                 <p className="text-xs font-medium text-slate-600 mb-2">Pagamento</p>
                 <div className="grid grid-cols-4 gap-1.5">
@@ -238,19 +345,15 @@ function VendaModal({ inventory, onClose, onVendaCompleta }) {
                         pagamento === p.key
                           ? 'bg-green-600 text-white border-green-600 shadow-sm'
                           : 'bg-white text-slate-600 border-gray-200 hover:border-green-300'
-                      }`}>
-                      {p.label}
-                    </button>
+                      }`}>{p.label}</button>
                   ))}
                 </div>
               </div>
 
-              {erro && (
-                <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-xl border border-red-100">{erro}</p>
-              )}
+              {erro && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-xl border border-red-100">{erro}</p>}
             </div>
 
-            {/* Footer fixo */}
+            {/* Footer */}
             <div className="px-5 pb-6 pt-3 shrink-0 border-t border-gray-100">
               <button onClick={confirmar}
                 disabled={loading || carrinho.length === 0 || !pagamento}
@@ -594,8 +697,9 @@ export default function Estoque() {
       {showVenda && (
         <VendaModal
           inventory={items}
+          officeData={officeData}
           onClose={() => setShowVenda(false)}
-          onVendaCompleta={() => { reload(); setShowVenda(false) }}
+          onVendaCompleta={reload}
         />
       )}
     </div>
