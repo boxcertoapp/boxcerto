@@ -1020,6 +1020,51 @@ export const downloadReceiptPDF = async ({ os, client, vehicle, items, officeDat
   doc.save(filename)
 }
 
+// ── VENDAS AVULSAS ────────────────────────────────────────
+const mapVenda = (v) => !v ? null : ({
+  id:         v.id,
+  items:      v.items      || [],
+  cliente:    v.cliente    || '',
+  pagamentos: v.pagamentos || [],
+  desconto:   v.desconto   || { tipo: 'valor', valor: 0 },
+  total:      Number(v.total),
+  createdAt:  v.created_at,
+})
+
+export const vendaStorage = {
+  create: async ({ items, cliente, pagamentos, desconto, total }) => {
+    const user_id = await getCurrentUserId()
+    // Baixa cada item do estoque
+    for (const item of items) {
+      if (item.inventoryId) {
+        await inventoryStorage.baixar(item.inventoryId, item.quantidade)
+      }
+    }
+    const { data, error } = await supabase.from('vendas').insert({
+      user_id,
+      items,
+      cliente:    cliente    || '',
+      pagamentos: pagamentos || [],
+      desconto:   desconto   || { tipo: 'valor', valor: 0 },
+      total:      Number(total),
+    }).select().single()
+    if (error) throw new Error(error.message)
+    return mapVenda(data)
+  },
+
+  getByMonth: async (mes, ano) => {
+    const from = new Date(ano, mes, 1).toISOString()
+    const to   = new Date(ano, mes + 1, 0, 23, 59, 59, 999).toISOString()
+    const { data } = await supabase
+      .from('vendas')
+      .select('*')
+      .gte('created_at', from)
+      .lte('created_at', to)
+      .order('created_at', { ascending: false })
+    return (data || []).map(mapVenda)
+  },
+}
+
 // ── HELPERS ───────────────────────────────────────────────
 export const formatCurrency = (val) =>
   Number(val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
