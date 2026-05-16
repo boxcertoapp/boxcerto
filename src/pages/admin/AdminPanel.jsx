@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Wrench, Users, LogOut, Shield, Eye, EyeOff, Loader2,
   LayoutDashboard, DollarSign, BarChart2, MessageSquare, Bell, Settings,
-  ChevronRight, X, LifeBuoy
+  ChevronRight, X, LifeBuoy, Mail, Download
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -135,10 +135,149 @@ function ImpersonateModal({ email, link, onClose }) {
 }
 
 // ── Navegação ────────────────────────────────────────────────
+// ── Seção Leads (diagnóstico) ─────────────────────────────────────────────────
+function LeadsSection() {
+  const [leads, setLeads]       = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [busca, setBusca]       = useState('')
+
+  useEffect(() => {
+    supabase
+      .from('diagnostico_leads')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => { setLeads(data || []); setLoading(false) })
+  }, [])
+
+  const filtrados = leads.filter(l =>
+    (l.email || '').toLowerCase().includes(busca.toLowerCase()) ||
+    (l.nome  || '').toLowerCase().includes(busca.toLowerCase())
+  )
+
+  function exportarXLS() {
+    // CSV simples com BOM UTF-8 (Excel abre corretamente)
+    const bom = '﻿'
+    const header = 'Data de captura\tNome\tE-mail\tVolume OS\tForma de orçamento\tPrincipal dor\tEquipe\tOrigem'
+    const rows = filtrados.map(l => {
+      const r = l.respostas || {}
+      const dt = l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : ''
+      return [
+        dt,
+        l.nome  || '',
+        l.email || '',
+        r.volume   || '',
+        r.orcamento|| '',
+        r.dor      || '',
+        r.equipe   || '',
+        l.origem   || '',
+      ].join('\t')
+    })
+    const tsv = bom + [header, ...rows].join('\n')
+    const blob = new Blob([tsv], { type: 'text/tab-separated-values;charset=utf-8' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = `leads-diagnostico-${new Date().toISOString().slice(0,10)}.xls`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const DOR_LABEL = {
+    aprovacao:  'Aprovação de orçamento',
+    estoque:    'Estoque bagunçado',
+    financeiro: 'Não sabe o lucro',
+    tempo:      'Muita papelada',
+  }
+  const VOL_LABEL = { pequena: '<20 OS', media: '20–50 OS', grande: '>50 OS' }
+
+  return (
+    <div className="p-4 md:p-6 max-w-6xl mx-auto">
+      {/* Cabeçalho */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+        <div className="flex-1">
+          <h2 className="text-xl font-bold text-slate-900">Leads do Diagnóstico</h2>
+          <p className="text-sm text-slate-500">{leads.length} leads capturados em /lpdiagnostico</p>
+        </div>
+        <div className="flex gap-2 flex-shrink-0">
+          <input
+            value={busca} onChange={e => setBusca(e.target.value)}
+            placeholder="Buscar por email ou nome…"
+            className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 w-48"
+          />
+          <button
+            onClick={exportarXLS}
+            disabled={filtrados.length === 0}
+            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Exportar XLS
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+        </div>
+      ) : filtrados.length === 0 ? (
+        <div className="text-center py-16 text-slate-400">
+          <Mail className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p className="text-sm">{busca ? 'Nenhum lead encontrado.' : 'Nenhum lead capturado ainda.'}</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  {['Data','Nome','E-mail','Volume','Dor principal','Origem'].map(h => (
+                    <th key={h} className="text-left text-xs font-semibold text-slate-500 px-4 py-3 whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filtrados.map(l => {
+                  const r  = l.respostas || {}
+                  const dt = l.created_at ? new Date(l.created_at).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—'
+                  return (
+                    <tr key={l.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap">{dt}</td>
+                      <td className="px-4 py-3 font-medium text-slate-800">{l.nome || <span className="text-slate-300">—</span>}</td>
+                      <td className="px-4 py-3 text-indigo-600 font-mono text-xs">{l.email}</td>
+                      <td className="px-4 py-3">
+                        {r.volume ? (
+                          <span className="bg-slate-100 text-slate-600 text-xs font-semibold px-2 py-0.5 rounded-full">
+                            {VOL_LABEL[r.volume] || r.volume}
+                          </span>
+                        ) : <span className="text-slate-300">—</span>}
+                      </td>
+                      <td className="px-4 py-3">
+                        {r.dor ? (
+                          <span className="bg-indigo-50 text-indigo-600 text-xs font-semibold px-2 py-0.5 rounded-full">
+                            {DOR_LABEL[r.dor] || r.dor}
+                          </span>
+                        ) : <span className="text-slate-300">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-slate-400 text-xs">{l.origem || '—'}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const NAV = [
   { key: 'dashboard',    label: 'Dashboard',      icon: LayoutDashboard, group: 'principal' },
   { key: 'clientes',     label: 'Clientes',        icon: Users,           group: 'principal' },
   { key: 'receita',      label: 'Receita',         icon: DollarSign,      group: 'principal' },
+  { key: 'leads',        label: 'Leads',           icon: Mail,            group: 'dados' },
   { key: 'analytics',   label: 'Analytics',       icon: BarChart2,       group: 'dados' },
   { key: 'comunicacoes', label: 'Comunicações',    icon: MessageSquare,   group: 'dados' },
   { key: 'anuncios',    label: 'Anúncios',        icon: Bell,            group: 'dados' },
@@ -209,6 +348,7 @@ export default function AdminPanel() {
       case 'dashboard':    return <Dashboard    {...sharedProps} onNavigate={setSection} />
       case 'clientes':     return <Clientes     {...sharedProps} />
       case 'receita':      return <Receita      {...sharedProps} />
+      case 'leads':        return <LeadsSection />
       case 'analytics':   return <Analytics    users={users} />
       case 'comunicacoes': return <Comunicacoes users={users} />
       case 'anuncios':    return <Anuncios     />

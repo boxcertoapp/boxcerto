@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { ArrowRight, CheckCircle, Zap, Star, Clock, TrendingUp, Package, FileText, ChevronRight, MessageCircle } from 'lucide-react'
+import { ArrowRight, CheckCircle, Zap, Star, Clock, TrendingUp, Package, FileText, ChevronRight, MessageCircle, Mail } from 'lucide-react'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useConfig } from '../hooks/useConfig'
 import { usePageView } from '../hooks/usePageView'
+import { supabase } from '../lib/supabase'
 
 const CADASTRO  = 'https://www.boxcerto.com/cadastro'
 const WPP_NUM   = '5553997065725'
@@ -292,6 +293,101 @@ function ResultadoCard({ dor, orcamentoMsg, equipeMsg, perda, cfg_pm }) {
   )
 }
 
+// ── Captura de email ──────────────────────────────────────────────────────────
+function CapturaEmail({ respostas, onContinuar }) {
+  const [nome,  setNome]    = useState('')
+  const [email, setEmail]   = useState('')
+  const [erro,  setErro]    = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function salvarLead(emailVal, nomeVal) {
+    try {
+      await supabase.from('diagnostico_leads').insert([{
+        nome:      nomeVal  || null,
+        email:     emailVal,
+        respostas: respostas,
+        origem:    'lpdiagnostico',
+      }])
+    } catch (_) {
+      // falha silenciosa — não bloqueia o usuário
+    }
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!email.includes('@') || !email.includes('.')) {
+      setErro('Digite um e-mail válido.')
+      return
+    }
+    setLoading(true)
+    await salvarLead(email, nome)
+    setLoading(false)
+    onContinuar()
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm max-w-lg mx-auto">
+      {/* Ícone + headline */}
+      <div className="text-center mb-6">
+        <div className="w-14 h-14 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Mail className="w-7 h-7 text-indigo-600" />
+        </div>
+        <h2 className="text-xl font-extrabold text-slate-900 mb-1">
+          Seu diagnóstico está pronto!
+        </h2>
+        <p className="text-slate-500 text-sm leading-relaxed">
+          Informe seu e-mail para receber o resultado completo — com o que está custando dinheiro na sua oficina e como corrigir.
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 mb-1">Nome (opcional)</label>
+          <input
+            type="text"
+            value={nome}
+            onChange={e => setNome(e.target.value)}
+            placeholder="Ex: Carlos Mecânico"
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 mb-1">E-mail *</label>
+          <input
+            type="email"
+            value={email}
+            onChange={e => { setEmail(e.target.value); setErro('') }}
+            placeholder="seu@email.com"
+            required
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+          {erro && <p className="text-red-500 text-xs mt-1">{erro}</p>}
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors text-sm shadow-md"
+        >
+          {loading ? 'Salvando…' : 'Ver meu diagnóstico →'}
+        </button>
+      </form>
+
+      {/* Pular */}
+      <button
+        onClick={onContinuar}
+        className="w-full mt-3 text-center text-xs text-slate-400 hover:text-slate-600 transition-colors py-1"
+      >
+        Pular e ver resultado sem salvar
+      </button>
+
+      <p className="text-center text-[11px] text-slate-300 mt-3">
+        Sem spam. Seus dados ficam só com a BoxCerto.
+      </p>
+    </div>
+  )
+}
+
 // ── Página principal ──────────────────────────────────────────────────────────
 export default function Diagnostico() {
   usePageView('/lpdiagnostico')
@@ -303,20 +399,23 @@ export default function Diagnostico() {
   const cfg = useConfig()
   const cfg_pm = parseFloat(cfg.price_monthly) || 97
 
-  const [etapa, setEtapa]           = useState(0)         // 0 = intro, 1–4 = perguntas, 5 = resultado
-  const [respostas, setRespostas]   = useState({})
+  // etapas: 0 = intro, 1–4 = perguntas, 5 = captura email, 6 = resultado
+  const [etapa, setEtapa]             = useState(0)
+  const [respostas, setRespostas]     = useState({})
   const [selecionada, setSelecionada] = useState(null)
   const resultadoRef = useRef(null)
 
-  const perguntaAtual = PERGUNTAS[etapa - 1]
+  const perguntaAtual  = PERGUNTAS[etapa - 1]
   const totalPerguntas = PERGUNTAS.length
+  const ETAPA_EMAIL    = totalPerguntas + 1   // 5
+  const ETAPA_RESULT   = totalPerguntas + 2   // 6
 
   // Scroll para resultado quando termina
   useEffect(() => {
-    if (etapa === totalPerguntas + 1 && resultadoRef.current) {
+    if (etapa === ETAPA_RESULT && resultadoRef.current) {
       setTimeout(() => resultadoRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
     }
-  }, [etapa, totalPerguntas])
+  }, [etapa, ETAPA_RESULT])
 
   const selecionar = (value) => {
     setSelecionada(value)
@@ -417,8 +516,16 @@ export default function Diagnostico() {
           </div>
         )}
 
+        {/* CAPTURA DE EMAIL */}
+        {etapa === ETAPA_EMAIL && (
+          <CapturaEmail
+            respostas={respostas}
+            onContinuar={() => setEtapa(ETAPA_RESULT)}
+          />
+        )}
+
         {/* RESULTADO */}
-        {etapa === totalPerguntas + 1 && (
+        {etapa === ETAPA_RESULT && (
           <div ref={resultadoRef}>
             <ResultadoCard {...gerarResultado(respostas)} cfg_pm={cfg_pm} />
           </div>
