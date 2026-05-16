@@ -23,6 +23,13 @@ const LandingOficinaP = lazy(() => import('./pages/LandingOficinaP'))
 const LandingOrcamento= lazy(() => import('./pages/LandingOrcamento'))
 const LandingVsPlanilha = lazy(() => import('./pages/LandingVsPlanilha'))
 const BemVindo          = lazy(() => import('./pages/BemVindo'))
+const LandingDemo       = lazy(() => import('./pages/LandingDemo'))
+const DemoLayout        = lazy(() => import('./pages/demo/DemoLayout'))
+const DemoOficina       = lazy(() => import('./pages/demo/DemoOficina'))
+const DemoHistorico     = lazy(() => import('./pages/demo/DemoHistorico'))
+const DemoFinanceiro    = lazy(() => import('./pages/demo/DemoFinanceiro'))
+const DemoEstoque       = lazy(() => import('./pages/demo/DemoEstoque'))
+const DemoMenu          = lazy(() => import('./pages/demo/DemoMenu'))
 
 // ── App (carregado apenas após login) ─────────────────────────────────────
 const AppLayout  = lazy(() => import('./pages/app/AppLayout'))
@@ -77,6 +84,17 @@ export default function App() {
             <Route path="/orcamento-online-oficina"         element={<Navigate to="/lporcamento-online-oficina" replace />} />
             <Route path="/boxcerto-vs-planilha"             element={<Navigate to="/lpboxcerto-vs-planilha" replace />} />
             <Route path="/bem-vindo"                        element={<BemVindo />} />
+
+            {/* Demo interativo */}
+            <Route path="/demo"       element={<LandingDemo />} />
+            <Route path="/demo/app"   element={<DemoLayout />}>
+              <Route index element={<Navigate to="/demo/app/oficina" replace />} />
+              <Route path="oficina"    element={<DemoOficina />} />
+              <Route path="historico"  element={<DemoHistorico />} />
+              <Route path="financeiro" element={<DemoFinanceiro />} />
+              <Route path="estoque"    element={<DemoEstoque />} />
+              <Route path="menu"       element={<DemoMenu />} />
+            </Route>
 
             {/* Admin */}
             <Route path="/admin" element={<AdminPanel />} />
