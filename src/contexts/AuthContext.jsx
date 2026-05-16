@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-export const ADMIN_EMAIL = 'rogerioknfilho@gmail.com'
+export const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || ''
 
 const AuthContext = createContext(null)
 

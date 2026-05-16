@@ -14,7 +14,7 @@ const getCurrentUserId = async () => {
 }
 
 // ── ADMIN ─────────────────────────────────────────────────
-export const ADMIN_EMAIL = 'rogerioknfilho@gmail.com'
+export const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || ''
 
 // ── MAPPERS (DB snake_case → JS camelCase) ────────────────
 const mapClient = (c) => !c ? null : ({

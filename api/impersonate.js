@@ -4,12 +4,22 @@
  * Usa fetch nativo (Node 18+) — sem dependência de @supabase/supabase-js no runtime.
  */
 
-const ADMIN_EMAIL = 'rogerioknfilho@gmail.com'
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || ''
+
+const ALLOWED_ORIGINS = [
+  'https://www.boxcerto.com',
+  'https://boxcerto.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
+]
 
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*')
+  const origin = req.headers.origin || ''
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : 'https://www.boxcerto.com'
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin)
+  res.setHeader('Vary', 'Origin')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   res.setHeader('Content-Type', 'application/json')
 
   if (req.method === 'OPTIONS') return res.status(200).end()
