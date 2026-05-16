@@ -238,7 +238,7 @@ function ResultadoCard({ dor, orcamentoMsg, equipeMsg, perda }) {
         {/* Divisor */}
         <div className="bg-white px-5 py-3 border-t border-b border-gray-100 flex items-center gap-2">
           <div className="flex-1 h-px bg-gray-100" />
-          <span className="text-xs text-slate-400 font-semibold">Com BoxCerto (R${cfg_pm % 1 === 0 ? cfg_pm.toFixed(0) : cfg_pm.toFixed(2).replace('.',','  )}/mês) você recupera</span>
+          <span className="text-xs text-slate-400 font-semibold">Com BoxCerto (R${cfg_pm % 1 === 0 ? cfg_pm.toFixed(0) : cfg_pm.toFixed(2).replace('.',',')}/mês) você recupera</span>
           <div className="flex-1 h-px bg-gray-100" />
         </div>
         {/* Base — o que ganha líquido */}

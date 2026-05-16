@@ -11,6 +11,9 @@ import {
   CheckCircle, ArrowRight, Star, ShieldCheck,
   TrendingUp, Users, X, Award, Zap,
 } from 'lucide-react'
+import { usePageMeta } from '../hooks/usePageMeta'
+import { usePageView } from '../hooks/usePageView'
+import { useConfig } from '../hooks/useConfig'
 
 // ─── hook scroll ──────────────────────────────────────────────────────────────
 function useScrolled(px = 400) {
@@ -171,8 +174,18 @@ function Objecao({ p, r }) {
 
 // ─── página ───────────────────────────────────────────────────────────────────
 export default function LandingAds2() {
+  usePageView('/lp2')
+  usePageMeta({
+    title: 'Volte para o Controle da sua Oficina | BoxCerto',
+    description: 'Você já sabe que sua oficina precisa se organizar. Teste o BoxCerto por 7 dias e veja como controlar OS, estoque, orçamentos e financeiro. Sem cartão.',
+    canonical: 'https://boxcerto.com/lp2',
+  })
   const navigate   = useNavigate()
   const scrolled   = useScrolled()
+  const cfg        = useConfig()
+  const cfg_pm     = parseFloat(cfg.price_monthly)        || 97
+  const cfg_pam    = parseFloat(cfg.price_annual_monthly) || 79.90
+  const cfg_pa     = parseFloat(cfg.price_annual_total)   || 948
   const goRegister = useCallback(() => navigate('/cadastro'), [navigate])
 
   return (
@@ -352,6 +365,38 @@ export default function LandingAds2() {
         </div>
       </section>
 
+      {/* PREÇO */}
+      <section className="bg-white px-4 py-14">
+        <div className="max-w-xl mx-auto text-center">
+          <h2 className="text-2xl font-extrabold text-slate-900 mb-2">Preço simples. Resultado real.</h2>
+          <p className="text-slate-500 text-sm mb-8">Por menos que o custo de uma peça por mês, sua oficina tem controle total.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-6 text-center">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Plano Mensal</p>
+              <div className="flex items-end justify-center gap-1 mb-1">
+                <span className="text-4xl font-extrabold text-slate-800">R${cfg_pm % 1 === 0 ? cfg_pm.toFixed(0) : cfg_pm.toFixed(2).replace('.',',')}</span>
+                <span className="text-slate-400 mb-1">/mês</span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">Cancele quando quiser</p>
+            </div>
+            <div className="bg-indigo-600 border-2 border-indigo-600 rounded-2xl p-6 text-center relative overflow-hidden">
+              <div className="absolute top-3 right-3 bg-amber-400 text-slate-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full">MAIS VANTAJOSO</div>
+              <p className="text-xs font-bold text-indigo-200 uppercase tracking-wider mb-3">Plano Anual</p>
+              <div className="flex items-end justify-center gap-1 mb-1">
+                <span className="text-4xl font-extrabold text-white">R${cfg_pam % 1 === 0 ? cfg_pam.toFixed(0) : cfg_pam.toFixed(2).replace('.',',')}</span>
+                <span className="text-indigo-300 mb-1">/mês</span>
+              </div>
+              <p className="text-xs text-indigo-300 mb-0.5">Cobrado anualmente: R${cfg_pa % 1 === 0 ? cfg_pa.toFixed(0) : cfg_pa.toFixed(2).replace('.',',')}</p>
+              <p className="text-xs font-bold text-amber-300">Economia de R${Math.round((cfg_pm - cfg_pam) * 12)}/ano</p>
+            </div>
+          </div>
+          <button onClick={goRegister} className="w-full max-w-sm mx-auto flex items-center justify-center gap-2 bg-emerald-500 text-white font-extrabold py-4 rounded-2xl hover:bg-emerald-400 transition-colors shadow-lg text-base">
+            Começar 7 dias grátis <ArrowRight className="w-5 h-5" />
+          </button>
+          <p className="text-slate-400 text-xs mt-2">Sem cartão · Cancele quando quiser</p>
+        </div>
+      </section>
+
       {/* OFERTA FINAL */}
       <section className="bg-slate-900 px-4 py-14">
         <div className="max-w-xl mx-auto text-center">
@@ -360,7 +405,7 @@ export default function LandingAds2() {
           </span>
           <h2 className="text-2xl font-extrabold text-white mb-1">Comece hoje por R$ 0</h2>
           <p className="text-slate-400 text-sm mb-6">
-            7 dias grátis, sem cartão. Depois só <strong className="text-white">R$ 79,90/mês</strong> no plano anual.
+            7 dias grátis, sem cartão. Depois só <strong className="text-white">R$ {cfg_pam % 1 === 0 ? cfg_pam.toFixed(0) : cfg_pam.toFixed(2).replace('.',',')}/mês</strong> no plano anual.
           </p>
           <div className="text-left space-y-3 mb-8 bg-white/5 rounded-2xl p-5">
             {[

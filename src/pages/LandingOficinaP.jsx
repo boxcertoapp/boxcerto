@@ -75,6 +75,20 @@ const DEPOIMENTOS = [
   },
 ]
 
+function FaqItem({ p, r }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <button onClick={() => setOpen(o => !o)}
+      className="w-full text-left bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:border-indigo-200 transition-all">
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-bold text-slate-900 text-sm">{p}</p>
+        <span className={`text-indigo-500 font-bold text-xl shrink-0 transition-transform ${open ? 'rotate-45' : ''}`}>+</span>
+      </div>
+      {open && <p className="text-slate-500 text-sm leading-relaxed mt-3 pt-3 border-t border-gray-100">{r}</p>}
+    </button>
+  )
+}
+
 export default function LandingOficinaP() {
   usePageView('/sistema-para-oficina-pequena')
   usePageMeta({
@@ -393,30 +407,60 @@ export default function LandingOficinaP() {
       {/* PREÇO */}
       <section className="py-16 bg-white">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="max-w-lg mx-auto text-center">
+          <div className="max-w-2xl mx-auto text-center">
             <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-3">
               Preço que cabe no orçamento da oficina
             </h2>
-            <p className="text-slate-500 mb-8">Menos que o custo de uma peça. E recupera o investimento no primeiro orçamento aprovado.</p>
-
-            <div className="bg-indigo-600 rounded-2xl p-8 text-white mb-4">
-              <p className="text-indigo-200 text-sm font-semibold uppercase tracking-wide mb-2">Plano único · Tudo incluído</p>
-              <div className="flex items-end justify-center gap-1 mb-1">
-                <span className="text-5xl font-extrabold">R${cfg_pm % 1 === 0 ? cfg_pm.toFixed(0) : cfg_pm.toFixed(2).replace('.',',')}</span>
-                <span className="text-indigo-300 mb-1">/mês</span>
+            <p className="text-slate-500 mb-8">Por menos que o valor de uma troca de óleo por mês, sua oficina tem controle total.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-6 text-center">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Plano Mensal</p>
+                <div className="flex items-end justify-center gap-1 mb-1">
+                  <span className="text-4xl font-extrabold text-slate-800">R${cfg_pm % 1 === 0 ? cfg_pm.toFixed(0) : cfg_pm.toFixed(2).replace('.',',')}</span>
+                  <span className="text-slate-400 mb-1">/mês</span>
+                </div>
+                <p className="text-xs text-slate-400 mt-1 mb-4">Cancele quando quiser</p>
+                <a href={CADASTRO} className="block w-full bg-slate-800 text-white font-bold py-2.5 rounded-xl text-sm hover:bg-slate-700 transition-colors">
+                  Testar grátis
+                </a>
               </div>
-              <p className="text-indigo-200 text-sm mb-6">ou R${cfg_pam.toFixed(2).replace('.',',')}/mês no plano anual</p>
-              <a
-                href={CADASTRO}
-                className="flex items-center justify-center gap-2 w-full bg-white text-indigo-700 font-bold py-3.5 rounded-xl hover:bg-indigo-50 transition-colors"
-              >
-                Começar 7 dias grátis
-                <ArrowRight className="w-4 h-4" />
-              </a>
+              <div className="bg-indigo-600 border-2 border-indigo-600 rounded-2xl p-6 text-center relative overflow-hidden">
+                <div className="absolute top-3 right-3 bg-amber-400 text-slate-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full">MAIS VANTAJOSO</div>
+                <p className="text-xs font-bold text-indigo-200 uppercase tracking-wider mb-3">Plano Anual</p>
+                <div className="flex items-end justify-center gap-1 mb-1">
+                  <span className="text-4xl font-extrabold text-white">R${cfg_pam % 1 === 0 ? cfg_pam.toFixed(0) : cfg_pam.toFixed(2).replace('.',',')}</span>
+                  <span className="text-indigo-300 mb-1">/mês</span>
+                </div>
+                <p className="text-xs text-indigo-300 mb-0.5">Cobrado: R${cfg_pm % 1 === 0 ? (cfg_pm * 12).toFixed(0) : (cfg_pm * 12).toFixed(2).replace('.',',')} → R${(cfg_pam * 12).toFixed(0)}</p>
+                <p className="text-xs font-bold text-amber-300 mb-4">Economia de R${Math.round((cfg_pm - cfg_pam) * 12)}/ano</p>
+                <a href={CADASTRO} className="block w-full bg-white text-indigo-700 font-bold py-2.5 rounded-xl text-sm hover:bg-indigo-50 transition-colors">
+                  Testar grátis
+                </a>
+              </div>
             </div>
             <div className="flex items-center justify-center gap-2 text-slate-400 text-xs">
               <Shield className="w-3.5 h-3.5" />
               Cancele quando quiser · Suporte incluso · Sem contrato de fidelidade
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 text-center mb-3">
+              Perguntas frequentes
+            </h2>
+            <p className="text-slate-500 text-center mb-8">Dúvidas mais comuns sobre sistema para oficina pequena.</p>
+            <div className="space-y-3">
+              <FaqItem p="Sistema para oficina pequena é complicado de aprender?" r="Não. O BoxCerto foi feito para mecânicos, não para TI. Em 10 minutos você já está abrindo a primeira OS e enviando orçamento pelo WhatsApp. Não precisa de treinamento e o suporte via WhatsApp está sempre disponível." />
+              <FaqItem p="Funciona para oficina com só 1 ou 2 técnicos?" r="Sim, é justamente para esse perfil. Você pode trabalhar sozinho ou com sua equipe. Cada técnico tem acesso ao próprio painel — sem ver informações que não são dele." />
+              <FaqItem p="Preciso instalar algum programa?" r="Não. O sistema para oficina pequena do BoxCerto é online e funciona pelo navegador do celular ou computador. Seus dados ficam na nuvem com backup automático." />
+              <FaqItem p="Funciona no celular no meio da oficina?" r="Sim. Foi pensado para isso. Você acessa do celular enquanto está na bancada, no balcão ou em qualquer lugar." />
+              <FaqItem p="O cliente consegue aprovar orçamento sem instalar nada?" r="Sim. Você envia um link pelo WhatsApp. O cliente abre no celular e aprova com um toque. Nada para instalar, nenhuma conta para criar." />
+              <FaqItem p="Serve para mecânica de motos, elétrica ou funilaria?" r="Serve para qualquer tipo de oficina que emite OS e orçamento: mecânica geral, elétrica, funilaria, estofaria, mecânica de motos e mais." />
             </div>
           </div>
         </div>

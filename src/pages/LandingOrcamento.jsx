@@ -4,6 +4,8 @@ import {
   Clock, Smartphone, FileText, ThumbsUp, Eye, Bell, Link2
 } from 'lucide-react'
 import { usePageMeta } from '../hooks/usePageMeta'
+import { usePageView } from '../hooks/usePageView'
+import { useConfig } from '../hooks/useConfig'
 
 const CADASTRO = 'https://www.boxcerto.com/cadastro'
 const WPP_NUM  = '5553997065725'
@@ -169,12 +171,31 @@ const DEPOIMENTOS = [
   },
 ]
 
+function FaqItem({ p, r }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <button onClick={() => setOpen(o => !o)}
+      className="w-full text-left bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:border-indigo-200 transition-all">
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-bold text-slate-900 text-sm">{p}</p>
+        <span className={`text-indigo-500 font-bold text-xl shrink-0 transition-transform ${open ? 'rotate-45' : ''}`}>+</span>
+      </div>
+      {open && <p className="text-slate-500 text-sm leading-relaxed mt-3 pt-3 border-t border-gray-100">{r}</p>}
+    </button>
+  )
+}
+
 export default function LandingOrcamento() {
+  usePageView('/orcamento-online-oficina')
   usePageMeta({
-    title: 'Orçamento Online para Oficina | Envie Link pelo WhatsApp — BoxCerto',
-    description: 'Crie orçamentos profissionais, envie por link no WhatsApp e registre a aprovação do cliente com data e hora. Sem ligação, sem conversa perdida. Teste grátis.',
+    title: 'Orçamento Online para Oficina pelo WhatsApp | BoxCerto',
+    description: 'Envie orçamentos por link no WhatsApp e permita que o cliente aprove online. Simples, rápido e com registro da aprovação. Teste grátis por 7 dias.',
     canonical: 'https://boxcerto.com/orcamento-online-oficina',
   })
+  const cfg    = useConfig()
+  const cfg_pm  = parseFloat(cfg.price_monthly)        || 97
+  const cfg_pam = parseFloat(cfg.price_annual_monthly) || 79.90
+  const cfg_pa  = parseFloat(cfg.price_annual_total)   || 948
 
   return (
     <div className="min-h-screen bg-white">
@@ -368,6 +389,61 @@ export default function LandingOrcamento() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* PREÇO */}
+      <section className="py-16 bg-white">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="max-w-2xl mx-auto text-center">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-3">
+              Quanto custa parar de perder orçamento?
+            </h2>
+            <p className="text-slate-500 mb-8">Menos do que você imagina — e se paga no primeiro orçamento aprovado.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 max-w-lg mx-auto">
+              <div className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-6 text-center">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Plano Mensal</p>
+                <div className="flex items-end justify-center gap-1 mb-1">
+                  <span className="text-4xl font-extrabold text-slate-800">R${cfg_pm % 1 === 0 ? cfg_pm.toFixed(0) : cfg_pm.toFixed(2).replace('.',',')}</span>
+                  <span className="text-slate-400 mb-1">/mês</span>
+                </div>
+                <p className="text-xs text-slate-400 mt-1">Cancele quando quiser</p>
+              </div>
+              <div className="bg-indigo-600 border-2 border-indigo-600 rounded-2xl p-6 text-center relative overflow-hidden">
+                <div className="absolute top-3 right-3 bg-amber-400 text-slate-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full">MAIS VANTAJOSO</div>
+                <p className="text-xs font-bold text-indigo-200 uppercase tracking-wider mb-3">Plano Anual</p>
+                <div className="flex items-end justify-center gap-1 mb-1">
+                  <span className="text-4xl font-extrabold text-white">R${cfg_pam % 1 === 0 ? cfg_pam.toFixed(0) : cfg_pam.toFixed(2).replace('.',',')}</span>
+                  <span className="text-indigo-300 mb-1">/mês</span>
+                </div>
+                <p className="text-xs text-indigo-300 mb-0.5">Cobrado: R${cfg_pa % 1 === 0 ? cfg_pa.toFixed(0) : cfg_pa.toFixed(2).replace('.',',')}/ano</p>
+                <p className="text-xs font-bold text-amber-300">Economia de R${Math.round((cfg_pm - cfg_pam) * 12)}/ano</p>
+              </div>
+            </div>
+            <a href={CADASTRO} className="inline-flex items-center gap-2 bg-indigo-600 text-white font-bold px-8 py-4 rounded-2xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 text-base">
+              Testar grátis por 7 dias <ArrowRight className="w-5 h-5" />
+            </a>
+            <p className="text-slate-400 text-xs mt-3">Sem cartão · Cancele quando quiser · Suporte incluso</p>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 text-center mb-3">
+              Perguntas frequentes
+            </h2>
+            <p className="text-slate-500 text-center mb-8">Sobre orçamento online para oficina mecânica.</p>
+            <div className="space-y-3">
+              <FaqItem p="O cliente precisa criar uma conta para aprovar o orçamento?" r="Não. Você envia o link pelo WhatsApp e o cliente abre no celular. Sem login, sem instalar nada, sem burocracia. É um clique para aprovar." />
+              <FaqItem p="A aprovação tem valor legal?" r="A aprovação registra nome, data e hora do acesso. Isso serve como evidência em caso de disputa. Não substitui contrato formal, mas elimina a grande maioria dos mal-entendidos." />
+              <FaqItem p="E se o cliente não tiver acesso ao link?" r="O link funciona em qualquer navegador de celular ou computador. Basta receber o WhatsApp e clicar. Sem requisitos técnicos." />
+              <FaqItem p="Consigo ver se o cliente leu o orçamento?" r="Sim. Você sabe se o orçamento foi aberto, quando foi aberto e se foi aprovado — tudo em tempo real no painel da oficina." />
+              <FaqItem p="Funciona para orçamentos de frotas ou empresas?" r="Sim. Você pode enviar para qualquer contato. Para frotas, o responsável recebe o link e aprova pelo celular — sem precisar ir até a oficina." />
+            </div>
           </div>
         </div>
       </section>

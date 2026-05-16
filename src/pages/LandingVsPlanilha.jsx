@@ -136,6 +136,20 @@ const DEPOIMENTOS = [
   },
 ]
 
+function FaqItem({ p, r }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <button onClick={() => setOpen(o => !o)}
+      className="w-full text-left bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:border-indigo-200 transition-all">
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-bold text-slate-900 text-sm">{p}</p>
+        <span className={`text-indigo-500 font-bold text-xl shrink-0 transition-transform ${open ? 'rotate-45' : ''}`}>+</span>
+      </div>
+      {open && <p className="text-slate-500 text-sm leading-relaxed mt-3 pt-3 border-t border-gray-100">{r}</p>}
+    </button>
+  )
+}
+
 export default function LandingVsPlanilha() {
   usePageView('/boxcerto-vs-planilha')
   usePageMeta({
@@ -364,6 +378,25 @@ export default function LandingVsPlanilha() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 text-center mb-3">
+              Perguntas frequentes
+            </h2>
+            <p className="text-slate-500 text-center mb-8">Tudo que você precisa saber antes de sair da planilha.</p>
+            <div className="space-y-3">
+              <FaqItem p="Migrar para o BoxCerto é complicado?" r="Não. Você pode rodar os dois em paralelo nos primeiros dias. Sem importar planilha, sem configuração longa. Cria a conta, abre a primeira OS e vai vendo a diferença na prática." />
+              <FaqItem p="Vou perder os dados que tenho na planilha?" r="Os dados da planilha ficam com você. No BoxCerto, você começa a registrar os novos atendimentos e clientes. O histórico antigo pode ser consultado na planilha normalmente." />
+              <FaqItem p="O BoxCerto funciona offline?" r="Precisa de conexão com internet, assim como o Google Sheets. A diferença é que no BoxCerto seus dados têm backup automático e não ficam presos num arquivo local." />
+              <FaqItem p="E se eu precisar de ajuda para configurar?" r="O suporte via WhatsApp está incluído em todos os planos. A equipe responde em minutos e ajuda com qualquer dúvida do início ao dia a dia." />
+              <FaqItem p="Precisa de cartão de crédito para testar?" r="Não. Os 7 dias são completamente gratuitos. Você só informa o pagamento se decidir continuar — sem cobrança automática, sem surpresa." />
+            </div>
           </div>
         </div>
       </section>

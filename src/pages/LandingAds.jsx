@@ -10,6 +10,9 @@ import {
   Clock, TrendingUp, ShieldCheck, AlertTriangle, X,
   Zap, Users, DollarSign, ThumbsUp,
 } from 'lucide-react'
+import { usePageMeta } from '../hooks/usePageMeta'
+import { usePageView } from '../hooks/usePageView'
+import { useConfig } from '../hooks/useConfig'
 
 // ─── hook scroll ─────────────────────────────────────────────────────────────
 function useScrolled(px = 400) {
@@ -311,10 +314,35 @@ function AntesDepois() {
   )
 }
 
+// ─── FAQ accordion ────────────────────────────────────────────────────────────
+function FAQ({ p, r }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <button onClick={() => setOpen(o => !o)}
+      className="w-full text-left bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:border-indigo-200 transition-all">
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-bold text-slate-900 text-sm">{p}</p>
+        <span className={`text-indigo-500 font-bold text-xl transition-transform ${open ? 'rotate-45' : ''}`}>+</span>
+      </div>
+      {open && <p className="text-slate-500 text-sm leading-relaxed mt-3 pt-3 border-t border-gray-100">{r}</p>}
+    </button>
+  )
+}
+
 // ─── página ───────────────────────────────────────────────────────────────────
 export default function LandingAds() {
+  usePageView('/lp')
+  usePageMeta({
+    title: 'Organize sua Oficina em 7 Dias | Teste Grátis BoxCerto',
+    description: 'Pare de perder orçamento, cliente e dinheiro por falta de controle. Use o BoxCerto para organizar sua oficina sem planilha e sem complicação. 7 dias grátis.',
+    canonical: 'https://boxcerto.com/lp',
+  })
   const navigate   = useNavigate()
   const scrolled   = useScrolled()
+  const cfg        = useConfig()
+  const cfg_pm     = parseFloat(cfg.price_monthly)        || 97
+  const cfg_pam    = parseFloat(cfg.price_annual_monthly) || 79.90
+  const cfg_pa     = parseFloat(cfg.price_annual_total)   || 948
   const goRegister = useCallback(() => navigate('/cadastro'), [navigate])
 
   return (
@@ -514,8 +542,77 @@ export default function LandingAds() {
         </div>
       </section>
 
+      {/* PREÇO */}
+      <section className="bg-gray-50 px-4 py-14">
+        <div className="max-w-xl mx-auto text-center">
+          <h2 className="text-2xl font-extrabold text-slate-900 mb-2">Preço simples e transparente</h2>
+          <p className="text-slate-500 text-sm mb-8">Por menos que o valor de uma troca de óleo por mês, sua oficina tem controle completo.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            {/* Mensal */}
+            <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 text-center">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Plano Mensal</p>
+              <div className="flex items-end justify-center gap-1 mb-1">
+                <span className="text-4xl font-extrabold text-slate-800">R${cfg_pm % 1 === 0 ? cfg_pm.toFixed(0) : cfg_pm.toFixed(2).replace('.',',')}</span>
+                <span className="text-slate-400 mb-1">/mês</span>
+              </div>
+              <p className="text-xs text-slate-400 mb-4">Cancele quando quiser</p>
+              <p className="text-xs text-slate-500">Para quem quer testar com liberdade total.</p>
+            </div>
+            {/* Anual */}
+            <div className="bg-indigo-600 border-2 border-indigo-600 rounded-2xl p-6 text-center relative overflow-hidden">
+              <div className="absolute top-3 right-3 bg-amber-400 text-slate-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full">MAIS VANTAJOSO</div>
+              <p className="text-xs font-bold text-indigo-200 uppercase tracking-wider mb-3">Plano Anual</p>
+              <div className="flex items-end justify-center gap-1 mb-1">
+                <span className="text-4xl font-extrabold text-white">R${cfg_pam % 1 === 0 ? cfg_pam.toFixed(0) : cfg_pam.toFixed(2).replace('.',',')}</span>
+                <span className="text-indigo-300 mb-1">/mês</span>
+              </div>
+              <p className="text-xs text-indigo-300 mb-1">Cobrado anualmente: R${cfg_pa % 1 === 0 ? cfg_pa.toFixed(0) : cfg_pa.toFixed(2).replace('.',',')}</p>
+              <p className="text-xs font-bold text-amber-300 mb-4">Economia de R${Math.round((cfg_pm - cfg_pam) * 12)}/ano</p>
+              <p className="text-xs text-indigo-200">Para quem quer o melhor custo-benefício.</p>
+            </div>
+          </div>
+          <p className="text-slate-500 text-sm italic">
+            "Se o BoxCerto evitar uma peça perdida, um orçamento esquecido ou um cliente sem retorno, ele já se paga no mês."
+          </p>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="bg-white px-4 py-14">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-2xl font-extrabold text-slate-900 text-center mb-2">Perguntas frequentes</h2>
+          <p className="text-slate-500 text-sm text-center mb-8">Respostas diretas para as dúvidas mais comuns.</p>
+          <div className="space-y-3">
+            <FAQ
+              p="Precisa instalar alguma coisa?"
+              r="Não. O BoxCerto é online e funciona direto no navegador do celular ou computador. Sem download, sem instalação, sem configuração de TI."
+            />
+            <FAQ
+              p="Funciona no celular?"
+              r="Sim, foi feito para isso. Você abre OS, envia orçamento e confere o financeiro tudo pelo celular — na bancada, no balcão ou em casa."
+            />
+            <FAQ
+              p="Precisa de cartão para testar?"
+              r="Não. O período de 7 dias é totalmente gratuito e não exige cartão de crédito. Você só informa o pagamento se decidir continuar."
+            />
+            <FAQ
+              p="Serve para oficina pequena com 1 ou 2 funcionários?"
+              r="Sim. O BoxCerto foi feito justamente para essas oficinas — que precisam de controle sem gastar tempo em sistema complicado. Funciona para mecânico solo até equipes maiores."
+            />
+            <FAQ
+              p="Posso cancelar quando quiser?"
+              r="Sim. No plano mensal você cancela a qualquer momento, sem multa e sem precisar ligar pra ninguém. Seus dados ficam disponíveis para exportar por 30 dias."
+            />
+            <FAQ
+              p="O cliente consegue aprovar orçamento sem criar conta?"
+              r="Sim. O cliente recebe um link pelo WhatsApp, abre no celular e aprova com um clique — sem instalar nada, sem criar conta, sem complicação."
+            />
+          </div>
+        </div>
+      </section>
+
       {/* GARANTIA */}
-      <section className="bg-white px-4 py-12 text-center">
+      <section className="bg-gray-50 px-4 py-12 text-center">
         <div className="max-w-xl mx-auto">
           <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <ShieldCheck className="w-8 h-8 text-emerald-600" />
