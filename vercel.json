@@ -1,6 +1,12 @@
 {
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/lp",                             "destination": "/lp.html" },
+    { "source": "/lp2",                            "destination": "/lp2.html" },
+    { "source": "/lpsistema-para-oficina-pequena", "destination": "/lpsistema-para-oficina-pequena.html" },
+    { "source": "/lpboxcerto-vs-planilha",         "destination": "/lpboxcerto-vs-planilha.html" },
+    { "source": "/lporcamento-online-oficina",     "destination": "/lporcamento-online-oficina.html" },
+    { "source": "/lpdiagnostico",                  "destination": "/lpdiagnostico.html" },
+    { "source": "/((?!api/).*)",                   "destination": "/index.html" }
   ],
   "crons": [
     {
