@@ -174,7 +174,7 @@ function OpcaoCard({ opcao, selecionada, onClick }) {
   )
 }
 
-function ResultadoCard({ dor, orcamentoMsg, equipeMsg, perda }) {
+function ResultadoCard({ dor, orcamentoMsg, equipeMsg, perda, cfg_pm }) {
   const c = COR[dor.cor]
   const DorIcon = dor.icon
 
@@ -294,7 +294,7 @@ function ResultadoCard({ dor, orcamentoMsg, equipeMsg, perda }) {
 
 // ── Página principal ──────────────────────────────────────────────────────────
 export default function Diagnostico() {
-  usePageView('/diagnostico')
+  usePageView('/lpdiagnostico')
   usePageMeta({
     title: 'Diagnóstico Gratuito para Oficina | Veja Seu Nível de Controle — BoxCerto',
     description: 'Faça um diagnóstico rápido e descubra se sua oficina está perdendo dinheiro com orçamentos perdidos, planilha e falta de controle. Resultado imediato.',
@@ -420,7 +420,7 @@ export default function Diagnostico() {
         {/* RESULTADO */}
         {etapa === totalPerguntas + 1 && (
           <div ref={resultadoRef}>
-            <ResultadoCard {...gerarResultado(respostas)} />
+            <ResultadoCard {...gerarResultado(respostas)} cfg_pm={cfg_pm} />
           </div>
         )}
 
@@ -429,7 +429,7 @@ export default function Diagnostico() {
       {/* Footer mínimo */}
       <footer className="border-t border-gray-100 mt-12 py-6">
         <div className="max-w-2xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
-          <span>© 2025 BoxCerto. Todos os direitos reservados.</span>
+          <span>© {new Date().getFullYear()} BoxCerto. Todos os direitos reservados.</span>
           <div className="flex gap-4">
             <a href="/termos" className="hover:text-slate-600">Termos</a>
             <a href="/privacidade" className="hover:text-slate-600">Privacidade</a>
