@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth, hasAccess } from '../contexts/AuthContext'
 import { useConfig } from '../hooks/useConfig'
 import { usePageView } from '../hooks/usePageView'
+import { usePageMeta } from '../hooks/usePageMeta'
 import Logo from '../components/Logo'
 import {
   Wrench, CheckCircle, ChevronDown, ChevronUp,
@@ -134,10 +135,16 @@ export default function Landing() {
   const { user, loading } = useAuth()
   const cfg = useConfig()
   usePageView('/landing')
-  const pMensal = parseFloat(cfg.price_monthly)        || 97
-  const pAnual  = parseFloat(cfg.price_annual)         || 958.80
-  const pAnualM = parseFloat(cfg.price_annual_monthly) || 79.90
-  const economia = Math.round(pMensal * 12 - pAnual)
+  usePageMeta({
+    title: 'BoxCerto | Sistema de Gestão para Oficina Mecânica',
+    description: 'Controle OS, orçamentos, clientes, estoque e financeiro da sua oficina em um sistema simples, online e fácil de usar. Teste grátis por 7 dias.',
+    canonical: 'https://boxcerto.com',
+  })
+  const pMensal    = parseFloat(cfg.price_monthly)        || 97
+  const pAnual     = parseFloat(cfg.price_annual)         || 958.80
+  const pAnualM    = parseFloat(cfg.price_annual_monthly) || 79.90
+  const economiaTotal = parseFloat((pMensal * 12 - pAnual).toFixed(2))
+  const economia   = Math.round(economiaTotal)
   const [faqOpen, setFaqOpen] = useState(null)
   const [scrolled, setScrolled] = useState(false)
   const [showSticky, setShowSticky] = useState(false)
@@ -635,7 +642,7 @@ export default function Landing() {
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
-              { icon: <Wrench className="w-6 h-6 text-white" />, bg: 'bg-indigo-600', title: 'Oficina — Visão em tempo real', desc: 'Dashboard com todos os carros. Placa, modelo, cliente e status por cor. Um toque para WhatsApp com o status atualizado.', items: ['Dashboard por cores: orçamento, serviço, pronto', 'Agendamento e KM do veículo', 'WhatsApp automático com 1 toque'] },
+              { icon: <Wrench className="w-6 h-6 text-white" />, bg: 'bg-indigo-600', title: 'Oficina — Visão em tempo real', desc: 'Dashboard com todos os carros. Placa, modelo, cliente e status por cor. Um toque para WhatsApp com o status atualizado.', items: ['Dashboard por cores: orçamento, serviço, pronto', 'Agendamento e KM do veículo', 'Envio de status ao cliente pelo WhatsApp'] },
               { icon: <Search className="w-6 h-6 text-white" />, bg: 'bg-violet-600', title: 'Histórico — Memória eterna', desc: 'Busque qualquer cliente ou placa e veja tudo que já foi feito. Nunca mais perca o histórico, mesmo que o cliente volte anos depois.', items: ['Busca por placa, nome ou CPF', 'Linha do tempo de todas as OS', 'Lista completa de clientes e veículos'] },
               { icon: <TrendingUp className="w-6 h-6 text-white" />, bg: 'bg-emerald-600', title: 'Financeiro — Lucro real', desc: 'Veja quanto entrou, quanto custou e quanto você realmente lucrou. O custo de peça fica invisível para o cliente — só você vê.', items: ['Lucro líquido do mês em destaque', 'Custo de peça separado do valor cobrado', 'Controle de despesas fixas'] },
               { icon: <FileText className="w-6 h-6 text-white" />, bg: 'bg-amber-500', title: 'Orçamento — Profissional em PDF', desc: 'Monte item por item com desconto, garantia por peça e recibo de pagamento. Envie o link de aprovação pelo WhatsApp.', items: ['PDF profissional com logo da sua oficina', 'Link exclusivo para aprovação do cliente', 'Aprovação com registro de data e hora'] },
@@ -722,7 +729,7 @@ export default function Landing() {
             <p className="text-indigo-600 font-semibold text-sm uppercase tracking-wider mb-3">Preços</p>
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">Menos de R$100 por mês. Controle total da oficina.</h2>
             <p className="text-slate-500 max-w-xl mx-auto mb-3">Comece grátis por 7 dias. Sem cartão. Sem compromisso.</p>
-            <p className="text-slate-400 text-sm italic">Recupere 1 cliente por mês e já se paga — o resto é lucro puro.</p>
+            <p className="text-slate-400 text-sm italic">Se o BoxCerto evitar 1 orçamento perdido no mês, ele já se paga.</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
@@ -739,7 +746,7 @@ export default function Landing() {
                   'OS ilimitadas',
                   'Clientes e veículos ilimitados',
                   'Aprovação de orçamento por link',
-                  'WhatsApp automático',
+                  'Orçamento com link pelo WhatsApp',
                   'Histórico completo',
                   'Controle financeiro',
                   'Estoque com alerta automático',
@@ -768,7 +775,8 @@ export default function Landing() {
                 <span className="text-5xl font-bold text-white">R${pAnualM.toFixed(2).replace('.',',')}</span>
                 <span className="text-indigo-200 mb-1.5">/mês</span>
               </div>
-              <p className="text-indigo-300 text-sm mt-1 mb-6">Cobrado R${pAnual.toFixed(2).replace('.',',')} uma vez por ano · Economize R${economia}</p>
+              <p className="text-indigo-300 text-sm mt-1">Cobrado uma vez ao ano: R${pAnual.toFixed(2).replace('.',',')}</p>
+              <p className="text-amber-300 text-xs font-semibold mb-6">Economia de R${economiaTotal.toFixed(2).replace('.',',')} comparado ao plano mensal</p>
               <ul className="space-y-3 mb-8 flex-1">
                 {[
                   'Tudo do plano mensal',
@@ -776,7 +784,7 @@ export default function Landing() {
                   'Acesso antecipado a novidades',
                   'Menor preço garantido',
                   '7 dias grátis para testar',
-                  'Garantia de reembolso',
+                  '7 dias para testar sem risco',
                 ].map((b, i) => (
                   <li key={i} className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-indigo-200 shrink-0" />
@@ -784,11 +792,11 @@ export default function Landing() {
                   </li>
                 ))}
               </ul>
-              {/* Verde para destacar visualmente como a melhor escolha */}
               <button onClick={goRegister}
                 className="w-full bg-emerald-500 text-white font-bold py-3.5 rounded-2xl hover:bg-emerald-400 transition-colors shadow-lg text-base">
-                Testar 7 dias grátis — melhor oferta ⭐
+                Testar grátis e economizar R$ {economia}
               </button>
+              <p className="text-indigo-300 text-xs text-center mt-3">Teste grátis por 7 dias. Depois, R${pAnual.toFixed(2).replace('.',',')}/ano.</p>
             </div>
           </div>
 

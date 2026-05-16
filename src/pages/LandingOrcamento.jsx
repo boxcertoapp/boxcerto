@@ -195,7 +195,7 @@ export default function LandingOrcamento() {
   const cfg    = useConfig()
   const cfg_pm  = parseFloat(cfg.price_monthly)        || 97
   const cfg_pam = parseFloat(cfg.price_annual_monthly) || 79.90
-  const cfg_pa  = parseFloat(cfg.price_annual_total)   || 948
+  const cfg_pa  = parseFloat(cfg.price_annual_total)   || 958.80
 
   return (
     <div className="min-h-screen bg-white">
@@ -417,8 +417,8 @@ export default function LandingOrcamento() {
                   <span className="text-4xl font-extrabold text-white">R${cfg_pam % 1 === 0 ? cfg_pam.toFixed(0) : cfg_pam.toFixed(2).replace('.',',')}</span>
                   <span className="text-indigo-300 mb-1">/mês</span>
                 </div>
-                <p className="text-xs text-indigo-300 mb-0.5">Cobrado: R${cfg_pa % 1 === 0 ? cfg_pa.toFixed(0) : cfg_pa.toFixed(2).replace('.',',')}/ano</p>
-                <p className="text-xs font-bold text-amber-300">Economia de R${Math.round((cfg_pm - cfg_pam) * 12)}/ano</p>
+                <p className="text-xs text-indigo-300 mb-0.5">Cobrado uma vez ao ano: R${cfg_pa % 1 === 0 ? cfg_pa.toFixed(0) : cfg_pa.toFixed(2).replace('.',',')}</p>
+                <p className="text-xs font-bold text-amber-300">Economia de R${parseFloat((cfg_pm * 12 - cfg_pa).toFixed(2)).toFixed(2).replace('.',',')} comparado ao plano mensal</p>
               </div>
             </div>
             <a href={CADASTRO} className="inline-flex items-center gap-2 bg-indigo-600 text-white font-bold px-8 py-4 rounded-2xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 text-base">

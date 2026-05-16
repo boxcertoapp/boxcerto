@@ -177,7 +177,7 @@ export default function LandingAds2() {
   usePageView('/lp2')
   usePageMeta({
     title: 'Volte para o Controle da sua Oficina | BoxCerto',
-    description: 'Você já sabe que sua oficina precisa se organizar. Teste o BoxCerto por 7 dias e veja como controlar OS, estoque, orçamentos e financeiro. Sem cartão.',
+    description: 'Você já sabe que sua oficina precisa se organizar. Teste o BoxCerto por 7 dias e controle OS, estoque, orçamentos e financeiro. Sem cartão.',
     canonical: 'https://boxcerto.com/lp2',
   })
   const navigate   = useNavigate()
@@ -386,8 +386,8 @@ export default function LandingAds2() {
                 <span className="text-4xl font-extrabold text-white">R${cfg_pam % 1 === 0 ? cfg_pam.toFixed(0) : cfg_pam.toFixed(2).replace('.',',')}</span>
                 <span className="text-indigo-300 mb-1">/mês</span>
               </div>
-              <p className="text-xs text-indigo-300 mb-0.5">Cobrado anualmente: R${cfg_pa % 1 === 0 ? cfg_pa.toFixed(0) : cfg_pa.toFixed(2).replace('.',',')}</p>
-              <p className="text-xs font-bold text-amber-300">Economia de R${Math.round((cfg_pm - cfg_pam) * 12)}/ano</p>
+              <p className="text-xs text-indigo-300 mb-0.5">Cobrado uma vez ao ano: R${cfg_pa % 1 === 0 ? cfg_pa.toFixed(0) : cfg_pa.toFixed(2).replace('.',',')}</p>
+              <p className="text-xs font-bold text-amber-300">Economia de R${parseFloat((cfg_pm * 12 - cfg_pa).toFixed(2)).toFixed(2).replace('.',',')} comparado ao plano mensal</p>
             </div>
           </div>
           <button onClick={goRegister} className="w-full max-w-sm mx-auto flex items-center justify-center gap-2 bg-emerald-500 text-white font-extrabold py-4 rounded-2xl hover:bg-emerald-400 transition-colors shadow-lg text-base">

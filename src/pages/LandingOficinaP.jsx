@@ -99,6 +99,7 @@ export default function LandingOficinaP() {
   const cfg = useConfig()
   const cfg_pm  = parseFloat(cfg.price_monthly)        || 97
   const cfg_pam = parseFloat(cfg.price_annual_monthly) || 79.90
+  const cfg_pa  = parseFloat(cfg.price_annual_total)   || 958.80
 
   const [tabAtiva, setTabAtiva] = useState('antes')
 
@@ -431,8 +432,8 @@ export default function LandingOficinaP() {
                   <span className="text-4xl font-extrabold text-white">R${cfg_pam % 1 === 0 ? cfg_pam.toFixed(0) : cfg_pam.toFixed(2).replace('.',',')}</span>
                   <span className="text-indigo-300 mb-1">/mês</span>
                 </div>
-                <p className="text-xs text-indigo-300 mb-0.5">Cobrado: R${cfg_pm % 1 === 0 ? (cfg_pm * 12).toFixed(0) : (cfg_pm * 12).toFixed(2).replace('.',',')} → R${(cfg_pam * 12).toFixed(0)}</p>
-                <p className="text-xs font-bold text-amber-300 mb-4">Economia de R${Math.round((cfg_pm - cfg_pam) * 12)}/ano</p>
+                <p className="text-xs text-indigo-300 mb-0.5">Cobrado uma vez ao ano: R${cfg_pa % 1 === 0 ? cfg_pa.toFixed(0) : cfg_pa.toFixed(2).replace('.',',')}</p>
+                <p className="text-xs font-bold text-amber-300 mb-4">Economia de R${parseFloat((cfg_pm * 12 - cfg_pa).toFixed(2)).toFixed(2).replace('.',',')} comparado ao plano mensal</p>
                 <a href={CADASTRO} className="block w-full bg-white text-indigo-700 font-bold py-2.5 rounded-xl text-sm hover:bg-indigo-50 transition-colors">
                   Testar grátis
                 </a>

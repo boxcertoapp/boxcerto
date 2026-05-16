@@ -566,8 +566,8 @@ export default function LandingAds() {
                 <span className="text-4xl font-extrabold text-white">R${cfg_pam % 1 === 0 ? cfg_pam.toFixed(0) : cfg_pam.toFixed(2).replace('.',',')}</span>
                 <span className="text-indigo-300 mb-1">/mês</span>
               </div>
-              <p className="text-xs text-indigo-300 mb-1">Cobrado anualmente: R${cfg_pa % 1 === 0 ? cfg_pa.toFixed(0) : cfg_pa.toFixed(2).replace('.',',')}</p>
-              <p className="text-xs font-bold text-amber-300 mb-4">Economia de R${Math.round((cfg_pm - cfg_pam) * 12)}/ano</p>
+              <p className="text-xs text-indigo-300 mb-1">Cobrado uma vez ao ano: R${cfg_pa % 1 === 0 ? cfg_pa.toFixed(0) : cfg_pa.toFixed(2).replace('.',',')}</p>
+              <p className="text-xs font-bold text-amber-300 mb-4">Economia de R${parseFloat((cfg_pm * 12 - cfg_pa).toFixed(2)).toFixed(2).replace('.',',')} comparado ao plano mensal</p>
               <p className="text-xs text-indigo-200">Para quem quer o melhor custo-benefício.</p>
             </div>
           </div>
