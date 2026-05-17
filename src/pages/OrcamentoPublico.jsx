@@ -356,7 +356,6 @@ export default function OrcamentoPublico() {
   const handleWhatsApp = () => {
     if (!os) return
     const tel = (os.office?.telefone || '').replace(/\D/g, '')
-    const passo = getPassoAtivo(os)
     const { passo: p, foiAtualizado: atualizado } = getEstado(os)
     const msgs = [
       atualizado
