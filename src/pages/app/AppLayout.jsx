@@ -1,4 +1,5 @@
-import { NavLink, Outlet, Navigate, useNavigate } from 'react-router-dom'
+import { useRef, useEffect } from 'react'
+import { NavLink, Outlet, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { Wrench, Clock, TrendingUp, Menu, Package, Zap } from 'lucide-react'
 import { useAuth, hasAccess, trialDaysLeft } from '../../contexts/AuthContext'
 import AnnouncementBanner from '../../components/AnnouncementBanner'
@@ -15,7 +16,18 @@ const tabs = [
 
 export default function AppLayout() {
   const { user, loading } = useAuth()
-  const navigate = useNavigate()
+  const navigate  = useNavigate()
+  const location  = useLocation()
+
+  // Refs dos containers de scroll — mobile e desktop
+  const mainMobileRef  = useRef(null)
+  const mainDesktopRef = useRef(null)
+
+  // Volta ao topo sempre que a rota mudar
+  useEffect(() => {
+    mainMobileRef.current?.scrollTo({ top: 0, behavior: 'instant' })
+    mainDesktopRef.current?.scrollTo({ top: 0, behavior: 'instant' })
+  }, [location.pathname])
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -93,7 +105,7 @@ export default function AppLayout() {
 
         {/* Main content — offset for sidebar */}
         <div className="ml-56 flex-1 flex flex-col min-h-screen">
-          <main className="flex-1 overflow-y-auto">
+          <main ref={mainDesktopRef} className="flex-1 overflow-y-auto">
             <div className="max-w-3xl mx-auto">
               <Outlet />
             </div>
@@ -127,7 +139,7 @@ export default function AppLayout() {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto pb-24">
+        <main ref={mainMobileRef} className="flex-1 overflow-y-auto pb-24">
           <Outlet />
         </main>
 
@@ -159,7 +171,9 @@ export default function AppLayout() {
         </nav>
       </div>
 
-      {/* Onboarding checklist flutuante */}
+      {/* Onboarding checklist flutuante
+          Mobile: lado ESQUERDO (o FAB "+" está fixed bottom-24 right-4)
+          Desktop: canto inferior direito */}
       <OnboardingChecklist />
 
       {/* Fundo decorativo desktop */}

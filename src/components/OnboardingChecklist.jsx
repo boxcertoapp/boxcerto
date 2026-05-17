@@ -152,7 +152,7 @@ export default function OnboardingChecklist() {
 
   return (
     <div
-      className="fixed z-50 right-3 bottom-[88px] lg:bottom-6 lg:right-6 w-72"
+      className="fixed z-50 left-3 bottom-[88px] lg:left-auto lg:right-6 lg:bottom-6 w-72"
       style={{ filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.14))' }}
     >
       <div className="rounded-2xl overflow-hidden border border-gray-100 bg-white">
