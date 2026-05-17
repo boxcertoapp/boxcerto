@@ -4,6 +4,13 @@ import { Eye, EyeOff, AlertCircle, CheckCircle, Wrench, Clock, TrendingUp, Packa
 import Logo from '../components/Logo'
 import { useAuth } from '../contexts/AuthContext'
 import { usePageView } from '../hooks/usePageView'
+import { supabase } from '../lib/supabase'
+
+// Eventos que também gravamos no Supabase para o painel admin
+const DB_EVENTS = new Set([
+  'cadastro_view', 'cadastro_form_start', 'cadastro_submit_click',
+  'cadastro_signup_success', 'cadastro_signup_error', 'cadastro_validation_error',
+])
 
 // ── Analytics ────────────────────────────────────────────────────────────────
 function track(name, params = {}) {
@@ -19,6 +26,21 @@ function track(name, params = {}) {
     if (typeof gtag === 'function') gtag('event', name, { ...base, ...params })
     window.dataLayer = window.dataLayer || []
     window.dataLayer.push({ event: name, ...base, ...params })
+
+    // Grava no Supabase para o painel de análise de cadastro
+    if (DB_EVENTS.has(name)) {
+      supabase.from('cadastro_events').insert({
+        event_name:   name,
+        origem:       base.origem       || null,
+        utm_source:   base.utm_source   || null,
+        utm_campaign: base.utm_campaign || null,
+        utm_content:  base.utm_content  || null,
+        device:       base.device,
+        error_type:   params.error_type  || null,
+        error_field:  params.error_field || null,
+        fields_count: params.campos_preenchidos ?? null,
+      }).then(() => {}).catch(() => {})
+    }
   } catch {}
 }
 
@@ -179,11 +201,15 @@ export default function Register() {
     setError('')
 
     const wppClean = form.whatsapp.replace(/\D/g,'')
-    if (!form.responsavel.trim())  return setError('Informe seu nome para continuar.')
-    if (wppClean.length < 10)      return setError('Confira seu WhatsApp. Ele precisa ter DDD + número.')
-    if (!form.oficina.trim())      return setError('Informe o nome da sua oficina.')
-    if (!form.email.includes('@')) return setError('E-mail inválido. Verifique e tente novamente.')
-    if (form.password.length < 6)  return setError('A senha deve ter ao menos 6 caracteres.')
+    const validErr = (field, type, msg) => {
+      track('cadastro_validation_error', { error_field: field, error_type: type, campos_preenchidos: filled })
+      setError(msg)
+    }
+    if (!form.responsavel.trim())  return validErr('nome',     'nome_vazio',           'Informe seu nome para continuar.')
+    if (wppClean.length < 10)      return validErr('whatsapp', 'whatsapp_incompleto',   'Confira seu WhatsApp. Ele precisa ter DDD + número.')
+    if (!form.oficina.trim())      return validErr('oficina',  'oficina_vazia',         'Informe o nome da sua oficina.')
+    if (!form.email.includes('@')) return validErr('email',    'email_invalido',        'E-mail inválido. Verifique e tente novamente.')
+    if (form.password.length < 6)  return validErr('senha',    'senha_curta',           'A senha deve ter ao menos 6 caracteres.')
 
     track('cadastro_submit_click', { campos_preenchidos: filled })
     setLoading(true)

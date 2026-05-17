@@ -1,7 +1,315 @@
 import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, Users, DollarSign, RefreshCw, Clock, AlertCircle, CheckCircle, Brain, Globe, MousePointerClick, ExternalLink } from 'lucide-react'
+import { TrendingUp, TrendingDown, Users, DollarSign, RefreshCw, Clock, AlertCircle, CheckCircle, Brain, Globe, MousePointerClick, ExternalLink, Funnel } from 'lucide-react'
 import { useConfig } from '../../../hooks/useConfig'
 import { supabase } from '../../../lib/supabase'
+
+// ════════════════════════════════════════════════════════════
+// ANÁLISE DE CADASTRO
+// ════════════════════════════════════════════════════════════
+
+function pct(num, den) { return den > 0 ? Math.round((num / den) * 100) : 0 }
+
+function TaxaBadge({ value, meta_boa, meta_excelente }) {
+  const cls = value >= meta_excelente
+    ? 'bg-green-100 text-green-700'
+    : value >= meta_boa
+      ? 'bg-amber-100 text-amber-700'
+      : 'bg-red-100 text-red-700'
+  return <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cls}`}>{value}%</span>
+}
+
+function FunnelStep({ label, count, total, color, dropLabel }) {
+  const p = pct(count, total)
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs font-semibold text-slate-700">{label}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-extrabold text-slate-900">{count}</span>
+          {total > 0 && count < total && (
+            <span className="text-[10px] text-red-400 font-medium">−{total - count} {dropLabel}</span>
+          )}
+        </div>
+      </div>
+      <div className="h-7 bg-gray-100 rounded-lg overflow-hidden">
+        <div className="h-full rounded-lg flex items-center pl-3 transition-all duration-700"
+          style={{ width: `${Math.max(p, count > 0 ? 4 : 0)}%`, backgroundColor: color }}>
+          {p >= 8 && <span className="text-white text-xs font-bold">{p}%</span>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AnalyseCadastro() {
+  const [events, setEvents]   = useState([])
+  const [loading, setLoading] = useState(true)
+  const [periodo, setPeriodo] = useState(30)
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      const since = new Date(Date.now() - periodo * 24 * 60 * 60 * 1000).toISOString()
+      const { data } = await supabase
+        .from('cadastro_events')
+        .select('event_name, origem, device, error_type, error_field, fields_count, created_at')
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+      setEvents(data || [])
+      setLoading(false)
+    }
+    load()
+  }, [periodo])
+
+  if (loading) return (
+    <div className="flex justify-center py-10">
+      <div className="w-5 h-5 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" />
+    </div>
+  )
+
+  if (events.length === 0) return (
+    <div className="bg-slate-50 rounded-2xl p-10 text-center">
+      <p className="text-slate-400 text-sm font-medium">Nenhum evento registrado neste período.</p>
+      <p className="text-slate-300 text-xs mt-1">Os dados aparecem assim que usuários acessarem /cadastro.</p>
+      <p className="text-slate-300 text-xs mt-3 font-mono">Execute primeiro: supabase/cadastro_events.sql</p>
+    </div>
+  )
+
+  const count = (name) => events.filter(e => e.event_name === name).length
+
+  // Funil principal
+  const views    = count('cadastro_view')
+  const starts   = count('cadastro_form_start')
+  const clicks   = count('cadastro_submit_click')
+  const success  = count('cadastro_signup_success')
+  const errors   = count('cadastro_signup_error')
+  const valErros = count('cadastro_validation_error')
+
+  const taxaInicio   = pct(starts,  views)
+  const taxaClick    = pct(clicks,  starts)
+  const taxaSucesso  = pct(success, clicks)
+  const taxaFinal    = pct(success, views)
+
+  // Diagnóstico automático
+  const getDiag = () => {
+    if (views === 0) return null
+    if (taxaInicio < 30) return { icon: '😶', cor: 'bg-amber-50 border-amber-200 text-amber-800', msg: `Só ${taxaInicio}% começou o formulário. A promessa da página ou o layout não está convencendo. Revise o headline e o CTA.` }
+    if (taxaClick < 40)  return { icon: '😓', cor: 'bg-amber-50 border-amber-200 text-amber-800', msg: `Só ${taxaClick}% de quem começou clicou no botão. O formulário está cansando ou travando alguém no meio.` }
+    if (taxaSucesso < 60) return { icon: '⚠️', cor: 'bg-red-50 border-red-200 text-red-800', msg: `Só ${taxaSucesso}% de sucesso após clique — provavelmente erro técnico, validação ou backend. Veja a tabela de erros abaixo.` }
+    if (taxaFinal >= 30) return { icon: '🚀', cor: 'bg-green-50 border-green-200 text-green-800', msg: `Taxa final de ${taxaFinal}% — ótima performance! Meta excelente é 40%+.` }
+    return { icon: '📈', cor: 'bg-indigo-50 border-indigo-200 text-indigo-800', msg: `Taxa final de ${taxaFinal}%. Meta mínima é 20%, boa é 30%+. Continue otimizando.` }
+  }
+  const diag = getDiag()
+
+  // Erros de validação por campo
+  const valByField = events
+    .filter(e => e.event_name === 'cadastro_validation_error' && e.error_field)
+    .reduce((acc, e) => { acc[e.error_field] = (acc[e.error_field] || 0) + 1; return acc }, {})
+  const valSorted = Object.entries(valByField).sort((a, b) => b[1] - a[1])
+
+  // Erros de backend
+  const errByType = events
+    .filter(e => e.event_name === 'cadastro_signup_error' && e.error_type)
+    .reduce((acc, e) => { acc[e.error_type] = (acc[e.error_type] || 0) + 1; return acc }, {})
+  const errSorted = Object.entries(errByType).sort((a, b) => b[1] - a[1])
+
+  // Por origem
+  const origens = {}
+  const origemEvents = ['cadastro_view','cadastro_form_start','cadastro_submit_click','cadastro_signup_success']
+  events.forEach(e => {
+    if (!origemEvents.includes(e.event_name)) return
+    const o = e.origem || 'direto'
+    if (!origens[o]) origens[o] = { view: 0, start: 0, click: 0, success: 0 }
+    if (e.event_name === 'cadastro_view')          origens[o].view++
+    if (e.event_name === 'cadastro_form_start')     origens[o].start++
+    if (e.event_name === 'cadastro_submit_click')   origens[o].click++
+    if (e.event_name === 'cadastro_signup_success') origens[o].success++
+  })
+  const origensSorted = Object.entries(origens).sort((a, b) => b[1].view - a[1].view)
+
+  // Por dispositivo
+  const devices = {}
+  events.forEach(e => {
+    if (!origemEvents.includes(e.event_name)) return
+    const d = e.device || 'desconhecido'
+    if (!devices[d]) devices[d] = { view: 0, start: 0, click: 0, success: 0 }
+    if (e.event_name === 'cadastro_view')          devices[d].view++
+    if (e.event_name === 'cadastro_form_start')     devices[d].start++
+    if (e.event_name === 'cadastro_submit_click')   devices[d].click++
+    if (e.event_name === 'cadastro_signup_success') devices[d].success++
+  })
+  const devicesSorted = Object.entries(devices).sort((a, b) => b[1].view - a[1].view)
+
+  return (
+    <div className="space-y-5">
+
+      {/* Header + período */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <p className="text-sm font-bold text-slate-800">Funil de cadastro</p>
+          <p className="text-xs text-slate-400">Eventos registrados na página /cadastro</p>
+        </div>
+        <div className="flex gap-1.5">
+          {[7, 14, 30].map(d => (
+            <button key={d} onClick={() => setPeriodo(d)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                periodo === d ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-slate-600 hover:border-indigo-300'
+              }`}>
+              {d} dias
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Diagnóstico automático */}
+      {diag && (
+        <div className={`border rounded-xl px-4 py-3 flex items-start gap-3 ${diag.cor}`}>
+          <span className="text-base flex-shrink-0">{diag.icon}</span>
+          <p className="text-sm">{diag.msg}</p>
+        </div>
+      )}
+
+      {/* KPIs das taxas */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: 'Taxa de início',     value: taxaInicio,  sub: 'view → form_start',    meta_boa: 50, meta_excelente: 70 },
+          { label: 'Taxa de clique',     value: taxaClick,   sub: 'start → submit_click', meta_boa: 50, meta_excelente: 70 },
+          { label: 'Sucesso após clique',value: taxaSucesso, sub: 'click → success',       meta_boa: 70, meta_excelente: 85 },
+          { label: 'Conversão final',    value: taxaFinal,   sub: 'view → success',        meta_boa: 20, meta_excelente: 30 },
+        ].map(k => (
+          <div key={k.label} className="bg-white rounded-2xl border border-gray-100 p-4">
+            <TaxaBadge value={k.value} meta_boa={k.meta_boa} meta_excelente={k.meta_excelente} />
+            <p className="text-2xl font-extrabold text-slate-900 mt-2">{k.value}%</p>
+            <p className="text-xs font-semibold text-slate-600 mt-0.5">{k.label}</p>
+            <p className="text-[10px] text-slate-400">{k.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Funil visual */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+        <p className="text-sm font-bold text-slate-800 mb-4">Funil step a step</p>
+        <div className="space-y-3">
+          <FunnelStep label="Visualizações (/cadastro)" count={views}   total={views}   color="#6366f1" dropLabel="" />
+          <FunnelStep label="Começou formulário"         count={starts}  total={views}   color="#818cf8" dropLabel="saíram sem começar" />
+          <FunnelStep label="Clicou em cadastrar"        count={clicks}  total={views}   color="#a78bfa" dropLabel="abandonaram no meio" />
+          <FunnelStep label="Cadastro concluído ✓"       count={success} total={views}   color="#10b981" dropLabel="tiveram erro ou desistiram" />
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-gray-50 grid grid-cols-3 gap-3">
+          <div className="text-center">
+            <p className="text-xs text-slate-400 mb-1">Erros de validação</p>
+            <p className="text-xl font-extrabold text-amber-600">{valErros}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-slate-400 mb-1">Erros de backend</p>
+            <p className="text-xl font-extrabold text-red-500">{errors}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-slate-400 mb-1">Total de eventos</p>
+            <p className="text-xl font-extrabold text-slate-600">{events.length}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Erros */}
+      {(valSorted.length > 0 || errSorted.length > 0) && (
+        <div className="grid md:grid-cols-2 gap-4">
+
+          {valSorted.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-5">
+              <p className="text-sm font-bold text-slate-800 mb-1">Erros de validação por campo</p>
+              <p className="text-xs text-slate-400 mb-4">Campo que travou antes de submeter</p>
+              <div className="space-y-2">
+                {valSorted.map(([field, n]) => (
+                  <div key={field} className="flex items-center justify-between text-sm">
+                    <span className="text-slate-600 font-medium">{field}</span>
+                    <span className="bg-amber-50 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">{n}x</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {errSorted.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-5">
+              <p className="text-sm font-bold text-slate-800 mb-1">Erros de backend</p>
+              <p className="text-xs text-slate-400 mb-4">Retornados pelo servidor após tentar cadastrar</p>
+              <div className="space-y-2">
+                {errSorted.map(([type, n]) => (
+                  <div key={type} className="flex items-center justify-between text-sm">
+                    <span className="text-slate-600 font-medium font-mono text-xs">{type}</span>
+                    <span className="bg-red-50 text-red-600 text-xs font-bold px-2 py-0.5 rounded-full">{n}x</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Por origem */}
+      {origensSorted.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 overflow-x-auto">
+          <p className="text-sm font-bold text-slate-800 mb-4">Por origem</p>
+          <table className="w-full text-xs min-w-[480px]">
+            <thead>
+              <tr className="border-b border-gray-100 text-slate-400">
+                {['Origem','Views','Início','Submit','Sucesso','Conversão'].map(h => (
+                  <th key={h} className="py-2 px-2 font-semibold text-left first:text-left text-right">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {origensSorted.map(([o, v]) => (
+                <tr key={o} className="border-b border-gray-50 last:border-0 hover:bg-gray-50">
+                  <td className="py-2 px-2 font-semibold text-slate-700">{o}</td>
+                  <td className="py-2 px-2 text-right text-slate-600">{v.view}</td>
+                  <td className="py-2 px-2 text-right text-slate-600">{v.start}</td>
+                  <td className="py-2 px-2 text-right text-slate-600">{v.click}</td>
+                  <td className="py-2 px-2 text-right text-green-600 font-semibold">{v.success}</td>
+                  <td className="py-2 px-2 text-right">
+                    <TaxaBadge value={pct(v.success, v.view)} meta_boa={20} meta_excelente={30} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Por dispositivo */}
+      {devicesSorted.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 overflow-x-auto">
+          <p className="text-sm font-bold text-slate-800 mb-4">Por dispositivo</p>
+          <table className="w-full text-xs min-w-[480px]">
+            <thead>
+              <tr className="border-b border-gray-100 text-slate-400">
+                {['Dispositivo','Views','Início','Submit','Sucesso','Conversão'].map(h => (
+                  <th key={h} className="py-2 px-2 font-semibold text-left first:text-left text-right">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {devicesSorted.map(([d, v]) => (
+                <tr key={d} className="border-b border-gray-50 last:border-0 hover:bg-gray-50">
+                  <td className="py-2 px-2 font-semibold text-slate-700">{d === 'mobile' ? '📱 mobile' : d === 'desktop' ? '🖥️ desktop' : d}</td>
+                  <td className="py-2 px-2 text-right text-slate-600">{v.view}</td>
+                  <td className="py-2 px-2 text-right text-slate-600">{v.start}</td>
+                  <td className="py-2 px-2 text-right text-slate-600">{v.click}</td>
+                  <td className="py-2 px-2 text-right text-green-600 font-semibold">{v.success}</td>
+                  <td className="py-2 px-2 text-right">
+                    <TaxaBadge value={pct(v.success, v.view)} meta_boa={20} meta_excelente={30} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ── Funil de conversão ───────────────────────────────────────
 function FunnelChart({ steps }) {
@@ -420,6 +728,20 @@ export default function Analytics({ users }) {
 
   return (
     <div className="space-y-6">
+
+      {/* Análise de Cadastro */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+        <div className="flex items-center gap-2 mb-5">
+          <div className="w-7 h-7 bg-indigo-50 rounded-lg flex items-center justify-center">
+            <TrendingUp className="w-4 h-4 text-indigo-600" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-slate-800">Análise de cadastro</p>
+            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Funil /cadastro — eventos em tempo real</p>
+          </div>
+        </div>
+        <AnalyseCadastro />
+      </div>
 
       {/* Tráfego do site */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
