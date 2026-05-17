@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   LogOut, CreditCard, ChevronRight, Shield, Building2,
   Phone, Mail, MapPin, FileText, Camera, Check, Save,
@@ -609,6 +609,7 @@ function AbaRelatorios({ user }) {
 export default function Menu() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const logoRef = useRef()
 
   const [officeData, setOfficeData] = useState({ nome: '', endereco: '', telefone: '', cnpj: '', logo: '', tecnicos: [], podeAssumir: false })
@@ -630,6 +631,15 @@ export default function Menu() {
   const [showPaymentSection, setShowPaymentSection] = useState(false)
   const [saved, setSaved] = useState(false)
   const [activeTab, setActiveTab] = useState('relatorios')
+
+  // Onboarding: se vier com state.tab, abre essa aba automaticamente
+  useEffect(() => {
+    if (location.state?.tab) {
+      setActiveTab(location.state.tab)
+      // Limpa o state para não persistir ao navegar de volta
+      window.history.replaceState({}, '')
+    }
+  }, [location.state?.tab])
 
   const isDirty = ['nome','cnpj','telefone','endereco'].some(k => officeData[k] !== savedFields[k])
 
