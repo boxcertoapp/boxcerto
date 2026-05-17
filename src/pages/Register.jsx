@@ -119,9 +119,8 @@ export default function Register() {
   const origem        = searchParams.get('origem') || ''
   const isDiagnostico = origem === 'diagnostico'
 
-  const nomeRef      = useRef(null)
-  const formRef      = useRef(null)
-  const submitBtnRef = useRef(null)  // ref no botão principal para IntersectionObserver
+  const nomeRef = useRef(null)
+  const formRef = useRef(null)
 
   const [form, setForm] = useState({
     responsavel: '', whatsapp: '', oficina: '', email: '', password: '', plan: 'annual',
@@ -130,8 +129,6 @@ export default function Register() {
   const [error, setError]             = useState('')
   const [loading, setLoading]         = useState(false)
   const [formStarted, setFormStarted] = useState(false)
-  // true = botão principal está visível → esconder botão fixo
-  const [mainBtnVisible, setMainBtnVisible] = useState(false)
 
   // Contar campos válidos (para analytics)
   const filled = [
@@ -145,18 +142,6 @@ export default function Register() {
 
   // Analytics: view
   useEffect(() => { track('cadastro_view') }, [])
-
-  // IntersectionObserver: esconde botão fixo quando botão principal está visível
-  useEffect(() => {
-    const btn = submitBtnRef.current
-    if (!btn) return
-    const observer = new IntersectionObserver(
-      ([entry]) => setMainBtnVisible(entry.isIntersecting),
-      { threshold: 0.8 }
-    )
-    observer.observe(btn)
-    return () => observer.disconnect()
-  }, [])
 
   const handle = (e) => {
     const { name, value } = e.target
@@ -353,9 +338,7 @@ export default function Register() {
         </div>
       </div>
 
-      {/* Botão principal — observado pelo IntersectionObserver */}
       <button
-        ref={submitBtnRef}
         type="submit" disabled={loading}
         onClick={() => track('cadastro_submit_click', { campos_preenchidos: filled })}
         className="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-60 text-base shadow-lg shadow-indigo-200 mt-1"
@@ -401,7 +384,7 @@ export default function Register() {
   return (
     <>
       {/* ── MOBILE ─────────────────────────────────────────────────────────── */}
-      <div className="lg:hidden min-h-screen bg-gradient-to-b from-slate-50 to-indigo-50/20 flex flex-col items-center px-4 pt-5 pb-28">
+      <div className="lg:hidden min-h-screen bg-gradient-to-b from-slate-50 to-indigo-50/20 flex flex-col items-center px-4 pt-5 pb-10">
 
         {/* Logo compacto */}
         <Link to="/" className="mb-2.5">
@@ -439,32 +422,6 @@ export default function Register() {
         </div>
       </div>
 
-      {/* ── Botão fixo mobile ──────────────────────────────────────────────
-          Aparece quando o botão principal NÃO está visível na tela.
-          Texto diferente do botão interno para não poluir. */}
-      {!mainBtnVisible && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 px-4 py-3 shadow-2xl">
-          <button
-            type="button"
-            onClick={() => {
-              track('cadastro_fixed_btn_click', { campos_preenchidos: filled })
-              if (allFilled) {
-                formRef.current?.requestSubmit()
-              } else {
-                nomeRef.current?.focus()
-                formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-              }
-            }}
-            disabled={loading}
-            className="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-60 text-base shadow-lg shadow-indigo-200"
-          >
-            {loading ? 'Criando sua conta...' : 'Criar conta grátis'}
-          </button>
-          <p className="text-center text-[10px] text-slate-400 mt-1.5">
-            Sem cartão · Acesso imediato
-          </p>
-        </div>
-      )}
 
       {/* ── DESKTOP: 2 colunas ─────────────────────────────────────────────── */}
       <div className="hidden lg:flex min-h-screen">
