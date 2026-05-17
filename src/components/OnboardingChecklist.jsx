@@ -85,20 +85,26 @@ export default function OnboardingChecklist() {
     return () => document.removeEventListener('mousedown', handler)
   }, [showTooltip])
 
+  // Quando todos os 3 passos forem concluídos → dismiss permanente no banco
+  useEffect(() => {
+    if (!user?.id) return
+    if (done.oficina && done.os && done.orcamento) {
+      setDismissed(true)
+      supabase.from('profiles')
+        .update({ onboarding_dismissed: true })
+        .eq('id', user.id)
+        .then(() => {}).catch(() => {})
+    }
+  }, [done.oficina, done.os, done.orcamento, user?.id])
+
   // ── Guarda de exibição ─────────────────────────────────────
   if (!user || user.isAdmin || user.isTecnico || dismissed) return null
-  const allDone = done.oficina && done.os && done.orcamento
-  if (allDone) return null
 
   const completedCount = [done.oficina, done.os, done.orcamento].filter(Boolean).length
 
   // ── Ações ─────────────────────────────────────────────────
-  const dismiss = async () => {
-    setDismissed(true)
-    try {
-      await supabase.from('profiles').update({ onboarding_dismissed: true }).eq('id', user?.id)
-    } catch {}
-  }
+  // X fecha só por essa sessão — não persiste no banco (volta no próximo acesso)
+  const dismiss = () => setDismissed(true)
 
   // Passo 1: navega para Menu e abre direto na aba "Oficina"
   const irParaConfigurar = () => {
@@ -181,7 +187,7 @@ export default function OnboardingChecklist() {
           <button
             onClick={(e) => { e.stopPropagation(); dismiss() }}
             className="p-1 hover:bg-indigo-500 rounded-lg transition-colors"
-            title="Fechar"
+            title="Fechar por agora (volta no próximo acesso)"
           >
             <X className="w-4 h-4" />
           </button>
