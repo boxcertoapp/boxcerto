@@ -4,6 +4,7 @@ import { usePageMeta } from '../hooks/usePageMeta'
 import { useConfig } from '../hooks/useConfig'
 import { usePageView } from '../hooks/usePageView'
 import { supabase } from '../lib/supabase'
+import Logo from '../components/Logo'
 
 const CADASTRO  = 'https://www.boxcerto.com/cadastro'
 const WPP_NUM   = '5553997065725'
@@ -435,11 +436,8 @@ export default function Diagnostico() {
       {/* Header */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-20">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center gap-3">
-          <a href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <Zap className="w-3.5 h-3.5 text-white" />
-            </div>
-            <span className="font-bold text-slate-900 text-sm">BoxCerto</span>
+          <a href="/">
+            <Logo size="sm" priority />
           </a>
           <div className="ml-auto text-xs text-slate-400">Diagnóstico gratuito</div>
         </div>

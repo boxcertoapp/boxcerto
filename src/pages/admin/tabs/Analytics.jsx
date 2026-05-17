@@ -42,24 +42,30 @@ function FunnelStep({ label, count, total, color, dropLabel }) {
 }
 
 function AnalyseCadastro() {
-  const [events, setEvents]   = useState([])
-  const [loading, setLoading] = useState(true)
-  const [periodo, setPeriodo] = useState(30)
+  const [events, setEvents]       = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [periodo, setPeriodo]     = useState(7)
+  const [modo, setModo]           = useState('dias')
+  const [customFrom, setCustomFrom] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0] })
+  const [customTo, setCustomTo]     = useState(() => new Date().toISOString().split('T')[0])
 
   useEffect(() => {
     const load = async () => {
       setLoading(true)
-      const since = new Date(Date.now() - periodo * 24 * 60 * 60 * 1000).toISOString()
-      const { data } = await supabase
+      const since = modo === 'custom'
+        ? new Date(customFrom + 'T00:00:00').toISOString()
+        : new Date(Date.now() - periodo * 24 * 60 * 60 * 1000).toISOString()
+      let q = supabase
         .from('cadastro_events')
         .select('event_name, origem, device, error_type, error_field, fields_count, created_at')
         .gte('created_at', since)
-        .order('created_at', { ascending: false })
+      if (modo === 'custom') q = q.lte('created_at', new Date(customTo + 'T23:59:59').toISOString())
+      const { data } = await q.order('created_at', { ascending: false })
       setEvents(data || [])
       setLoading(false)
     }
     load()
-  }, [periodo])
+  }, [periodo, modo, customFrom, customTo])
 
   if (loading) return (
     <div className="flex justify-center py-10">
@@ -149,15 +155,35 @@ function AnalyseCadastro() {
           <p className="text-sm font-bold text-slate-800">Funil de cadastro</p>
           <p className="text-xs text-slate-400">Eventos registrados na página /cadastro</p>
         </div>
-        <div className="flex gap-1.5">
-          {[7, 14, 30].map(d => (
-            <button key={d} onClick={() => setPeriodo(d)}
+        <div className="flex flex-col gap-2 items-end">
+          <div className="flex gap-1.5 flex-wrap">
+            {[7, 14, 30].map(d => (
+              <button key={d} onClick={() => { setModo('dias'); setPeriodo(d) }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  modo === 'dias' && periodo === d ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-slate-600 hover:border-indigo-300'
+                }`}>
+                {d} dias
+              </button>
+            ))}
+            <button onClick={() => setModo('custom')}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                periodo === d ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-slate-600 hover:border-indigo-300'
+                modo === 'custom' ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-slate-600 hover:border-indigo-300'
               }`}>
-              {d} dias
+              Personalizado
             </button>
-          ))}
+          </div>
+          {modo === 'custom' && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-slate-500 font-medium">De</span>
+              <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
+                max={customTo}
+                className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-slate-700 focus:outline-none focus:border-indigo-400 bg-white" />
+              <span className="text-xs text-slate-500 font-medium">até</span>
+              <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
+                min={customFrom} max={new Date().toISOString().split('T')[0]}
+                className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-slate-700 focus:outline-none focus:border-indigo-400 bg-white" />
+            </div>
+          )}
         </div>
       </div>
 
@@ -466,24 +492,30 @@ function BarraSimples({ label, count, total, color = 'bg-indigo-400', prefix = '
 }
 
 function TrafegoSite({ users }) {
-  const [views, setViews]     = useState([])
-  const [loading, setLoading] = useState(true)
-  const [periodo, setPeriodo] = useState(7)
+  const [views, setViews]         = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [periodo, setPeriodo]     = useState(7)
+  const [modo, setModo]           = useState('dias')
+  const [customFrom, setCustomFrom] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0] })
+  const [customTo, setCustomTo]     = useState(() => new Date().toISOString().split('T')[0])
 
   useEffect(() => {
     const load = async () => {
       setLoading(true)
-      const since = new Date(Date.now() - periodo * 24 * 60 * 60 * 1000).toISOString()
-      const { data } = await supabase
+      const since = modo === 'custom'
+        ? new Date(customFrom + 'T00:00:00').toISOString()
+        : new Date(Date.now() - periodo * 24 * 60 * 60 * 1000).toISOString()
+      let q = supabase
         .from('page_views')
         .select('page, session_id, referrer, device, browser, created_at')
         .gte('created_at', since)
-        .order('created_at', { ascending: false })
+      if (modo === 'custom') q = q.lte('created_at', new Date(customTo + 'T23:59:59').toISOString())
+      const { data } = await q.order('created_at', { ascending: false })
       setViews(data || [])
       setLoading(false)
     }
     load()
-  }, [periodo])
+  }, [periodo, modo, customFrom, customTo])
 
   const totalVisitas  = views.length
   const sessoesUnicas = new Set(views.map(v => v.session_id)).size
@@ -548,16 +580,37 @@ function TrafegoSite({ users }) {
     <div className="space-y-5">
 
       {/* Seletor de período */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex gap-1.5">
-          {[7, 14, 30].map(d => (
-            <button key={d} onClick={() => setPeriodo(d)}
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div />
+        <div className="flex flex-col gap-2 items-end">
+          <div className="flex gap-1.5 flex-wrap">
+            {[7, 14, 30].map(d => (
+              <button key={d} onClick={() => { setModo('dias'); setPeriodo(d) }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  modo === 'dias' && periodo === d ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-slate-600 hover:border-indigo-300'
+                }`}>
+                {d} dias
+              </button>
+            ))}
+            <button onClick={() => setModo('custom')}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                periodo === d ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-slate-600 hover:border-indigo-300'
+                modo === 'custom' ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-slate-600 hover:border-indigo-300'
               }`}>
-              {d} dias
+              Personalizado
             </button>
-          ))}
+          </div>
+          {modo === 'custom' && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-slate-500 font-medium">De</span>
+              <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
+                max={customTo}
+                className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-slate-700 focus:outline-none focus:border-indigo-400 bg-white" />
+              <span className="text-xs text-slate-500 font-medium">até</span>
+              <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
+                min={customFrom} max={new Date().toISOString().split('T')[0]}
+                className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-slate-700 focus:outline-none focus:border-indigo-400 bg-white" />
+            </div>
+          )}
         </div>
       </div>
 
