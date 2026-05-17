@@ -61,6 +61,10 @@ export function AuthProvider({ children }) {
       setLoading(false)
       return
     }
+    // Garante loading=true enquanto busca o perfil.
+    // Sem isso, AppLayout vê loading=false + user=null e redireciona
+    // para /login antes do perfil chegar — causando tela em branco.
+    setLoading(true)
     const { data: profile } = await supabase
       .from('profiles')
       .select('*')
