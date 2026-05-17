@@ -399,6 +399,25 @@ export default function LandingAds() {
         </div>
       </section>
 
+      {/* PRODUTO VISUAL */}
+      <section className="bg-white px-4 py-10 border-b border-gray-100">
+        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-5 text-center">
+          O sistema na prática
+        </p>
+        <div className="relative max-w-2xl mx-auto">
+          <div className="absolute -inset-3 bg-indigo-50 rounded-3xl blur-2xl opacity-60 pointer-events-none" />
+          <img
+            src="/mockup01.webp"
+            alt="BoxCerto — gestão de oficina no celular e no computador"
+            className="relative w-full h-auto"
+            loading="lazy"
+            decoding="async"
+            width="1448"
+            height="1086"
+          />
+        </div>
+      </section>
+
       {/* DOR */}
       <section className="bg-gray-50 px-4 py-14">
         <div className="max-w-3xl mx-auto">

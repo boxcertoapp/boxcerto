@@ -253,69 +253,18 @@ export default function Landing() {
             </p>
           </div>
 
-          {/* Phone mockup */}
-          <div className="max-w-xs mx-auto relative">
-            <div className="absolute -inset-6 bg-indigo-600/20 rounded-3xl blur-3xl" />
-            <div className="relative bg-gray-900 rounded-[2.5rem] p-3 shadow-2xl border border-slate-700">
-              <div className="bg-gray-50 rounded-[2rem] overflow-hidden">
-                <div className="bg-white h-6 flex items-center justify-center">
-                  <div className="w-20 h-3 bg-gray-200 rounded-full" />
-                </div>
-                <div className="bg-white px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <img src="/logo.svg" width="20" height="20" alt="" loading="lazy" decoding="async" style={{borderRadius:4}} />
-                    <span className="text-xs font-bold text-slate-900">BoxCerto</span>
-                  </div>
-                  <span className="text-[10px] text-slate-400">Oficina do José</span>
-                </div>
-                <div className="bg-gray-50 px-3 py-2 grid grid-cols-3 gap-1.5">
-                  <div className="bg-amber-50 rounded-xl p-2 text-center border border-amber-100">
-                    <p className="text-[14px] font-bold text-amber-600">3</p>
-                    <p className="text-[8px] text-amber-500 font-medium">Orçamentos</p>
-                  </div>
-                  <div className="bg-blue-50 rounded-xl p-2 text-center border border-blue-100">
-                    <p className="text-[14px] font-bold text-blue-600">7</p>
-                    <p className="text-[8px] text-blue-500 font-medium">Em serviço</p>
-                  </div>
-                  <div className="bg-green-50 rounded-xl p-2 text-center border border-green-100">
-                    <p className="text-[14px] font-bold text-green-600">4</p>
-                    <p className="text-[8px] text-green-500 font-medium">Prontos</p>
-                  </div>
-                </div>
-                <div className="p-2 space-y-2 bg-gray-50">
-                  {[
-                    { placa: 'RST-2F45', modelo: 'Ford Ranger',  cliente: 'Carlos M.',  status: 'Pronto',       sc: 'bg-green-100 text-green-700' },
-                    { placa: 'ABC-1D23', modelo: 'Fiat Strada',  cliente: 'Ana Paula',  status: 'Aguard. apr.', sc: 'bg-amber-100 text-amber-700' },
-                    { placa: 'XYZ-8G90', modelo: 'VW Gol',       cliente: 'Roberto S.', status: 'Em serviço',   sc: 'bg-blue-100 text-blue-700' },
-                  ].map((c, i) => (
-                    <div key={i} className="bg-white rounded-xl p-2.5 flex items-center gap-2 shadow-sm border border-gray-100">
-                      <div className="bg-slate-800 px-1.5 py-1 rounded-md min-w-[52px] text-center">
-                        <span className="text-white text-[9px] font-bold tracking-wider">{c.placa}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold text-slate-800 truncate">{c.modelo}</p>
-                        <p className="text-[9px] text-slate-400 truncate">{c.cliente}</p>
-                      </div>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${c.sc}`}>{c.status}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="bg-white border-t border-gray-100 flex justify-around py-2">
-                  {[
-                    { icon: Wrench, label: 'Oficina', a: true },
-                    { icon: Clock, label: 'Histórico', a: false },
-                    { icon: TrendingUp, label: 'Financeiro', a: false },
-                    { icon: Package, label: 'Estoque', a: false },
-                    { icon: Users, label: 'Menu', a: false },
-                  ].map((t, i) => (
-                    <div key={i} className={`flex flex-col items-center gap-0.5 ${t.a ? 'text-indigo-600' : 'text-gray-300'}`}>
-                      <t.icon className="w-3 h-3" />
-                      <span className="text-[7px] font-medium">{t.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+          {/* Mockup real do produto */}
+          <div className="relative w-full max-w-2xl mx-auto px-2">
+            <div className="absolute -inset-4 bg-indigo-500/20 rounded-3xl blur-3xl pointer-events-none" />
+            <img
+              src="/mockup01.webp"
+              alt="BoxCerto em uso — gestão de oficina no computador e no celular"
+              className="relative w-full h-auto"
+              loading="eager"
+              decoding="async"
+              width="1448"
+              height="1086"
+            />
           </div>
         </div>
 
