@@ -42,14 +42,14 @@ function CelulaStatus({ valor }) {
 }
 
 // ── Calculadora de perda ──────────────────────────────────────
-function Calculadora() {
+function Calculadora({ precoMensal = 97 }) {
   const [osM, setOsM]   = useState(30)
   const [perdaPct, setPerdaPct] = useState(10)
   const [ticketM, setTicketM]   = useState(350)
 
   const perdaOs    = Math.round(osM * perdaPct / 100)
   const perdaMes   = perdaOs * ticketM
-  const ganhoLiq   = perdaMes - 97
+  const ganhoLiq   = perdaMes - precoMensal
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm max-w-xl mx-auto">
@@ -95,7 +95,7 @@ function Calculadora() {
         </div>
         <div className="flex justify-between items-center py-2 border-b border-gray-100">
           <span className="text-sm text-slate-500">Custo do BoxCerto/mês</span>
-          <span className="text-sm font-bold text-slate-700">R${cfg_pm % 1 === 0 ? cfg_pm.toFixed(0) : cfg_pm.toFixed(2).replace('.',',')}</span>
+          <span className="text-sm font-bold text-slate-700">R${precoMensal % 1 === 0 ? precoMensal.toFixed(0) : precoMensal.toFixed(2).replace('.',',')}</span>
         </div>
         <div className={`flex justify-between items-center py-3 px-3 rounded-xl mt-1 ${ganhoLiq > 0 ? 'bg-emerald-50 border border-emerald-200' : 'bg-amber-50 border border-amber-200'}`}>
           <span className="text-sm font-bold text-slate-700">Ganho líquido estimado</span>
@@ -235,7 +235,7 @@ export default function LandingVsPlanilha() {
             </h2>
             <p className="text-slate-500">Ajuste os valores e veja a diferença que o BoxCerto faria no seu caixa.</p>
           </div>
-          <Calculadora />
+          <Calculadora precoMensal={cfg_pm} />
         </div>
       </section>
 

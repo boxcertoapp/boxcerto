@@ -443,8 +443,16 @@ export default function Register() {
         </p>
 
         {/* Mockup abaixo do form */}
-        <div className="mt-8 w-full max-w-sm opacity-80">
-          <SystemPreview />
+        <div className="mt-8 w-full max-w-sm">
+          <img
+            src="/mockup01.webp"
+            alt="BoxCerto — gestão de oficina no celular e no computador"
+            className="w-full h-auto"
+            loading="lazy"
+            decoding="async"
+            width="1448"
+            height="1086"
+          />
         </div>
       </div>
 
@@ -476,7 +484,15 @@ export default function Register() {
           </div>
 
           <div className="max-w-xs">
-            <SystemPreview />
+            <img
+              src="/mockup01.webp"
+              alt="BoxCerto — gestão de oficina no celular e no computador"
+              className="w-full h-auto"
+              loading="eager"
+              decoding="async"
+              width="1448"
+              height="1086"
+            />
           </div>
         </div>
 
