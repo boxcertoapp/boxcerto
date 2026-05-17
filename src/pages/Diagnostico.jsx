@@ -176,7 +176,8 @@ function OpcaoCard({ opcao, selecionada, onClick }) {
 }
 
 function ResultadoCard({ dor, orcamentoMsg, equipeMsg, perda, cfg_pm }) {
-  const c = COR[dor.cor]
+  if (!dor) return null  // guard contra stale closure residual
+  const c = COR[dor.cor] || COR.indigo
   const DorIcon = dor.icon
 
   return (
@@ -418,10 +419,11 @@ export default function Diagnostico() {
   }, [etapa, ETAPA_RESULT])
 
   const selecionar = (value) => {
+    const idAtual = perguntaAtual.id   // captura o id antes do timeout
     setSelecionada(value)
     setTimeout(() => {
-      const novasRespostas = { ...respostas, [perguntaAtual.id]: value }
-      setRespostas(novasRespostas)
+      // Usa forma funcional para evitar stale closure sobre respostas
+      setRespostas(prev => ({ ...prev, [idAtual]: value }))
       setSelecionada(null)
       setEtapa(e => e + 1)
     }, 350)
