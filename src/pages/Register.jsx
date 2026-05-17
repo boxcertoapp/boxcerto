@@ -38,7 +38,7 @@ function humanizeError(raw = '') {
   return raw || 'Algo deu errado. Tente novamente ou fale com o suporte.'
 }
 
-// ── Mockup visual (desktop left) ─────────────────────────────────────────────
+// ── Mockup visual ────────────────────────────────────────────────────────────
 function SystemPreview() {
   return (
     <div className="relative">
@@ -119,18 +119,21 @@ export default function Register() {
   const origem        = searchParams.get('origem') || ''
   const isDiagnostico = origem === 'diagnostico'
 
-  const nomeRef = useRef(null)
-  const formRef = useRef(null)
+  const nomeRef      = useRef(null)
+  const formRef      = useRef(null)
+  const submitBtnRef = useRef(null)  // ref no botão principal para IntersectionObserver
 
   const [form, setForm] = useState({
     responsavel: '', whatsapp: '', oficina: '', email: '', password: '', plan: 'annual',
   })
-  const [show, setShow]       = useState(false)
-  const [error, setError]     = useState('')
-  const [loading, setLoading] = useState(false)
+  const [show, setShow]               = useState(false)
+  const [error, setError]             = useState('')
+  const [loading, setLoading]         = useState(false)
   const [formStarted, setFormStarted] = useState(false)
+  // true = botão principal está visível → esconder botão fixo
+  const [mainBtnVisible, setMainBtnVisible] = useState(false)
 
-  // Contar campos preenchidos (para botão fixo mobile)
+  // Contar campos válidos (para analytics)
   const filled = [
     form.responsavel.trim().length > 0,
     form.whatsapp.replace(/\D/g,'').length >= 10,
@@ -143,12 +146,24 @@ export default function Register() {
   // Analytics: view
   useEffect(() => { track('cadastro_view') }, [])
 
+  // IntersectionObserver: esconde botão fixo quando botão principal está visível
+  useEffect(() => {
+    const btn = submitBtnRef.current
+    if (!btn) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setMainBtnVisible(entry.isIntersecting),
+      { threshold: 0.8 }
+    )
+    observer.observe(btn)
+    return () => observer.disconnect()
+  }, [])
+
   const handle = (e) => {
     const { name, value } = e.target
     setForm(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleFocus = (fieldName) => {
+  const handleFocus = () => {
     if (!formStarted) {
       setFormStarted(true)
       track('cadastro_form_start')
@@ -178,13 +193,12 @@ export default function Register() {
     e?.preventDefault()
     setError('')
 
-    // Validações humanizadas
     const wppClean = form.whatsapp.replace(/\D/g,'')
-    if (!form.responsavel.trim()) return setError('Informe seu nome para continuar.')
-    if (wppClean.length < 10)    return setError('Confira seu WhatsApp. Ele precisa ter DDD + número.')
-    if (!form.oficina.trim())    return setError('Informe o nome da sua oficina.')
+    if (!form.responsavel.trim())  return setError('Informe seu nome para continuar.')
+    if (wppClean.length < 10)      return setError('Confira seu WhatsApp. Ele precisa ter DDD + número.')
+    if (!form.oficina.trim())      return setError('Informe o nome da sua oficina.')
     if (!form.email.includes('@')) return setError('E-mail inválido. Verifique e tente novamente.')
-    if (form.password.length < 6) return setError('A senha deve ter ao menos 6 caracteres.')
+    if (form.password.length < 6)  return setError('A senha deve ter ao menos 6 caracteres.')
 
     track('cadastro_submit_click', { campos_preenchidos: filled })
     setLoading(true)
@@ -206,7 +220,6 @@ export default function Register() {
       return
     }
 
-    // Sucesso — analytics
     if (typeof gtag === 'function') {
       gtag('event', 'sign_up', { method: 'email' })
       gtag('event', 'conversion', { send_to: 'G-HQNZQ5PHFB' })
@@ -220,7 +233,6 @@ export default function Register() {
     })
     track('cadastro_signup_success')
 
-    // Email boas-vindas (background)
     fetch('/api/send-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -245,7 +257,7 @@ export default function Register() {
     seal:      '7 dias grátis • sem cartão • acesso imediato',
     sealMob:   '7 dias grátis • sem cartão',
     leftHead:  <>Sua oficina no <span className="text-indigo-400">controle</span> desde o primeiro dia</>,
-    leftSub:   'Chega de papel, planilha e WhatsApp bagunçado. Controle OS, estoque, técnicos, pátio e orçamentos em uma única tela.',
+    leftSub:   'Chega de papel, planilha e WhatsApp perdido. Controle OS, estoque, técnicos, pátio e orçamentos em uma única tela.',
     cardTitle: 'Comece seu teste grátis',
     cardSub:   'Controle OS, estoque, técnicos, pátio e orçamentos da sua oficina em minutos.',
   }
@@ -258,9 +270,9 @@ export default function Register() {
     'Controle de estoque com alertas automáticos',
   ]
 
-  // ── Formulário (shared) ──────────────────────────────────────────────────
+  // ── Formulário ──────────────────────────────────────────────────────────
   const FormFields = (
-    <form id="form-cadastro" ref={formRef} onSubmit={submit} className="space-y-3">
+    <form id="form-cadastro" ref={formRef} onSubmit={submit} className="space-y-2.5">
       {error && (
         <div className="flex items-start gap-2 bg-red-50 border border-red-100 text-red-600 text-sm p-3 rounded-xl">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -275,7 +287,7 @@ export default function Register() {
           ref={nomeRef}
           name="responsavel" required
           value={form.responsavel} onChange={handle}
-          onFocus={() => handleFocus('responsavel')}
+          onFocus={handleFocus}
           onBlur={() => handleBlur('responsavel')}
           placeholder="Ex: João Silva"
           className={inputCls}
@@ -289,7 +301,7 @@ export default function Register() {
           name="whatsapp" required
           value={form.whatsapp}
           onChange={(e) => setForm(p => ({ ...p, whatsapp: formatWpp(e.target.value) }))}
-          onFocus={() => handleFocus('whatsapp')}
+          onFocus={handleFocus}
           onBlur={() => handleBlur('whatsapp')}
           placeholder="(51) 99999-9999" maxLength={15}
           className={inputCls}
@@ -302,7 +314,7 @@ export default function Register() {
         <input
           name="oficina" required
           value={form.oficina} onChange={handle}
-          onFocus={() => handleFocus('oficina')}
+          onFocus={handleFocus}
           onBlur={() => handleBlur('oficina')}
           placeholder="Ex: Auto Elétrica do João"
           className={inputCls}
@@ -315,7 +327,7 @@ export default function Register() {
         <input
           name="email" type="email" required
           value={form.email} onChange={handle}
-          onFocus={() => handleFocus('email')}
+          onFocus={handleFocus}
           onBlur={() => handleBlur('email')}
           placeholder="seuemail@exemplo.com"
           className={inputCls}
@@ -329,7 +341,7 @@ export default function Register() {
           <input
             name="password" type={show ? 'text' : 'password'} required
             value={form.password} onChange={handle}
-            onFocus={() => handleFocus('password')}
+            onFocus={handleFocus}
             onBlur={() => handleBlur('password')}
             placeholder="Mínimo 6 caracteres"
             className={`${inputCls} pr-11`}
@@ -341,8 +353,9 @@ export default function Register() {
         </div>
       </div>
 
-      {/* Botão */}
+      {/* Botão principal — observado pelo IntersectionObserver */}
       <button
+        ref={submitBtnRef}
         type="submit" disabled={loading}
         onClick={() => track('cadastro_submit_click', { campos_preenchidos: filled })}
         className="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-60 text-base shadow-lg shadow-indigo-200 mt-1"
@@ -350,17 +363,14 @@ export default function Register() {
         {loading ? 'Criando sua conta...' : 'Começar meu teste grátis'}
       </button>
 
-      {/* Microcopy */}
       <p className="text-center text-xs text-slate-400">
         Leva menos de 1 minuto. Não precisa cartão.
       </p>
 
-      {/* Segurança extra */}
       <p className="text-center text-[11px] text-slate-400 font-medium">
         Nenhuma cobrança será feita sem sua confirmação.
       </p>
 
-      {/* Termos */}
       <p className="text-[10px] text-slate-300 text-center leading-relaxed pt-1">
         Ao continuar, você concorda com os{' '}
         <Link to="/termos" target="_blank" className="text-slate-400 hover:text-indigo-500 transition-colors underline underline-offset-2">Termos de Uso</Link>
@@ -373,7 +383,7 @@ export default function Register() {
   // ── Chips de confiança ───────────────────────────────────────────────────
   const Chips = ({ compact = false }) => (
     compact ? (
-      <p className="text-xs text-slate-500 text-center mb-4">
+      <p className="text-xs text-slate-500 text-center mb-3">
         Fácil de usar&nbsp;•&nbsp;Aprenda em minutos&nbsp;•&nbsp;Acesso imediato
       </p>
     ) : (
@@ -391,23 +401,23 @@ export default function Register() {
   return (
     <>
       {/* ── MOBILE ─────────────────────────────────────────────────────────── */}
-      <div className="lg:hidden min-h-screen bg-gradient-to-b from-slate-50 to-indigo-50/20 flex flex-col items-center px-4 pt-6 pb-32">
+      <div className="lg:hidden min-h-screen bg-gradient-to-b from-slate-50 to-indigo-50/20 flex flex-col items-center px-4 pt-5 pb-28">
 
         {/* Logo compacto */}
-        <Link to="/" className="mb-3">
+        <Link to="/" className="mb-2.5">
           <Logo size="sm" priority />
         </Link>
 
         {/* Selo */}
-        <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+        <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">
           <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full inline-block" />
           {copy.sealMob}
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 w-full max-w-sm">
-          <h1 className="text-xl font-extrabold text-slate-900 mb-1">{copy.cardTitle}</h1>
-          <p className="text-slate-500 text-xs mb-3 leading-snug">{copy.cardSub}</p>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 w-full max-w-sm">
+          <h1 className="text-xl font-extrabold text-slate-900 mb-0.5">{copy.cardTitle}</h1>
+          <p className="text-slate-500 text-xs mb-2.5 leading-snug">{copy.cardSub}</p>
 
           <Chips compact />
 
@@ -415,7 +425,7 @@ export default function Register() {
         </div>
 
         {/* Link login */}
-        <p className="mt-5 text-sm text-slate-500 text-center">
+        <p className="mt-4 text-sm text-slate-500 text-center">
           Já tem conta?{' '}
           <Link to="/login" onClick={() => track('cadastro_login_click')}
             className="text-indigo-600 font-semibold hover:underline">
@@ -423,18 +433,21 @@ export default function Register() {
           </Link>
         </p>
 
-        {/* Mockup abaixo (após o form, não empurra o botão) */}
+        {/* Mockup abaixo do form */}
         <div className="mt-8 w-full max-w-sm opacity-80">
           <SystemPreview />
         </div>
       </div>
 
-      {/* Botão fixo mobile — só aparece depois que o usuário começou a preencher */}
-      {formStarted && (
+      {/* ── Botão fixo mobile ──────────────────────────────────────────────
+          Aparece quando o botão principal NÃO está visível na tela.
+          Texto diferente do botão interno para não poluir. */}
+      {!mainBtnVisible && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 px-4 py-3 shadow-2xl">
           <button
             type="button"
             onClick={() => {
+              track('cadastro_fixed_btn_click', { campos_preenchidos: filled })
               if (allFilled) {
                 formRef.current?.requestSubmit()
               } else {
@@ -443,17 +456,9 @@ export default function Register() {
               }
             }}
             disabled={loading}
-            className={`w-full font-bold py-3.5 rounded-xl active:scale-[0.98] transition-all disabled:opacity-60 text-base shadow-lg flex items-center justify-center gap-2 ${
-              allFilled
-                ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200'
-                : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100 shadow-none border border-indigo-100'
-            }`}
+            className="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-60 text-base shadow-lg shadow-indigo-200"
           >
-            {loading
-              ? 'Criando sua conta...'
-              : allFilled
-                ? 'Criar minha conta grátis →'
-                : `Continuar preenchendo (${filled}/5)`}
+            {loading ? 'Criando sua conta...' : 'Criar conta grátis'}
           </button>
           <p className="text-center text-[10px] text-slate-400 mt-1.5">
             Sem cartão · Acesso imediato
