@@ -429,27 +429,37 @@ export default function Register() {
         </div>
       </div>
 
-      {/* Botão fixo mobile */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 px-4 py-3 shadow-2xl">
-        <button
-          type="button"
-          onClick={() => {
-            if (allFilled) {
-              formRef.current?.requestSubmit()
-            } else {
-              nomeRef.current?.focus()
-              formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-            }
-          }}
-          disabled={loading}
-          className="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-60 text-base shadow-lg shadow-indigo-200 flex items-center justify-center gap-2"
-        >
-          {loading ? 'Criando sua conta...' : allFilled ? 'Criar minha conta grátis' : 'Começar meu teste grátis'}
-        </button>
-        <p className="text-center text-[10px] text-slate-400 mt-1.5">
-          {filled}/5 campos · Sem cartão · Acesso imediato
-        </p>
-      </div>
+      {/* Botão fixo mobile — só aparece depois que o usuário começou a preencher */}
+      {formStarted && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 px-4 py-3 shadow-2xl">
+          <button
+            type="button"
+            onClick={() => {
+              if (allFilled) {
+                formRef.current?.requestSubmit()
+              } else {
+                nomeRef.current?.focus()
+                formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+            }}
+            disabled={loading}
+            className={`w-full font-bold py-3.5 rounded-xl active:scale-[0.98] transition-all disabled:opacity-60 text-base shadow-lg flex items-center justify-center gap-2 ${
+              allFilled
+                ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200'
+                : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100 shadow-none border border-indigo-100'
+            }`}
+          >
+            {loading
+              ? 'Criando sua conta...'
+              : allFilled
+                ? 'Criar minha conta grátis →'
+                : `Continuar preenchendo (${filled}/5)`}
+          </button>
+          <p className="text-center text-[10px] text-slate-400 mt-1.5">
+            Sem cartão · Acesso imediato
+          </p>
+        </div>
+      )}
 
       {/* ── DESKTOP: 2 colunas ─────────────────────────────────────────────── */}
       <div className="hidden lg:flex min-h-screen">
