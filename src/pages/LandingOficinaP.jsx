@@ -181,6 +181,22 @@ export default function LandingOficinaP() {
         </div>
       </section>
 
+      {/* MOCKUP PRODUTO */}
+      <section className="bg-white px-4 py-8 border-b border-gray-100">
+        <div className="relative max-w-2xl mx-auto">
+          <div className="absolute -inset-3 bg-indigo-50 rounded-3xl blur-2xl opacity-60 pointer-events-none" />
+          <img
+            src="/mockup01.webp"
+            alt="BoxCerto — gestão de oficina no celular e no computador"
+            className="relative w-full h-auto"
+            loading="lazy"
+            decoding="async"
+            width="1448"
+            height="1086"
+          />
+        </div>
+      </section>
+
       {/* ISSO É PARA VOCÊ SE */}
       <section className="py-14 bg-white border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4">
