@@ -28,6 +28,11 @@ const buildUser = (authUser, profile) => {
     masterId: profile?.master_id || null,
     nome: profile?.nome || profile?.responsavel || '',
     setupDone: profile?.setup_done !== false, // true por padrão para masters
+    // Onboarding checklist
+    onboardingOficinaD:    profile?.onboarding_oficina_done   || false,
+    onboardingOsDone:      profile?.onboarding_os_done        || false,
+    onboardingOrcamentoDone: profile?.onboarding_orcamento_done || false,
+    onboardingDismissed:   profile?.onboarding_dismissed      || false,
   }
 }
 

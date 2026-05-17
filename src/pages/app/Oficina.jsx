@@ -491,6 +491,13 @@ export default function Oficina() {
     }
   }, [])
 
+  // Onboarding: abre modal quando o checklist dispara o evento
+  useEffect(() => {
+    const handler = () => { setPrefillPlate(''); setShowNewOS(true) }
+    window.addEventListener('boxcerto:abrir-nova-os', handler)
+    return () => window.removeEventListener('boxcerto:abrir-nova-os', handler)
+  }, [])
+
   const openOS = (os) => setSelectedOS(os)
 
   if (selectedOS) {
@@ -653,6 +660,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
         : await clientStorage.create({ officeName, ...newClient, dataNascimento: dataBRtoISO(newClient.dataNascimento) || newClient.dataNascimento })
       const v = await vehicleStorage.create({ officeName, clientId: c.id, placa, modelo: newClient.modelo })
       await osStorage.create({ officeName, vehicleId: v.id, km, agendadoPara: dataBRtoISO(agendadoPara) ? dataBRtoISO(agendadoPara) + 'T12:00' : null })
+      window.dispatchEvent(new CustomEvent('boxcerto:os-criada'))
       onClose()
     } catch (e) {
       setError(e.message || 'Erro ao criar OS.')
@@ -664,6 +672,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
     setLoading(true)
     try {
       await osStorage.create({ officeName, vehicleId: vehicle.id, km, agendadoPara: dataBRtoISO(agendadoPara) ? dataBRtoISO(agendadoPara) + 'T12:00' : null })
+      window.dispatchEvent(new CustomEvent('boxcerto:os-criada'))
       onClose()
     } catch (e) {
       setError(e.message || 'Erro ao criar OS.')
@@ -1333,6 +1342,7 @@ function OSDetailModal({ os, onClose, officeName }) {
         link
       )
       window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`, '_blank')
+      window.dispatchEvent(new CustomEvent('boxcerto:orcamento-enviado'))
     } catch (e) {
       alert('Erro ao gerar link de aprovação.')
     } finally {

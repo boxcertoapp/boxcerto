@@ -3,6 +3,7 @@ import { Wrench, Clock, TrendingUp, Menu, Package, Zap } from 'lucide-react'
 import { useAuth, hasAccess, trialDaysLeft } from '../../contexts/AuthContext'
 import AnnouncementBanner from '../../components/AnnouncementBanner'
 import Logo from '../../components/Logo'
+import OnboardingChecklist from '../../components/OnboardingChecklist'
 
 const tabs = [
   { to: '/app/oficina',    icon: Wrench,     label: 'Oficina' },
@@ -157,6 +158,9 @@ export default function AppLayout() {
           <div style={{ height: 'env(safe-area-inset-bottom, 0px)' }} />
         </nav>
       </div>
+
+      {/* Onboarding checklist flutuante */}
+      <OnboardingChecklist />
 
       {/* Fundo decorativo desktop */}
       <div className="fixed inset-0 -z-10 bg-gradient-to-br from-slate-100 to-indigo-50 hidden lg:block" />
