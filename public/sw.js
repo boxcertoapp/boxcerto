@@ -42,8 +42,13 @@ self.addEventListener('activate', (event) => {
 
 // ── Fetch: Network First, fallback para cache ────────────
 self.addEventListener('fetch', (event) => {
-  // Ignora requisições para APIs externas, Supabase e rotas /api/*
   const url = new URL(event.request.url)
+
+  // Ignora qualquer request que não seja http/https
+  // (chrome-extension://, moz-extension://, etc. causam TypeError no cache.put)
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return
+
+  // Ignora requisições para APIs externas, Supabase e rotas /api/*
   if (
     url.hostname.includes('supabase.co') ||
     url.hostname.includes('stripe.com') ||
