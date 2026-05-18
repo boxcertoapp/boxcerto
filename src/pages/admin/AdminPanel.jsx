@@ -42,6 +42,7 @@ export const loadUsers = async () => {
     lastSeenAt: p.last_seen_at || null,
     osCount: p.os_count || 0,
     notasAdmin: p.notas_admin || '',
+    signupMethod: p.signup_method || 'email',
   }))
 }
 

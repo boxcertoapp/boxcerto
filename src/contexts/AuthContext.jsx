@@ -28,6 +28,8 @@ const buildUser = (authUser, profile) => {
     masterId: profile?.master_id || null,
     nome: profile?.nome || profile?.responsavel || '',
     setupDone: profile?.setup_done !== false, // true por padrão para masters
+    // Método de cadastro
+    signupMethod: profile?.signup_method || 'email',
     // Onboarding checklist
     onboardingOficinaD:    profile?.onboarding_oficina_done   || false,
     onboardingOsDone:      profile?.onboarding_os_done        || false,
@@ -123,7 +125,12 @@ export function AuthProvider({ children }) {
               }
 
               if (isNewSignup) {
-                // Novo cadastro via Google
+                // Novo cadastro via Google — grava método no perfil
+                await supabase.from('profiles')
+                  .update({ signup_method: 'google' })
+                  .eq('id', session.user.id)
+                  .catch(() => {})
+
                 if (typeof gtag === 'function') {
                   gtag('event', 'sign_up',    { method: 'google' })
                   gtag('event', 'conversion', { send_to: 'G-HQNZQ5PHFB' })

@@ -147,7 +147,7 @@ export default function Register() {
   const formRef = useRef(null)
 
   const [form, setForm] = useState({
-    responsavel: '', whatsapp: '', email: '', password: '', plan: 'annual',
+    oficina: '', responsavel: '', whatsapp: '', email: '', password: '', plan: 'annual',
   })
   const [show, setShow]               = useState(false)
   const [error, setError]             = useState('')
@@ -156,12 +156,13 @@ export default function Register() {
 
   // Contar campos válidos (para analytics)
   const filled = [
+    form.oficina.trim().length > 0,
     form.responsavel.trim().length > 0,
     form.whatsapp.replace(/\D/g,'').length >= 10,
     form.email.trim().length > 0,
     form.password.length >= 6,
   ].filter(Boolean).length
-  const allFilled = filled === 4
+  const allFilled = filled === 5
 
   // Analytics: view
   useEffect(() => { track('cadastro_view') }, [])
@@ -206,6 +207,7 @@ export default function Register() {
       track('cadastro_validation_error', { error_field: field, error_type: type, campos_preenchidos: filled })
       setError(msg)
     }
+    if (!form.oficina.trim())       return validErr('oficina',  'oficina_vazia',         'Informe o nome da sua oficina.')
     if (!form.responsavel.trim())  return validErr('nome',     'nome_vazio',           'Informe seu nome para continuar.')
     if (wppClean.length < 10)      return validErr('whatsapp', 'whatsapp_incompleto',   'Confira seu WhatsApp. Ele precisa ter DDD + número.')
     if (!form.email.includes('@')) return validErr('email',    'email_invalido',        'E-mail inválido. Verifique e tente novamente.')
@@ -215,7 +217,7 @@ export default function Register() {
     setLoading(true)
 
     const result = await register({
-      oficina:     '',   // configurado depois em Menu > Oficina
+      oficina:     form.oficina.trim(),
       responsavel: form.responsavel.trim(),
       whatsapp:    form.whatsapp,
       email:       form.email.trim(),
@@ -249,7 +251,7 @@ export default function Register() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         type: 'welcome', to: form.email.trim(),
-        nome: form.responsavel.trim(), oficina: '', trialDias: 7,
+        nome: form.responsavel.trim(), oficina: form.oficina.trim(), trialDias: 7,
       }),
     }).catch(() => {})
 
@@ -298,6 +300,19 @@ export default function Register() {
           <span>{error}</span>
         </div>
       )}
+
+      {/* Nome da oficina */}
+      <div>
+        <label className={labelCls}>Nome da oficina</label>
+        <input
+          name="oficina" required
+          value={form.oficina} onChange={handle}
+          onFocus={handleFocus}
+          onBlur={() => handleBlur('oficina')}
+          placeholder="Ex: Oficina do João"
+          className={inputCls}
+        />
+      </div>
 
       {/* Seu nome */}
       <div>
