@@ -249,7 +249,7 @@ export default function Register() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         type: 'welcome', to: form.email.trim(),
-        nome: form.responsavel.trim(), oficina: form.oficina.trim(), trialDias: 7,
+        nome: form.responsavel.trim(), oficina: '', trialDias: 7,
       }),
     }).catch(() => {})
 
