@@ -89,7 +89,7 @@ export function AuthProvider({ children }) {
       initialized = true
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!initialized) return // aguarda getSession() completar primeiro
       loadProfile(session?.user ?? null)
       if (session?.user) {
@@ -104,6 +104,55 @@ export function AuthProvider({ children }) {
             const device = isTablet ? 'tablet' : isMobile ? 'mobile' : 'desktop'
             await supabase.from('profiles').update({ last_device: device }).eq('id', session.user.id)
           } catch {}
+
+          // ── Rastreamento Google OAuth ──────────────────────────────────
+          // Só dispara quando o evento é SIGNED_IN via provider Google
+          if (event === 'SIGNED_IN' && session.user.app_metadata?.provider === 'google') {
+            try {
+              const createdAt = new Date(session.user.created_at).getTime()
+              const ageSec = (Date.now() - createdAt) / 1000
+              const isNewSignup = ageSec < 120 // criado há menos de 2 minutos = novo cadastro
+
+              const sp = new URLSearchParams(window.location.search)
+              const base = {
+                method:       'google',
+                origem:       sp.get('origem')       || 'direto',
+                utm_source:   sp.get('utm_source')   || '',
+                utm_campaign: sp.get('utm_campaign') || '',
+                device:       window.innerWidth < 768 ? 'mobile' : 'desktop',
+              }
+
+              if (isNewSignup) {
+                // Novo cadastro via Google
+                if (typeof gtag === 'function') {
+                  gtag('event', 'sign_up',    { method: 'google' })
+                  gtag('event', 'conversion', { send_to: 'G-HQNZQ5PHFB' })
+                }
+                window.dataLayer = window.dataLayer || []
+                window.dataLayer.push({ event: 'iniciou_teste_gratis', ...base })
+
+                // Grava no Supabase para o painel de análise de cadastro
+                await supabase.from('cadastro_events').insert({
+                  event_name:   'cadastro_signup_success',
+                  origem:       base.origem       || null,
+                  utm_source:   base.utm_source   || null,
+                  utm_campaign: base.utm_campaign || null,
+                  device:       base.device,
+                  error_type:   null,
+                  error_field:  null,
+                  fields_count: null,
+                }).catch(() => {})
+              } else {
+                // Login de usuário já existente via Google
+                if (typeof gtag === 'function') {
+                  gtag('event', 'login', { method: 'google' })
+                }
+                window.dataLayer = window.dataLayer || []
+                window.dataLayer.push({ event: 'login_google', ...base })
+              }
+            } catch {}
+          }
+          // ──────────────────────────────────────────────────────────────
         })()
       }
     })
