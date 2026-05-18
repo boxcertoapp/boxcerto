@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
-import { Eye, EyeOff, AlertCircle, CheckCircle, Wrench, Clock, TrendingUp, Package } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle, CheckCircle, Star, MessageCircle } from 'lucide-react'
 import Logo from '../components/Logo'
 import { useAuth } from '../contexts/AuthContext'
 import { usePageView } from '../hooks/usePageView'
 import { supabase } from '../lib/supabase'
+
+const WPP_SUPORTE = 'https://wa.me/5553997065725?text=' + encodeURIComponent('Olá! Tenho dúvidas sobre o BoxCerto e quero ajuda para me cadastrar.')
 
 // Eventos que também gravamos no Supabase para o painel admin
 const DB_EVENTS = new Set([
@@ -145,7 +147,7 @@ export default function Register() {
   const formRef = useRef(null)
 
   const [form, setForm] = useState({
-    responsavel: '', whatsapp: '', oficina: '', email: '', password: '', plan: 'annual',
+    responsavel: '', whatsapp: '', email: '', password: '', plan: 'annual',
   })
   const [show, setShow]               = useState(false)
   const [error, setError]             = useState('')
@@ -156,11 +158,10 @@ export default function Register() {
   const filled = [
     form.responsavel.trim().length > 0,
     form.whatsapp.replace(/\D/g,'').length >= 10,
-    form.oficina.trim().length > 0,
     form.email.trim().length > 0,
     form.password.length >= 6,
   ].filter(Boolean).length
-  const allFilled = filled === 5
+  const allFilled = filled === 4
 
   // Analytics: view
   useEffect(() => { track('cadastro_view') }, [])
@@ -207,7 +208,6 @@ export default function Register() {
     }
     if (!form.responsavel.trim())  return validErr('nome',     'nome_vazio',           'Informe seu nome para continuar.')
     if (wppClean.length < 10)      return validErr('whatsapp', 'whatsapp_incompleto',   'Confira seu WhatsApp. Ele precisa ter DDD + número.')
-    if (!form.oficina.trim())      return validErr('oficina',  'oficina_vazia',         'Informe o nome da sua oficina.')
     if (!form.email.includes('@')) return validErr('email',    'email_invalido',        'E-mail inválido. Verifique e tente novamente.')
     if (form.password.length < 6)  return validErr('senha',    'senha_curta',           'A senha deve ter ao menos 6 caracteres.')
 
@@ -215,7 +215,7 @@ export default function Register() {
     setLoading(true)
 
     const result = await register({
-      oficina:     form.oficina.trim(),
+      oficina:     '',   // configurado depois em Menu > Oficina
       responsavel: form.responsavel.trim(),
       whatsapp:    form.whatsapp,
       email:       form.email.trim(),
@@ -253,7 +253,15 @@ export default function Register() {
       }),
     }).catch(() => {})
 
-    navigate(`/bem-vindo?nome=${encodeURIComponent(form.responsavel.trim())}&oficina=${encodeURIComponent(form.oficina.trim())}`)
+    navigate(`/bem-vindo?nome=${encodeURIComponent(form.responsavel.trim())}`)
+  }
+
+  const loginGoogle = async () => {
+    track('cadastro_google_click')
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/bem-vindo' },
+    })
   }
 
   // ── Copy dinâmica por origem ─────────────────────────────────────────────
@@ -319,19 +327,6 @@ export default function Register() {
         />
       </div>
 
-      {/* Nome da oficina */}
-      <div>
-        <label className={labelCls}>Nome da oficina</label>
-        <input
-          name="oficina" required
-          value={form.oficina} onChange={handle}
-          onFocus={handleFocus}
-          onBlur={() => handleBlur('oficina')}
-          placeholder="Ex: Auto Elétrica do João"
-          className={inputCls}
-        />
-      </div>
-
       {/* E-mail */}
       <div>
         <label className={labelCls}>E-mail</label>
@@ -376,6 +371,28 @@ export default function Register() {
         Leva menos de 1 minuto. Não precisa cartão.
       </p>
 
+      {/* Divisor */}
+      <div className="flex items-center gap-3 my-1">
+        <div className="flex-1 h-px bg-gray-100" />
+        <span className="text-xs text-slate-400 font-medium">ou</span>
+        <div className="flex-1 h-px bg-gray-100" />
+      </div>
+
+      {/* Entrar com Google */}
+      <button
+        type="button"
+        onClick={loginGoogle}
+        className="w-full flex items-center justify-center gap-2.5 border border-gray-200 text-slate-700 text-sm font-semibold py-2.5 rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all"
+      >
+        <svg className="w-4 h-4" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Continuar com Google
+      </button>
+
       <p className="text-center text-[11px] text-slate-400 font-medium">
         Nenhuma cobrança será feita sem sua confirmação.
       </p>
@@ -410,50 +427,72 @@ export default function Register() {
   return (
     <>
       {/* ── MOBILE ─────────────────────────────────────────────────────────── */}
-      <div className="lg:hidden min-h-screen bg-gradient-to-b from-slate-50 to-indigo-50/20 flex flex-col items-center px-4 pt-5 pb-10">
+      <div className="lg:hidden min-h-screen bg-gradient-to-b from-slate-900 via-indigo-950 to-indigo-900 flex flex-col items-center px-4 pt-6 pb-10">
 
-        {/* Logo compacto */}
-        <Link to="/" className="mb-2.5">
-          <Logo size="sm" priority />
+        {/* Logo */}
+        <Link to="/" className="mb-5">
+          <Logo size="sm" onDark priority />
         </Link>
 
-        {/* Selo */}
-        <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">
-          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full inline-block" />
-          {copy.sealMob}
+        {/* ── VENDA ANTES DO FORM ─────────────────────────── */}
+        <div className="w-full max-w-sm text-center mb-5">
+          <h1 className="text-2xl font-extrabold text-white leading-tight mb-2">
+            Pare de perder o controle<br />
+            <span className="text-amber-400">da sua oficina</span>
+          </h1>
+          <p className="text-indigo-200 text-sm leading-relaxed mb-5">
+            OS digital, orçamento pelo WhatsApp, financeiro e estoque — tudo no celular.
+          </p>
+
+          {/* Bullets */}
+          <div className="space-y-2 mb-5 text-left">
+            {[
+              '✅ Orçamento aprovado pelo WhatsApp em segundos',
+              '✅ Financeiro em tempo real — saiba seu lucro hoje',
+              '✅ Histórico completo de clientes e veículos',
+            ].map(b => (
+              <p key={b} className="text-sm text-indigo-100">{b}</p>
+            ))}
+          </div>
+
+          {/* Prova social */}
+          <div className="flex items-center justify-center gap-2 mb-5">
+            <div className="flex">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+              ))}
+            </div>
+            <span className="text-white text-sm font-semibold">+347 oficinas já usam</span>
+          </div>
         </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 w-full max-w-sm">
-          <h1 className="text-xl font-extrabold text-slate-900 mb-0.5">{copy.cardTitle}</h1>
-          <p className="text-slate-500 text-xs mb-2.5 leading-snug">{copy.cardSub}</p>
-
-          <Chips compact />
+        {/* ── FORMULÁRIO ──────────────────────────────────── */}
+        <div className="bg-white rounded-2xl shadow-lg p-5 w-full max-w-sm">
+          <p className="text-xs font-semibold text-slate-500 text-center mb-4">
+            7 dias grátis · sem cartão · acesso imediato
+          </p>
 
           {FormFields}
         </div>
 
         {/* Link login */}
-        <p className="mt-4 text-sm text-slate-500 text-center">
+        <p className="mt-4 text-sm text-indigo-300 text-center">
           Já tem conta?{' '}
           <Link to="/login" onClick={() => track('cadastro_login_click')}
-            className="text-indigo-600 font-semibold hover:underline">
+            className="text-white font-semibold hover:underline">
             Entrar
           </Link>
         </p>
 
-        {/* Mockup abaixo do form */}
-        <div className="mt-8 w-full max-w-sm">
-          <img
-            src="/mockup01.webp"
-            alt="BoxCerto — gestão de oficina no celular e no computador"
-            className="w-full h-auto"
-            loading="lazy"
-            decoding="async"
-            width="1448"
-            height="1086"
-          />
-        </div>
+        {/* Botão WhatsApp suporte */}
+        <a
+          href={WPP_SUPORTE} target="_blank" rel="noreferrer"
+          onClick={() => track('cadastro_wpp_suporte_click')}
+          className="mt-4 flex items-center gap-2 text-emerald-300 text-sm font-medium hover:text-emerald-200 transition-colors"
+        >
+          <MessageCircle className="w-4 h-4" />
+          Falar com especialista antes de cadastrar
+        </a>
       </div>
 
 
@@ -474,13 +513,23 @@ export default function Register() {
             {copy.leftSub}
           </p>
 
-          <div className="space-y-2.5 mb-8">
+          <div className="space-y-2.5 mb-6">
             {BULLETS.map(b => (
               <div key={b} className="flex items-center gap-3 text-sm text-slate-200">
                 <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
                 {b}
               </div>
             ))}
+          </div>
+
+          {/* Prova social desktop */}
+          <div className="flex items-center gap-2 mb-8">
+            <div className="flex">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+              ))}
+            </div>
+            <span className="text-slate-300 text-sm">+347 oficinas já usam o BoxCerto</span>
           </div>
 
           <div className="max-w-xs">
@@ -519,6 +568,16 @@ export default function Register() {
               Entrar
             </Link>
           </p>
+
+          {/* WhatsApp suporte desktop */}
+          <a
+            href={WPP_SUPORTE} target="_blank" rel="noreferrer"
+            onClick={() => track('cadastro_wpp_suporte_click')}
+            className="mt-4 flex items-center gap-2 text-emerald-600 text-sm font-medium hover:text-emerald-700 transition-colors"
+          >
+            <MessageCircle className="w-4 h-4" />
+            Falar com especialista antes de cadastrar
+          </a>
         </div>
       </div>
     </>
