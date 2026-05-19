@@ -30,6 +30,8 @@ const buildUser = (authUser, profile) => {
     setupDone: profile?.setup_done !== false, // true por padrão para masters
     // Método de cadastro
     signupMethod: profile?.signup_method || 'email',
+    // Modal de boas-vindas
+    welcomeSeen: profile?.welcome_seen || false,
     // Onboarding checklist
     onboardingOficinaD:    profile?.onboarding_oficina_done   || false,
     onboardingOsDone:      profile?.onboarding_os_done        || false,
