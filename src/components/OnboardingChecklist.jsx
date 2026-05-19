@@ -9,8 +9,8 @@ export default function OnboardingChecklist() {
   const navigate  = useNavigate()
   const tooltipRef = useRef(null)
 
-  // Inicia COLAPSADO — só o header fica visível, não cobre o FAB "+"
-  const [collapsed,   setCollapsed]   = useState(true)
+  // Inicia EXPANDIDO — garante que o usuário veja os passos logo na primeira visita
+  const [collapsed,   setCollapsed]   = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
   // Aviso inline para passo 3 quando OS ainda não foi criada
   const [warnOS, setWarnOS] = useState(false)
@@ -133,18 +133,18 @@ export default function OnboardingChecklist() {
   // ── Passos ────────────────────────────────────────────────
   const steps = [
     {
-      key:    'oficina',
-      icon:   '📋',
-      label:  'Configure sua oficina',
-      done:   done.oficina,
-      action: irParaConfigurar,
-    },
-    {
       key:    'os',
       icon:   '🔧',
       label:  'Crie sua primeira OS',
       done:   done.os,
       action: irParaCriarOS,
+    },
+    {
+      key:    'oficina',
+      icon:   '📋',
+      label:  'Configure sua oficina',
+      done:   done.oficina,
+      action: irParaConfigurar,
     },
     {
       key:        'orcamento',
