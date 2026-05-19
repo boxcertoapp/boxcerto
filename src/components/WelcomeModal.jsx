@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { supabase } from '../lib/supabase'
 
-// Mostra apenas UMA VEZ para usuários novos que ainda não criaram nenhuma OS.
-// O flag welcome_seen é salvo no Supabase — funciona em qualquer dispositivo.
+// Aparece toda vez que o usuário entrar enquanto não tiver criado nenhuma OS.
+// Some automaticamente quando ele completar a primeira tarefa do onboarding.
 export default function WelcomeModal() {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -13,32 +12,24 @@ export default function WelcomeModal() {
   useEffect(() => {
     if (!user || user.isAdmin || user.isTecnico) return
 
-    // Só exibe se nenhum passo foi concluído e o modal ainda não foi visto
+    // Exibe enquanto nenhum dos 3 passos foi concluído
     const nenhum = !user.onboardingOsDone && !user.onboardingOficinaD && !user.onboardingOrcamentoDone
-    if (!nenhum || user.welcomeSeen) return
+    if (!nenhum) return
 
     const t = setTimeout(() => setVisible(true), 600)
     return () => clearTimeout(t)
   }, [
     user?.id,
-    user?.welcomeSeen,
     user?.onboardingOsDone,
     user?.onboardingOficinaD,
     user?.onboardingOrcamentoDone,
   ])
 
-  const marcarVisto = () => {
-    setVisible(false)
-    if (user?.id) {
-      supabase.from('profiles')
-        .update({ welcome_seen: true })
-        .eq('id', user.id)
-        .then(() => {}).catch(() => {})
-    }
-  }
+  // Fecha só para essa sessão — volta na próxima vez que entrar
+  const fechar = () => setVisible(false)
 
   const criarOS = () => {
-    marcarVisto()
+    fechar()
     navigate('/app/oficina')
     setTimeout(() => window.dispatchEvent(new CustomEvent('boxcerto:abrir-nova-os')), 120)
   }
@@ -90,7 +81,7 @@ export default function WelcomeModal() {
           </button>
 
           <button
-            onClick={marcarVisto}
+            onClick={fechar}
             className="w-full text-slate-400 text-sm py-3 mt-2 hover:text-slate-600 transition-colors"
           >
             Explorar o sistema primeiro
