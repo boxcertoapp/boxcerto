@@ -36,7 +36,7 @@ export default function WelcomeModal() {
 
   if (!visible) return null
 
-  const nome = user?.responsavel?.split(' ')[0] || 'Mecânico'
+  const nome = user?.responsavel?.split(' ')[0] || 'parceiro'
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm">
