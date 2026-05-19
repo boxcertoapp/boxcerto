@@ -201,10 +201,12 @@ function ClientePerfil({ u, onClose, onReload }) {
 
 // ── Exportar CSV ─────────────────────────────────────────────
 function exportCSV(users) {
-  const headers = ['Oficina','Responsável','Email','WhatsApp','Status','Plano','Cadastro','Último acesso','OS criadas','Health Score']
+  const headers = ['Oficina','Responsável','Email','WhatsApp','Status','Plano','Cadastro via','Cadastrado em','Último acesso','OS criadas','Health Score']
   const rows = users.map(u => [
     u.oficina, u.responsavel, u.email, u.whatsapp,
-    u.status, u.plan || '', u.createdAt ? formatDate(u.createdAt) : '',
+    u.status, u.plan || '',
+    u.signupMethod === 'google' ? 'Google' : 'Formulário',
+    u.createdAt ? formatDate(u.createdAt) : '',
     u.lastSeenAt ? formatDate(u.lastSeenAt) : '',
     u.osCount || 0, calcHealthScore(u)
   ])
@@ -265,26 +267,39 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
 
   // Filtros e ordenação
   const filtered = users
-    .filter(u => filter === 'all' || u.status === filter ||
-      (filter === 'risk' && (calcHealthScore(u) < 40 || u.status === 'inadimplente')))
+    .filter(u => {
+      if (filter === 'all')          return true
+      if (filter === 'risk')         return calcHealthScore(u) < 40 || u.status === 'inadimplente'
+      if (filter === 'nunca_usou')   return (u.osCount || 0) === 0
+      if (filter === 'google')       return u.signupMethod === 'google'
+      if (filter === 'sem_wpp')      return !u.whatsapp
+      return u.status === filter
+    })
     .filter(u => !query ||
       u.oficina?.toLowerCase().includes(query.toLowerCase()) ||
       u.responsavel?.toLowerCase().includes(query.toLowerCase()) ||
       u.email?.toLowerCase().includes(query.toLowerCase()))
     .sort((a, b) => {
-      if (sortBy === 'health') return calcHealthScore(b) - calcHealthScore(a)
-      if (sortBy === 'name')   return (a.oficina || '').localeCompare(b.oficina || '')
-      if (sortBy === 'status') return a.status.localeCompare(b.status)
+      if (sortBy === 'health')      return calcHealthScore(b) - calcHealthScore(a)
+      if (sortBy === 'name')        return (a.oficina || '').localeCompare(b.oficina || '')
+      if (sortBy === 'status')      return a.status.localeCompare(b.status)
+      if (sortBy === 'os_desc')     return (b.osCount || 0) - (a.osCount || 0)
+      if (sortBy === 'os_asc')      return (a.osCount || 0) - (b.osCount || 0)
+      if (sortBy === 'last_seen')   return new Date(b.lastSeenAt || 0) - new Date(a.lastSeenAt || 0)
+      if (sortBy === 'trial_end')   return new Date(a.trialEnd || 0) - new Date(b.trialEnd || 0)
       return new Date(b.createdAt) - new Date(a.createdAt) // date
     })
 
   const counts = {
-    all: users.length,
-    active: users.filter(u => u.status === 'active').length,
-    trial: users.filter(u => u.status === 'trial').length,
-    inadimplente: users.filter(u => u.status === 'inadimplente').length,
-    cancelado: users.filter(u => u.status === 'cancelado').length,
-    risk: users.filter(u => calcHealthScore(u) < 40).length,
+    all:         users.length,
+    active:      users.filter(u => u.status === 'active').length,
+    trial:       users.filter(u => u.status === 'trial').length,
+    inadimplente:users.filter(u => u.status === 'inadimplente').length,
+    cancelado:   users.filter(u => u.status === 'cancelado').length,
+    risk:        users.filter(u => calcHealthScore(u) < 40).length,
+    nunca_usou:  users.filter(u => (u.osCount || 0) === 0).length,
+    google:      users.filter(u => u.signupMethod === 'google').length,
+    sem_wpp:     users.filter(u => !u.whatsapp).length,
   }
 
   const perfilUser = perfilId ? users.find(u => u.id === perfilId) : null
@@ -305,8 +320,12 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
           <select value={sortBy} onChange={e => setSortBy(e.target.value)}
             className="px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white text-slate-600">
             <option value="date">Mais recentes</option>
+            <option value="last_seen">Último acesso</option>
+            <option value="os_desc">Mais OS</option>
+            <option value="os_asc">Menos OS</option>
             <option value="health">Health score</option>
-            <option value="name">Nome</option>
+            <option value="trial_end">Trial expirando</option>
+            <option value="name">Nome A-Z</option>
             <option value="status">Status</option>
           </select>
           <button onClick={reload} className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50">
@@ -319,21 +338,28 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
         </div>
       </div>
 
-      {/* Filtros de status */}
+      {/* Filtros */}
       <div className="flex gap-1.5 flex-wrap">
         {[
-          { key: 'all',          label: `Todos (${counts.all})` },
-          { key: 'active',       label: `Ativos (${counts.active})` },
-          { key: 'trial',        label: `Trial (${counts.trial})` },
-          { key: 'inadimplente', label: `Inadimp. (${counts.inadimplente})` },
-          { key: 'cancelado',    label: `Cancelados (${counts.cancelado})` },
-          { key: 'risk',         label: `Em risco (${counts.risk})`, alert: true },
+          { key: 'all',          label: `Todos (${counts.all})`,              style: 'normal' },
+          { key: 'active',       label: `Ativos (${counts.active})`,          style: 'normal' },
+          { key: 'trial',        label: `Trial (${counts.trial})`,            style: 'normal' },
+          { key: 'inadimplente', label: `Inadimp. (${counts.inadimplente})`,  style: 'normal' },
+          { key: 'cancelado',    label: `Cancelados (${counts.cancelado})`,   style: 'normal' },
+          { key: 'risk',         label: `Em risco (${counts.risk})`,          style: 'alert'  },
+          { key: 'nunca_usou',   label: `Nunca usou (${counts.nunca_usou})`,  style: 'warn'   },
+          { key: 'google',       label: `Google (${counts.google})`,          style: 'normal' },
+          { key: 'sem_wpp',      label: `Sem WhatsApp (${counts.sem_wpp})`,   style: 'warn'   },
         ].map(f => (
           <button key={f.key} onClick={() => setFilter(f.key)}
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
               filter === f.key
-                ? f.alert ? 'bg-red-600 text-white' : 'bg-indigo-600 text-white'
-                : f.alert ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-white text-slate-600 border border-gray-200'
+                ? f.style === 'alert' ? 'bg-red-600 text-white'
+                : f.style === 'warn'  ? 'bg-amber-500 text-white'
+                : 'bg-indigo-600 text-white'
+                : f.style === 'alert' ? 'bg-red-50 text-red-600 border border-red-100'
+                : f.style === 'warn'  ? 'bg-amber-50 text-amber-700 border border-amber-100'
+                : 'bg-white text-slate-600 border border-gray-200'
             }`}>
             {f.label}
           </button>
@@ -386,6 +412,15 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
                       {u.notasAdmin && <StickyNote className="w-3 h-3 text-amber-400" title="Tem notas" />}
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5 truncate">{u.email}</p>
+                  </div>
+
+                  {/* OS count */}
+                  <div className="hidden sm:flex flex-col items-center shrink-0">
+                    <span className={`text-base font-extrabold leading-none ${
+                      (u.osCount || 0) === 0 ? 'text-red-400' :
+                      (u.osCount || 0) < 3   ? 'text-amber-500' : 'text-emerald-600'
+                    }`}>{u.osCount || 0}</span>
+                    <span className="text-[9px] text-slate-400 font-medium mt-0.5">OS</span>
                   </div>
 
                   {/* Health */}
