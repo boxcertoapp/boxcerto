@@ -16,7 +16,7 @@ export default function WelcomeModal() {
     const nenhum = !user.onboardingOsDone && !user.onboardingOficinaD && !user.onboardingOrcamentoDone
     if (!nenhum) return
 
-    const t = setTimeout(() => setVisible(true), 600)
+    const t = setTimeout(() => setVisible(true), 800)
     return () => clearTimeout(t)
   }, [
     user?.id,
@@ -31,7 +31,7 @@ export default function WelcomeModal() {
   const criarOS = () => {
     fechar()
     navigate('/app/oficina')
-    setTimeout(() => window.dispatchEvent(new CustomEvent('boxcerto:abrir-nova-os')), 120)
+    setTimeout(() => window.dispatchEvent(new CustomEvent('boxcerto:abrir-nova-os')), 400)
   }
 
   if (!visible) return null

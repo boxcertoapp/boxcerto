@@ -82,16 +82,29 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
-    // Flag que garante que onAuthStateChange não sobrescreve a sessão
-    // antes do getSession() terminar — evita logout falso no reload do iPhone/PWA
+    // `initialized` impede que onAuthStateChange precoce (iPhone/PWA) sobrescreva
+    // a sessão antes do getSession() terminar.
+    // `nullTimer` evita o race condition oposto: getSession() retornando null
+    // temporariamente durante redirect OAuth antes do SIGNED_IN chegar —
+    // aguardamos 300ms por onAuthStateChange antes de aceitar "sem sessão".
     let initialized = false
+    let nullTimer   = null
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      loadProfile(session?.user ?? null)
+      if (session?.user) {
+        // Sessão confirmada — carrega imediatamente
+        loadProfile(session.user)
+      } else {
+        // Sem sessão no getSession — pode ser redirect OAuth ainda processando.
+        // Aguarda onAuthStateChange; se não vier em 300ms, aceita como deslogado.
+        nullTimer = setTimeout(() => { loadProfile(null) }, 300)
+      }
       initialized = true
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Cancela o timer de null caso o SIGNED_IN chegue a tempo
+      if (nullTimer) { clearTimeout(nullTimer); nullTimer = null }
       if (!initialized) return // aguarda getSession() completar primeiro
       loadProfile(session?.user ?? null)
       if (session?.user) {
@@ -164,7 +177,10 @@ export function AuthProvider({ children }) {
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+      if (nullTimer) clearTimeout(nullTimer)
+    }
   }, [])
 
   const login = async (email, password) => {
