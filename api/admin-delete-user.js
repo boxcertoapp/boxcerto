@@ -6,6 +6,21 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
+// Tabelas que precisam ser limpas antes de deletar o usuário
+// (evita erros de FK constraint caso as tabelas não tenham ON DELETE CASCADE)
+const USER_TABLES = [
+  'service_items',     // itens de OS (referencia service_orders)
+  'service_orders',    // ordens de serviço
+  'vehicles',          // veículos
+  'clients',           // clientes
+  'inventory',         // estoque
+  'expenses',          // despesas
+  'vendas',            // vendas
+  'office_data',       // dados da oficina
+  'cadastro_events',   // eventos de analytics
+  'profiles',          // perfil (por último, antes do auth.users)
+]
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -39,9 +54,21 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Deleta o usuário do auth.users — Supabase cascateia para profiles e todos os dados
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId)
-    if (error) throw error
+    // 1. Apaga dados do usuário em todas as tabelas (evita FK constraint errors)
+    for (const table of USER_TABLES) {
+      const { error } = await supabaseAdmin
+        .from(table)
+        .delete()
+        .eq('user_id', userId)
+      // Ignora erros individuais (tabela pode não ter user_id ou já estar vazia)
+      if (error) {
+        console.warn(`Aviso ao limpar ${table}:`, error.message)
+      }
+    }
+
+    // 2. Deleta o usuário do auth.users
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
+    if (deleteError) throw deleteError
 
     return res.status(200).json({ success: true })
   } catch (err) {
