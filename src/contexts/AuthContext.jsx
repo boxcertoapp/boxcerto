@@ -35,6 +35,9 @@ const buildUser = (authUser, profile) => {
     onboardingOsDone:      profile?.onboarding_os_done        || false,
     onboardingOrcamentoDone: profile?.onboarding_orcamento_done || false,
     onboardingDismissed:   profile?.onboarding_dismissed      || false,
+    // Qualificação (coletada na página /bem-vindo)
+    tipoOficina: profile?.tipo_oficina || null,
+    cargo:       profile?.cargo        || null,
   }
 }
 

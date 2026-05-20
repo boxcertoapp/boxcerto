@@ -20,31 +20,37 @@ const STATUS_CONFIG = {
 }
 
 // ── Health Score ─────────────────────────────────────────────
+// Fórmula: OS é o principal indicador de engajamento real.
+// Usuários que nunca criaram OS têm "último acesso" limitado a 8 pts
+// para não inflarem o score apenas por ter se cadastrado hoje.
 function calcHealthScore(u) {
   let score = 0
   const now = new Date()
+  const os  = u.osCount || 0
 
-  // 1. Status (30 pts)
-  const statusPts = { active: 30, trial: 20, pending: 10, inadimplente: 5, cancelado: 0, inactive: 0, rejected: 0 }
-  score += statusPts[u.status] || 0
+  // 1. OS criadas (0–50 pts) — engajamento real
+  if      (os >= 20) score += 50
+  else if (os >= 10) score += 42
+  else if (os >= 5)  score += 33
+  else if (os >= 2)  score += 22
+  else if (os >= 1)  score += 12
+  // 0 OS = 0 pts
 
-  // 2. Último acesso (40 pts)
+  // 2. Último acesso (0–30 pts)
+  // Sem OS: cap 8 pts (não infla score de quem só se cadastrou)
   if (u.lastSeenAt) {
     const diffDays = (now - new Date(u.lastSeenAt)) / (1000 * 60 * 60 * 24)
-    if      (diffDays <= 1)  score += 40
-    else if (diffDays <= 3)  score += 30
-    else if (diffDays <= 7)  score += 20
-    else if (diffDays <= 14) score += 10
-    else                     score += 0
+    let pts = 0
+    if      (diffDays <= 1)  pts = 30
+    else if (diffDays <= 3)  pts = 22
+    else if (diffDays <= 7)  pts = 14
+    else if (diffDays <= 14) pts = 7
+    score += os === 0 ? Math.min(pts, 8) : pts
   }
 
-  // 3. OS criadas (30 pts)
-  const os = u.osCount || 0
-  if      (os >= 20) score += 30
-  else if (os >= 10) score += 22
-  else if (os >= 5)  score += 15
-  else if (os >= 2)  score += 8
-  else if (os >= 1)  score += 3
+  // 3. Status (0–20 pts)
+  const statusPts = { active: 20, trial: 15, pending: 5, inadimplente: 2, cancelado: 0, inactive: 0, rejected: 0 }
+  score += statusPts[u.status] || 0
 
   return Math.min(score, 100)
 }

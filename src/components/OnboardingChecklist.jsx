@@ -134,8 +134,8 @@ export default function OnboardingChecklist() {
   const steps = [
     {
       key:    'os',
-      icon:   '🔧',
-      label:  'Crie sua primeira OS',
+      icon:   '📋',
+      label:  'Crie seu primeiro orçamento',
       done:   done.os,
       action: irParaCriarOS,
     },
@@ -261,14 +261,14 @@ export default function OnboardingChecklist() {
                 <div className="flex items-start gap-2 mb-2">
                   <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                   <p className="text-xs text-amber-800 leading-snug">
-                    Crie uma OS primeiro para poder enviar um orçamento ao cliente.
+                    Você precisa criar o orçamento antes de enviá-lo ao cliente.
                   </p>
                 </div>
                 <button
                   onClick={() => { setWarnOS(false); irParaCriarOS() }}
                   className="w-full bg-indigo-600 text-white text-xs font-semibold py-2 rounded-lg hover:bg-indigo-700 transition-colors"
                 >
-                  🔧 Criar primeira OS agora
+                  📋 Criar primeiro orçamento agora
                 </button>
               </div>
             )}

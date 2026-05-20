@@ -53,8 +53,8 @@ export default function WelcomeModal() {
             <span className="text-indigo-200">Bem-vindo ao BoxCerto</span>
           </h2>
           <p className="text-indigo-200 text-sm mt-2 leading-relaxed">
-            Vamos criar sua primeira Ordem de Serviço?<br />
-            Leva menos de 2 minutos.
+            Que tal enviar seu primeiro orçamento<br />
+            pelo WhatsApp agora? Leva 2 minutos.
           </p>
         </div>
 
@@ -77,7 +77,7 @@ export default function WelcomeModal() {
             onClick={criarOS}
             className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl text-base hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-lg shadow-indigo-200"
           >
-            Criar minha primeira OS agora →
+            Criar meu primeiro orçamento agora →
           </button>
 
           <button
