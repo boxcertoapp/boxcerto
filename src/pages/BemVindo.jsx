@@ -63,7 +63,7 @@ function OptionCard({ emoji, label, desc, selected, onClick, muted = false, extr
           <p className={`text-xs mt-0.5 leading-snug ${muted && !selected ? 'text-gray-300' : 'text-slate-400'}`}>
             {desc}
           </p>
-          {extra && !selected && (
+          {extra && selected && (
             <p className="text-[10px] text-emerald-600 font-medium mt-1">{extra}</p>
           )}
         </div>
