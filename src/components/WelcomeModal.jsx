@@ -47,14 +47,14 @@ export default function WelcomeModal() {
           <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/10 rounded-full" />
           <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-white/10 rounded-full" />
 
-          <div className="text-5xl mb-3">🔧</div>
+          <div className="text-5xl mb-3">🚀</div>
           <h2 className="text-2xl font-extrabold text-white leading-tight">
             Olá, {nome}!<br />
-            <span className="text-indigo-200">Bem-vindo ao BoxCerto</span>
+            <span className="text-indigo-200">Tua oficina está pronta.</span>
           </h2>
           <p className="text-indigo-200 text-sm mt-2 leading-relaxed">
-            Que tal enviar seu primeiro orçamento<br />
-            pelo WhatsApp agora? Leva 2 minutos.
+            Vamos criar o primeiro orçamento agora?<br />
+            Leva menos de 2 minutos.
           </p>
         </div>
 
@@ -62,9 +62,9 @@ export default function WelcomeModal() {
         <div className="px-6 py-5">
           <div className="space-y-3 mb-6">
             {[
-              { icon: '⚡', text: 'Registre o carro e o problema do cliente' },
-              { icon: '📲', text: 'Envie o orçamento pelo WhatsApp em segundos' },
-              { icon: '✅', text: 'Controle tudo em um único lugar' },
+              { icon: '⚡', text: 'Orçamento pronto em menos de 2 minutos' },
+              { icon: '📲', text: 'Cliente recebe o link e aprova pelo WhatsApp' },
+              { icon: '✅', text: 'Tu acompanhas tudo: pendente, aprovado, em andamento' },
             ].map(({ icon, text }) => (
               <div key={text} className="flex items-center gap-3">
                 <span className="text-xl shrink-0">{icon}</span>

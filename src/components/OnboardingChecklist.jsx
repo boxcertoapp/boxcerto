@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { Check, X, ChevronDown, ChevronUp, HelpCircle, AlertCircle } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Check, X, ChevronDown, ChevronUp, Lock, AlertCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
@@ -7,12 +7,9 @@ import { useNavigate } from 'react-router-dom'
 export default function OnboardingChecklist() {
   const { user } = useAuth()
   const navigate  = useNavigate()
-  const tooltipRef = useRef(null)
-
   // Inicia EXPANDIDO — garante que o usuário veja os passos logo na primeira visita
-  const [collapsed,   setCollapsed]   = useState(false)
-  const [showTooltip, setShowTooltip] = useState(false)
-  // Aviso inline para passo 3 quando OS ainda não foi criada
+  const [collapsed, setCollapsed] = useState(false)
+  // Aviso inline quando tenta enviar orçamento sem ter criado um
   const [warnOS, setWarnOS] = useState(false)
 
   const [done, setDone] = useState({
@@ -73,18 +70,6 @@ export default function OnboardingChecklist() {
     }
   }, [persist])
 
-  // Fecha tooltip ao clicar fora
-  useEffect(() => {
-    if (!showTooltip) return
-    const handler = (e) => {
-      if (tooltipRef.current && !tooltipRef.current.contains(e.target)) {
-        setShowTooltip(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [showTooltip])
-
   // Quando todos os 3 passos forem concluídos → dismiss permanente no banco
   useEffect(() => {
     if (!user?.id) return
@@ -130,7 +115,8 @@ export default function OnboardingChecklist() {
     }
   }
 
-  // ── Passos ────────────────────────────────────────────────
+  // ── Passos ─────────────────────────────────────────────────────────────────
+  // Ordem: valor primeiro — crie → envie → configure (configurar é prêmio, não porta de entrada)
   const steps = [
     {
       key:    'os',
@@ -138,21 +124,23 @@ export default function OnboardingChecklist() {
       label:  'Crie seu primeiro orçamento',
       done:   done.os,
       action: irParaCriarOS,
+      locked: false,
+    },
+    {
+      key:    'orcamento',
+      icon:   '📲',
+      label:  'Envie um orçamento pelo WhatsApp',
+      done:   done.orcamento,
+      action: irParaOrcamento,
+      locked: !done.os, // bloqueado até criar o orçamento
     },
     {
       key:    'oficina',
-      icon:   '📋',
+      icon:   '⚙️',
       label:  'Configure sua oficina',
       done:   done.oficina,
       action: irParaConfigurar,
-    },
-    {
-      key:        'orcamento',
-      icon:       '📲',
-      label:      'Envie um orçamento',
-      done:       done.orcamento,
-      action:     irParaOrcamento,
-      hasTooltip: true,
+      locked: false,
     },
   ]
 
@@ -198,20 +186,24 @@ export default function OnboardingChecklist() {
           <>
             <div className="divide-y divide-gray-50">
               {steps.map((step) => (
-                <div key={step.key} className="px-4 py-3 flex items-center gap-3">
+                <div key={step.key} className={`px-4 py-3 flex items-center gap-3 ${step.locked ? 'opacity-50' : ''}`}>
 
                   {/* Checkbox circular */}
                   <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border-2 transition-all duration-300 ${
                     step.done
                       ? 'bg-emerald-500 border-emerald-500'
-                      : 'border-gray-300'
+                      : step.locked
+                        ? 'border-gray-200 bg-gray-50'
+                        : 'border-gray-300'
                   }`}>
                     {step.done && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
                   </div>
 
                   {/* Ícone + label */}
                   <span className={`flex-1 text-sm leading-snug ${
-                    step.done ? 'text-gray-400 line-through' : 'text-gray-700 font-medium'
+                    step.done   ? 'text-gray-400 line-through' :
+                    step.locked ? 'text-gray-400' :
+                    'text-gray-700 font-medium'
                   }`}>
                     <span className="mr-1">{step.icon}</span>
                     {step.label}
@@ -220,35 +212,17 @@ export default function OnboardingChecklist() {
                   {/* Ação — só se não concluído */}
                   {!step.done && (
                     <div className="flex items-center gap-1 shrink-0">
-                      {/* ? Tooltip para passo 3 */}
-                      {step.hasTooltip && (
-                        <div ref={tooltipRef} className="relative">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setShowTooltip(s => !s) }}
-                            onMouseEnter={() => setShowTooltip(true)}
-                            onMouseLeave={() => setShowTooltip(false)}
-                            className="p-1 text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                          >
-                            <HelpCircle className="w-4 h-4" />
-                          </button>
-                          {showTooltip && (
-                            <div className="absolute right-0 bottom-8 w-56 bg-gray-900 text-white text-[11px] rounded-xl p-3 shadow-2xl z-20 leading-relaxed pointer-events-none">
-                              Abra uma OS, adicione itens e toque em{' '}
-                              <strong className="text-indigo-300">Enviar para cliente</strong>{' '}
-                              para enviar o orçamento via WhatsApp.
-                              <div className="absolute bottom-0 right-5 translate-y-1/2 w-2.5 h-2.5 bg-gray-900 rotate-45" />
-                            </div>
-                          )}
-                        </div>
+                      {step.locked ? (
+                        /* Cadeado: passo bloqueado até o anterior ser feito */
+                        <Lock className="w-3.5 h-3.5 text-gray-300" />
+                      ) : (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); step.action() }}
+                          className="text-indigo-600 hover:bg-indigo-50 text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors"
+                        >
+                          Ir →
+                        </button>
                       )}
-
-                      {/* Botão Ir → */}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); step.action() }}
-                        className="text-indigo-600 hover:bg-indigo-50 text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors"
-                      >
-                        Ir →
-                      </button>
                     </div>
                   )}
                 </div>
