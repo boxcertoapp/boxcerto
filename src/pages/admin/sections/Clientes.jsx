@@ -9,6 +9,22 @@ import { supabase } from '../../../lib/supabase'
 import { formatDate } from '../../../lib/storage'
 import { SenhaModal } from '../AdminPanel'
 
+// ── Qualificação — labels e cores ────────────────────────────
+const TIPO_CONFIG = {
+  mecanica:  { emoji: '🔧', label: 'Mecânica Geral' },
+  moto:      { emoji: '🏍️', label: 'Moto oficina' },
+  pesados:   { emoji: '🚛', label: 'Pesados' },
+  funilaria: { emoji: '🎨', label: 'Funilaria & Pintura' },
+  eletrica:  { emoji: '⚡', label: 'Elétrica Automotiva' },
+  estetica:  { emoji: '✨', label: 'Estética Automotiva' },
+  geral:     { emoji: '🚗', label: 'Vários serviços' },
+}
+const CARGO_CONFIG = {
+  dono:        { emoji: '👑', label: 'Dono / Sócio',     color: 'bg-amber-50 text-amber-700' },
+  gerente:     { emoji: '📋', label: 'Func. / Gerente',  color: 'bg-blue-50 text-blue-600' },
+  pesquisando: { emoji: '🔍', label: 'Pesquisando',      color: 'bg-gray-100 text-gray-500' },
+}
+
 const STATUS_CONFIG = {
   pending:      { label: 'Pendente',     color: 'bg-amber-100 text-amber-700',  icon: Clock },
   trial:        { label: 'Trial',        color: 'bg-indigo-100 text-indigo-700', icon: Clock },
@@ -167,6 +183,30 @@ function ClientePerfil({ u, onClose, onReload }) {
             </div>
           </div>
 
+          {/* Qualificação */}
+          {(u.tipoOficina || u.cargo) && (
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Qualificação</p>
+              <div className="flex flex-wrap gap-2">
+                {u.tipoOficina && TIPO_CONFIG[u.tipoOficina] && (
+                  <span className="flex items-center gap-1.5 text-sm bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-xl font-medium">
+                    {TIPO_CONFIG[u.tipoOficina].emoji} {TIPO_CONFIG[u.tipoOficina].label}
+                  </span>
+                )}
+                {u.cargo && CARGO_CONFIG[u.cargo] && (
+                  <span className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-xl font-medium ${CARGO_CONFIG[u.cargo].color}`}>
+                    {CARGO_CONFIG[u.cargo].emoji} {CARGO_CONFIG[u.cargo].label}
+                  </span>
+                )}
+                {u.activated && (
+                  <span className="flex items-center gap-1.5 text-sm bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-xl font-medium">
+                    ✅ Ativado {u.firstActionAt ? `em ${formatDate(u.firstActionAt)}` : ''}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Timeline */}
           {timeline.length > 0 && (
             <div>
@@ -207,11 +247,14 @@ function ClientePerfil({ u, onClose, onReload }) {
 
 // ── Exportar CSV ─────────────────────────────────────────────
 function exportCSV(users) {
-  const headers = ['Oficina','Responsável','Email','WhatsApp','Status','Plano','Cadastro via','Cadastrado em','Último acesso','OS criadas','Health Score']
+  const headers = ['Oficina','Responsável','Email','WhatsApp','Status','Plano','Cadastro via','Tipo de oficina','Cargo','Ativado','Cadastrado em','Último acesso','OS criadas','Health Score']
   const rows = users.map(u => [
     u.oficina, u.responsavel, u.email, u.whatsapp,
     u.status, u.plan || '',
     u.signupMethod === 'google' ? 'Google' : 'Formulário',
+    u.tipoOficina ? (TIPO_CONFIG[u.tipoOficina]?.label || u.tipoOficina) : '',
+    u.cargo ? (CARGO_CONFIG[u.cargo]?.label || u.cargo) : '',
+    u.activated ? 'Sim' : 'Não',
     u.createdAt ? formatDate(u.createdAt) : '',
     u.lastSeenAt ? formatDate(u.lastSeenAt) : '',
     u.osCount || 0, calcHealthScore(u)
@@ -279,6 +322,9 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
       if (filter === 'nunca_usou')   return (u.osCount || 0) === 0
       if (filter === 'google')       return u.signupMethod === 'google'
       if (filter === 'sem_wpp')      return !u.whatsapp
+      if (filter === 'pesquisando')  return u.cargo === 'pesquisando'
+      if (filter === 'qualificado')  return u.tipoOficina && u.whatsapp && u.cargo && u.cargo !== 'pesquisando'
+      if (filter === 'sem_qualif')   return !u.tipoOficina || !u.cargo
       return u.status === filter
     })
     .filter(u => !query ||
@@ -306,6 +352,9 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
     nunca_usou:  users.filter(u => (u.osCount || 0) === 0).length,
     google:      users.filter(u => u.signupMethod === 'google').length,
     sem_wpp:     users.filter(u => !u.whatsapp).length,
+    pesquisando: users.filter(u => u.cargo === 'pesquisando').length,
+    qualificado: users.filter(u => u.tipoOficina && u.whatsapp && u.cargo && u.cargo !== 'pesquisando').length,
+    sem_qualif:  users.filter(u => !u.tipoOficina || !u.cargo).length,
   }
 
   const perfilUser = perfilId ? users.find(u => u.id === perfilId) : null
@@ -354,8 +403,11 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
           { key: 'cancelado',    label: `Cancelados (${counts.cancelado})`,   style: 'normal' },
           { key: 'risk',         label: `Em risco (${counts.risk})`,          style: 'alert'  },
           { key: 'nunca_usou',   label: `Nunca usou (${counts.nunca_usou})`,  style: 'warn'   },
-          { key: 'google',       label: `Google (${counts.google})`,          style: 'normal' },
+          { key: 'google',       label: `Google (${counts.google})`,            style: 'normal' },
           { key: 'sem_wpp',      label: `Sem WhatsApp (${counts.sem_wpp})`,   style: 'warn'   },
+          { key: 'qualificado',  label: `✅ Qualificados (${counts.qualificado})`, style: 'normal' },
+          { key: 'pesquisando',  label: `🔍 Pesquisando (${counts.pesquisando})`, style: 'warn' },
+          { key: 'sem_qualif',   label: `Sem qualificação (${counts.sem_qualif})`, style: 'warn' },
         ].map(f => (
           <button key={f.key} onClick={() => setFilter(f.key)}
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
@@ -414,6 +466,16 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
                           </span>
                         : <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-semibold">Formulário</span>
                       }
+                      {u.tipoOficina && TIPO_CONFIG[u.tipoOficina] && (
+                        <span className="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-full font-semibold">
+                          {TIPO_CONFIG[u.tipoOficina].emoji} {TIPO_CONFIG[u.tipoOficina].label}
+                        </span>
+                      )}
+                      {u.cargo && CARGO_CONFIG[u.cargo] && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${CARGO_CONFIG[u.cargo].color}`}>
+                          {CARGO_CONFIG[u.cargo].emoji} {CARGO_CONFIG[u.cargo].label}
+                        </span>
+                      )}
                       {u.isAdmin && <Shield className="w-3 h-3 text-amber-500" />}
                       {u.notasAdmin && <StickyNote className="w-3 h-3 text-amber-400" title="Tem notas" />}
                     </div>

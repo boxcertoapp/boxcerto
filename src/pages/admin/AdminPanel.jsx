@@ -43,6 +43,10 @@ export const loadUsers = async () => {
     osCount: p.os_count || 0,
     notasAdmin: p.notas_admin || '',
     signupMethod: p.signup_method || 'email',
+    tipoOficina: p.tipo_oficina || null,
+    cargo:       p.cargo        || null,
+    activated:   p.activated    || false,
+    firstActionAt: p.first_action_at || null,
   }))
 }
 
