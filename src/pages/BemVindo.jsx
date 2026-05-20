@@ -1,23 +1,45 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 
-// ── Opções de qualificação ────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function formatWpp(val) {
+  const n = val.replace(/\D/g, '')
+  if (n.length <= 2)  return n
+  if (n.length <= 7)  return `(${n.slice(0,2)}) ${n.slice(2)}`
+  return `(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7,11)}`
+}
+
+function getStoredUtms() {
+  try {
+    const raw = localStorage.getItem('boxcerto_utm')
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    localStorage.removeItem('boxcerto_utm')
+    return parsed
+  } catch { return {} }
+}
+
+// ── Opções ────────────────────────────────────────────────────────────────────
 const TIPOS = [
   { value: 'mecanica',   emoji: '🔧', label: 'Mecânica Geral',       desc: 'Motor, freios, suspensão, revisões' },
+  { value: 'moto',       emoji: '🏍️',  label: 'Moto oficina',         desc: 'Motos de qualquer cilindrada' },
+  { value: 'pesados',    emoji: '🚛', label: 'Pesados',               desc: 'Caminhões, ônibus, vans' },
   { value: 'funilaria',  emoji: '🎨', label: 'Funilaria & Pintura',   desc: 'Lataria, amassados, pintura geral' },
   { value: 'eletrica',   emoji: '⚡', label: 'Elétrica Automotiva',   desc: 'Injeção eletrônica, ar-condicionado' },
+  { value: 'estetica',   emoji: '✨', label: 'Estética Automotiva',   desc: 'Polimento, vitrificação, higienização' },
   { value: 'geral',      emoji: '🚗', label: 'Vários serviços',       desc: 'Mais de um tipo na mesma oficina' },
 ]
 
 const CARGOS = [
-  { value: 'dono',      emoji: '👑', label: 'Sou o dono ou sócio',        desc: 'O negócio é meu — quero controlar tudo' },
-  { value: 'gerente',   emoji: '📋', label: 'Sou funcionário / gerente',   desc: 'Cuido da operação no dia a dia' },
+  { value: 'dono',        emoji: '👑', label: 'Sou o dono ou sócio',       desc: 'O negócio é meu — quero controlar tudo',  muted: false },
+  { value: 'gerente',     emoji: '📋', label: 'Sou funcionário / gerente',  desc: 'Cuido da operação no dia a dia',           muted: false },
+  { value: 'pesquisando', emoji: '🔍', label: 'Estou só pesquisando',       desc: 'Ainda não tenho certeza se é pra mim',    muted: true  },
 ]
 
-// ── Componente de card de opção ───────────────────────────────────────────────
-function OptionCard({ emoji, label, desc, selected, onClick }) {
+// ── Card de opção ─────────────────────────────────────────────────────────────
+function OptionCard({ emoji, label, desc, selected, onClick, muted = false, extra = null }) {
   return (
     <button
       type="button"
@@ -25,16 +47,25 @@ function OptionCard({ emoji, label, desc, selected, onClick }) {
       className={`w-full text-left p-4 rounded-2xl border-2 transition-all duration-150 active:scale-[0.97] ${
         selected
           ? 'border-indigo-500 bg-indigo-50 shadow-sm shadow-indigo-100'
-          : 'border-gray-100 bg-white hover:border-indigo-200 hover:bg-indigo-50/30'
+          : muted
+            ? 'border-gray-100 bg-gray-50/60 hover:border-gray-200'
+            : 'border-gray-100 bg-white hover:border-indigo-200 hover:bg-indigo-50/30'
       }`}
     >
       <div className="flex items-center gap-3">
-        <span className="text-2xl shrink-0">{emoji}</span>
-        <div className="min-w-0">
-          <p className={`font-bold text-sm leading-tight ${selected ? 'text-indigo-700' : 'text-slate-800'}`}>
+        <span className={`text-2xl shrink-0 ${muted && !selected ? 'opacity-60' : ''}`}>{emoji}</span>
+        <div className="min-w-0 flex-1">
+          <p className={`font-bold text-sm leading-tight ${
+            selected ? 'text-indigo-700' : muted ? 'text-gray-400' : 'text-slate-800'
+          }`}>
             {label}
           </p>
-          <p className="text-xs text-slate-400 mt-0.5 leading-snug">{desc}</p>
+          <p className={`text-xs mt-0.5 leading-snug ${muted && !selected ? 'text-gray-300' : 'text-slate-400'}`}>
+            {desc}
+          </p>
+          {extra && !selected && (
+            <p className="text-[10px] text-emerald-600 font-medium mt-1">{extra}</p>
+          )}
         </div>
         <div className={`ml-auto w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${
           selected ? 'border-indigo-500 bg-indigo-500' : 'border-gray-200'
@@ -51,132 +82,176 @@ function OptionCard({ emoji, label, desc, selected, onClick }) {
 }
 
 // ── Barra de progresso ────────────────────────────────────────────────────────
-function ProgressBar({ step, total }) {
+function ProgressBar({ current, total }) {
   return (
-    <div className="flex items-center gap-2 mb-8">
+    <div className="flex items-center gap-1.5 mb-8">
       {Array.from({ length: total }).map((_, i) => (
-        <div
-          key={i}
-          className={`h-1.5 rounded-full transition-all duration-300 ${
-            i < step ? 'bg-indigo-500 flex-1' : i === step ? 'bg-indigo-300 flex-1' : 'bg-gray-200 flex-1'
-          }`}
-        />
+        <div key={i} className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+          i < current ? 'bg-indigo-500' : i === current ? 'bg-indigo-300' : 'bg-gray-100'
+        }`} />
       ))}
     </div>
   )
 }
 
-// ── Tela de loading ────────────────────────────────────────────────────────────
+// ── Loader ────────────────────────────────────────────────────────────────────
 function Loader() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center">
-      <div className="w-8 h-8 border-3 border-indigo-300/30 border-t-indigo-400 rounded-full animate-spin"
-        style={{ border: '3px solid rgba(165,180,252,0.2)', borderTopColor: '#818cf8' }} />
+      <div style={{ width: 32, height: 32, border: '3px solid rgba(165,180,252,0.2)', borderTopColor: '#818cf8', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   )
 }
 
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function BemVindo() {
-  const navigate = useNavigate()
-  const [params] = useSearchParams()
+  const navigate   = useNavigate()
+  const [params]   = useSearchParams()
   const { user, loading: authLoading, refreshUser } = useAuth()
 
-  // step: 'loading' | 'oficina' | 'tipo' | 'cargo' | 'saving' | 'done'
-  const [step, setStep]           = useState('loading')
-  const [oficina, setOficina]     = useState('')
-  const [tipo, setTipo]           = useState('')
-  const [cargo, setCargo]         = useState('')
-  const [saving, setSaving]       = useState(false)
-  const [nomeDisplay, setNomeDisplay] = useState('')
+  // Formulário
+  const [oficina,  setOficina]  = useState('')
+  const [tipo,     setTipo]     = useState('')
+  const [cargo,    setCargo]    = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
 
-  // Determina o ponto de entrada após auth carregar
+  // Controle de navegação entre passos
+  // steps: lista dos passos que este usuário precisa completar, em ordem
+  const [steps,    setSteps]    = useState([])   // ['oficina','tipo','cargo','whatsapp']
+  const [stepIdx,  setStepIdx]  = useState(0)    // índice atual
+  const [ready,    setReady]    = useState(false) // auth carregou + steps calculados
+  const [saving,   setSaving]   = useState(false)
+  const [done,     setDone]     = useState(false)
+
+  const nomeDisplay = params.get('nome') || user?.responsavel?.split(' ')[0] || user?.nome?.split(' ')[0] || 'parceiro'
+
+  // ── Calcula os passos que faltam após auth carregar ───────────────────────
   useEffect(() => {
     if (authLoading) return
+    if (!user) { navigate('/login', { replace: true }); return }
 
-    // Sem usuário → redireciona para login
-    if (!user) {
-      navigate('/login', { replace: true })
-      return
-    }
+    const needsOficina  = !user.oficina?.trim()
+    const needsTipo     = !user.tipoOficina
+    const needsCargo    = !user.cargo
+    const needsWhatsapp = !user.whatsapp?.replace(/\D/g, '').length
 
-    // Se já qualificou → vai direto pro app
-    if (user.tipoOficina && user.cargo) {
+    const pending = []
+    if (needsOficina)  pending.push('oficina')
+    if (needsTipo)     pending.push('tipo')
+    if (needsCargo)    pending.push('cargo')
+    if (needsWhatsapp) pending.push('whatsapp')
+
+    // Tudo preenchido → vai direto pro app
+    if (pending.length === 0) {
       navigate('/app/oficina', { replace: true })
       return
     }
 
-    // Define nome para exibição
-    const nomeUrl = params.get('nome')
-    setNomeDisplay(nomeUrl || user.responsavel?.split(' ')[0] || user.nome?.split(' ')[0] || 'parceiro')
+    // Pré-popula com o que já existe no perfil
+    if (user.oficina)  setOficina(user.oficina)
+    if (user.whatsapp) setWhatsapp(user.whatsapp)
 
-    // Se falta nome de oficina (cadastro Google sem oficina) → pede primeiro
-    const oficinaSalva = user.oficina || ''
-    if (!oficinaSalva.trim()) {
-      setStep('oficina')
+    setSteps(pending)
+    setStepIdx(0)
+    setReady(true)
+  }, [authLoading, user?.id])
+
+  // ── Avança para o próximo passo ───────────────────────────────────────────
+  const next = useCallback(() => {
+    if (stepIdx < steps.length - 1) {
+      setStepIdx(i => i + 1)
     } else {
-      setOficina(oficinaSalva)
-      setStep('tipo')
+      handleFinish()
     }
-  }, [authLoading, user])
+  }, [stepIdx, steps])
 
-  // ── Avança do passo "oficina" para "tipo" ─────────────────────────────────
-  const handleOficinaNext = () => {
-    if (!oficina.trim()) return
-    setStep('tipo')
-  }
-
-  // ── Avança do passo "tipo" para "cargo" ───────────────────────────────────
-  const handleTipoNext = () => {
-    if (!tipo) return
-    setStep('cargo')
-  }
-
-  // ── Salva e redireciona ───────────────────────────────────────────────────
-  const handleCargoNext = async () => {
-    if (!cargo || saving) return
+  // ── Salva tudo e redireciona ──────────────────────────────────────────────
+  const handleFinish = async () => {
+    if (saving) return
     setSaving(true)
-    setStep('saving')
 
     try {
+      // Recupera UTMs salvos no localStorage antes do redirect
+      const utms = getStoredUtms()
+
       const updates = {
-        tipo_oficina: tipo,
-        cargo,
-        ...(oficina.trim() ? { oficina: oficina.trim() } : {}),
+        ...(oficina.trim()  ? { oficina:      oficina.trim()  } : {}),
+        ...(tipo            ? { tipo_oficina: tipo            } : {}),
+        ...(cargo           ? { cargo                        } : {}),
+        ...(whatsapp.replace(/\D/g,'').length ? { whatsapp } : {}),
+        ...(utms.utm_source   ? { utm_source:   utms.utm_source   } : {}),
+        ...(utms.utm_medium   ? { utm_medium:   utms.utm_medium   } : {}),
+        ...(utms.utm_campaign ? { utm_campaign: utms.utm_campaign } : {}),
+        ...(utms.utm_content  ? { utm_content:  utms.utm_content  } : {}),
       }
+
       await supabase.from('profiles').update(updates).eq('id', user.id)
 
-      // Analytics qualificado
+      // ── Eventos ──────────────────────────────────────────────────────────
+      const finalOficina  = (oficina.trim() || user.oficina || '').trim()
+      const finalWhatsapp = whatsapp || user.whatsapp || ''
+      const finalTipo     = tipo || user.tipoOficina || ''
+      const finalCargo    = cargo || user.cargo || ''
+      const isQualified   = finalOficina && finalWhatsapp.replace(/\D/g,'').length >= 10
+                          && finalTipo && finalCargo !== 'pesquisando'
+
       try {
         if (typeof gtag === 'function') {
-          gtag('event', 'lead_qualificado', { tipo_oficina: tipo, cargo, is_owner: cargo === 'dono' })
-          if (cargo === 'dono') {
-            gtag('event', 'lead_dono_oficina', { tipo_oficina: tipo })
+          if (isQualified) {
+            gtag('event', 'StartTrialQualified', {
+              tipo_oficina: finalTipo,
+              cargo: finalCargo,
+              is_owner: finalCargo === 'dono',
+            })
           }
+          gtag('event', 'lead_qualificado', {
+            tipo_oficina: finalTipo,
+            cargo: finalCargo,
+            qualified: isQualified,
+          })
         }
         window.dataLayer = window.dataLayer || []
-        window.dataLayer.push({ event: 'lead_qualificado', tipo_oficina: tipo, cargo, is_owner: cargo === 'dono' })
+        if (isQualified) {
+          window.dataLayer.push({ event: 'StartTrialQualified', tipo_oficina: finalTipo, cargo: finalCargo })
+        }
+        window.dataLayer.push({ event: 'lead_qualificado', tipo_oficina: finalTipo, cargo: finalCargo })
       } catch {}
 
-      // Atualiza contexto
       await refreshUser()
     } catch (e) {
       console.error('Erro ao salvar qualificação:', e)
     }
 
-    setStep('done')
-    setTimeout(() => navigate('/app/oficina', { replace: true }), 1800)
+    setDone(true)
+    setTimeout(() => navigate('/app/oficina', { replace: true }), 1600)
   }
 
-  // ── Renderização por passo ────────────────────────────────────────────────
-  if (authLoading || step === 'loading') return <Loader />
+  // ── Ações por passo ───────────────────────────────────────────────────────
+  const canAdvance = {
+    oficina:  oficina.trim().length > 0,
+    tipo:     tipo !== '',
+    cargo:    cargo !== '',
+    whatsapp: whatsapp.replace(/\D/g, '').length >= 10,
+  }
 
-  // Tela final de sucesso
-  if (step === 'saving' || step === 'done') {
+  const handleKeyDown = (e, step) => {
+    if (e.key === 'Enter' && canAdvance[step]) next()
+  }
+
+  // ── Renderização ──────────────────────────────────────────────────────────
+  if (authLoading || !ready) return <Loader />
+
+  const currentStep = steps[stepIdx]
+  const isLast      = stepIdx === steps.length - 1
+
+  // Tela de sucesso
+  if (done || saving) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex flex-col items-center justify-center px-4">
         <div className="text-center">
-          <div className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
+          <div className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6"
+            style={{ animation: 'bounceIn 0.4s ease' }}>
             <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
@@ -185,19 +260,21 @@ export default function BemVindo() {
           <p className="text-indigo-300 text-sm">Preparando seu BoxCerto...</p>
           <div className="mt-6 flex gap-1.5 justify-center">
             {[0,1,2].map(i => (
-              <div key={i} className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"
-                style={{ animationDelay: `${i * 0.15}s` }} />
+              <div key={i} className="w-2 h-2 bg-indigo-400 rounded-full"
+                style={{ animation: `bounce 0.8s ${i*0.15}s infinite` }} />
             ))}
           </div>
         </div>
+        <style>{`
+          @keyframes bounceIn { 0% { transform: scale(0.5); opacity: 0 } 70% { transform: scale(1.1) } 100% { transform: scale(1); opacity: 1 } }
+          @keyframes bounce { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
+        `}</style>
       </div>
     )
   }
 
-  // Total de passos visíveis: oficina é step extra só quando necessário
-  const hasOficinaStep = step === 'oficina' || (step !== 'tipo' && step !== 'cargo' && !user?.oficina?.trim())
-  const totalSteps = hasOficinaStep ? 3 : 2
-  const stepIndex  = step === 'oficina' ? 0 : step === 'tipo' ? (hasOficinaStep ? 1 : 0) : (hasOficinaStep ? 2 : 1)
+  // Rótulo do passo para a barra de progresso
+  const stepLabel = { oficina: 'Passo 1', tipo: `Passo ${stepIdx+1}`, cargo: `Passo ${stepIdx+1}`, whatsapp: `Passo ${stepIdx+1}` }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex flex-col items-center justify-center px-4 py-10">
@@ -216,115 +293,136 @@ export default function BemVindo() {
       {/* Card principal */}
       <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 sm:p-8">
 
-        <ProgressBar step={stepIndex} total={totalSteps} />
+        <ProgressBar current={stepIdx} total={steps.length} />
 
-        {/* ── PASSO: Nome da Oficina ────────────────────────── */}
-        {step === 'oficina' && (
+        {/* ── PASSO: Nome da Oficina ──────────────────────── */}
+        {currentStep === 'oficina' && (
           <div>
-            <p className="text-xs font-semibold text-indigo-500 uppercase tracking-widest mb-2">Passo 1</p>
+            <p className="text-xs font-semibold text-indigo-500 uppercase tracking-widest mb-2">
+              Passo {stepIdx + 1} de {steps.length}
+            </p>
             <h2 className="text-2xl font-extrabold text-slate-900 leading-tight mb-1">
               Como se chama<br />sua oficina?
             </h2>
             <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-              Isso aparece no sistema e nos orçamentos que você envia aos clientes.
+              Esse nome aparece nos orçamentos que você envia aos clientes.
             </p>
-
             <input
               autoFocus
               type="text"
               value={oficina}
               onChange={e => setOficina(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleOficinaNext()}
+              onKeyDown={e => handleKeyDown(e, 'oficina')}
               placeholder="Ex: Oficina do João, Auto Center Silva..."
               className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-100 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 outline-none text-slate-900 placeholder-slate-300 text-base transition-all mb-6"
             />
-
-            <button
-              onClick={handleOficinaNext}
-              disabled={!oficina.trim()}
-              className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl text-base hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-40 shadow-lg shadow-indigo-200"
-            >
+            <button onClick={next} disabled={!canAdvance.oficina}
+              className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl text-base hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-40 shadow-lg shadow-indigo-200">
               Continuar →
             </button>
           </div>
         )}
 
-        {/* ── PASSO: Tipo de negócio ────────────────────────── */}
-        {step === 'tipo' && (
+        {/* ── PASSO: Tipo de negócio ──────────────────────── */}
+        {currentStep === 'tipo' && (
           <div>
             <p className="text-xs font-semibold text-indigo-500 uppercase tracking-widest mb-2">
-              {hasOficinaStep ? 'Passo 2' : 'Passo 1'}
+              Passo {stepIdx + 1} de {steps.length}
             </p>
             <h2 className="text-2xl font-extrabold text-slate-900 leading-tight mb-1">
-              Que tipo de negócio<br />você tem?
+              Qual é o foco principal<br />da sua oficina?
             </h2>
             <p className="text-slate-400 text-sm mb-5 leading-relaxed">
-              Vamos personalizar o BoxCerto para a sua realidade.
+              Vamos configurar o BoxCerto do jeito certo pra você.
             </p>
-
-            <div className="space-y-2.5 mb-6">
+            <div className="space-y-2 mb-6">
               {TIPOS.map(opt => (
-                <OptionCard
-                  key={opt.value}
-                  {...opt}
+                <OptionCard key={opt.value} {...opt}
                   selected={tipo === opt.value}
-                  onClick={() => setTipo(opt.value)}
-                />
+                  onClick={() => setTipo(opt.value)} />
               ))}
             </div>
-
-            <button
-              onClick={handleTipoNext}
-              disabled={!tipo}
-              className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl text-base hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-40 shadow-lg shadow-indigo-200"
-            >
+            <button onClick={next} disabled={!canAdvance.tipo}
+              className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl text-base hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-40 shadow-lg shadow-indigo-200">
               Continuar →
             </button>
           </div>
         )}
 
-        {/* ── PASSO: Cargo ──────────────────────────────────── */}
-        {step === 'cargo' && (
+        {/* ── PASSO: Papel na oficina ─────────────────────── */}
+        {currentStep === 'cargo' && (
           <div>
             <p className="text-xs font-semibold text-indigo-500 uppercase tracking-widest mb-2">
-              {hasOficinaStep ? 'Passo 3' : 'Passo 2'}
+              Passo {stepIdx + 1} de {steps.length}
             </p>
             <h2 className="text-2xl font-extrabold text-slate-900 leading-tight mb-1">
               Qual é o seu papel<br />na oficina?
             </h2>
             <p className="text-slate-400 text-sm mb-5 leading-relaxed">
-              Última pergunta, {nomeDisplay}. Promessa!
+              Última pergunta de qualificação, {nomeDisplay}.
             </p>
-
-            <div className="space-y-2.5 mb-6">
+            <div className="space-y-2 mb-6">
               {CARGOS.map(opt => (
-                <OptionCard
-                  key={opt.value}
-                  {...opt}
+                <OptionCard key={opt.value} {...opt}
                   selected={cargo === opt.value}
                   onClick={() => setCargo(opt.value)}
-                />
+                  extra={opt.value === 'pesquisando' ? '✓ Acesso liberado, sem cobrança' : null} />
               ))}
             </div>
-
-            <button
-              onClick={handleCargoNext}
-              disabled={!cargo || saving}
-              className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl text-base hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-40 shadow-lg shadow-indigo-200"
-            >
-              {saving ? 'Salvando...' : 'Entrar no BoxCerto →'}
+            <button onClick={next} disabled={!canAdvance.cargo}
+              className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl text-base hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-40 shadow-lg shadow-indigo-200">
+              {isLast ? 'Criar meu primeiro orçamento →' : 'Continuar →'}
             </button>
+            {isLast && (
+              <p className="text-center text-xs text-slate-300 mt-3">
+                🔒 7 dias grátis · sem cartão · cancele quando quiser
+              </p>
+            )}
+          </div>
+        )}
 
+        {/* ── PASSO: WhatsApp ─────────────────────────────── */}
+        {currentStep === 'whatsapp' && (
+          <div>
+            <p className="text-xs font-semibold text-indigo-500 uppercase tracking-widest mb-2">
+              Passo {stepIdx + 1} de {steps.length}
+            </p>
+            <h2 className="text-2xl font-extrabold text-slate-900 leading-tight mb-1">
+              Qual é o WhatsApp<br />da oficina?
+            </h2>
+            <p className="text-slate-400 text-sm mb-5 leading-relaxed">
+              Seus clientes aprovam orçamentos direto pelo WhatsApp.
+            </p>
+            <input
+              autoFocus
+              type="tel"
+              value={whatsapp}
+              onChange={e => setWhatsapp(formatWpp(e.target.value))}
+              onKeyDown={e => handleKeyDown(e, 'whatsapp')}
+              placeholder="(51) 99999-0000"
+              maxLength={15}
+              className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-100 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 outline-none text-slate-900 placeholder-slate-300 text-base transition-all mb-4"
+            />
+            {/* Card explicativo */}
+            <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3 mb-6">
+              <span className="text-xl shrink-0 mt-0.5">📲</span>
+              <p className="text-xs text-emerald-800 leading-relaxed font-medium">
+                O WhatsApp é o coração do BoxCerto — seu cliente aprova o orçamento com 1 clique direto pelo WhatsApp.
+              </p>
+            </div>
+            <button onClick={next} disabled={!canAdvance.whatsapp}
+              className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl text-base hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-40 shadow-lg shadow-indigo-200">
+              Criar meu primeiro orçamento →
+            </button>
             <p className="text-center text-xs text-slate-300 mt-3">
-              🔒 7 dias grátis • sem cartão • cancele quando quiser
+              🔒 7 dias grátis · sem cartão · cancele quando quiser
             </p>
           </div>
         )}
       </div>
 
-      {/* Rodapé discreto */}
-      <p className="mt-6 text-indigo-300/50 text-xs text-center">
-        Suas respostas nos ajudam a melhorar o sistema para oficinas como a sua.
+      <p className="mt-6 text-indigo-300/40 text-xs text-center">
+        Suas respostas nos ajudam a personalizar o sistema para sua oficina.
       </p>
     </div>
   )

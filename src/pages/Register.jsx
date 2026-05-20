@@ -246,6 +246,17 @@ export default function Register() {
     })
     track('cadastro_signup_success')
 
+    // Persiste UTMs para o BemVindo.jsx recuperar após o redirect
+    try {
+      localStorage.setItem('boxcerto_utm', JSON.stringify({
+        utm_source:   sp.get('utm_source')   || '',
+        utm_medium:   sp.get('utm_medium')   || '',
+        utm_campaign: sp.get('utm_campaign') || '',
+        utm_content:  sp.get('utm_content')  || '',
+        origem:       sp.get('origem')       || '',
+      }))
+    } catch {}
+
     fetch('/api/send-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -260,6 +271,17 @@ export default function Register() {
 
   const loginGoogle = async () => {
     track('cadastro_google_click')
+    // Salva UTMs antes do redirect OAuth (a URL muda e os params se perdem)
+    try {
+      const sp2 = new URLSearchParams(window.location.search)
+      localStorage.setItem('boxcerto_utm', JSON.stringify({
+        utm_source:   sp2.get('utm_source')   || '',
+        utm_medium:   sp2.get('utm_medium')   || '',
+        utm_campaign: sp2.get('utm_campaign') || '',
+        utm_content:  sp2.get('utm_content')  || '',
+        origem:       sp2.get('origem')       || '',
+      }))
+    } catch {}
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin + '/bem-vindo' },

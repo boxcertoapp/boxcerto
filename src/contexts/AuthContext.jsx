@@ -38,6 +38,12 @@ const buildUser = (authUser, profile) => {
     // Qualificação (coletada na página /bem-vindo)
     tipoOficina: profile?.tipo_oficina || null,
     cargo:       profile?.cargo        || null,
+    // Ativação
+    activated:     profile?.activated       || false,
+    firstActionAt: profile?.first_action_at || null,
+    // UTMs (para referência interna)
+    utmSource:   profile?.utm_source   || null,
+    utmCampaign: profile?.utm_campaign || null,
   }
 }
 

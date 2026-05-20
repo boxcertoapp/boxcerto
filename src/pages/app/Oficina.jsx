@@ -11,6 +11,7 @@ import {
   Flag, TriangleAlert, ClipboardList, Circle
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { supabase } from '../../lib/supabase'
 import FipeSeletor from '../../components/FipeSeletor'
 import {
   osStorage, itemStorage, clientStorage, vehicleStorage,
@@ -474,7 +475,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
 
 // ── MAIN OFICINA ──────────────────────────────────────────
 export default function Oficina() {
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
   const [selectedOS, setSelectedOS] = useState(null)
   const [showNewOS, setShowNewOS] = useState(false)
   const [prefillPlate, setPrefillPlate] = useState('')
@@ -497,6 +498,28 @@ export default function Oficina() {
     window.addEventListener('boxcerto:abrir-nova-os', handler)
     return () => window.removeEventListener('boxcerto:abrir-nova-os', handler)
   }, [])
+
+  // Rastreia primeira OS criada — ativa o usuário e dispara CreatedFirstBudget
+  useEffect(() => {
+    if (!user?.id) return
+    const handleOsCriada = async () => {
+      if (user.activated) return
+      try {
+        await supabase.from('profiles').update({
+          first_action_at: new Date().toISOString(),
+          activated: true,
+        }).eq('id', user.id)
+        await refreshUser()
+        try {
+          if (typeof gtag === 'function') gtag('event', 'CreatedFirstBudget')
+          window.dataLayer = window.dataLayer || []
+          window.dataLayer.push({ event: 'CreatedFirstBudget' })
+        } catch {}
+      } catch {}
+    }
+    window.addEventListener('boxcerto:os-criada', handleOsCriada)
+    return () => window.removeEventListener('boxcerto:os-criada', handleOsCriada)
+  }, [user?.id, user?.activated])
 
   const openOS = (os) => setSelectedOS(os)
 
