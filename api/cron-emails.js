@@ -90,7 +90,7 @@ module.exports = async (req, res) => {
   // ── Busca todos os usuários em trial ──────────────────────
   const { data: usuarios, error } = await supabase
     .from('profiles')
-    .select('id, email, responsavel, oficina, trial_end, created_at')
+    .select('id, email, responsavel, oficina, trial_end, created_at, tipo_oficina, cargo')
     .eq('status', 'trial')
     .not('email', 'is', null)
 
@@ -106,8 +106,10 @@ module.exports = async (req, res) => {
   for (const u of usuarios) {
     if (!u.email) continue
 
-    const nome    = u.responsavel || u.oficina || 'dono da oficina'
-    const oficina = u.oficina || 'sua oficina'
+    const nome        = u.responsavel || u.oficina || 'dono da oficina'
+    const oficina     = u.oficina || 'sua oficina'
+    const tipoOficina = u.tipo_oficina || null
+    const isPesquisando = u.cargo === 'pesquisando'
 
     const criadoEm  = new Date(u.created_at)
     const trialEnd  = new Date(u.trial_end)
@@ -120,16 +122,17 @@ module.exports = async (req, res) => {
     // 1. Parabéns pela 1ª OS (qualquer dia do trial, assim que criar)
     if (diasSince >= 1 && diasLeft > 0 && !(await jaEnviou(u.email, 'primeira_os'))) {
       if (await temOS(u.id)) {
-        const ok = await enviarEmail('primeira_os', u.email, { nome, oficina })
+        const ok = await enviarEmail('primeira_os', u.email, { nome, oficina, tipoOficina })
         ok ? resultados.enviados++ : resultados.erros++
         continue
       }
     }
 
     // 2. Nudge de ativação — dia 2+ sem OS
+    // Pesquisando: recebe versão suave (isPesquisando=true), usuários reais: versão direta
     if (diasSince >= 2 && diasLeft > 0 && !(await jaEnviou(u.email, 'activation_nudge'))) {
       if (!(await temOS(u.id))) {
-        const ok = await enviarEmail('activation_nudge', u.email, { nome, oficina })
+        const ok = await enviarEmail('activation_nudge', u.email, { nome, oficina, tipoOficina, isPesquisando })
         ok ? resultados.enviados++ : resultados.erros++
       } else {
         await registrarLog(u.email, 'activation_nudge') // marca como "pulado" para não checar novamente

@@ -68,6 +68,8 @@ function calcHealthScore(u) {
   const statusPts = { active: 20, trial: 15, pending: 5, inadimplente: 2, cancelado: 0, inactive: 0, rejected: 0 }
   score += statusPts[u.status] || 0
 
+  // Cap pesquisando em 30 — baixa intenção não deve aparecer como saudável
+  if (u.cargo === 'pesquisando') return Math.min(score, 30)
   return Math.min(score, 100)
 }
 

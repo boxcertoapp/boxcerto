@@ -54,52 +54,105 @@ const notice = (color, bg, border, content) =>
 const templates = {
 
   // ── Boas-vindas (dia 0) ─────────────────────────────────
-  welcome: ({ nome, oficina, trialDias = 7 }) => ({
-    subject: `Bem-vindo ao BoxCerto, ${nome}! 🎉`,
-    html: base(`
-      ${card(`
-        <h2 style="color:#1e293b;margin:0 0 8px;font-size:20px">Olá, ${nome}! 👋</h2>
-        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 16px">
-          Sua oficina <strong>${oficina}</strong> está cadastrada e pronta para usar.<br>
-          Você tem <strong>${trialDias} dias grátis</strong> para explorar tudo sem limitações e sem cartão.
-        </p>
-        <div style="background:#f1f5f9;border-radius:10px;padding:16px;margin-bottom:20px">
-          <p style="color:#334155;font-size:13px;font-weight:600;margin:0 0 10px">Comece agora — 3 passos simples:</p>
-          <p style="color:#475569;font-size:13px;margin:6px 0">1️⃣ Cadastre um cliente e seu veículo</p>
-          <p style="color:#475569;font-size:13px;margin:6px 0">2️⃣ Abra sua primeira OS</p>
-          <p style="color:#475569;font-size:13px;margin:6px 0">3️⃣ Envie um orçamento por link para o cliente aprovar</p>
-        </div>
-        ${btn(`${APP_URL}/app/oficina`, 'Acessar minha oficina →')}
-      `)}
-      ${notice('#92400e','#fefce8','#fde68a',
-        `⏳ <strong>Trial por ${trialDias} dias.</strong> Para continuar sem interrupção, escolha um plano antes do vencimento.
-        <a href="${APP_URL}/assinar" style="color:#92400e;font-weight:bold">Ver planos →</a>`)}
-    `),
-  }),
+  welcome: ({ nome, oficina, trialDias = 7, tipoOficina }) => {
+    // Linha personalizada por tipo de oficina
+    const tipoLinhas = {
+      mecanica:  '🔧 Mecânica geral, revisões e reparos — tudo registrado e rastreável.',
+      moto:      '🏍️ OS de motos com controle de peças e histórico por veículo.',
+      pesados:   '🚛 Caminhões, ônibus e frotas — histórico completo por veículo.',
+      funilaria: '🎨 Orçamentos de funilaria e pintura aprovados antes de começar.',
+      eletrica:  '⚡ Diagnósticos elétricos com orçamento aprovado pelo cliente no celular.',
+      estetica:  '✨ Polimento, higienização e estética — cliente aprova o pacote por link.',
+      geral:     '🚗 Todos os tipos de serviço num só sistema, sem planilha.',
+    }
+    const tipoLinha = tipoLinhas[tipoOficina] || ''
+    return {
+      subject: `Bem-vindo ao BoxCerto, ${nome}! 🎉`,
+      html: base(`
+        ${card(`
+          <h2 style="color:#1e293b;margin:0 0 8px;font-size:20px">Olá, ${nome}! 👋</h2>
+          <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 16px">
+            ${tipoLinha ? `${tipoLinha}<br><br>` : ''}Sua oficina <strong>${oficina}</strong> está cadastrada e pronta para usar.<br>
+            Você tem <strong>${trialDias} dias grátis</strong> para explorar tudo sem limitações e sem cartão.
+          </p>
+          <div style="background:#f1f5f9;border-radius:10px;padding:16px;margin-bottom:20px">
+            <p style="color:#334155;font-size:13px;font-weight:600;margin:0 0 10px">Comece agora — 3 passos simples:</p>
+            <p style="color:#475569;font-size:13px;margin:6px 0">1️⃣ Cadastre um cliente e seu veículo</p>
+            <p style="color:#475569;font-size:13px;margin:6px 0">2️⃣ Crie seu primeiro orçamento</p>
+            <p style="color:#475569;font-size:13px;margin:6px 0">3️⃣ Envie por link para o cliente aprovar pelo celular</p>
+          </div>
+          ${btn(`${APP_URL}/app/oficina`, 'Criar meu primeiro orçamento →')}
+        `)}
+        ${notice('#92400e','#fefce8','#fde68a',
+          `⏳ <strong>Trial por ${trialDias} dias.</strong> Para continuar sem interrupção, escolha um plano antes do vencimento.
+          <a href="${APP_URL}/assinar" style="color:#92400e;font-weight:bold">Ver planos →</a>`)}
+      `),
+    }
+  },
 
   // ── Nudge de ativação (dia 2) ────────────────────────────
-  activation_nudge: ({ nome, oficina }) => ({
-    subject: `${nome}, você já abriu sua primeira OS? 🔧`,
-    html: base(`
-      ${card(`
-        <h2 style="color:#1e293b;margin:0 0 12px">Sua oficina está esperando, ${nome}!</h2>
-        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 16px">
-          Passamos pela <strong>${oficina}</strong> e vimos que você ainda não abriu nenhuma OS.
-          Leva menos de 2 minutos para criar a primeira — prometemos.
-        </p>
-        <div style="background:#f1f5f9;border-radius:10px;padding:16px;margin-bottom:20px">
-          <p style="color:#334155;font-size:13px;font-weight:600;margin:0 0 8px">Sua primeira OS em 3 cliques:</p>
-          <p style="color:#475569;font-size:13px;margin:4px 0">→ Acesse o app e clique em <strong>"Nova OS"</strong></p>
-          <p style="color:#475569;font-size:13px;margin:4px 0">→ Digite a placa do carro</p>
-          <p style="color:#475569;font-size:13px;margin:4px 0">→ Adicione os serviços e envie o orçamento</p>
-        </div>
-        ${btn(`${APP_URL}/app/oficina`, 'Abrir minha primeira OS →')}
-        <p style="color:#64748b;font-size:13px;text-align:center;margin:8px 0 0">
-          Precisa de ajuda? <a href="https://wa.me/5553997065725" style="color:#4f46e5">Fale com a gente no WhatsApp</a>
-        </p>
-      `)}
-    `),
-  }),
+  activation_nudge: ({ nome, oficina, tipoOficina, isPesquisando }) => {
+    // Versão suave para quem declarou que ainda está pesquisando
+    if (isPesquisando) {
+      return {
+        subject: `${nome}, como está sendo sua experiência com o BoxCerto?`,
+        html: base(`
+          ${card(`
+            <h2 style="color:#1e293b;margin:0 0 12px">Explorando sem pressa? Faz sentido, ${nome} 👋</h2>
+            <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 16px">
+              Sabemos que avaliar um sistema novo leva tempo — e a decisão precisa fazer sentido
+              para a <strong>${oficina}</strong>.
+            </p>
+            <div style="background:#f1f5f9;border-radius:10px;padding:16px;margin-bottom:20px">
+              <p style="color:#334155;font-size:13px;font-weight:600;margin:0 0 8px">O que você pode fazer agora:</p>
+              <p style="color:#475569;font-size:13px;margin:4px 0">→ <strong>Crie um orçamento de teste</strong> com dados fictícios</p>
+              <p style="color:#475569;font-size:13px;margin:4px 0">→ Veja como o cliente recebe o link e aprova</p>
+              <p style="color:#475569;font-size:13px;margin:4px 0">→ Se fizer sentido, leva menos de 5 min para começar de verdade</p>
+            </div>
+            ${btn(`${APP_URL}/app/oficina`, 'Experimentar sem compromisso →')}
+            <p style="color:#64748b;font-size:13px;text-align:center;margin:8px 0 0">
+              Tem dúvidas? <a href="https://wa.me/5553997065725" style="color:#4f46e5">Fale com a gente — respondemos rápido</a>
+            </p>
+          `)}
+        `),
+      }
+    }
+
+    // Exemplo específico por tipo de oficina
+    const tipoExemplos = {
+      mecanica:  'Troca de óleo, freios, revisão — tudo em menos de 2 minutos.',
+      moto:      'OS de moto, troca de pneu, revisão — tudo em menos de 2 minutos.',
+      pesados:   'Revisão de caminhão, manutenção de frota — orçamento pronto rápido.',
+      funilaria: 'Funilaria, amassado, pintura — cliente aprova o valor antes de você começar.',
+      eletrica:  'Diagnóstico elétrico, sensor, bateria — orçamento enviado em segundos.',
+      estetica:  'Polimento, cristalização, higienização — cliente escolhe o pacote pelo link.',
+      geral:     'Qualquer serviço — orçamento pronto em menos de 2 minutos.',
+    }
+    const exemplo = tipoExemplos[tipoOficina] || 'Qualquer serviço — orçamento pronto em menos de 2 minutos.'
+
+    return {
+      subject: `${nome}, crie seu primeiro orçamento em 2 minutos 🔧`,
+      html: base(`
+        ${card(`
+          <h2 style="color:#1e293b;margin:0 0 12px">Sua oficina está esperando, ${nome}!</h2>
+          <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 16px">
+            A <strong>${oficina}</strong> ainda não criou nenhum orçamento.
+            ${exemplo}
+          </p>
+          <div style="background:#f1f5f9;border-radius:10px;padding:16px;margin-bottom:20px">
+            <p style="color:#334155;font-size:13px;font-weight:600;margin:0 0 8px">Primeiro orçamento em 3 cliques:</p>
+            <p style="color:#475569;font-size:13px;margin:4px 0">→ Acesse o app e clique em <strong>"Nova OS"</strong></p>
+            <p style="color:#475569;font-size:13px;margin:4px 0">→ Digite a placa e adicione os serviços</p>
+            <p style="color:#475569;font-size:13px;margin:4px 0">→ Gere o link e mande no WhatsApp do cliente</p>
+          </div>
+          ${btn(`${APP_URL}/app/oficina`, 'Criar meu primeiro orçamento →')}
+          <p style="color:#64748b;font-size:13px;text-align:center;margin:8px 0 0">
+            Precisa de ajuda? <a href="https://wa.me/5553997065725" style="color:#4f46e5">Fale com a gente no WhatsApp</a>
+          </p>
+        `)}
+      `),
+    }
+  },
 
   // ── Dica: aprovação por link (dia 4) ─────────────────────
   tip_aprovacao: ({ nome, oficina }) => ({
@@ -248,29 +301,41 @@ const templates = {
   }),
 
   // ── Parabéns primeira OS criada ─────────────────────────
-  primeira_os: ({ nome, oficina }) => ({
-    subject: `${nome}, você criou sua primeira OS no BoxCerto! 🎉`,
-    html: base(`
-      ${card(`
-        <h2 style="color:#1e293b;margin:0 0 12px">Primeira OS criada — parabéns, ${nome}! 🔧</h2>
-        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 16px">
-          A <strong>${oficina}</strong> acabou de dar o primeiro passo para organizar tudo digitalmente.
-          Agora vem a parte que os seus clientes vão adorar:
-          <strong>enviar o orçamento por link para aprovação.</strong>
-        </p>
-        <div style="background:#eef2ff;border-radius:10px;padding:16px;margin-bottom:20px;border:1px solid #c7d2fe">
-          <p style="color:#3730a3;font-size:13px;font-weight:600;margin:0 0 10px">Próximo passo — envie o orçamento pro cliente:</p>
-          <p style="color:#4338ca;font-size:13px;margin:4px 0">1. Abra a OS que você criou</p>
-          <p style="color:#4338ca;font-size:13px;margin:4px 0">2. Clique em <strong>"Gerar link de aprovação"</strong></p>
-          <p style="color:#4338ca;font-size:13px;margin:4px 0">3. Mande o link no WhatsApp do cliente</p>
-          <p style="color:#4338ca;font-size:13px;margin:4px 0">4. Veja a aprovação chegar em tempo real ✅</p>
-        </div>
-        ${btn(`${APP_URL}/app/oficina`, 'Ver minha OS →')}
-      `)}
-      ${notice('#065f46','#ecfdf5','#6ee7b7',
-        '💡 <strong>Dica:</strong> Clientes que recebem orçamento por link aprovam muito mais rápido — e você tem tudo registrado com data e hora.')}
-    `),
-  }),
+  primeira_os: ({ nome, oficina, tipoOficina }) => {
+    const tipoDica = {
+      mecanica:  'Mecânicas que usam o link de aprovação reduzem ligações do cliente pela metade.',
+      moto:      'Donos de moto adoram acompanhar o status no celular — sem precisar ligar.',
+      pesados:   'Frota e transportadoras aprovam os serviços por link sem precisar ir à oficina.',
+      funilaria: 'Para funilaria, o cliente já aprova o orçamento antes de você começar — zero surpresa.',
+      eletrica:  'Com diagnóstico elétrico registrado, o cliente vê o que foi feito e aprova com segurança.',
+      estetica:  'Clientes de estética adoram receber o orçamento de pacotes pelo link — e voltam mais.',
+      geral:     'Clientes que recebem orçamento por link aprovam muito mais rápido.',
+    }
+    const dica = tipoDica[tipoOficina] || tipoDica.geral
+    return {
+      subject: `${nome}, você criou seu primeiro orçamento no BoxCerto! 🎉`,
+      html: base(`
+        ${card(`
+          <h2 style="color:#1e293b;margin:0 0 12px">Primeiro orçamento criado — parabéns, ${nome}! 🎉</h2>
+          <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 16px">
+            A <strong>${oficina}</strong> acabou de dar o primeiro passo para organizar tudo digitalmente.
+            Agora vem a parte que os seus clientes vão adorar:
+            <strong>receber o orçamento por link e aprovar pelo celular.</strong>
+          </p>
+          <div style="background:#eef2ff;border-radius:10px;padding:16px;margin-bottom:20px;border:1px solid #c7d2fe">
+            <p style="color:#3730a3;font-size:13px;font-weight:600;margin:0 0 10px">Próximo passo — envie pro cliente agora:</p>
+            <p style="color:#4338ca;font-size:13px;margin:4px 0">1. Abra a OS que você criou</p>
+            <p style="color:#4338ca;font-size:13px;margin:4px 0">2. Clique em <strong>"Gerar link de aprovação"</strong></p>
+            <p style="color:#4338ca;font-size:13px;margin:4px 0">3. Mande o link no WhatsApp do cliente</p>
+            <p style="color:#4338ca;font-size:13px;margin:4px 0">4. Veja a aprovação chegar em tempo real ✅</p>
+          </div>
+          ${btn(`${APP_URL}/app/oficina`, 'Enviar orçamento agora →')}
+        `)}
+        ${notice('#065f46','#ecfdf5','#6ee7b7',
+          `💡 <strong>Dica:</strong> ${dica} E você tem tudo registrado com data e hora.`)}
+      `),
+    }
+  },
 
   // ── Descoberta de funcionalidade (dia 3) ─────────────────
   feature_discovery: ({ nome, oficina }) => ({
