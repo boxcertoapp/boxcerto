@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Check, X, ChevronDown, ChevronUp, Lock, AlertCircle } from 'lucide-react'
+import { Check, X, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
@@ -127,12 +127,13 @@ export default function OnboardingChecklist() {
       locked: false,
     },
     {
-      key:    'orcamento',
-      icon:   '📲',
-      label:  'Envie um orçamento pelo WhatsApp',
-      done:   done.orcamento,
-      action: irParaOrcamento,
-      locked: !done.os, // bloqueado até criar o orçamento
+      key:      'orcamento',
+      icon:     '📲',
+      label:    'Envie um orçamento pelo WhatsApp',
+      done:     done.orcamento,
+      action:   irParaOrcamento,
+      locked:   false,
+      pending:  !done.os, // ainda não chegou a hora, mas não está bloqueado
     },
     {
       key:    'oficina',
@@ -140,7 +141,8 @@ export default function OnboardingChecklist() {
       label:  'Configure sua oficina',
       done:   done.oficina,
       action: irParaConfigurar,
-      locked: false,
+      locked:  false,
+      pending: false,
     },
   ]
 
@@ -186,44 +188,45 @@ export default function OnboardingChecklist() {
           <>
             <div className="divide-y divide-gray-50">
               {steps.map((step) => (
-                <div key={step.key} className={`px-4 py-3 flex items-center gap-3 ${step.locked ? 'opacity-50' : ''}`}>
+                <div key={step.key} className="px-4 py-3 flex items-start gap-3">
 
                   {/* Checkbox circular */}
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border-2 transition-all duration-300 ${
-                    step.done
-                      ? 'bg-emerald-500 border-emerald-500'
-                      : step.locked
-                        ? 'border-gray-200 bg-gray-50'
-                        : 'border-gray-300'
+                  <div className={`w-5 h-5 mt-0.5 rounded-full flex items-center justify-center shrink-0 border-2 transition-all duration-300 ${
+                    step.done ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'
                   }`}>
                     {step.done && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
                   </div>
 
-                  {/* Ícone + label */}
-                  <span className={`flex-1 text-sm leading-snug ${
-                    step.done   ? 'text-gray-400 line-through' :
-                    step.locked ? 'text-gray-400' :
-                    'text-gray-700 font-medium'
-                  }`}>
-                    <span className="mr-1">{step.icon}</span>
-                    {step.label}
-                  </span>
+                  {/* Ícone + label + hint de sequência */}
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-sm leading-snug ${
+                      step.done    ? 'text-gray-400 line-through' :
+                      step.pending ? 'text-gray-400' :
+                      'text-gray-700 font-medium'
+                    }`}>
+                      <span className="mr-1">{step.icon}</span>
+                      {step.label}
+                    </span>
+                    {/* Indicador de sequência — sem cadeado, só texto discreto */}
+                    {!step.done && step.pending && (
+                      <p className="text-[10px] text-gray-400 mt-0.5 leading-none">
+                        Complete o passo 1 primeiro
+                      </p>
+                    )}
+                  </div>
 
-                  {/* Ação — só se não concluído */}
+                  {/* Botão Ir → (sempre disponível, mesmo pending) */}
                   {!step.done && (
-                    <div className="flex items-center gap-1 shrink-0">
-                      {step.locked ? (
-                        /* Cadeado: passo bloqueado até o anterior ser feito */
-                        <Lock className="w-3.5 h-3.5 text-gray-300" />
-                      ) : (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); step.action() }}
-                          className="text-indigo-600 hover:bg-indigo-50 text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors"
-                        >
-                          Ir →
-                        </button>
-                      )}
-                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); step.action() }}
+                      className={`text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors shrink-0 ${
+                        step.pending
+                          ? 'text-gray-400 hover:bg-gray-50'
+                          : 'text-indigo-600 hover:bg-indigo-50'
+                      }`}
+                    >
+                      Ir →
+                    </button>
                   )}
                 </div>
               ))}
