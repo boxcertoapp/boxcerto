@@ -490,7 +490,7 @@ const TESTIMONIALS = [
 ]
 
 // ── State ────────────────────────────────────────────────────
-let curQ=0, answers=[], selOpt=null
+let curQ=0, answers=[], selOpt=null, _advTimer=null
 
 // ── Helpers ──────────────────────────────────────────────────
 function show(id){
@@ -532,10 +532,12 @@ function renderQ(){
 }
 
 function pick(i){
+  if(_advTimer){clearTimeout(_advTimer);_advTimer=null}
   document.querySelectorAll('.option').forEach(el=>el.classList.remove('selected'))
   document.getElementById('opt-'+i).classList.add('selected')
   selOpt=i
   document.getElementById('btn-next').disabled=false
+  _advTimer=setTimeout(()=>{_advTimer=null;nextQuestion()},360)
 }
 
 function nextQuestion(){
