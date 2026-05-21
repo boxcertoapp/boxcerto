@@ -590,7 +590,7 @@ function buildResult(){
   const pct=Math.round((total/max)*100)
   const level=pct>=60?'red':pct>=30?'yellow':'green'
   const r=RESULTS[level]
-  const url=`https://boxcerto.com/register?origem=quiz&utm_source=meta&utm_campaign=lpquizdiagnostico&score=${pct}&nivel=${level}`
+  const url=`https://boxcerto.com/cadastro?origem=quiz&utm_source=meta&utm_campaign=lpquizdiagnostico&score=${pct}&nivel=${level}`
   const waMsgRaw=`Olá! Fiz o diagnóstico do BoxCerto e quero saber mais. Meu índice de risco foi ${pct}%.`
   const waUrl=`https://wa.me/5553997065725?text=${encodeURIComponent(waMsgRaw)}`
 
