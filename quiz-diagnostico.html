@@ -129,6 +129,15 @@ body{
 .loading-dot{width:7px;height:7px;border-radius:50%;background:#c7d2fe;transition:background .3s,transform .3s;}
 .loading-dot.lit{background:#4f46e5;transform:scale(1.2);}
 
+/* ── Back button ── */
+.btn-back{
+  background:none;border:none;cursor:pointer;padding:2px 10px 2px 0;
+  color:#c7d2fe;font-size:20px;line-height:1;transition:color .15s;
+  visibility:hidden;flex-shrink:0;
+}
+.btn-back.show{visibility:visible;}
+.btn-back:hover{color:#4f46e5;}
+
 /* ── Social proof bar ── */
 .social-proof{
   display:flex;align-items:center;gap:12px;
@@ -306,6 +315,7 @@ body{
 
     <div class="progress-wrap">
       <div class="progress-top">
+        <button class="btn-back" id="btn-back" onclick="goBack()" aria-label="Voltar">&#8592;</button>
         <span class="progress-label" id="prog-label">Pergunta 1 de 6</span>
         <span class="progress-count" id="prog-count">1/6</span>
       </div>
@@ -490,7 +500,7 @@ const TESTIMONIALS = [
 ]
 
 // ── State ────────────────────────────────────────────────────
-let curQ=0, answers=[], selOpt=null, _advTimer=null
+let curQ=0, answers=[], selOpt=null, _advTimer=null, _prevSel=null
 
 // ── Helpers ──────────────────────────────────────────────────
 function show(id){
@@ -515,6 +525,7 @@ function renderQ(){
   document.getElementById('prog-label').textContent=`Pergunta ${curQ+1} de ${total}`
   document.getElementById('prog-count').textContent=`${curQ+1}/${total}`
   document.getElementById('prog-fill').style.width=pct+'%'
+  const bb=document.getElementById('btn-back');if(bb)bb.classList.toggle('show',curQ>0)
   const isLast=curQ===total-1
   const btn=document.getElementById('btn-next')
   btn.textContent=isLast?'Ver meu resultado →':'Próxima pergunta →'
@@ -537,7 +548,7 @@ function pick(i){
   document.getElementById('opt-'+i).classList.add('selected')
   selOpt=i
   document.getElementById('btn-next').disabled=false
-  _advTimer=setTimeout(()=>{_advTimer=null;nextQuestion()},360)
+  _advTimer=setTimeout(()=>{_advTimer=null;nextQuestion()},1400)
 }
 
 function nextQuestion(){
@@ -554,6 +565,24 @@ function nextQuestion(){
     },180)
   } else {
     startLoading()
+  }
+}
+
+// ── Go back ──────────────────────────────────────────────
+function goBack(){
+  if(curQ===0)return
+  if(_advTimer){clearTimeout(_advTimer);_advTimer=null}
+  const prev=answers.pop()          // answer we gave to the question we're going back to
+  curQ--
+  renderQ()
+  if(prev!=null){
+    // restore previous selection without triggering auto-advance
+    setTimeout(()=>{
+      const el=document.getElementById('opt-'+prev.oi)
+      if(el){el.classList.add('selected')}
+      selOpt=prev.oi
+      document.getElementById('btn-next').disabled=false
+    },40)
   }
 }
 
