@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Descubra onde sua oficina está perdendo dinheiro. Diagnóstico gratuito em 6 perguntas — resultado imediato, sem cadastro.">
+<meta property="og:title" content="Diagnóstico Gratuito — BoxCerto">
+<meta property="og:description" content="Você trabalha o dia todo e no fim do mês o dinheiro nunca fecha. Responda 6 perguntas e descubra agora.">
+<title>Diagnóstico Gratuito — BoxCerto</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-text-size-adjust:100%;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',Roboto,sans-serif;
+  background:#f0eeff;
+  min-height:100vh;
+  color:#1e293b;
+  line-height:1.5;
+}
+
+.wrap{max-width:500px;margin:0 auto;padding:20px 16px 72px;}
+
+/* ── Brand ── */
+.brand{text-align:center;margin-bottom:20px;}
+.brand-logo{
+  display:inline-flex;align-items:center;gap:8px;
+  background:#4f46e5;color:white;
+  font-weight:700;font-size:15px;letter-spacing:-.3px;
+  padding:7px 16px;border-radius:10px;
+}
+.brand-logo::before{
+  content:'✓';display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;background:rgba(255,255,255,.2);
+  border-radius:50%;font-size:11px;
+}
+
+/* ── Screens ── */
+.screen{display:none;}
+.screen.active{display:block;animation:fadeUp .3s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── Card ── */
+.card{
+  background:#fff;border-radius:20px;padding:24px;
+  border:1px solid rgba(99,102,241,.12);margin-bottom:12px;
+}
+
+/* ── Pills ── */
+.pill{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:700;letter-spacing:.04em;
+  padding:5px 12px;border-radius:100px;margin-bottom:18px;text-transform:uppercase;
+}
+.pill-indigo{background:#ede9fe;color:#4f46e5;}
+.pill-red{background:#fee2e2;color:#dc2626;}
+.pill-yellow{background:#fef3c7;color:#b45309;}
+.pill-green{background:#d1fae5;color:#059669;}
+
+/* ── Intro ── */
+.intro-headline{
+  font-size:26px;font-weight:800;line-height:1.2;
+  letter-spacing:-.6px;color:#0f0a2e;margin-bottom:14px;
+}
+.intro-headline em{font-style:normal;color:#4f46e5;}
+.intro-sub{font-size:15px;line-height:1.75;color:#475569;margin-bottom:24px;}
+
+/* ── Impact numbers ── */
+.impact-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+.impact-item{
+  display:flex;align-items:center;gap:16px;
+  padding:14px 16px;background:#faf9ff;
+  border-radius:14px;border:1px solid #ede9fe;
+}
+.impact-number{font-size:21px;font-weight:800;color:#4f46e5;white-space:nowrap;min-width:68px;letter-spacing:-.5px;}
+.impact-desc{font-size:13px;color:#475569;line-height:1.5;}
+
+/* ── Buttons ── */
+.btn-primary{
+  display:block;width:100%;padding:18px 24px;
+  background:#4f46e5;color:#fff;font-size:16px;font-weight:700;
+  text-align:center;border:none;border-radius:14px;cursor:pointer;
+  transition:background .15s,transform .1s;text-decoration:none;letter-spacing:-.2px;
+}
+.btn-primary:hover{background:#4338ca;}
+.btn-primary:active{transform:scale(.98);}
+.btn-primary:disabled{background:#c7d2fe;cursor:not-allowed;transform:none;}
+
+.trust-note{text-align:center;font-size:12px;color:#94a3b8;margin-top:12px;line-height:1.6;}
+
+/* ── Progress ── */
+.progress-wrap{margin-bottom:20px;}
+.progress-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.progress-label{font-size:11px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:.07em;}
+.progress-count{font-size:12px;color:#94a3b8;font-weight:600;}
+.progress-track{height:5px;background:#e8e4ff;border-radius:5px;overflow:hidden;}
+.progress-fill{height:100%;background:#4f46e5;border-radius:5px;transition:width .4s cubic-bezier(.4,0,.2,1);}
+
+/* ── Question ── */
+.q-title{font-size:19px;font-weight:700;line-height:1.3;color:#0f172a;margin-bottom:12px;letter-spacing:-.3px;}
+.q-insight{font-size:13px;color:#64748b;font-style:italic;line-height:1.65;margin-bottom:20px;padding-left:14px;border-left:3px solid #c7d2fe;}
+
+/* ── Options ── */
+.options{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
+.option{
+  border:1.5px solid #e8e4ff;border-radius:14px;padding:14px 16px;cursor:pointer;
+  transition:border-color .15s,background .15s;background:#fff;
+  user-select:none;-webkit-tap-highlight-color:transparent;
+}
+.option:hover{border-color:#a5b4fc;background:#fafaff;}
+.option.selected{border-color:#4f46e5;background:#f5f3ff;}
+.option:active{transform:scale(.99);}
+.option-main{display:flex;align-items:flex-start;gap:12px;}
+.option-emoji{font-size:20px;line-height:1.2;flex-shrink:0;}
+.option-text{font-size:14px;color:#334155;line-height:1.55;font-weight:500;}
+.option-reveal{
+  display:none;margin-top:10px;padding-top:10px;
+  border-top:1px solid #ede9fe;font-size:12.5px;color:#64748b;font-style:italic;line-height:1.6;
+}
+.option.selected .option-reveal{display:block;animation:slideIn .2s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── Loading ── */
+.loading-wrap{text-align:center;padding:64px 20px;}
+.loading-icon{font-size:44px;margin-bottom:24px;display:block;}
+.loading-spinner{
+  width:36px;height:36px;border:3px solid #e8e4ff;
+  border-top-color:#4f46e5;border-radius:50%;
+  animation:spin .75s linear infinite;margin:20px auto;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-msg{font-size:16px;font-weight:600;color:#334155;min-height:26px;transition:opacity .25s;}
+.loading-dots{display:flex;justify-content:center;gap:7px;margin-top:20px;}
+.loading-dot{width:7px;height:7px;border-radius:50%;background:#c7d2fe;transition:background .3s,transform .3s;}
+.loading-dot.lit{background:#4f46e5;transform:scale(1.2);}
+
+/* ── Social proof bar ── */
+.social-proof{
+  display:flex;align-items:center;gap:12px;
+  background:#faf9ff;border:1px solid #ede9fe;
+  border-radius:14px;padding:12px 16px;margin-bottom:16px;
+}
+.sp-avatars{display:flex;}
+.sp-av{
+  width:30px;height:30px;border-radius:50%;
+  background:#4f46e5;color:white;font-size:10px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid white;margin-left:-9px;flex-shrink:0;
+}
+.sp-av:first-child{margin-left:0;}
+.sp-av:nth-child(2){background:#6366f1;}
+.sp-av:nth-child(3){background:#818cf8;}
+.sp-text{font-size:12.5px;color:#475569;line-height:1.5;}
+.sp-text strong{color:#1e293b;font-weight:700;}
+
+/* ── Result ── */
+.result-headline{font-size:21px;font-weight:800;line-height:1.25;color:#0f172a;margin-bottom:12px;letter-spacing:-.3px;}
+.result-text{font-size:14px;line-height:1.75;color:#475569;margin-bottom:20px;}
+.result-text strong{color:#1e293b;}
+
+/* ── Gauge ── */
+.gauge-box{background:#f8f7ff;border-radius:14px;padding:16px 18px;margin-bottom:20px;border:1px solid #ede9fe;}
+.gauge-label{font-size:12px;font-weight:600;color:#64748b;margin-bottom:10px;}
+.gauge-track{height:10px;background:#e8e4ff;border-radius:10px;overflow:hidden;margin-bottom:8px;}
+.gauge-fill{height:100%;border-radius:10px;width:0;transition:width 1.4s cubic-bezier(.34,1.3,.64,1);}
+.gf-red{background:#ef4444;}
+.gf-yellow{background:#f59e0b;}
+.gf-green{background:#10b981;}
+.gauge-info{font-size:12.5px;font-weight:600;margin-top:4px;}
+.gi-red{color:#dc2626;}
+.gi-yellow{color:#b45309;}
+.gi-green{color:#059669;}
+
+/* ── First CTA (acima dos pain points) ── */
+.first-cta-wrap{margin-top:4px;}
+.btn-first-cta{
+  display:block;width:100%;padding:15px;
+  background:#4f46e5;color:#fff;font-size:14.5px;font-weight:700;
+  text-align:center;border:none;border-radius:12px;cursor:pointer;
+  text-decoration:none;letter-spacing:-.2px;
+  transition:background .15s,transform .1s;
+}
+.btn-first-cta:hover{background:#4338ca;}
+.btn-first-cta:active{transform:scale(.98);}
+.first-cta-note{text-align:center;font-size:11px;color:#94a3b8;margin-top:7px;}
+
+/* ── Divider ── */
+.section-divider{
+  display:flex;align-items:center;gap:10px;margin:20px 0 14px;
+}
+.section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:#ede9fe;}
+.section-divider span{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;white-space:nowrap;}
+
+/* ── Pain points ── */
+.pains-label{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;margin-top:4px;}
+.pain-card{background:#fff;border-radius:14px;padding:14px 16px;border:1px solid #ede9fe;margin-bottom:10px;}
+.pain-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px;}
+.pain-emoji{font-size:17px;line-height:1.4;flex-shrink:0;}
+.pain-title{font-size:13.5px;font-weight:700;color:#1e293b;line-height:1.4;}
+.pain-desc{font-size:12.5px;color:#64748b;line-height:1.65;}
+
+/* ── Testimonials ── */
+.testi-label{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
+.testi-card{background:#fff;border-radius:14px;padding:14px 16px;border:1px solid #ede9fe;margin-bottom:10px;}
+.testi-stars{color:#f59e0b;font-size:12px;margin-bottom:6px;}
+.testi-text{font-size:13px;color:#334155;line-height:1.65;font-style:italic;margin-bottom:8px;}
+.testi-author{font-size:11.5px;color:#94a3b8;font-weight:600;}
+
+/* ── CTA block ── */
+.cta-box{background:#4f46e5;border-radius:20px;padding:26px 22px;text-align:center;margin-top:16px;}
+.cta-eyebrow{font-size:11px;font-weight:700;color:#a5b4fc;text-transform:uppercase;letter-spacing:.09em;margin-bottom:10px;}
+.cta-headline{font-size:18px;font-weight:800;color:#fff;line-height:1.3;margin-bottom:12px;letter-spacing:-.3px;}
+.cta-sub{font-size:13px;color:#c7d2fe;line-height:1.7;margin-bottom:18px;}
+
+/* ── Urgency badge ── */
+.urgency{
+  font-size:12px;color:#fde68a;font-weight:600;
+  margin-bottom:16px;padding:9px 14px;
+  background:rgba(251,191,36,.12);border-radius:9px;
+  border:1px solid rgba(251,191,36,.2);
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+
+.btn-cta{
+  display:block;width:100%;padding:18px;
+  background:#fff;color:#4f46e5;font-size:15px;font-weight:800;
+  border:none;border-radius:12px;cursor:pointer;text-decoration:none;margin-bottom:12px;
+  letter-spacing:-.2px;transition:opacity .15s,transform .1s;
+}
+.btn-cta:hover{opacity:.95;transform:scale(1.01);}
+.btn-cta:active{transform:scale(.98);}
+
+/* ── WhatsApp button ── */
+.btn-whatsapp{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:13px;background:transparent;color:#a5b4fc;
+  font-size:14px;font-weight:600;
+  border:1.5px solid rgba(165,180,252,.35);
+  border-radius:12px;cursor:pointer;text-decoration:none;
+  margin-bottom:16px;transition:background .15s,color .15s,border-color .15s;
+}
+.btn-whatsapp:hover{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(165,180,252,.6);}
+.wpp-icon{font-size:17px;}
+
+.cta-trust{font-size:11.5px;color:#818cf8;margin-bottom:22px;}
+.features{display:flex;flex-direction:column;gap:9px;text-align:left;}
+.feature{display:flex;align-items:center;gap:9px;font-size:13px;color:#c7d2fe;}
+.feature-check{
+  width:17px;height:17px;background:rgba(255,255,255,.18);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:9px;color:#fff;flex-shrink:0;font-weight:700;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ══ TELA 1 — INTRO ═══════════════════════════════════════ -->
+  <div id="screen-intro" class="screen active">
+    <div class="brand"><div class="brand-logo">BoxCerto</div></div>
+
+    <div class="card">
+      <div class="pill pill-indigo">🔍 Diagnóstico Gratuito</div>
+
+      <h1 class="intro-headline">
+        Você trabalha o dia todo e no fim do mês o dinheiro
+        <em>nunca fecha.</em>
+      </h1>
+
+      <p class="intro-sub">
+        Não é falta de cliente. Não é falta de esforço. É falta de controle —
+        e você nem sabe exatamente onde está escapando.
+        Responda 6 perguntas e descubra agora.
+      </p>
+
+      <div class="impact-grid">
+        <div class="impact-item">
+          <div class="impact-number">R$2.800</div>
+          <div class="impact-desc">perdidos por mês em média por falta de organização</div>
+        </div>
+        <div class="impact-item">
+          <div class="impact-number">6 em 10</div>
+          <div class="impact-desc">orçamentos não fecham por demora na resposta</div>
+        </div>
+        <div class="impact-item">
+          <div class="impact-number">2 min</div>
+          <div class="impact-desc">para descobrir onde sua oficina está sangrando</div>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="startQuiz()">Fazer meu diagnóstico — é grátis →</button>
+      <p class="trust-note">🔒 Sem cadastro agora &nbsp;·&nbsp; Resultado imediato &nbsp;·&nbsp; 100% grátis</p>
+    </div>
+
+    <!-- Social proof na intro -->
+    <div class="social-proof">
+      <div class="sp-avatars">
+        <div class="sp-av">CR</div>
+        <div class="sp-av">RM</div>
+        <div class="sp-av">JP</div>
+      </div>
+      <div class="sp-text">
+        <strong>+4.200 donos de oficina</strong> já descobriram onde estavam perdendo dinheiro com esse diagnóstico
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TELA 2 — QUIZ ════════════════════════════════════════ -->
+  <div id="screen-quiz" class="screen">
+    <div class="brand"><div class="brand-logo">BoxCerto</div></div>
+
+    <div class="progress-wrap">
+      <div class="progress-top">
+        <span class="progress-label" id="prog-label">Pergunta 1 de 6</span>
+        <span class="progress-count" id="prog-count">1/6</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="prog-fill"></div>
+      </div>
+    </div>
+
+    <div class="card" id="q-card">
+      <h2 class="q-title" id="q-title"></h2>
+      <p class="q-insight" id="q-insight"></p>
+      <div class="options" id="q-options"></div>
+      <button class="btn-primary" id="btn-next" disabled onclick="nextQuestion()">Próxima pergunta →</button>
+    </div>
+  </div>
+
+  <!-- ══ TELA 3 — LOADING ════════════════════════════════════ -->
+  <div id="screen-loading" class="screen">
+    <div class="loading-wrap">
+      <span class="loading-icon">🔍</span>
+      <div class="loading-msg" id="loading-msg">Analisando suas respostas...</div>
+      <div class="loading-spinner"></div>
+      <div class="loading-dots" id="loading-dots">
+        <div class="loading-dot lit"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TELA 4 — RESULTADO ══════════════════════════════════ -->
+  <div id="screen-result" class="screen">
+    <div class="brand"><div class="brand-logo">BoxCerto</div></div>
+    <div id="result-card" class="card"></div>
+    <div id="pains-wrap"></div>
+    <div id="cta-wrap" class="cta-box"></div>
+  </div>
+
+</div>
+
+<script>
+// ── Questions ────────────────────────────────────────────────
+const Q = [
+  {
+    title:"Como você manda o orçamento pro cliente hoje?",
+    insight:"Esse momento decide se você fecha o serviço ou perde para a concorrência — e a maioria das oficinas nem percebe.",
+    opts:[
+      {e:"📞",t:"Ligo ou falo pessoalmente e dou o valor na hora",         r:"Sem registro, sem rastreio. Se ele sumir, você não tem como cobrar.",s:3},
+      {e:"💬",t:"Mando uma mensagem no WhatsApp digitando tudo na mão",    r:"Demora, cansa e ainda dá margem pra erro no valor.",s:2},
+      {e:"📄",t:"Mando um PDF ou foto de papel",                           r:"Profissional, mas ainda é lento e o cliente some fácil.",s:1},
+      {e:"✅",t:"Mando um link e ele aprova com um clique",                r:"Isso é o padrão que mais converte. Velocidade = mais fechamentos.",s:0},
+    ]
+  },
+  {
+    title:"Quando um cliente some depois do orçamento, o que você faz?",
+    insight:"A maioria dos donos de oficina perde de 30% a 50% dos orçamentos assim — e acha que é porque o preço era alto.",
+    opts:[
+      {e:"🤷",t:"Não faço nada, se ele quiser me liga",                  r:"Silêncio é dinheiro escorrendo. O cliente esqueceu de você.",s:3},
+      {e:"📱",t:"Mando uma mensagem um dia depois, quando lembro",        r:"Quando você lembra, ele já escolheu outra oficina.",s:2},
+      {e:"📋",t:"Tenho uma lista pra follow-up mas não consigo manter",   r:"Boa intenção, execução falha. É o mais comum.",s:1},
+      {e:"🎯",t:"O sistema avisa e eu já sei exatamente quem contatar",   r:"Esse é o jogo profissional.",s:0},
+    ]
+  },
+  {
+    title:"Você sabe, agora mesmo, quantos carros estão em aberto na sua oficina?",
+    insight:"Carro parado sem OS ativa é prejuízo duplo: ocupa o espaço e você pode esquecer de cobrar um serviço.",
+    opts:[
+      {e:"😅",t:"Tenho uma noção, mas não sei o número exato",           r:'"Noção" não paga conta. Um esquecido vira prejuízo.',s:3},
+      {e:"📝",t:"Tenho anotado em papel ou caderno",                     r:"Papel some, rasura, molha. E você não consegue ver de longe.",s:2},
+      {e:"📱",t:"Tenho numa lista no celular ou grupo de WhatsApp",      r:"Melhor que papel, mas ainda manual e fácil de perder.",s:1},
+      {e:"💻",t:"Vejo no sistema em tempo real",                         r:"Controle total. Exatamente onde deveria estar.",s:0},
+    ]
+  },
+  {
+    title:"No fim do mês, você consegue saber o lucro real da sua oficina?",
+    insight:"Faturamento não é lucro. Muita oficina que fatura bem quebra porque não sabe o que sobrou depois das peças, dos custos e do próprio trabalho.",
+    opts:[
+      {e:"🙈",t:"Não consigo calcular, só sei se ficou dinheiro na conta",r:"A conta cheia pode enganar. O lucro real pode ser muito menor.",s:3},
+      {e:"🧮",t:"Faço na cabeça ou estimo, mas pode estar errado",       r:"Estimativa errada leva a decisão errada. É risco direto.",s:2},
+      {e:"📊",t:"Tenho uma planilha, mas é trabalhoso de manter",        r:"Planilha que não atualiza não serve. A dor é real.",s:1},
+      {e:"📈",t:"O sistema gera o relatório automático pra mim",         r:"Esse é o controle que libera tempo e evita surpresa ruim.",s:0},
+    ]
+  },
+  {
+    title:"Quando um cliente volta depois de meses, você lembra o histórico do carro dele?",
+    insight:"O cliente que volta e precisa recontar tudo sente que é só mais um pra você. Quem lembra fideliza. Quem não lembra, perde.",
+    opts:[
+      {e:"😬",t:"Não lembro, preciso perguntar pra ele mesmo",           r:"Ele já sabe mais que você sobre o próprio carro. Não é bom.",s:3},
+      {e:"🗂️",t:"Tenho algo anotado mas é difícil de achar",            r:"Informação que não se encontra é igual a informação que não existe.",s:2},
+      {e:"💻",t:"Consulto no computador, mas nem sempre tá atualizado",  r:"Dado pela metade leva a decisão pela metade.",s:1},
+      {e:"🎯",t:"Puxo o histórico completo em segundos",                 r:"Isso é relacionamento. Isso fideliza.",s:0},
+    ]
+  },
+  {
+    title:"Qual dessas frases mais parece com o que você sente hoje?",
+    insight:"Não existe resposta certa. Essa pergunta é pra entender onde está a sua maior dor agora.",
+    opts:[
+      {e:"🔥",t:'"Trabalho muito mas não consigo crescer"',              r:"Você é o gargalo do seu próprio negócio sem perceber.",s:2},
+      {e:"💸",t:'"Não sei se tô ganhando ou perdendo dinheiro de verdade"',r:"Esse é o perigo silencioso que quebra oficina boa.",s:2},
+      {e:"🌀",t:'"Vivo apagando incêndio, nunca consigo organizar"',     r:"Sem processo, você vai apagar incêndio para sempre.",s:2},
+      {e:"📉",t:'"Perco cliente e não consigo entender por quê"',        r:"A causa quase sempre é velocidade ou falta de retorno.",s:2},
+    ]
+  },
+]
+
+// ── Pain points ──────────────────────────────────────────────
+const PAINS = {
+  orcamento:     {e:"💬",t:"Orçamento lento é cliente que vai embora",              d:"Pesquisa do setor mostra que oficina que responde em até 10 minutos fecha 3x mais serviços. Cada hora que você demora, a chance de fechar cai pela metade."},
+  followup:      {e:"👻",t:"Cliente que some não foi embora — foi esquecido",        d:"Ele pediu o orçamento porque tinha interesse. Se sumiu, é porque ninguém foi atrás. Um follow-up no momento certo recupera entre 20% e 40% desses orçamentos perdidos."},
+  os:            {e:"📋",t:"OS esquecida é serviço que você fez de graça",          d:"Quando o controle é em papel ou WhatsApp, serviço pequeno cai fácil. Troca de filtro, verificação, borracha — itens que somados podem chegar a R$300 ou mais no mês."},
+  lucro:         {e:"💸",t:"Você pode estar trabalhando no prejuízo sem saber",     d:"Custo de peça, desconto que deu, serviço que subestimou o tempo — quem não controla descobre o rombo quando já está no limite. O financeiro transparente é o que separa quem cresce de quem sobrevive."},
+  historico:     {e:"🧠",t:"Cliente que volta e precisa se repetir não volta mais", d:"O histórico do carro é a ferramenta mais subestimada de fidelização. Quando você já sabe o que foi feito, o cliente sente que está em boas mãos — e indica sua oficina."},
+  emprego:       {e:"🔄",t:"Você construiu um emprego, não um negócio",             d:"Se a oficina depende de você pra tudo, você nunca vai conseguir crescer — porque você é o único gargalo. A saída é processo e ferramenta, não trabalhar mais horas."},
+  desorganizacao:{e:"🌀",t:"Desorganização é dinheiro invisível escorrendo todo dia",d:"Cada vez que você procura uma informação que deveria estar na ponta do dedo, você perde tempo que poderia estar num cliente. Ao longo do mês, são horas de trabalho desperdiçado."},
+  processo:      {e:"⏱️",t:"Processo manual consome o tempo que você não tem",     d:"Digitar orçamento, anotar OS, lembrar de ligar — tudo isso é trabalho que não gera receita. Quando o sistema faz isso por você, sobra tempo pro que realmente importa: atender bem."},
+}
+
+// ── Results ──────────────────────────────────────────────────
+const RESULTS = {
+  red:{
+    pill:"🔴 Atenção — Risco Alto",pillClass:"pill-red",
+    headline:"Sua oficina está trabalhando contra você.",
+    text:"Com base nas suas respostas, estimamos que você perde entre <strong>R$2.000 e R$4.000 por mês</strong> — não por falta de cliente, mas por orçamentos que não fecham, serviços esquecidos e dinheiro que sai sem você ver. Isso não é derrota. É falta de ferramenta certa.",
+    gfClass:"gf-red",giClass:"gi-red",gaugeNote:"zona crítica. Cada semana sem controle custa mais.",
+    ctaHead:"7 dias pra ver sua oficina de outro jeito. Sem pagar nada.",
+    ctaSub:"O BoxCerto foi feito para o dono de oficina que faz tudo sozinho e não tem tempo pra complicação. Em 10 minutos você já manda orçamento pelo WhatsApp, controla OS e vê seu financeiro sem planilha.",
+    ctaBtn:"Começar meu teste grátis agora →",
+    firstBtn:"Quero resolver isso — testar grátis →",
+  },
+  yellow:{
+    pill:"🟡 Atenção — Risco Médio",pillClass:"pill-yellow",
+    headline:"Você tem base. Mas está deixando dinheiro escorrer.",
+    text:"Você já tem mais controle que a maioria — mas identificamos <strong>2 ou 3 pontos que estão travando seu crescimento</strong>. Pequenas falhas de processo que parecem normais mas, no acumulado do mês, fazem diferença séria no bolso.",
+    gfClass:"gf-yellow",giClass:"gi-yellow",gaugeNote:"zona de atenção. Pequenos ajustes, resultado grande.",
+    ctaHead:"Feche os buracos e veja o que sua oficina pode realmente gerar.",
+    ctaSub:"O BoxCerto organiza o que você já faz bem e automatiza o que te consome tempo. Orçamento aprovado mais rápido, OS sem papel, histórico do cliente na palma da mão.",
+    ctaBtn:"Testar grátis por 7 dias →",
+    firstBtn:"Ver como fechar esses buracos →",
+  },
+  green:{
+    pill:"🟢 Gestão Acima da Média",pillClass:"pill-green",
+    headline:"Você já faz muita coisa certa. Agora é hora de escalar.",
+    text:"Você é exceção entre os donos de oficina — tem mais controle que a maioria. Mas <strong>boa gestão sem automação tem teto</strong>. O próximo nível é fazer o sistema trabalhar por você enquanto você foca no que realmente importa.",
+    gfClass:"gf-green",giClass:"gi-green",gaugeNote:"zona controlada. O gargalo agora é velocidade e escala.",
+    ctaHead:"Você gerencia bem. Agora deixa o sistema trabalhar por você.",
+    ctaSub:"Com o BoxCerto você vai de boa gestão para gestão profissional — aprovação por WhatsApp, financeiro automático, histórico completo de todo cliente. Teste 7 dias, sem custo.",
+    ctaBtn:"Elevar minha oficina ao próximo nível →",
+    firstBtn:"Ver o que o sistema faz por mim →",
+  },
+}
+
+const LOADING_MSGS = [
+  "Analisando suas respostas...",
+  "Calculando estimativa de perda mensal...",
+  "Identificando pontos críticos...",
+  "Gerando diagnóstico personalizado...",
+  "Preparando seu relatório...",
+]
+
+const FEATURES = [
+  "Orçamento aprovado pelo WhatsApp",
+  "Controle de OS sem papel",
+  "Estoque e peças integrados",
+  "Financeiro sem planilha",
+  "Histórico completo do cliente",
+  "PDV de venda de peças",
+]
+
+const TESTIMONIALS = [
+  {
+    stars:"★★★★★",
+    text:'"Fazia tudo no WhatsApp, nem sabia que estava perdendo cliente. Em uma semana mudei. Fechei 4 orçamentos que antes simplesmente sumiam."',
+    author:"Carlos R. — mecânica, São Paulo",
+  },
+  {
+    stars:"★★★★★",
+    text:'"No terceiro dia já mandei orçamento por link. O cliente aprovou na hora — nunca tinha acontecido tão rápido antes. Agora faço isso em todo serviço."',
+    author:"Rodrigo M. — mecânica, Minas Gerais",
+  },
+]
+
+// ── State ────────────────────────────────────────────────────
+let curQ=0, answers=[], selOpt=null
+
+// ── Helpers ──────────────────────────────────────────────────
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'))
+  document.getElementById('screen-'+id).classList.add('active')
+  window.scrollTo({top:0,behavior:'smooth'})
+}
+
+// ── Intro → Quiz ─────────────────────────────────────────────
+function startQuiz(){
+  curQ=0;answers=[];selOpt=null
+  renderQ()
+  show('quiz')
+}
+
+// ── Render question ───────────────────────────────────────────
+function renderQ(){
+  const q=Q[curQ],total=Q.length
+  const pct=Math.round(((curQ+1)/total)*100)
+  document.getElementById('q-title').textContent=q.title
+  document.getElementById('q-insight').textContent=q.insight
+  document.getElementById('prog-label').textContent=`Pergunta ${curQ+1} de ${total}`
+  document.getElementById('prog-count').textContent=`${curQ+1}/${total}`
+  document.getElementById('prog-fill').style.width=pct+'%'
+  const isLast=curQ===total-1
+  const btn=document.getElementById('btn-next')
+  btn.textContent=isLast?'Ver meu resultado →':'Próxima pergunta →'
+  btn.disabled=true
+  selOpt=null
+  document.getElementById('q-options').innerHTML=q.opts.map((o,i)=>`
+    <div class="option" id="opt-${i}" onclick="pick(${i})" role="button" tabindex="0">
+      <div class="option-main">
+        <span class="option-emoji">${o.e}</span>
+        <span class="option-text">${o.t}</span>
+      </div>
+      <div class="option-reveal">${o.r}</div>
+    </div>
+  `).join('')
+}
+
+function pick(i){
+  document.querySelectorAll('.option').forEach(el=>el.classList.remove('selected'))
+  document.getElementById('opt-'+i).classList.add('selected')
+  selOpt=i
+  document.getElementById('btn-next').disabled=false
+}
+
+function nextQuestion(){
+  if(selOpt===null)return
+  answers.push({qi:curQ,oi:selOpt,score:Q[curQ].opts[selOpt].s})
+  if(curQ<Q.length-1){
+    curQ++
+    const card=document.getElementById('q-card')
+    card.style.cssText='opacity:0;transform:translateY(8px);transition:.18s'
+    setTimeout(()=>{
+      renderQ()
+      card.style.cssText='opacity:1;transform:translateY(0);transition:opacity .25s,transform .25s'
+      setTimeout(()=>card.style.cssText='',300)
+    },180)
+  } else {
+    startLoading()
+  }
+}
+
+// ── Loading ───────────────────────────────────────────────────
+function startLoading(){
+  show('loading')
+  const msgEl=document.getElementById('loading-msg')
+  const dots=document.querySelectorAll('.loading-dot')
+  let step=0
+  const tick=()=>{
+    if(step<LOADING_MSGS.length){
+      msgEl.style.opacity='0'
+      dots.forEach((d,i)=>d.classList.toggle('lit',i===step))
+      setTimeout(()=>{
+        msgEl.textContent=LOADING_MSGS[step]
+        msgEl.style.opacity='1'
+        step++
+        setTimeout(tick,680)
+      },200)
+    } else {
+      buildResult()
+      setTimeout(()=>show('result'),300)
+    }
+  }
+  setTimeout(tick,400)
+}
+
+// ── Build result ──────────────────────────────────────────────
+function buildResult(){
+  const total=answers.reduce((s,a)=>s+a.score,0)
+  const max=Q.length*3
+  const pct=Math.round((total/max)*100)
+  const level=pct>=60?'red':pct>=30?'yellow':'green'
+  const r=RESULTS[level]
+  const url=`https://boxcerto.com/register?origem=quiz&utm_source=meta&utm_campaign=lpquizdiagnostico&score=${pct}&nivel=${level}`
+  const waMsgRaw=`Olá! Fiz o diagnóstico do BoxCerto e quero saber mais. Meu índice de risco foi ${pct}%.`
+  const waUrl=`https://wa.me/5553997065725?text=${encodeURIComponent(waMsgRaw)}`
+
+  // ── Result card + first CTA ───────────────────────────────
+  document.getElementById('result-card').innerHTML=`
+    <div class="pill ${r.pillClass}">${r.pill}</div>
+    <h2 class="result-headline">${r.headline}</h2>
+    <p class="result-text">${r.text}</p>
+    <div class="gauge-box">
+      <div class="gauge-label">Índice de desorganização financeira da sua oficina</div>
+      <div class="gauge-track"><div class="gauge-fill ${r.gfClass}" id="gfill"></div></div>
+      <div class="gauge-info ${r.giClass}">Nível de risco: ${pct}% — ${r.gaugeNote}</div>
+    </div>
+    <div class="first-cta-wrap">
+      <a href="${url}" class="btn-first-cta">${r.firstBtn}</a>
+      <p class="first-cta-note">Sem cartão · Começa em 10 min · Cancela quando quiser</p>
+    </div>
+  `
+
+  setTimeout(()=>{
+    const el=document.getElementById('gfill')
+    if(el)el.style.width=Math.min(pct,95)+'%'
+  },350)
+
+  // ── Pains + testimonials ──────────────────────────────────
+  const pids=pickPains(answers)
+  document.getElementById('pains-wrap').innerHTML=`
+    <div class="section-divider"><span>O que encontramos na sua oficina</span></div>
+    ${pids.map(id=>{const p=PAINS[id];return`
+      <div class="pain-card">
+        <div class="pain-head"><span class="pain-emoji">${p.e}</span><span class="pain-title">${p.t}</span></div>
+        <p class="pain-desc">${p.d}</p>
+      </div>`}).join('')}
+    <div class="section-divider" style="margin-top:20px;"><span>O que dizem quem mudou</span></div>
+    ${TESTIMONIALS.map(t=>`
+      <div class="testi-card">
+        <div class="testi-stars">${t.stars}</div>
+        <p class="testi-text">${t.text}</p>
+        <span class="testi-author">— ${t.author}</span>
+      </div>`).join('')}
+  `
+
+  // ── CTA block ─────────────────────────────────────────────
+  document.getElementById('cta-wrap').innerHTML=`
+    <p class="cta-eyebrow">✦ O próximo passo certo para você</p>
+    <h3 class="cta-headline">${r.ctaHead}</h3>
+    <p class="cta-sub">${r.ctaSub}</p>
+    <div class="urgency">⚡ Diagnóstico concluído — 7 dias grátis + 3 dias bônus para quem terminar hoje</div>
+    <a href="${url}" class="btn-cta">${r.ctaBtn}</a>
+    <a href="${waUrl}" class="btn-whatsapp" target="_blank">
+      <span class="wpp-icon">💬</span> Prefere falar primeiro? WhatsApp →
+    </a>
+    <p class="cta-trust">Sem cartão de crédito &nbsp;·&nbsp; Cancela quando quiser &nbsp;·&nbsp; Pronto em 10 minutos</p>
+    <div class="features">
+      ${FEATURES.map(f=>`
+        <div class="feature">
+          <div class="feature-check">✓</div><span>${f}</span>
+        </div>`).join('')}
+    </div>
+  `
+}
+
+// ── Pain selection ────────────────────────────────────────────
+function pickPains(ans){
+  const q6map=['emprego','lucro','desorganizacao','orcamento']
+  const q6oi=ans[5]?.oi??0
+  const queue=[],seen=new Set()
+  const add=id=>{if(!seen.has(id)){queue.push(id);seen.add(id)}}
+  if((ans[0]?.score||0)>=2)add('orcamento')
+  if((ans[1]?.score||0)>=2)add('followup')
+  if((ans[2]?.score||0)>=2)add('os')
+  if((ans[3]?.score||0)>=2)add('lucro')
+  if((ans[4]?.score||0)>=2)add('historico')
+  add(q6map[q6oi])
+  if(ans.reduce((s,a)=>s+a.score,0)>=12)add('processo')
+  return queue.slice(0,4)
+}
+
+// ── Keyboard ──────────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!document.getElementById('btn-next')?.disabled)nextQuestion()
+})
+</script>
+</body>
+</html>

@@ -6,6 +6,8 @@
     { "source": "/lpboxcerto-vs-planilha",         "destination": "/lpboxcerto-vs-planilha.html" },
     { "source": "/lporcamento-online-oficina",     "destination": "/lporcamento-online-oficina.html" },
     { "source": "/lpdiagnostico",                  "destination": "/lpdiagnostico.html" },
+    { "source": "/quizdiagnostico",                "destination": "/quizdiagnostico.html" },
+    { "source": "/lpquizdiagnostico",              "destination": "/lpquizdiagnostico.html" },
     { "source": "/((?!api/).*)",                   "destination": "/index.html" }
   ],
   "crons": [
