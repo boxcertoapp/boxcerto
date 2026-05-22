@@ -4,24 +4,24 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 
 // ── Sub-passos do formulário Nova OS ─────────────────────────────────────────
-// Cada entrada spotlight um campo específico. Campos com skipAfter avançam
-// automaticamente se não aparecerem no DOM dentro do tempo (ms).
+// Fluxo: placa → buscar → (btn-abrir-os OU nome→wpp→cpf→marca→ano→modelo→confirmar) → criar-os
+// skipAfter: tempo (ms) antes de pular automaticamente se o elemento não aparecer
 const FORM_SUBSTEPS = [
-  { sel: '[data-tour="input-placa"]',          title: 'Digite a placa',              body: 'Formato antigo: ABC-1234 · Mercosul: ABC-1A23' },
-  { sel: '[data-tour="btn-buscar-placa"]',      title: 'Clique em Buscar / Abrir OS', body: 'O sistema verifica se o veículo já está cadastrado.' },
-  // Caminho "veículo já existe" (aparece só se placa encontrada)
-  { sel: '[data-tour="btn-abrir-os"]',          title: 'Veículo encontrado! Abrir OS', body: 'Clique para abrir a Ordem de Serviço.',            skipAfter: 1200 },
-  // Caminho "novo cliente" (aparece só se placa não encontrada)
-  { sel: '[data-tour="input-nome-cliente"]',    title: 'Nome do cliente *',            body: 'Obrigatório. Digite 4+ letras para ver sugestões.', skipAfter: 1200 },
-  { sel: '[data-tour="input-whatsapp"]',        title: 'WhatsApp *',                   body: 'Obrigatório — o cliente recebe o orçamento aqui.',  skipAfter: 1200 },
-  { sel: '[data-tour="input-cpf"]',             title: 'CPF',                          body: 'Opcional. Se informado, deve ter 11 dígitos.',      skipAfter: 1200 },
+  { sel: '[data-tour="input-placa"]',             title: 'Digite a placa',              body: 'Formato antigo: ABC-1234 · Mercosul: ABC-1A23' },
+  { sel: '[data-tour="btn-buscar-placa"]',         title: 'Clique em Buscar / Abrir OS', body: 'O sistema verifica se o veículo já está cadastrado.' },
+  // Caminho "veículo já existe" — aparece só se placa encontrada
+  { sel: '[data-tour="btn-abrir-os"]',             title: 'Veículo encontrado!',         body: 'Clique para abrir a Ordem de Serviço diretamente.',  skipAfter: 3500 },
+  // Caminho "novo cliente" — aparece se placa não encontrada
+  { sel: '[data-tour="input-nome-cliente"]',       title: 'Nome do cliente *',           body: 'Obrigatório. Digite 4+ letras para ver sugestões.',  skipAfter: 1500 },
+  { sel: '[data-tour="input-whatsapp"]',           title: 'WhatsApp *',                  body: 'Obrigatório — o cliente recebe o orçamento aqui.',   skipAfter: 1500 },
+  { sel: '[data-tour="input-cpf"]',                title: 'CPF (opcional)',              body: 'Se informado, deve ter 11 dígitos.',                 skipAfter: 1500 },
   // FipeSeletor — 3 etapas em cascata
-  { sel: '[data-tour="select-marca"]',          title: 'Marca do veículo *',           body: 'Escolha o tipo (carro/moto/caminhão) e a montadora.', skipAfter: 1200 },
-  { sel: '[data-tour="select-ano"]',            title: 'Ano do veículo *',             body: 'Selecione o ano. A lista carrega após escolher a marca.', skipAfter: 8000 },
-  { sel: '[data-tour="select-modelo-container"]', title: 'Modelo *',                   body: 'Filtre pelo nome e clique no modelo na lista.',     skipAfter: 8000 },
-  { sel: '[data-tour="btn-confirmar-modelo"]',  title: 'Confirme o modelo',            body: 'Clique em Confirmar para usar este veículo.',       skipAfter: 8000 },
+  { sel: '[data-tour="select-marca"]',             title: 'Marca do veículo *',          body: 'Escolha o tipo (carro/moto/caminhão) e a montadora.', skipAfter: 1500 },
+  { sel: '[data-tour="select-ano"]',               title: 'Ano do veículo *',            body: 'A lista de anos carrega após escolher a marca.',     skipAfter: 12000 },
+  { sel: '[data-tour="select-modelo-container"]',  title: 'Modelo *',                    body: 'Filtre pelo nome e clique no modelo desejado.',      skipAfter: 12000 },
+  { sel: '[data-tour="btn-confirmar-modelo"]',     title: 'Confirme o veículo',          body: 'Clique em Confirmar para usar este veículo.',        skipAfter: 12000 },
   // Botão final
-  { sel: '[data-tour="btn-criar-os"]',          title: 'Clique em Cadastrar e Abrir OS', body: 'Tudo preenchido! Clique para criar a OS.',       skipAfter: 1200 },
+  { sel: '[data-tour="btn-criar-os"]',             title: 'Cadastrar e Abrir OS',        body: 'Tudo preenchido! Clique para criar a OS.' },
 ]
 
 // ── Passos principais do tour ─────────────────────────────────────────────────
@@ -89,14 +89,14 @@ export default function OnboardingTour() {
   const navigate   = useNavigate()
   const location   = useLocation()
 
-  const [stepId,        setStepId]        = useState('welcome')
-  const [rect,          setRect]          = useState(null)       // rect do alvo principal (FAB, btn-config)
-  const [formActive,    setFormActive]    = useState(false)      // true após FAB clicado = modo sub-passos
-  const [formSubIdx,    setFormSubIdx]    = useState(0)          // índice em FORM_SUBSTEPS
-  const [formRect,      setFormRect]      = useState(null)       // rect do sub-passo atual
-  const [done,          setDone]          = useState(false)
-  const [skipped,       setSkipped]       = useState(false)
-  const [animIn,        setAnimIn]        = useState(true)
+  const [stepId,     setStepId]     = useState('welcome')
+  const [rect,       setRect]       = useState(null)      // rect do FAB / btn-config
+  const [formActive, setFormActive] = useState(false)     // true após FAB clicado
+  const [formSubIdx, setFormSubIdx] = useState(0)         // índice em FORM_SUBSTEPS
+  const [formRect,   setFormRect]   = useState(null)      // rect do campo atual
+  const [done,       setDone]       = useState(false)
+  const [skipped,    setSkipped]    = useState(false)
+  const [animIn,     setAnimIn]     = useState(true)
   const doneRef = useRef(false)
 
   const shouldShow = user && !user.isAdmin && !user.isTecnico
@@ -120,20 +120,13 @@ export default function OnboardingTour() {
     if (idx < STEPS.length - 1) advance(STEPS[idx + 1].id)
   }, [stepId, advance])
 
-  // ── Avança sub-passo do formulário ────────────────────────────────────────
+  // ── FIX 1: sempre incrementa — nunca retorna prev ─────────────────────────
+  // Antes: fazia scan síncrono e retornava prev se não achava → travado para sempre
+  // Agora: incrementa incondicionalmente; o useEffect poleia pelo novo elemento;
+  //        se não aparecer, o skipAfter do novo sub-passo o avança automaticamente.
   const nextFormSub = useCallback(() => {
     setFormRect(null)
-    setFormSubIdx(prev => {
-      // Procura próximo sub-passo com elemento visível no DOM
-      for (let i = prev + 1; i < FORM_SUBSTEPS.length; i++) {
-        const els = document.querySelectorAll(FORM_SUBSTEPS[i].sel)
-        for (const el of els) {
-          const r = el.getBoundingClientRect()
-          if (r.width > 0 && r.height > 0) return i
-        }
-      }
-      return prev // sem mais sub-passos visíveis — aguarda os-criada
-    })
+    setFormSubIdx(prev => Math.min(prev + 1, FORM_SUBSTEPS.length - 1))
   }, [])
 
   // ── Navega ao mudar de passo principal ────────────────────────────────────
@@ -216,7 +209,6 @@ export default function OnboardingTour() {
 
     let cancelled = false
     let rafId
-    let start = null
     let skipTimer = null
 
     const grabFormRect = () => {
@@ -232,15 +224,14 @@ export default function OnboardingTour() {
       return false
     }
 
-    const poll = (ts) => {
+    // Polling contínuo até achar (sem timeout — skipAfter cancela se necessário)
+    const poll = () => {
       if (cancelled) return
-      start = start ?? ts
-      if (grabFormRect()) return   // achou — para o polling
-      rafId = requestAnimationFrame(poll)
+      if (!grabFormRect()) rafId = requestAnimationFrame(poll)
     }
     rafId = requestAnimationFrame(poll)
 
-    // Skip automático se o elemento não aparecer
+    // Pula automaticamente se o elemento não aparecer no tempo estipulado
     if (sub.skipAfter) {
       skipTimer = setTimeout(() => {
         if (!cancelled) nextFormSub()
@@ -260,24 +251,25 @@ export default function OnboardingTour() {
     window.addEventListener('resize', recalc)
     window.addEventListener('scroll', recalc, true)
 
-    // Clique no elemento (ou filho) → avança sub-passo
+    // FIX 3: ignora SELECTs no click (abrir dropdown ≠ selecionar) — usa 'change'
     const onSubClick = (e) => {
       const all = document.querySelectorAll(sub.sel)
       for (const el of all) {
         if (el.contains(e.target) || el === e.target) {
-          setTimeout(nextFormSub, 80)   // pequeno delay para o estado do form atualizar
+          if (el.tagName === 'SELECT') return   // select usa onSubChange
+          setTimeout(nextFormSub, 120)
           return
         }
       }
     }
     document.addEventListener('click', onSubClick, true)
 
-    // Para selects: change também avança
+    // change: para selects (marca, ano) e para o modelo selecionado
     const onSubChange = (e) => {
       const all = document.querySelectorAll(sub.sel)
       for (const el of all) {
         if (el === e.target || el.contains(e.target)) {
-          setTimeout(nextFormSub, 80)
+          setTimeout(nextFormSub, 120)
           return
         }
       }
@@ -437,7 +429,6 @@ export default function OnboardingTour() {
 
   // ── SPOTLIGHT ─────────────────────────────────────────────────────────────
   if (step.type === 'spotlight') {
-    // Qual rect usar: sub-passo (form) ou alvo principal
     const activeRect = formActive ? formRect : rect
     const activeSub  = formActive ? FORM_SUBSTEPS[formSubIdx] : null
 
@@ -445,32 +436,69 @@ export default function OnboardingTour() {
     const color = 'rgba(0,0,0,0.72)'
     const TIP_W = 288
 
-    // Enquanto aguarda elemento aparecer
+    // ── Estado de espera — elemento ainda não apareceu ──────────────────────
+    // FIX 2: quando formActive, overlay NÃO bloqueia pointer events
+    //   → usuário pode interagir com o modal mesmo durante a transição
     if (!activeRect) return (
       <>
         <TourStyles />
-        <div className="fixed inset-0 z-[290] pointer-events-auto" style={{ background: color }} />
-        <div className="fixed inset-0 z-[296] flex items-center justify-center pointer-events-none">
-          <div className="bg-white rounded-2xl px-6 py-4 shadow-xl flex items-center gap-3">
-            <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm text-slate-600">
-              {formActive ? 'Aguardando o campo…' : 'Carregando…'}
-            </span>
+
+        {/* Overlay: bloqueia interação apenas se NÃO estiver no modo formulário */}
+        <div className="fixed inset-0 z-[290]"
+          style={{ background: color, pointerEvents: formActive ? 'none' : 'auto' }} />
+
+        {formActive && activeSub ? (
+          // Card flutuante — não bloqueia a tela, informa o próximo campo
+          <div className="fixed z-[295] left-1/2 -translate-x-1/2 bottom-8 w-[calc(100%-32px)] max-w-sm"
+            style={{ animation: 'tourUp .3s ease' }}>
+            <div className="bg-white rounded-2xl shadow-2xl border border-indigo-100 overflow-hidden">
+              <div className="bg-indigo-600 px-4 py-2 flex items-center gap-2">
+                <div className="flex gap-1">
+                  {NON_CELEBRATION.map((s, i) => (
+                    <div key={s.id} className="w-1.5 h-1.5 rounded-full"
+                      style={{ background: i <= progIdx ? '#fff' : 'rgba(255,255,255,0.3)' }} />
+                  ))}
+                </div>
+                <span className="text-indigo-200 text-xs ml-auto">{progIdx + 1} de {NON_CELEBRATION.length}</span>
+              </div>
+              <div className="p-4">
+                <h3 className="font-bold text-slate-900 text-sm mb-1">{activeSub.title}</h3>
+                {activeSub.body && <p className="text-slate-500 text-xs leading-relaxed">{activeSub.body}</p>}
+                <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-slate-100">
+                  <div className="w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                  <span className="text-xs text-indigo-400 flex-1">Localizando campo…</span>
+                  <button onClick={nextFormSub}
+                    className="text-xs text-indigo-600 font-semibold hover:text-indigo-800 transition-colors">
+                    Pular →
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          // Spinner genérico (procurando FAB ou btn-config)
+          <div className="fixed inset-0 z-[295] flex items-center justify-center pointer-events-none">
+            <div className="bg-white rounded-2xl px-6 py-4 shadow-xl flex items-center gap-3">
+              <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-slate-600">Carregando…</span>
+            </div>
+          </div>
+        )}
+
         {formActive && (
           <button onClick={nextStep}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[297] bg-white/20 text-white text-xs px-4 py-2 rounded-full backdrop-blur-sm">
+            className="fixed bottom-28 left-1/2 -translate-x-1/2 z-[296] bg-white/10 backdrop-blur-sm text-white/70 text-xs px-4 py-2 rounded-full hover:text-white hover:bg-white/20 transition-colors">
             Já criei a OS →
           </button>
         )}
         <button onClick={skip}
-          className="fixed top-4 right-4 z-[297] text-white/50 hover:text-white text-xs transition-colors">
+          className="fixed top-4 right-4 z-[296] text-white/50 hover:text-white text-xs transition-colors">
           Pular tour
         </button>
       </>
     )
 
+    // ── Spotlight ativo — elemento encontrado ───────────────────────────────
     const sTop   = activeRect.top    - PAD
     const sLeft  = activeRect.left   - PAD
     const sWidth = activeRect.width  + PAD * 2
@@ -494,7 +522,7 @@ export default function OnboardingTour() {
       <>
         <TourStyles />
 
-        {/* ── 4 overlays ──── */}
+        {/* ── 4 overlays que formam a moldura escura em volta do spotlight ── */}
         <div className="fixed inset-x-0 top-0 z-[290] pointer-events-auto"
           style={{ height: sTop, background: color }} />
         <div className="fixed inset-x-0 z-[290] pointer-events-auto"
@@ -504,7 +532,7 @@ export default function OnboardingTour() {
         <div className="fixed right-0 z-[290] pointer-events-auto"
           style={{ top: sTop, left: sLeft + sWidth, height: sHeight, background: color }} />
 
-        {/* Borda pulsante */}
+        {/* Borda pulsante ao redor do elemento */}
         <div className="fixed z-[291] pointer-events-none rounded-xl"
           style={{
             top: sTop, left: sLeft, width: sWidth, height: sHeight,
@@ -512,15 +540,16 @@ export default function OnboardingTour() {
             animation: 'tourPulse 1.4s ease-in-out infinite',
           }} />
 
-        {/* ── Tooltip ──── */}
+        {/* ── Tooltip ── */}
         <div className="fixed z-[295]" style={{ left: tipLeft, width: TIP_W, ...tipVert }}>
 
-          {/* Seta para cima (tooltip abaixo do alvo) */}
+          {/* Seta apontando para cima (tooltip abaixo do elemento) */}
           {!above && (
             <div style={{
               position: 'absolute', bottom: '100%', left: arrowX - 7, marginBottom: -1,
               width: 0, height: 0,
-              borderLeft: '7px solid transparent', borderRight: '7px solid transparent',
+              borderLeft: '7px solid transparent',
+              borderRight: '7px solid transparent',
               borderBottom: '7px solid #4f46e5',
             }} />
           )}
@@ -539,30 +568,36 @@ export default function OnboardingTour() {
             <div className="p-4">
               <h3 className="font-bold text-slate-900 text-sm mb-1">{title}</h3>
               {body ? <p className="text-slate-500 text-xs leading-relaxed">{body}</p> : null}
-              {/* Botão escape no modo sub-passos */}
+
+              {/* Botões de escape no modo sub-passos */}
               {formActive && (
-                <div className="mt-3 pt-2.5 border-t border-slate-100 flex justify-end">
-                  <button onClick={nextStep}
+                <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <button onClick={nextFormSub}
                     className="text-xs text-indigo-500 hover:text-indigo-700 font-semibold transition-colors">
-                    Já criei a OS →
+                    Próximo campo →
+                  </button>
+                  <button onClick={nextStep}
+                    className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
+                    Já criei a OS
                   </button>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Seta para baixo (tooltip acima do alvo) */}
+          {/* Seta apontando para baixo (tooltip acima do elemento) */}
           {above && (
             <div style={{
               position: 'absolute', top: '100%', left: arrowX - 7, marginTop: -1,
               width: 0, height: 0,
-              borderLeft: '7px solid transparent', borderRight: '7px solid transparent',
+              borderLeft: '7px solid transparent',
+              borderRight: '7px solid transparent',
               borderTop: '7px solid white',
             }} />
           )}
         </div>
 
-        {/* Pular */}
+        {/* Botão pular */}
         <button onClick={skip}
           className="fixed top-4 right-4 z-[297] text-white/50 hover:text-white text-xs transition-colors">
           Pular tour
