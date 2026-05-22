@@ -467,7 +467,6 @@ function TourStyles() {
         100% { transform:translateY(100vh) rotate(720deg); opacity:0 }
       }
       [data-tour-active="true"] {
-        position:relative;
         z-index:292 !important;
       }
     `}</style>
