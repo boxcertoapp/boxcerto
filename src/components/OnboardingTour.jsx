@@ -262,60 +262,91 @@ export default function OnboardingTour() {
 
   // ── SPOTLIGHT — 4 divs que deixam o alvo livre para clicar ───────────────
   if (step.type === 'spotlight') {
-    const PAD = 12
-    const sTop    = rect ? rect.top    - PAD : null
-    const sLeft   = rect ? rect.left   - PAD : null
-    const sWidth  = rect ? rect.width  + PAD * 2 : null
-    const sHeight = rect ? rect.height + PAD * 2 : null
+    const PAD     = 10
     const color   = 'rgba(0,0,0,0.72)'
+    const TIP_W   = 288   // largura fixa do tooltip em px
 
-    // Tooltip acima ou abaixo do alvo
-    const above    = rect && rect.top > window.innerHeight * 0.55
-    const tipLeft  = rect
-      ? Math.min(Math.max(sLeft + sWidth / 2 - 160, 12), window.innerWidth - 332)
-      : window.innerWidth / 2 - 160
-    const tipStyle = above
-      ? { bottom: window.innerHeight - sTop + 14 }
-      : { top: sTop + sHeight + 14 }
+    // Aguardando o elemento → overlay escuro + spinner
+    if (!rect) return (
+      <>
+        <TourStyles />
+        <div className="fixed inset-0 z-[290] pointer-events-auto" style={{ background: color }} />
+        <div className="fixed inset-0 z-[296] flex items-center justify-center pointer-events-none">
+          <div className="bg-white rounded-2xl px-6 py-4 shadow-xl flex items-center gap-3">
+            <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm text-slate-600">Carregando…</span>
+          </div>
+        </div>
+        <button onClick={skip}
+          className="fixed top-4 right-4 z-[297] text-white/50 hover:text-white text-xs transition-colors">
+          Pular tour
+        </button>
+      </>
+    )
+
+    const sTop    = rect.top    - PAD
+    const sLeft   = rect.left   - PAD
+    const sWidth  = rect.width  + PAD * 2
+    const sHeight = rect.height + PAD * 2
+
+    // Posição vertical: tooltip acima quando alvo está na metade inferior
+    const above = rect.top > window.innerHeight * 0.5
+    const SPACING = 14
+    const tipVertical = above
+      ? { bottom: window.innerHeight - sTop + SPACING }
+      : { top: sTop + sHeight + SPACING }
+
+    // Posição horizontal: centralizado no alvo, clamped para não vazar
+    const targetCX = sLeft + sWidth / 2
+    const idealLeft = targetCX - TIP_W / 2
+    const tipLeft   = Math.max(12, Math.min(window.innerWidth - TIP_W - 12, idealLeft))
+
+    // Seta: aponta para o centro do alvo mesmo que tooltip esteja clamped
+    const rawArrow = targetCX - tipLeft
+    const arrowX   = Math.max(20, Math.min(TIP_W - 20, rawArrow))
 
     return (
       <>
         <TourStyles />
 
         {/* ── 4 overlays que NÃO cobrem o alvo ─────── */}
-        {rect ? (
-          <>
-            {/* Topo */}
-            <div className="fixed inset-x-0 top-0 z-[290] pointer-events-auto"
-              style={{ height: sTop, background: color }} />
-            {/* Baixo */}
-            <div className="fixed inset-x-0 bottom-0 z-[290] pointer-events-auto"
-              style={{ top: sTop + sHeight, background: color }} />
-            {/* Esquerda */}
-            <div className="fixed left-0 z-[290] pointer-events-auto"
-              style={{ top: sTop, width: sLeft, height: sHeight, background: color }} />
-            {/* Direita */}
-            <div className="fixed right-0 z-[290] pointer-events-auto"
-              style={{ top: sTop, left: sLeft + sWidth, bottom: window.innerHeight - sTop - sHeight, background: color }} />
+        {/* Topo */}
+        <div className="fixed inset-x-0 top-0 z-[290] pointer-events-auto"
+          style={{ height: sTop, background: color }} />
+        {/* Baixo */}
+        <div className="fixed inset-x-0 z-[290] pointer-events-auto"
+          style={{ top: sTop + sHeight, bottom: 0, background: color }} />
+        {/* Esquerda */}
+        <div className="fixed left-0 z-[290] pointer-events-auto"
+          style={{ top: sTop, width: sLeft, height: sHeight, background: color }} />
+        {/* Direita */}
+        <div className="fixed right-0 z-[290] pointer-events-auto"
+          style={{ top: sTop, left: sLeft + sWidth, height: sHeight, background: color }} />
 
-            {/* Borda pulsante ao redor do alvo */}
-            <div className="fixed z-[291] pointer-events-none rounded-2xl"
-              style={{
-                top: sTop, left: sLeft, width: sWidth, height: sHeight,
-                boxShadow: '0 0 0 3px #4f46e5, 0 0 0 6px rgba(79,70,229,0.3)',
-                animation: 'tourPulse 1.4s ease-in-out infinite',
-              }} />
-          </>
-        ) : (
-          /* Overlay único enquanto carrega */
-          <div className="fixed inset-0 z-[290] pointer-events-auto" style={{ background: color }} />
-        )}
+        {/* Borda pulsante ao redor do alvo */}
+        <div className="fixed z-[291] pointer-events-none rounded-2xl"
+          style={{
+            top: sTop, left: sLeft, width: sWidth, height: sHeight,
+            boxShadow: '0 0 0 3px #4f46e5, 0 0 0 6px rgba(79,70,229,0.3)',
+            animation: 'tourPulse 1.4s ease-in-out infinite',
+          }} />
 
         {/* ── Tooltip ──────────────────────────────── */}
-        <div className="fixed z-[295] w-80" style={{ left: tipLeft, ...tipStyle,
-          animation: rect ? 'tourUp .3s ease' : 'none' }}>
-          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-            {/* Barra de progresso no topo */}
+        <div className="fixed z-[295]" style={{ left: tipLeft, width: TIP_W, ...tipVertical }}>
+
+          {/* Seta apontando PARA CIMA → tooltip está abaixo do alvo */}
+          {!above && (
+            <div style={{
+              position: 'absolute', bottom: '100%', left: arrowX - 7, marginBottom: -1,
+              width: 0, height: 0,
+              borderLeft: '7px solid transparent',
+              borderRight: '7px solid transparent',
+              borderBottom: '7px solid #4f46e5',
+            }} />
+          )}
+
+          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden"
+            style={{ animation: 'tourUp .3s ease' }}>
             <div className="bg-indigo-600 px-4 py-2 flex items-center gap-2">
               <div className="flex gap-1">
                 {NON_CELEBRATION.map((s, i) => (
@@ -332,21 +363,18 @@ export default function OnboardingTour() {
               <p className="text-slate-500 text-xs leading-relaxed">{step.body}</p>
             </div>
           </div>
-          {/* Seta */}
-          <div className="flex justify-center" style={{ marginTop: above ? 6 : -8, order: above ? 1 : -1 }}>
-            <span className="text-white text-xl">{above ? '▼' : '▲'}</span>
-          </div>
-        </div>
 
-        {/* Loading enquanto elemento não aparece */}
-        {!rect && (
-          <div className="fixed inset-0 z-[296] flex items-center justify-center pointer-events-none">
-            <div className="bg-white rounded-2xl px-6 py-4 shadow-xl flex items-center gap-3">
-              <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm text-slate-600">Carregando…</span>
-            </div>
-          </div>
-        )}
+          {/* Seta apontando PARA BAIXO → tooltip está acima do alvo */}
+          {above && (
+            <div style={{
+              position: 'absolute', top: '100%', left: arrowX - 7, marginTop: -1,
+              width: 0, height: 0,
+              borderLeft: '7px solid transparent',
+              borderRight: '7px solid transparent',
+              borderTop: '7px solid white',
+            }} />
+          )}
+        </div>
 
         {/* Pular */}
         <button onClick={skip}
