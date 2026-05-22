@@ -12,6 +12,10 @@ export default function WelcomeModal() {
   useEffect(() => {
     if (!user || user.isAdmin || user.isTecnico) return
 
+    // Não exibe se o OnboardingTour ainda não foi concluído/pulado
+    // (os dois não devem aparecer ao mesmo tempo)
+    if (!user.onboardingDismissed) return
+
     // Exibe enquanto nenhum dos 3 passos foi concluído
     const nenhum = !user.onboardingOsDone && !user.onboardingOficinaD && !user.onboardingOrcamentoDone
     if (!nenhum) return
@@ -20,6 +24,7 @@ export default function WelcomeModal() {
     return () => clearTimeout(t)
   }, [
     user?.id,
+    user?.onboardingDismissed,
     user?.onboardingOsDone,
     user?.onboardingOficinaD,
     user?.onboardingOrcamentoDone,
