@@ -2,7 +2,9 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: true,
+  timeout: 90_000,
+  fullyParallel: false,
+  workers: 1,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   use: {
@@ -16,8 +18,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm.cmd run dev -- --host 127.0.0.1 --port 4173',
+    command: 'node ./node_modules/vite/bin/vite.js --host 127.0.0.1 --port 4173 --strictPort',
     url: 'http://127.0.0.1:4173',
+    timeout: 120_000,
     reuseExistingServer: !process.env.CI,
     env: {
       ...process.env,

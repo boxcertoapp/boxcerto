@@ -707,14 +707,16 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
   const inp = 'w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 text-sm'
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40">
-      <div className="bg-white rounded-t-3xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-x-hidden">
+    <div className="fixed inset-x-0 top-0 z-[60] h-screen flex items-end justify-center bg-black/40"
+      style={{ height: '100dvh' }}>
+      <div className="bg-white rounded-t-3xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-x-hidden"
+        style={{ maxHeight: '92dvh' }}>
         <div className="flex items-center justify-between p-5 pb-3 shrink-0">
           <h2 className="text-lg font-bold text-slate-900">Nova Ordem de Serviço</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-slate-500" /></button>
         </div>
 
-        <div className="overflow-y-auto flex-1 px-5 pb-6">
+        <div data-tour="nova-os-scroll" className="overflow-y-auto overscroll-contain flex-1 px-5 pb-6">
           {error && (
             <div className="flex items-center gap-2 bg-red-50 text-red-600 text-sm p-3 rounded-xl mb-4">
               <AlertCircle className="w-4 h-4" />{error}

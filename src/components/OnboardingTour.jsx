@@ -277,6 +277,8 @@ export default function OnboardingTour() {
     let rafId
     let skipTimer = null
     let advanceTimer = null
+    let revealTimer = null
+    let viewportTimer = null
     let foundVisibleTarget = false
     let revealedTarget = false
 
@@ -285,21 +287,33 @@ export default function OnboardingTour() {
       advanceTimer = setTimeout(nextFormSub, 120)
     }
 
-    const revealFormTarget = (el) => {
-      if (revealedTarget) return
+    const syncFormRect = (el) => {
+      const r = el.getBoundingClientRect()
+      if (r.width <= 0 || r.height <= 0) return false
+
+      foundVisibleTarget = true
+      setFormRect({ top: r.top, left: r.left, width: r.width, height: r.height })
+      el.setAttribute('data-tour-active', 'true')
+      return true
+    }
+
+    const revealFormTarget = (el, force = false, behavior = 'smooth') => {
+      if (!force && revealedTarget) return
       revealedTarget = true
-      el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' })
+      el.scrollIntoView({ block: 'center', inline: 'nearest', behavior })
+      clearTimeout(revealTimer)
+      revealTimer = setTimeout(() => {
+        if (cancelled) return
+        el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' })
+        syncFormRect(el)
+      }, 320)
     }
 
     const grabFormRect = () => {
       const all = document.querySelectorAll(sub.sel)
       for (const el of all) {
-        const r = el.getBoundingClientRect()
-        if (r.width > 0 && r.height > 0) {
-          foundVisibleTarget = true
+        if (syncFormRect(el)) {
           revealFormTarget(el)
-          setFormRect({ top: r.top, left: r.left, width: r.width, height: r.height })
-          el.setAttribute('data-tour-active', 'true')
           return true
         }
       }
@@ -323,16 +337,40 @@ export default function OnboardingTour() {
     const recalc = () => {
       const all = document.querySelectorAll(sub.sel)
       for (const el of all) {
-        const r = el.getBoundingClientRect()
-        if (r.width > 0 && r.height > 0) {
-          foundVisibleTarget = true
-          setFormRect({ top: r.top, left: r.left, width: r.width, height: r.height })
+        if (syncFormRect(el)) return
+      }
+    }
+
+    const recenterCurrentTarget = (behavior = 'auto') => {
+      const all = document.querySelectorAll(sub.sel)
+      for (const el of all) {
+        if (!syncFormRect(el)) continue
+        revealFormTarget(el, true, behavior)
+        return
+      }
+    }
+
+    // Mobile keyboards change the visual viewport after focus. Recenter again
+    // after that resize so the active field stays above the keyboard.
+    const onViewportChange = () => {
+      clearTimeout(viewportTimer)
+      viewportTimer = setTimeout(() => recenterCurrentTarget('auto'), 80)
+    }
+    window.addEventListener('resize', onViewportChange)
+    window.addEventListener('scroll', recalc, true)
+    window.visualViewport?.addEventListener('resize', onViewportChange)
+    window.visualViewport?.addEventListener('scroll', onViewportChange)
+
+    const onSubFocusIn = (e) => {
+      const all = document.querySelectorAll(sub.sel)
+      for (const el of all) {
+        if (el === e.target || el.contains(e.target)) {
+          revealFormTarget(el, true)
           return
         }
       }
     }
-    window.addEventListener('resize', recalc)
-    window.addEventListener('scroll', recalc, true)
+    document.addEventListener('focusin', onSubFocusIn, true)
 
     // Avanca com botoes reais; inputs ficam no campo ate o usuario pedir o proximo.
     const onSubClick = (e) => {
@@ -380,8 +418,13 @@ export default function OnboardingTour() {
       cancelAnimationFrame(rafId)
       clearTimeout(skipTimer)
       clearTimeout(advanceTimer)
-      window.removeEventListener('resize', recalc)
+      clearTimeout(revealTimer)
+      clearTimeout(viewportTimer)
+      window.removeEventListener('resize', onViewportChange)
       window.removeEventListener('scroll', recalc, true)
+      window.visualViewport?.removeEventListener('resize', onViewportChange)
+      window.visualViewport?.removeEventListener('scroll', onViewportChange)
+      document.removeEventListener('focusin', onSubFocusIn, true)
       document.removeEventListener('click', onSubClick, true)
       document.removeEventListener('change', onSubChange, true)
       document.removeEventListener('focusout', onSubFocusOut, true)
@@ -553,15 +596,13 @@ export default function OnboardingTour() {
     const TIP_W = 288
 
     // ── Estado de espera — elemento ainda não apareceu ──────────────────────
-    // FIX 2: quando formActive, overlay NÃO bloqueia pointer events
-    //   → usuário pode interagir com o modal mesmo durante a transição
     if (!activeRect) return (
       <>
         <TourStyles />
 
-        {/* Overlay: bloqueia interação apenas se NÃO estiver no modo formulário */}
-        <div className="fixed inset-0 z-[290]"
-          style={{ background: color, pointerEvents: formActive ? 'none' : 'auto' }} />
+        {/* Overlay keeps the guided form on its current field while it loads. */}
+        <div data-tour="spotlight-overlay" className="fixed inset-0 z-[290]"
+          style={{ background: color }} />
 
         {formActive && activeSub ? (
           // Card flutuante — não bloqueia a tela, informa o próximo campo
@@ -639,14 +680,14 @@ export default function OnboardingTour() {
         <TourStyles />
 
         {/* ── 4 overlays que formam a moldura escura em volta do spotlight ── */}
-        <div className="fixed inset-x-0 top-0 z-[290] pointer-events-auto"
-          style={{ height: sTop, background: color, pointerEvents: formActive ? 'none' : 'auto' }} />
-        <div className="fixed inset-x-0 z-[290] pointer-events-auto"
-          style={{ top: sTop + sHeight, bottom: 0, background: color, pointerEvents: formActive ? 'none' : 'auto' }} />
-        <div className="fixed left-0 z-[290] pointer-events-auto"
-          style={{ top: sTop, width: sLeft, height: sHeight, background: color, pointerEvents: formActive ? 'none' : 'auto' }} />
-        <div className="fixed right-0 z-[290] pointer-events-auto"
-          style={{ top: sTop, left: sLeft + sWidth, height: sHeight, background: color, pointerEvents: formActive ? 'none' : 'auto' }} />
+        <div data-tour="spotlight-overlay" className="fixed inset-x-0 top-0 z-[290] pointer-events-auto"
+          style={{ height: sTop, background: color }} />
+        <div data-tour="spotlight-overlay" className="fixed inset-x-0 z-[290] pointer-events-auto"
+          style={{ top: sTop + sHeight, bottom: 0, background: color }} />
+        <div data-tour="spotlight-overlay" className="fixed left-0 z-[290] pointer-events-auto"
+          style={{ top: sTop, width: sLeft, height: sHeight, background: color }} />
+        <div data-tour="spotlight-overlay" className="fixed right-0 z-[290] pointer-events-auto"
+          style={{ top: sTop, left: sLeft + sWidth, height: sHeight, background: color }} />
 
         {/* Borda pulsante ao redor do elemento */}
         <div className="fixed z-[291] pointer-events-none rounded-xl"

@@ -50,7 +50,10 @@ test('tour waits on required Nova OS inputs on mobile', async ({ page }) => {
 
   const plate = page.locator('[data-tour="input-placa"]')
   await expect(page.getByText('Digite a placa', { exact: true })).toBeVisible()
+  await expect(page.locator('[data-tour="spotlight-overlay"]').first()).toHaveCSS('pointer-events', 'auto')
   await plate.fill('ABC1A23')
+  await page.setViewportSize({ width: 393, height: 420 })
+  await expect(plate).toBeInViewport()
   await page.waitForTimeout(1700)
   await expect(page.getByText('Digite a placa', { exact: true })).toBeVisible()
 
@@ -60,6 +63,14 @@ test('tour waits on required Nova OS inputs on mobile', async ({ page }) => {
 
   const name = page.locator('[data-tour="input-nome-cliente"]')
   await expect(page.getByText('Nome do cliente *', { exact: true })).toBeVisible({ timeout: 6000 })
+  const modalScroll = page.locator('[data-tour="nova-os-scroll"]')
+  await expect.poll(() => modalScroll.evaluate(el => el.scrollHeight > el.clientHeight)).toBeTruthy()
+  await page.waitForTimeout(500)
+  const guidedScrollTop = await modalScroll.evaluate(el => el.scrollTop)
+  await page.mouse.move(10, 10)
+  await page.mouse.wheel(0, 700)
+  await expect.poll(() => modalScroll.evaluate(el => el.scrollTop)).toBe(guidedScrollTop)
+
   await name.fill('Joao da Silva')
   await page.waitForTimeout(1700)
   await expect(page.getByText('Nome do cliente *', { exact: true })).toBeVisible()
@@ -68,11 +79,14 @@ test('tour waits on required Nova OS inputs on mobile', async ({ page }) => {
   const whatsapp = page.locator('[data-tour="input-whatsapp"]')
   await expect(page.getByRole('heading', { name: 'WhatsApp *' })).toBeVisible()
   await whatsapp.fill('51999999999')
+  await page.setViewportSize({ width: 393, height: 360 })
+  await expect(whatsapp).toBeInViewport()
   await page.waitForTimeout(1700)
   await expect(page.getByRole('heading', { name: 'WhatsApp *' })).toBeVisible()
 
   await whatsapp.blur()
   await expect(page.getByRole('heading', { name: /Marca do veiculo|Marca do veículo/i })).toBeVisible()
+  await expect(page.locator('[data-tour="select-marca"]')).toBeInViewport()
 })
 
 test('tour resumes after the first OS is already complete', async ({ page }) => {
