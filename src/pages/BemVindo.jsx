@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -158,13 +158,13 @@ export default function BemVindo() {
   }, [authLoading, user?.id])
 
   // ── Avança para o próximo passo ───────────────────────────────────────────
-  const next = useCallback(() => {
+  const next = () => {
     if (stepIdx < steps.length - 1) {
       setStepIdx(i => i + 1)
     } else {
       handleFinish()
     }
-  }, [stepIdx, steps])
+  }
 
   // ── Salva tudo e redireciona ──────────────────────────────────────────────
   const handleFinish = async () => {

@@ -91,6 +91,12 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
+    if (import.meta.env.DEV && window.__BOXCERTO_E2E_USER__) {
+      setUser(window.__BOXCERTO_E2E_USER__)
+      setLoading(false)
+      return
+    }
+
     // `initialized` impede que onAuthStateChange precoce (iPhone/PWA) sobrescreva
     // a sessão antes do getSession() terminar.
     // `nullTimer` evita o race condition oposto: getSession() retornando null

@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 
 // ── Sub-passos do formulário Nova OS ─────────────────────────────────────────
-// Fluxo: placa → buscar → (btn-abrir-os OU nome→wpp→cpf→marca→ano→modelo→confirmar) → criar-os
+// Fluxo: placa → buscar → (btn-abrir-os OU nome→wpp→marca→ano→modelo→confirmar) → criar-os
 // skipAfter: tempo (ms) antes de pular automaticamente se o elemento não aparecer
 const FORM_SUBSTEPS = [
   { sel: '[data-tour="input-placa"]',             title: 'Digite a placa',              body: 'Formato antigo: ABC-1234 · Mercosul: ABC-1A23' },
@@ -13,7 +13,6 @@ const FORM_SUBSTEPS = [
   { sel: '[data-tour="btn-abrir-os"]',             title: 'Veículo encontrado!',         body: 'Clique para abrir a Ordem de Serviço diretamente.',  skipAfter: 3500 },
   // Caminho "novo cliente" — aparece se placa não encontrada
   { sel: '[data-tour="input-nome-cliente"]',       title: 'Nome do cliente *',           body: 'Obrigatório. Digite 4+ letras para ver sugestões.',  skipAfter: 1500 },
-  { sel: '[data-tour="input-cpf"]',                title: 'CPF (opcional)',              body: 'Se informado, deve ter 11 dígitos.',                 skipAfter: 1500 },
   { sel: '[data-tour="input-whatsapp"]',           title: 'WhatsApp *',                  body: 'Obrigatório — o cliente recebe o orçamento aqui.',   skipAfter: 1500 },
   // FipeSeletor — 3 etapas em cascata
   { sel: '[data-tour="select-marca"]',             title: 'Marca do veículo *',          body: 'Escolha o tipo (carro/moto/caminhão) e a montadora.', skipAfter: 1500 },
@@ -35,6 +34,7 @@ const STEPS = [
     title: 'Toque no + para criar sua primeira OS',
     body: 'Toque no botão azul + no canto da tela.',
     completeOn: 'boxcerto:os-criada',
+    completeColumn: 'onboarding_os_done',
   },
   {
     id: 'celebration-os',
@@ -51,6 +51,7 @@ const STEPS = [
     title: '📲 Agora envie o orçamento para o cliente',
     body: 'Abra a OS que você criou e clique no botão verde "Enviar para cliente". O cliente recebe um link e aprova no celular.',
     completeOn: 'boxcerto:orcamento-enviado',
+    completeColumn: 'onboarding_orcamento_done',
   },
   {
     id: 'celebration-wpp',
@@ -72,6 +73,7 @@ const STEPS = [
     title: '⚙️ Preencha os dados da oficina',
     body: 'Digite o nome e telefone da sua oficina e clique em Salvar. Esses dados aparecem nos orçamentos enviados aos clientes.',
     completeOn: 'boxcerto:oficina-configurada',
+    completeColumn: 'onboarding_oficina_done',
   },
   {
     id: 'celebration-final',
@@ -85,6 +87,32 @@ const STEPS = [
 ]
 
 function getIdx(id) { return STEPS.findIndex(s => s.id === id) }
+
+const TOUR_STORAGE_PREFIX = 'boxcerto:onboarding-tour:'
+
+function getStoredStep(userId) {
+  if (!userId) return null
+  try {
+    const stepId = localStorage.getItem(`${TOUR_STORAGE_PREFIX}${userId}`)
+    return getIdx(stepId) >= 0 ? stepId : null
+  } catch {
+    return null
+  }
+}
+
+function getCompletedStep(user) {
+  if (!user) return null
+  if (user.onboardingOsDone && user.onboardingOrcamentoDone && user.onboardingOficinaD) return 'celebration-final'
+  if (user.onboardingOsDone && user.onboardingOrcamentoDone) return 'configurar-oficina'
+  if (user.onboardingOsDone) return 'enviar-orcamento'
+  return null
+}
+
+function getLaterStep(...stepIds) {
+  return stepIds
+    .filter(stepId => getIdx(stepId) >= 0)
+    .sort((a, b) => getIdx(b) - getIdx(a))[0] || null
+}
 
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function OnboardingTour() {
@@ -101,6 +129,7 @@ export default function OnboardingTour() {
   const [skipped,    setSkipped]    = useState(false)
   const [animIn,     setAnimIn]     = useState(true)
   const doneRef = useRef(false)
+  const resumedUserRef = useRef(null)
 
   const shouldShow = user && !user.isAdmin && !user.isTecnico
     && !user.onboardingDismissed && !done && !skipped
@@ -131,6 +160,24 @@ export default function OnboardingTour() {
     setFormRect(null)
     setFormSubIdx(prev => Math.min(prev + 1, FORM_SUBSTEPS.length - 1))
   }, [])
+
+  // Retoma o passo salvo no navegador e nunca volta atras de tarefas ja concluidas.
+  useEffect(() => {
+    if (!user?.id || resumedUserRef.current === user.id) return
+    resumedUserRef.current = user.id
+    const resumeStep = getLaterStep(getStoredStep(user.id), getCompletedStep(user))
+    if (!resumeStep || resumeStep === stepId) return
+    setStepId(resumeStep)
+    setRect(null)
+    setFormActive(false)
+    setFormSubIdx(0)
+    setFormRect(null)
+  }, [stepId, user])
+
+  useEffect(() => {
+    if (!user?.id || done || skipped) return
+    try { localStorage.setItem(`${TOUR_STORAGE_PREFIX}${user.id}`, stepId) } catch {}
+  }, [done, skipped, stepId, user?.id])
 
   // ── Navega ao mudar de passo principal ────────────────────────────────────
   useEffect(() => {
@@ -213,12 +260,14 @@ export default function OnboardingTour() {
     let cancelled = false
     let rafId
     let skipTimer = null
+    let foundVisibleTarget = false
 
     const grabFormRect = () => {
       const all = document.querySelectorAll(sub.sel)
       for (const el of all) {
         const r = el.getBoundingClientRect()
         if (r.width > 0 && r.height > 0) {
+          foundVisibleTarget = true
           setFormRect({ top: r.top, left: r.left, width: r.width, height: r.height })
           el.setAttribute('data-tour-active', 'true')
           return true
@@ -237,7 +286,7 @@ export default function OnboardingTour() {
     // Pula automaticamente se o elemento não aparecer no tempo estipulado
     if (sub.skipAfter) {
       skipTimer = setTimeout(() => {
-        if (!cancelled) nextFormSub()
+        if (!cancelled && !foundVisibleTarget) nextFormSub()
       }, sub.skipAfter)
     }
 
@@ -246,6 +295,7 @@ export default function OnboardingTour() {
       for (const el of all) {
         const r = el.getBoundingClientRect()
         if (r.width > 0 && r.height > 0) {
+          foundVisibleTarget = true
           setFormRect({ top: r.top, left: r.left, width: r.width, height: r.height })
           return
         }
@@ -254,24 +304,28 @@ export default function OnboardingTour() {
     window.addEventListener('resize', recalc)
     window.addEventListener('scroll', recalc, true)
 
-    // FIX 3: ignora SELECTs no click (abrir dropdown ≠ selecionar) — usa 'change'
+    // Avanca com botoes reais; inputs ficam no campo ate o usuario pedir o proximo.
     const onSubClick = (e) => {
       const all = document.querySelectorAll(sub.sel)
       for (const el of all) {
         if (el.contains(e.target) || el === e.target) {
-          if (el.tagName === 'SELECT') return   // select usa onSubChange
-          setTimeout(nextFormSub, 120)
+          const clickedButton = e.target.closest('button')
+          const pickedFipeModel = sub.sel === '[data-tour="select-modelo-container"]'
+            && clickedButton?.matches('[data-tour="btn-modelo-fipe"]')
+          if (el.tagName === 'BUTTON' || pickedFipeModel) {
+            setTimeout(nextFormSub, 120)
+          }
           return
         }
       }
     }
     document.addEventListener('click', onSubClick, true)
 
-    // change: para selects (marca, ano) e para o modelo selecionado
+    // Abrir o dropdown nao basta; a troca do select e que avanca o tour.
     const onSubChange = (e) => {
       const all = document.querySelectorAll(sub.sel)
       for (const el of all) {
-        if (el === e.target || el.contains(e.target)) {
+        if (el.tagName === 'SELECT' && el === e.target) {
           setTimeout(nextFormSub, 120)
           return
         }
@@ -296,10 +350,19 @@ export default function OnboardingTour() {
   useEffect(() => {
     const step = STEPS[getIdx(stepId)]
     if (!step?.completeOn) return
-    const handler = () => nextStep()
+    const handler = () => {
+      if (step.completeColumn && user?.id) {
+        supabase.from('profiles')
+          .update({ [step.completeColumn]: true })
+          .eq('id', user.id)
+          .then(() => {})
+          .catch(() => {})
+      }
+      nextStep()
+    }
     window.addEventListener(step.completeOn, handler)
     return () => window.removeEventListener(step.completeOn, handler)
-  }, [stepId, nextStep])
+  }, [stepId, nextStep, user?.id])
 
   // ── Finalizar / pular ─────────────────────────────────────────────────────
   const finalize = useCallback(async () => {
@@ -307,12 +370,18 @@ export default function OnboardingTour() {
     doneRef.current = true
     setDone(true)
     if (user?.id) {
+      try { localStorage.removeItem(`${TOUR_STORAGE_PREFIX}${user.id}`) } catch {}
+    }
+    if (user?.id) {
       try { await supabase.from('profiles').update({ onboarding_dismissed: true }).eq('id', user.id) } catch {}
     }
   }, [user?.id])
 
   const skip = useCallback(async () => {
     setSkipped(true)
+    if (user?.id) {
+      try { localStorage.removeItem(`${TOUR_STORAGE_PREFIX}${user.id}`) } catch {}
+    }
     if (user?.id) {
       try { await supabase.from('profiles').update({ onboarding_dismissed: true }).eq('id', user.id) } catch {}
     }

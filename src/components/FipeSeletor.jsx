@@ -273,7 +273,7 @@ export default function FipeSeletor({ onSelect, onManual }) {
                 modelosVisiveis.length > 0 ? (
                   <div className="mt-1 max-h-44 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg divide-y divide-gray-50">
                     {modelosVisiveis.slice(0, 40).map(m => (
-                      <button key={m.codigo} type="button"
+                      <button key={m.codigo} data-tour="btn-modelo-fipe" type="button"
                         onMouseDown={e => { e.preventDefault(); setModelo(m); setFiltro(m.nome) }}
                         className="w-full text-left px-3 py-2.5 text-sm hover:bg-indigo-50 transition-colors">
                         {m.nome}
