@@ -725,11 +725,11 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Placa do Veículo</label>
-                <input type="text" value={placa} onChange={e => setPlaca(formatPlate(e.target.value))}
+                <input data-tour="input-placa" type="text" value={placa} onChange={e => setPlaca(formatPlate(e.target.value))}
                   placeholder="ABC-1D23" maxLength={8} autoFocus
                   className="w-full px-4 py-4 text-center text-2xl font-bold plate-mercosul rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 uppercase tracking-widest" />
               </div>
-              <button onClick={searchPlate} disabled={loading} className="w-full bg-indigo-600 text-white font-semibold py-3.5 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-60">
+              <button data-tour="btn-buscar-placa" onClick={searchPlate} disabled={loading} className="w-full bg-indigo-600 text-white font-semibold py-3.5 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-60">
                 <Search className="w-5 h-5 inline mr-2" />{loading ? 'Buscando...' : 'Buscar / Abrir OS'}
               </button>
             </div>
@@ -780,6 +780,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
                   <div className="relative">
                     <label className="block text-xs font-medium text-slate-600 mb-1">Nome Completo *</label>
                     <input
+                      data-tour="input-nome-cliente"
                       type="text"
                       placeholder="João da Silva Santos"
                       value={newClient.nome}
@@ -817,7 +818,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="block text-xs font-medium text-slate-600 mb-1">CPF</label>
-                      <input type="text" inputMode="numeric" placeholder="000.000.000-00" value={newClient.cpf}
+                      <input data-tour="input-cpf" type="text" inputMode="numeric" placeholder="000.000.000-00" value={newClient.cpf}
                         onChange={e => setNewClient(p => ({...p, cpf: formatCPF(e.target.value)}))} className={inp} />
                     </div>
                     <div>
@@ -830,7 +831,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">WhatsApp *</label>
-                    <input type="text" placeholder="(51) 99999-9999" value={newClient.whatsapp}
+                    <input data-tour="input-whatsapp" type="text" placeholder="(51) 99999-9999" value={newClient.whatsapp}
                       onChange={e => setNewClient(p => ({...p, whatsapp: formatWpp(e.target.value)}))} maxLength={15} className={inp} />
                   </div>
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider pt-1">Endereço</p>
@@ -889,7 +890,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
                       </div>
                     )}
                   </div>
-                  <button onClick={createAndOpen} disabled={loading}
+                  <button data-tour="btn-criar-os" onClick={createAndOpen} disabled={loading}
                     className="w-full bg-indigo-600 text-white font-semibold py-3.5 rounded-xl hover:bg-indigo-700 transition-colors mt-2 disabled:opacity-60">
                     {loading ? 'Salvando...' : 'Cadastrar e Abrir OS'}
                   </button>
@@ -908,7 +909,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
                     </div>
                     {client.whatsapp && <p className="text-xs text-slate-400">{client.whatsapp}</p>}
                   </div>
-                  <button onClick={openOS} disabled={loading}
+                  <button data-tour="btn-abrir-os" onClick={openOS} disabled={loading}
                     className="w-full bg-indigo-600 text-white font-semibold py-3.5 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-60">
                     <Plus className="w-5 h-5 inline mr-2" />{loading ? 'Abrindo...' : 'Abrir OS'}
                   </button>

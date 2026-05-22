@@ -188,7 +188,7 @@ export default function FipeSeletor({ onSelect, onManual }) {
       {/* Marca */}
       <div>
         <label className="block text-xs font-medium text-slate-600 mb-1">Marca</label>
-        <select value={marca?.codigo || ''} disabled={loading && !marcas.length}
+        <select data-tour="select-marca" value={marca?.codigo || ''} disabled={loading && !marcas.length}
           onChange={e => {
             const m = marcas.find(m => String(m.codigo) === e.target.value)
             setMarca(m || null)
@@ -218,7 +218,7 @@ export default function FipeSeletor({ onSelect, onManual }) {
       {anosDisponiveis.length > 0 && (
         <div>
           <label className="block text-xs font-medium text-slate-600 mb-1">Ano</label>
-          <select value={anoSel}
+          <select data-tour="select-ano" value={anoSel}
             onChange={e => {
               setAnoSel(e.target.value)
               setModelo(null); setFiltro('')
@@ -233,7 +233,7 @@ export default function FipeSeletor({ onSelect, onManual }) {
 
       {/* Modelo — só aparece após ano selecionado e carregamento suficiente */}
       {anoSel && (
-        <div>
+        <div data-tour="select-modelo-container">
           <label className="block text-xs font-medium text-slate-600 mb-1">
             Modelo
             {!loadingAnos && (
@@ -334,7 +334,7 @@ export default function FipeSeletor({ onSelect, onManual }) {
           className="flex-1 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-slate-600 font-medium hover:bg-gray-50 transition-colors">
           Digitar manualmente
         </button>
-        <button type="button" onClick={confirmar}
+        <button data-tour="btn-confirmar-modelo" type="button" onClick={confirmar}
           disabled={!marca || !modelo || (!combSel && combustiveis.length !== 1)}
           className="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold disabled:opacity-40 hover:bg-indigo-700 transition-colors">
           Confirmar
