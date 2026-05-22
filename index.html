@@ -66,7 +66,7 @@
     <meta name="twitter:description" content="Envie o orçamento por link, cliente aprova em 1 clique. 7 dias grátis, sem cartão." />
     <meta name="twitter:image" content="https://boxcerto.com/og-image.png" />
 
-    <!-- Schema.org JSON-LD -->
+    <!-- Schema.org JSON-LD: SoftwareApplication -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -74,16 +74,17 @@
       "name": "BoxCerto",
       "applicationCategory": "BusinessApplication",
       "operatingSystem": "Web, Android, iOS",
-      "description": "Sistema de gestão para oficinas mecânicas. Orçamentos por link no WhatsApp, controle de OS, estoque e financeiro.",
+      "description": "Sistema de gestão para oficinas mecânicas. Orçamentos por link no WhatsApp, cliente aprova em 1 clique. Controle de OS, estoque e financeiro.",
       "url": "https://boxcerto.com",
       "logo": "https://boxcerto.com/logo.svg",
+      "screenshot": "https://boxcerto.com/og-image.png",
       "offers": {
         "@type": "Offer",
         "price": "97.00",
         "priceCurrency": "BRL",
         "priceValidUntil": "2026-12-31",
         "availability": "https://schema.org/InStock",
-        "description": "Plano mensal — 7 dias de teste gratuito"
+        "description": "Plano mensal — 7 dias de teste gratuito, sem cartão de crédito"
       },
       "aggregateRating": {
         "@type": "AggregateRating",
@@ -92,11 +93,30 @@
         "bestRating": "5",
         "worstRating": "1"
       },
+      "review": [
+        {
+          "@type": "Review",
+          "author": { "@type": "Person", "name": "Evandro" },
+          "reviewBody": "Tinha orçamento que mandava no WhatsApp e o cliente sumia. Achava que era o preço. Depois que comecei a mandar o link, percebi que o problema era outro. Agora aprova na hora.",
+          "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+          "publisher": { "@type": "Organization", "name": "Valencia Auto Center" }
+        },
+        {
+          "@type": "Review",
+          "author": { "@type": "Person", "name": "André" },
+          "reviewBody": "Eu controlava tudo na cabeça e numa caderneta. Funcionava até o dia que não funcionou mais. Perdi uma peça, cobrei errado, cliente reclamou. Hoje tá tudo no sistema e consigo ver a oficina inteira pelo celular.",
+          "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+          "publisher": { "@type": "Organization", "name": "Mecânica Avenida" }
+        }
+      ],
       "publisher": {
         "@type": "Organization",
-        "name": "BoxCerto Tecnologia Ltda.",
+        "name": "BoxCerto",
         "url": "https://boxcerto.com",
         "logo": "https://boxcerto.com/logo.svg",
+        "sameAs": [
+          "https://www.instagram.com/boxcertoapp"
+        ],
         "contactPoint": {
           "@type": "ContactPoint",
           "telephone": "+55-53-99706-5725",
@@ -104,6 +124,72 @@
           "availableLanguage": "Portuguese"
         }
       }
+    }
+    </script>
+
+    <!-- Schema.org JSON-LD: FAQPage -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "O BoxCerto funciona para qualquer tipo de oficina?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sim. O BoxCerto atende mecânicas gerais, funilarias, elétricas automotivas, oficinas de motos, martelinho de ouro, ar-condicionado veicular e muito mais. O sistema se adapta ao tipo de serviço da sua oficina."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Como funciona o orçamento por link no WhatsApp?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Você cria o orçamento no BoxCerto, gera um link e envia para o cliente pelo WhatsApp. O cliente abre o link no celular, vê os serviços e valores detalhados, e aprova com um clique. A aprovação fica registrada com data e hora, sem precisar de assinatura em papel."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Precisa instalar algum programa?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Não. O BoxCerto funciona direto pelo navegador — computador, celular ou tablet. Não precisa instalar nada. Basta fazer o cadastro e começar a usar."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Tem período de teste gratuito?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sim. São 7 dias grátis, sem precisar cadastrar cartão de crédito. Você usa todas as funcionalidades durante o trial e só paga se decidir continuar."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Posso controlar o estoque de peças pelo BoxCerto?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sim. O módulo de estoque permite cadastrar peças, controlar entradas e saídas, definir quantidade mínima para alerta, e realizar vendas no balcão com emissão de recibo. Tudo integrado ao financeiro da oficina."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "O sistema emite nota fiscal?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "O BoxCerto não emite nota fiscal diretamente, mas registra todos os serviços, peças e valores de forma organizada, facilitando o trabalho com seu contador."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Quanto custa o BoxCerto?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "O plano mensal custa R$97 por mês. Há também o plano anual com desconto. Os primeiros 7 dias são gratuitos, sem cartão de crédito."
+          }
+        }
+      ]
     }
     </script>
   </head>
