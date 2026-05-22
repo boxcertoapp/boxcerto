@@ -115,6 +115,22 @@ function getLaterStep(...stepIds) {
 }
 
 // ── Componente principal ──────────────────────────────────────────────────────
+function isSubstepValueReady(sub, el) {
+  if (!el || (el.tagName !== 'INPUT' && el.tagName !== 'SELECT')) return false
+
+  const value = String(el.value || '').trim()
+  if (el.tagName === 'SELECT') return value.length > 0
+  if (sub.sel === '[data-tour="input-placa"]') {
+    return value.replace(/[^a-z0-9]/gi, '').length >= 7
+  }
+  if (sub.sel === '[data-tour="input-nome-cliente"]') return value.length >= 4
+  if (sub.sel === '[data-tour="input-whatsapp"]') {
+    return value.replace(/\D/g, '').length >= 10
+  }
+
+  return value.length > 0
+}
+
 export default function OnboardingTour() {
   const { user }   = useAuth()
   const navigate   = useNavigate()
@@ -260,7 +276,20 @@ export default function OnboardingTour() {
     let cancelled = false
     let rafId
     let skipTimer = null
+    let advanceTimer = null
     let foundVisibleTarget = false
+    let revealedTarget = false
+
+    const scheduleNextFormSub = () => {
+      clearTimeout(advanceTimer)
+      advanceTimer = setTimeout(nextFormSub, 120)
+    }
+
+    const revealFormTarget = (el) => {
+      if (revealedTarget) return
+      revealedTarget = true
+      el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' })
+    }
 
     const grabFormRect = () => {
       const all = document.querySelectorAll(sub.sel)
@@ -268,6 +297,7 @@ export default function OnboardingTour() {
         const r = el.getBoundingClientRect()
         if (r.width > 0 && r.height > 0) {
           foundVisibleTarget = true
+          revealFormTarget(el)
           setFormRect({ top: r.top, left: r.left, width: r.width, height: r.height })
           el.setAttribute('data-tour-active', 'true')
           return true
@@ -313,7 +343,7 @@ export default function OnboardingTour() {
           const pickedFipeModel = sub.sel === '[data-tour="select-modelo-container"]'
             && clickedButton?.matches('[data-tour="btn-modelo-fipe"]')
           if (el.tagName === 'BUTTON' || pickedFipeModel) {
-            setTimeout(nextFormSub, 120)
+            scheduleNextFormSub()
           }
           return
         }
@@ -326,21 +356,35 @@ export default function OnboardingTour() {
       const all = document.querySelectorAll(sub.sel)
       for (const el of all) {
         if (el.tagName === 'SELECT' && el === e.target) {
-          setTimeout(nextFormSub, 120)
+          scheduleNextFormSub()
           return
         }
       }
     }
     document.addEventListener('change', onSubChange, true)
 
+    // Inputs advance only after the user leaves a filled guided field.
+    const onSubFocusOut = (e) => {
+      const all = document.querySelectorAll(sub.sel)
+      for (const el of all) {
+        if (el === e.target && isSubstepValueReady(sub, el)) {
+          scheduleNextFormSub()
+          return
+        }
+      }
+    }
+    document.addEventListener('focusout', onSubFocusOut, true)
+
     return () => {
       cancelled = true
       cancelAnimationFrame(rafId)
       clearTimeout(skipTimer)
+      clearTimeout(advanceTimer)
       window.removeEventListener('resize', recalc)
       window.removeEventListener('scroll', recalc, true)
       document.removeEventListener('click', onSubClick, true)
       document.removeEventListener('change', onSubChange, true)
+      document.removeEventListener('focusout', onSubFocusOut, true)
       document.querySelectorAll(`${sub.sel}[data-tour-active]`)
         .forEach(el => el.removeAttribute('data-tour-active'))
     }
@@ -596,13 +640,13 @@ export default function OnboardingTour() {
 
         {/* ── 4 overlays que formam a moldura escura em volta do spotlight ── */}
         <div className="fixed inset-x-0 top-0 z-[290] pointer-events-auto"
-          style={{ height: sTop, background: color }} />
+          style={{ height: sTop, background: color, pointerEvents: formActive ? 'none' : 'auto' }} />
         <div className="fixed inset-x-0 z-[290] pointer-events-auto"
-          style={{ top: sTop + sHeight, bottom: 0, background: color }} />
+          style={{ top: sTop + sHeight, bottom: 0, background: color, pointerEvents: formActive ? 'none' : 'auto' }} />
         <div className="fixed left-0 z-[290] pointer-events-auto"
-          style={{ top: sTop, width: sLeft, height: sHeight, background: color }} />
+          style={{ top: sTop, width: sLeft, height: sHeight, background: color, pointerEvents: formActive ? 'none' : 'auto' }} />
         <div className="fixed right-0 z-[290] pointer-events-auto"
-          style={{ top: sTop, left: sLeft + sWidth, height: sHeight, background: color }} />
+          style={{ top: sTop, left: sLeft + sWidth, height: sHeight, background: color, pointerEvents: formActive ? 'none' : 'auto' }} />
 
         {/* Borda pulsante ao redor do elemento */}
         <div className="fixed z-[291] pointer-events-none rounded-xl"

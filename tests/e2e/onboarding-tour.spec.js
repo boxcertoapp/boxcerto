@@ -54,7 +54,7 @@ test('tour waits on required Nova OS inputs on mobile', async ({ page }) => {
   await page.waitForTimeout(1700)
   await expect(page.getByText('Digite a placa', { exact: true })).toBeVisible()
 
-  await page.getByRole('button', { name: /proximo campo|próximo campo/i }).click()
+  await plate.blur()
   await expect(page.getByRole('heading', { name: /Clique em Buscar \/ Abrir OS/ })).toBeVisible()
   await page.locator('[data-tour="btn-buscar-placa"]').click()
 
@@ -64,12 +64,15 @@ test('tour waits on required Nova OS inputs on mobile', async ({ page }) => {
   await page.waitForTimeout(1700)
   await expect(page.getByText('Nome do cliente *', { exact: true })).toBeVisible()
 
-  await page.getByRole('button', { name: /proximo campo|próximo campo/i }).click()
+  await name.blur()
   const whatsapp = page.locator('[data-tour="input-whatsapp"]')
   await expect(page.getByRole('heading', { name: 'WhatsApp *' })).toBeVisible()
   await whatsapp.fill('51999999999')
   await page.waitForTimeout(1700)
   await expect(page.getByRole('heading', { name: 'WhatsApp *' })).toBeVisible()
+
+  await whatsapp.blur()
+  await expect(page.getByRole('heading', { name: /Marca do veiculo|Marca do veículo/i })).toBeVisible()
 })
 
 test('tour resumes after the first OS is already complete', async ({ page }) => {
