@@ -194,8 +194,12 @@ export const vehicleStorage = {
   },
 
   getByPlate: async (_officeName, placa) => {
-    const { data } = await supabase.from('vehicles').select('*').ilike('placa', placa).maybeSingle()
-    return mapVehicle(data)
+    const { data } = await supabase
+      .from('vehicles')
+      .select('*, clients(*)')
+      .ilike('placa', placa)
+      .maybeSingle()
+    return data ? { ...mapVehicle(data), client: mapClient(data.clients) } : null
   },
 
   create: async ({ officeName: _o, clientId, placa, modelo }) => {

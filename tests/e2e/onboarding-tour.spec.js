@@ -18,19 +18,93 @@ const baseUser = {
 async function openOnboarding(page, user = {}) {
   await page.addInitScript(e2eUser => {
     window.__BOXCERTO_E2E_USER__ = e2eUser
+    window.open = (...args) => {
+      window.__BOXCERTO_LAST_OPEN__ = args
+      return null
+    }
   }, { ...baseUser, ...user })
 
+  const db = {
+    client: null,
+    vehicle: null,
+    os: null,
+    items: [],
+  }
+
   await page.route('**/rest/v1/**', async route => {
-    if (route.request().method() === 'PATCH') {
+    const request = route.request()
+    const method = request.method()
+    const url = new URL(request.url())
+    const table = url.pathname.split('/').filter(Boolean).pop()
+    const json = (body, status = 200) => route.fulfill({
+      status,
+      contentType: 'application/json',
+      body: JSON.stringify(body),
+    })
+
+    if (method === 'PATCH') {
       await route.fulfill({ status: 204, body: '' })
       return
     }
 
-    await route.fulfill({
-      status: route.request().method() === 'GET' ? 200 : 201,
-      contentType: 'application/json',
-      body: '[]',
-    })
+    if (method === 'POST') {
+      const body = JSON.parse(request.postData() || '{}')
+
+      if (table === 'clients') {
+        db.client = {
+          id: 'client-1',
+          created_at: '2026-05-22T12:00:00.000Z',
+          ...body,
+        }
+        await json(db.client, 201)
+        return
+      }
+
+      if (table === 'vehicles') {
+        db.vehicle = {
+          id: 'vehicle-1',
+          created_at: '2026-05-22T12:00:00.000Z',
+          ...body,
+          clients: db.client,
+        }
+        await json(db.vehicle, 201)
+        return
+      }
+
+      if (table === 'service_orders') {
+        db.os = {
+          id: 'os-1',
+          created_at: '2026-05-22T12:00:00.000Z',
+          updated_at: '2026-05-22T12:00:00.000Z',
+          aprovacao_token: null,
+          aprovacao_status: 'pendente',
+          ...body,
+        }
+        await json(db.os, 201)
+        return
+      }
+
+      if (table === 'service_items') {
+        const item = {
+          id: `item-${db.items.length + 1}`,
+          created_at: '2026-05-22T12:00:00.000Z',
+          ...body,
+        }
+        db.items.push(item)
+        await json(item, 201)
+        return
+      }
+
+      await json({}, 201)
+      return
+    }
+
+    if (method === 'GET' && table === 'service_items') {
+      await json(db.items)
+      return
+    }
+
+    await json([])
   })
 
   await page.route('https://parallelum.com.br/fipe/api/v1/**', route => route.fulfill({
@@ -45,7 +119,7 @@ async function openOnboarding(page, user = {}) {
 test('tour waits on required Nova OS inputs on mobile', async ({ page }) => {
   await openOnboarding(page)
 
-  await page.getByRole('button', { name: /vamos la|vamos lá/i }).click()
+  await page.getByRole('button', { name: /comecar tour guiado|começar tour guiado/i }).click()
   await page.locator('[data-tour="fab-nova-os"]:visible').click()
 
   const plate = page.locator('[data-tour="input-placa"]')
@@ -54,15 +128,15 @@ test('tour waits on required Nova OS inputs on mobile', async ({ page }) => {
   await plate.fill('ABC1A23')
   await page.setViewportSize({ width: 393, height: 420 })
   await expect(plate).toBeInViewport()
-  await page.waitForTimeout(1700)
+  await page.waitForTimeout(900)
   await expect(page.getByText('Digite a placa', { exact: true })).toBeVisible()
 
   await plate.blur()
-  await expect(page.getByRole('heading', { name: /Clique em Buscar \/ Abrir OS/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Busque a placa' })).toBeVisible()
   await page.locator('[data-tour="btn-buscar-placa"]').click()
 
   const name = page.locator('[data-tour="input-nome-cliente"]')
-  await expect(page.getByText('Nome do cliente *', { exact: true })).toBeVisible({ timeout: 6000 })
+  await expect(page.getByText('Digite o nome do cliente', { exact: true })).toBeVisible({ timeout: 6000 })
   const modalScroll = page.locator('[data-tour="nova-os-scroll"]')
   await expect.poll(() => modalScroll.evaluate(el => el.scrollHeight > el.clientHeight)).toBeTruthy()
   await page.waitForTimeout(500)
@@ -72,28 +146,28 @@ test('tour waits on required Nova OS inputs on mobile', async ({ page }) => {
   await expect.poll(() => modalScroll.evaluate(el => el.scrollTop)).toBe(guidedScrollTop)
 
   await name.fill('Joao da Silva')
-  await page.waitForTimeout(1700)
-  await expect(page.getByText('Nome do cliente *', { exact: true })).toBeVisible()
+  await page.waitForTimeout(900)
+  await expect(page.getByText('Digite o nome do cliente', { exact: true })).toBeVisible()
 
   await name.blur()
   const whatsapp = page.locator('[data-tour="input-whatsapp"]')
-  await expect(page.getByRole('heading', { name: 'WhatsApp *' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Digite o WhatsApp' })).toBeVisible()
   await whatsapp.fill('51999999999')
   await page.setViewportSize({ width: 393, height: 360 })
   await expect(whatsapp).toBeInViewport()
-  await page.waitForTimeout(1700)
-  await expect(page.getByRole('heading', { name: 'WhatsApp *' })).toBeVisible()
+  await page.waitForTimeout(900)
+  await expect(page.getByRole('heading', { name: 'Digite o WhatsApp' })).toBeVisible()
 
   await whatsapp.blur()
-  await expect(page.getByRole('heading', { name: /Marca do veiculo|Marca do veículo/i })).toBeVisible()
-  await expect(page.locator('[data-tour="select-marca"]')).toBeInViewport()
+  await expect(page.getByRole('heading', { name: 'Digite o modelo do veículo' })).toBeVisible()
+  await expect(page.locator('[data-tour="input-modelo-manual"]')).toBeInViewport()
 })
 
 test('tour resumes after the first OS is already complete', async ({ page }) => {
   await openOnboarding(page, { onboardingOsDone: true })
 
-  await expect(page.getByText(/Agora envie o orcamento|Agora envie o orçamento/i)).toBeVisible()
-  await expect(page.getByText(/Vamos configurar sua oficina agora/i)).toHaveCount(0)
+  await expect(page.getByText(/Envie pelo WhatsApp/i)).toBeVisible()
+  await expect(page.getByText(/Vamos abrir sua primeira OS juntos/i)).toHaveCount(0)
 })
 
 test('tour restores the latest step saved in the browser', async ({ page }) => {
@@ -103,5 +177,33 @@ test('tour restores the latest step saved in the browser', async ({ page }) => {
   await openOnboarding(page)
 
   await expect(page).toHaveURL(/\/app\/menu$/)
-  await expect(page.getByText(/Preencha os dados da oficina/i)).toBeVisible()
+  await expect(page.getByText(/Adicione o logotipo/i)).toBeVisible()
+})
+
+test('guided first OS creates the example service and opens WhatsApp step', async ({ page }) => {
+  await openOnboarding(page)
+
+  await page.getByRole('button', { name: /comecar tour guiado|começar tour guiado/i }).click()
+  await page.locator('[data-tour="fab-nova-os"]:visible').click()
+  await expect(page.getByText('Digite a placa', { exact: true })).toBeVisible()
+  await page.locator('[data-tour="input-placa"]').fill('ABC1A23')
+  await page.locator('[data-tour="input-placa"]').blur()
+  await expect(page.getByRole('heading', { name: 'Busque a placa' })).toBeVisible()
+  await page.locator('[data-tour="btn-buscar-placa"]').click()
+
+  await expect(page.getByText('Digite o nome do cliente', { exact: true })).toBeVisible()
+  await page.locator('[data-tour="input-nome-cliente"]').fill('Joao da Silva')
+  await page.locator('[data-tour="input-nome-cliente"]').blur()
+  await expect(page.getByRole('heading', { name: 'Digite o WhatsApp' })).toBeVisible()
+  await page.locator('[data-tour="input-whatsapp"]').fill('51999999999')
+  await page.locator('[data-tour="input-whatsapp"]').blur()
+  await expect(page.getByRole('heading', { name: 'Digite o modelo do veículo' })).toBeVisible()
+  await page.locator('[data-tour="input-modelo-manual"]').fill('Honda CG 160 2022')
+  await page.locator('[data-tour="input-modelo-manual"]').blur()
+  await expect(page.getByRole('heading', { name: 'Crie e abra a primeira OS' })).toBeVisible()
+  await page.locator('[data-tour="btn-criar-os"]').click()
+
+  await expect(page.locator('[data-tour="btn-enviar-cliente"]')).toBeVisible()
+  await expect(page.getByText(/SERVIÇO EXEMPLO PRIMEIRA OS/i)).toBeVisible()
+  await expect(page.getByText(/Envie pelo WhatsApp/i)).toBeVisible()
 })

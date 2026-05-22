@@ -754,14 +754,14 @@ export default function Menu() {
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">Logotipo (máx. 1MB)</label>
             <div className="flex items-center gap-4">
-              <div onClick={() => !logoSaving && logoRef.current?.click()}
+              <div data-tour="btn-logo-oficina" onClick={() => !logoSaving && logoRef.current?.click()}
                 className={`w-20 h-20 rounded-2xl border-2 border-dashed flex items-center justify-center cursor-pointer transition-all overflow-hidden shrink-0 ${logoSaving ? 'border-gray-100 opacity-60' : 'border-gray-200 hover:border-indigo-400 hover:bg-indigo-50'}`}>
                 {officeData.logo
                   ? <img src={officeData.logo} alt="Logo" className="w-full h-full object-contain" />
                   : <Camera className="w-8 h-8 text-slate-300" />}
               </div>
               <div>
-                <button onClick={() => !logoSaving && logoRef.current?.click()} disabled={logoSaving}
+                <button data-tour="btn-logo-oficina-action" onClick={() => !logoSaving && logoRef.current?.click()} disabled={logoSaving}
                   className="text-indigo-600 text-sm font-semibold hover:underline block mb-1 disabled:opacity-50">
                   {logoSaving ? 'Salvando…' : logoSaved ? '✓ Logo salvo!' : officeData.logo ? 'Trocar logo' : 'Adicionar logo'}
                 </button>
@@ -786,6 +786,7 @@ export default function Menu() {
               <div className="relative">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{f.icon}</div>
                 <input type="text" value={officeData[f.key]}
+                  data-tour={f.key === 'endereco' ? 'input-endereco-oficina' : undefined}
                   onChange={e => {
                     const val = f.fmt ? f.fmt(e.target.value) : e.target.value
                     setOfficeData(p => ({ ...p, [f.key]: val }))

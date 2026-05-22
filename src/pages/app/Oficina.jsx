@@ -58,6 +58,22 @@ const WPP_MESSAGES = {
     `Olá ${cliente}! 🎂 Hoje é seu aniversário! A equipe da oficina deseja um dia incrível. Aproveite nosso desconto especial de aniversário! 🎁`,
 }
 
+const ONBOARDING_FIRST_OS_KEY = 'boxcerto:onboarding:first-os-active'
+const ONBOARDING_EXAMPLE_ITEM = {
+  descricao: 'SERVIÇO EXEMPLO PRIMEIRA OS',
+  custo: 0,
+  venda: 470,
+  garantia: '',
+}
+
+function isOnboardingFirstOS() {
+  try {
+    return sessionStorage.getItem(ONBOARDING_FIRST_OS_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
 function PlateTag({ placa }) {
   return (
     <div className="bg-slate-800 px-2.5 py-1.5 rounded-lg flex flex-col items-center min-w-[80px]">
@@ -547,6 +563,12 @@ export default function Oficina() {
           officeName={user.oficina}
           prefillPlate={prefillPlate}
           onClose={() => { setShowNewOS(false); setPrefillPlate(''); reload() }}
+          onCreated={(createdOS) => {
+            setShowNewOS(false)
+            setPrefillPlate('')
+            setSelectedOS(createdOS)
+            reload()
+          }}
         />
       )}
     </>
@@ -554,7 +576,7 @@ export default function Oficina() {
 }
 
 // ── NEW OS MODAL ─────────────────────────────────────────
-function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
+function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
   const [placa, setPlaca] = useState(prefillPlate)
   const [step, setStep] = useState('plate') // plate | newClient | confirm
   const [vehicle, setVehicle] = useState(null)
@@ -572,7 +594,8 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
   const [allClients, setAllClients] = useState([]) // pre-loaded for suggestions
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [showFipe, setShowFipe] = useState(true)
+  const [onboardingMode] = useState(isOnboardingFirstOS)
+  const [showFipe, setShowFipe] = useState(() => !isOnboardingFirstOS())
 
   useEffect(() => {
     clientStorage.getAll(officeName).then(setAllClients)
@@ -634,7 +657,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
     const found = await vehicleStorage.getByPlate(officeName, placa)
     if (found) {
       setVehicle(found)
-      const c = allClients.find(c => c.id === found.clientId)
+      const c = found.client || allClients.find(c => c.id === found.clientId)
       setClient(c)
       setStep('confirm')
     } else {
@@ -683,9 +706,21 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
         ? existingClient
         : await clientStorage.create({ officeName, ...newClient, dataNascimento: dataBRtoISO(newClient.dataNascimento) || newClient.dataNascimento })
       const v = await vehicleStorage.create({ officeName, clientId: c.id, placa, modelo: newClient.modelo })
-      await osStorage.create({ officeName, vehicleId: v.id, km, agendadoPara: dataBRtoISO(agendadoPara) ? dataBRtoISO(agendadoPara) + 'T12:00' : null })
-      window.dispatchEvent(new CustomEvent('boxcerto:os-criada'))
-      onClose()
+      const createdOS = await osStorage.create({ officeName, vehicleId: v.id, km, agendadoPara: dataBRtoISO(agendadoPara) ? dataBRtoISO(agendadoPara) + 'T12:00' : null })
+      const items = []
+      if (onboardingMode) {
+        items.push(await itemStorage.add({ osId: createdOS.id, ...ONBOARDING_EXAMPLE_ITEM }))
+      }
+      const hydratedOS = {
+        ...createdOS,
+        vehicle: { ...v, client: c },
+        client: c,
+        items,
+        totals: itemStorage.totals(items),
+      }
+      window.dispatchEvent(new CustomEvent('boxcerto:os-criada', { detail: { osId: createdOS.id, onboarding: onboardingMode } }))
+      if (onCreated) onCreated(hydratedOS)
+      else onClose()
     } catch (e) {
       setError(e.message || 'Erro ao criar OS.')
       setLoading(false)
@@ -695,9 +730,21 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
   const openOS = async () => {
     setLoading(true)
     try {
-      await osStorage.create({ officeName, vehicleId: vehicle.id, km, agendadoPara: dataBRtoISO(agendadoPara) ? dataBRtoISO(agendadoPara) + 'T12:00' : null })
-      window.dispatchEvent(new CustomEvent('boxcerto:os-criada'))
-      onClose()
+      const createdOS = await osStorage.create({ officeName, vehicleId: vehicle.id, km, agendadoPara: dataBRtoISO(agendadoPara) ? dataBRtoISO(agendadoPara) + 'T12:00' : null })
+      const items = []
+      if (onboardingMode) {
+        items.push(await itemStorage.add({ osId: createdOS.id, ...ONBOARDING_EXAMPLE_ITEM }))
+      }
+      const hydratedOS = {
+        ...createdOS,
+        vehicle: { ...vehicle, client },
+        client,
+        items,
+        totals: itemStorage.totals(items),
+      }
+      window.dispatchEvent(new CustomEvent('boxcerto:os-criada', { detail: { osId: createdOS.id, onboarding: onboardingMode } }))
+      if (onCreated) onCreated(hydratedOS)
+      else onClose()
     } catch (e) {
       setError(e.message || 'Erro ao criar OS.')
       setLoading(false)
@@ -713,7 +760,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
         style={{ maxHeight: '92dvh' }}>
         <div className="flex items-center justify-between p-5 pb-3 shrink-0">
           <h2 className="text-lg font-bold text-slate-900">Nova Ordem de Serviço</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-slate-500" /></button>
+          <button data-tour="btn-fechar-nova-os" onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-slate-500" /></button>
         </div>
 
         <div data-tour="nova-os-scroll" className="overflow-y-auto overscroll-contain flex-1 px-5 pb-6">
@@ -881,14 +928,16 @@ function NewOSModal({ officeName, onClose, prefillPlate = '' }) {
                       />
                     ) : (
                       <div className="space-y-1.5">
-                        <input type="text" placeholder="Ex: Honda CG 160 2022 Gasolina"
+                        <input data-tour="input-modelo-manual" type="text" placeholder="Ex: Honda CG 160 2022 Gasolina"
                           value={newClient.modelo}
                           onChange={e => setNewClient(p => ({ ...p, modelo: e.target.value }))}
                           className={inp} />
+                        {!onboardingMode && (
                         <button type="button" onClick={() => { setNewClient(p => ({ ...p, modelo: '' })); setShowFipe(true) }}
                           className="w-full py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-xs text-indigo-600 font-semibold hover:bg-indigo-100 transition-colors">
                           🔍 Busca fácil por marca e modelo
                         </button>
+                        )}
                       </div>
                     )}
                   </div>

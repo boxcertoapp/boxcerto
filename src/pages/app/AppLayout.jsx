@@ -5,7 +5,6 @@ import { useAuth, hasAccess, trialDaysLeft } from '../../contexts/AuthContext'
 import AnnouncementBanner from '../../components/AnnouncementBanner'
 import Logo from '../../components/Logo'
 import OnboardingTour from '../../components/OnboardingTour'
-import WelcomeModal from '../../components/WelcomeModal'
 
 const tabs = [
   { to: '/app/oficina',    icon: Wrench,     label: 'Oficina' },
@@ -175,7 +174,6 @@ export default function AppLayout() {
       {/* Onboarding checklist flutuante
           Mobile: lado ESQUERDO (o FAB "+" está fixed bottom-24 right-4)
           Desktop: canto inferior direito */}
-      <WelcomeModal />
       <OnboardingTour />
 
       {/* Fundo decorativo desktop */}

@@ -1,816 +1,978 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
-
-// ── Sub-passos do formulário Nova OS ─────────────────────────────────────────
-// Fluxo: placa → buscar → (btn-abrir-os OU nome→wpp→marca→ano→modelo→confirmar) → criar-os
-// skipAfter: tempo (ms) antes de pular automaticamente se o elemento não aparecer
-const FORM_SUBSTEPS = [
-  { sel: '[data-tour="input-placa"]',             title: 'Digite a placa',              body: 'Formato antigo: ABC-1234 · Mercosul: ABC-1A23' },
-  { sel: '[data-tour="btn-buscar-placa"]',         title: 'Clique em Buscar / Abrir OS', body: 'O sistema verifica se o veículo já está cadastrado.' },
-  // Caminho "veículo já existe" — aparece só se placa encontrada
-  { sel: '[data-tour="btn-abrir-os"]',             title: 'Veículo encontrado!',         body: 'Clique para abrir a Ordem de Serviço diretamente.',  skipAfter: 3500 },
-  // Caminho "novo cliente" — aparece se placa não encontrada
-  { sel: '[data-tour="input-nome-cliente"]',       title: 'Nome do cliente *',           body: 'Obrigatório. Digite 4+ letras para ver sugestões.',  skipAfter: 1500 },
-  { sel: '[data-tour="input-whatsapp"]',           title: 'WhatsApp *',                  body: 'Obrigatório — o cliente recebe o orçamento aqui.',   skipAfter: 1500 },
-  // FipeSeletor — 3 etapas em cascata
-  { sel: '[data-tour="select-marca"]',             title: 'Marca do veículo *',          body: 'Escolha o tipo (carro/moto/caminhão) e a montadora.', skipAfter: 1500 },
-  { sel: '[data-tour="select-ano"]',               title: 'Ano do veículo *',            body: 'A lista de anos carrega após escolher a marca.',     skipAfter: 12000 },
-  { sel: '[data-tour="select-modelo-container"]',  title: 'Modelo *',                    body: 'Filtre pelo nome e clique no modelo desejado.',      skipAfter: 12000 },
-  { sel: '[data-tour="btn-confirmar-modelo"]',     title: 'Confirme o veículo',          body: 'Clique em Confirmar para usar este veículo.',        skipAfter: 12000 },
-  // Botão final
-  { sel: '[data-tour="btn-criar-os"]',             title: 'Cadastrar e Abrir OS',        body: 'Tudo preenchido! Clique para criar a OS.' },
-]
-
-// ── Passos principais do tour ─────────────────────────────────────────────────
-const STEPS = [
-  { id: 'welcome', type: 'modal' },
-  {
-    id: 'criar-os',
-    type: 'spotlight',
-    page: '/app/oficina',
-    target: '[data-tour="fab-nova-os"]',
-    title: 'Toque no + para criar sua primeira OS',
-    body: 'Toque no botão azul + no canto da tela.',
-    completeOn: 'boxcerto:os-criada',
-    completeColumn: 'onboarding_os_done',
-  },
-  {
-    id: 'celebration-os',
-    type: 'celebration',
-    emoji: '🎉',
-    title: 'Parabéns! Você criou sua primeira OS!',
-    body: 'Isso é o começo de uma oficina organizada. Agora vamos dar um passo ainda maior — enviar o orçamento para o cliente pelo WhatsApp.',
-    cta: 'Continuar →',
-  },
-  {
-    id: 'enviar-orcamento',
-    type: 'floating',
-    page: '/app/oficina',
-    title: '📲 Agora envie o orçamento para o cliente',
-    body: 'Abra a OS que você criou e clique no botão verde "Enviar para cliente". O cliente recebe um link e aprova no celular.',
-    completeOn: 'boxcerto:orcamento-enviado',
-    completeColumn: 'onboarding_orcamento_done',
-  },
-  {
-    id: 'celebration-wpp',
-    type: 'celebration',
-    emoji: '🏆',
-    title: 'Você está no top 1% das oficinas do Brasil!',
-    body: 'A maioria das oficinas ainda manda tudo por texto no WhatsApp — e perde clientes por isso. Você já faz diferente. Agora vamos colocar a identidade da sua oficina.',
-    cta: 'Quase lá →',
-  },
-  {
-    id: 'configurar-oficina',
-    // FIX: era 'spotlight' com target=[data-tour="btn-config-oficina"],
-    // mas esse botão só renderiza quando isDirty||saved → poll nunca achava
-    // → overlay bloqueante cobria a página inteira → usuário não conseguia digitar.
-    // Solução: floating card não-bloqueante; completeOn avança quando o usuário salvar.
-    type: 'floating',
-    page: '/app/menu',
-    pageState: { tab: 'oficina' },
-    title: '⚙️ Preencha os dados da oficina',
-    body: 'Digite o nome e telefone da sua oficina e clique em Salvar. Esses dados aparecem nos orçamentos enviados aos clientes.',
-    completeOn: 'boxcerto:oficina-configurada',
-    completeColumn: 'onboarding_oficina_done',
-  },
-  {
-    id: 'celebration-final',
-    type: 'celebration',
-    emoji: '🚀',
-    title: 'Sua oficina está pronta para decolar!',
-    body: 'Você completou todas as etapas. OS criada, orçamento enviado, oficina configurada. Agora é só usar e ver a diferença no caixa.',
-    cta: 'Começar a usar →',
-    final: true,
-  },
-]
-
-function getIdx(id) { return STEPS.findIndex(s => s.id === id) }
+import { osStorage } from '../lib/storage'
 
 const TOUR_STORAGE_PREFIX = 'boxcerto:onboarding-tour:'
+const FIRST_OS_SESSION_KEY = 'boxcerto:onboarding:first-os-active'
+
+const STEP_ORDER = [
+  'welcome',
+  'open-fab',
+  'plate',
+  'search-plate',
+  'branch-after-search',
+  'existing-open',
+  'client-name',
+  'client-whatsapp',
+  'vehicle-model',
+  'create-os',
+  'send-whatsapp',
+  'config-logo',
+  'config-address',
+  'config-save',
+  'final',
+]
+
+const LEGACY_STEP_MAP = {
+  'criar-os': 'open-fab',
+  'enviar-orcamento': 'send-whatsapp',
+  'configurar-oficina': 'config-logo',
+  'celebration-final': 'final',
+}
+
+const PHASES = [
+  { id: 'os', label: 'OS' },
+  { id: 'whatsapp', label: 'WhatsApp' },
+  { id: 'oficina', label: 'Oficina' },
+]
+
+const FIRST_OS_STEPS = new Set([
+  'open-fab',
+  'plate',
+  'search-plate',
+  'branch-after-search',
+  'existing-open',
+  'client-name',
+  'client-whatsapp',
+  'vehicle-model',
+  'create-os',
+])
+
+const FORM_STEPS = new Set([
+  'plate',
+  'search-plate',
+  'branch-after-search',
+  'existing-open',
+  'client-name',
+  'client-whatsapp',
+  'vehicle-model',
+  'create-os',
+])
+
+const STEPS = {
+  welcome: {
+    id: 'welcome',
+    kind: 'modal',
+    phase: 1,
+  },
+  'open-fab': {
+    id: 'open-fab',
+    kind: 'target',
+    phase: 1,
+    page: '/app/oficina',
+    target: '[data-tour="fab-nova-os"]',
+    title: 'Toque no + para abrir sua primeira OS',
+    body: 'Vamos criar uma OS de exemplo dentro do fluxo real do sistema.',
+    action: 'click',
+  },
+  plate: {
+    id: 'plate',
+    kind: 'target',
+    phase: 1,
+    page: '/app/oficina',
+    target: '[data-tour="input-placa"]',
+    title: 'Digite a placa',
+    body: 'Use uma placa real ou de teste. Formatos aceitos: ABC-1234 ou ABC-1A23.',
+    action: 'blur',
+    next: 'search-plate',
+  },
+  'search-plate': {
+    id: 'search-plate',
+    kind: 'target',
+    phase: 1,
+    page: '/app/oficina',
+    target: '[data-tour="btn-buscar-placa"]',
+    title: 'Busque a placa',
+    body: 'O sistema verifica se o veículo já existe. Se for novo, seguimos com cliente e modelo.',
+    action: 'click',
+  },
+  'branch-after-search': {
+    id: 'branch-after-search',
+    kind: 'waiting',
+    phase: 1,
+    title: 'Verificando a placa',
+    body: 'Estou aguardando o sistema mostrar o próximo passo certo.',
+  },
+  'existing-open': {
+    id: 'existing-open',
+    kind: 'target',
+    phase: 1,
+    page: '/app/oficina',
+    target: '[data-tour="btn-abrir-os"]',
+    title: 'Abra a OS desse veículo',
+    body: 'Como a placa já existe, basta abrir uma nova OS para esse cliente.',
+    action: 'event',
+    event: 'boxcerto:os-criada',
+  },
+  'client-name': {
+    id: 'client-name',
+    kind: 'target',
+    phase: 1,
+    page: '/app/oficina',
+    target: '[data-tour="input-nome-cliente"]',
+    title: 'Digite o nome do cliente',
+    body: 'Nome é obrigatório. CPF não faz parte do tour e pode ficar em branco.',
+    action: 'blur',
+    next: 'client-whatsapp',
+  },
+  'client-whatsapp': {
+    id: 'client-whatsapp',
+    kind: 'target',
+    phase: 1,
+    page: '/app/oficina',
+    target: '[data-tour="input-whatsapp"]',
+    title: 'Digite o WhatsApp',
+    body: 'Esse número recebe o orçamento profissional e o link de aprovação.',
+    action: 'blur',
+    next: 'vehicle-model',
+  },
+  'vehicle-model': {
+    id: 'vehicle-model',
+    kind: 'target',
+    phase: 1,
+    page: '/app/oficina',
+    target: '[data-tour="input-modelo-manual"]',
+    title: 'Digite o modelo do veículo',
+    body: 'Aqui é digitação manual para acelerar. Exemplo: Honda CG 160 2022.',
+    action: 'blur',
+    next: 'create-os',
+  },
+  'create-os': {
+    id: 'create-os',
+    kind: 'target',
+    phase: 1,
+    page: '/app/oficina',
+    target: '[data-tour="btn-criar-os"]',
+    title: 'Crie e abra a primeira OS',
+    body: 'Ao criar, adiciono automaticamente o item SERVIÇO EXEMPLO PRIMEIRA OS no valor de R$ 470,00.',
+    action: 'event',
+    event: 'boxcerto:os-criada',
+  },
+  'send-whatsapp': {
+    id: 'send-whatsapp',
+    kind: 'target',
+    phase: 2,
+    page: '/app/oficina',
+    target: '[data-tour="btn-enviar-cliente"]',
+    title: 'Envie pelo WhatsApp',
+    body: 'Clique em Enviar para cliente. O cliente recebe o link de aprovação da OS no WhatsApp.',
+    action: 'event',
+    event: 'boxcerto:orcamento-enviado',
+  },
+  'config-logo': {
+    id: 'config-logo',
+    kind: 'target',
+    phase: 3,
+    page: '/app/menu',
+    pageState: { tab: 'oficina' },
+    target: '[data-tour="btn-logo-oficina"]',
+    title: 'Adicione o logotipo',
+    body: 'O logotipo deixa PDFs e orçamentos mais profissionais. Este passo pode ser pulado.',
+    action: 'optional',
+    next: 'config-address',
+  },
+  'config-address': {
+    id: 'config-address',
+    kind: 'target',
+    phase: 3,
+    page: '/app/menu',
+    pageState: { tab: 'oficina' },
+    target: '[data-tour="input-endereco-oficina"]',
+    title: 'Preencha o endereço',
+    body: 'O endereço aparece no material enviado ao cliente e aumenta a confiança.',
+    action: 'blur',
+    next: 'config-save',
+  },
+  'config-save': {
+    id: 'config-save',
+    kind: 'target',
+    phase: 3,
+    page: '/app/menu',
+    pageState: { tab: 'oficina' },
+    target: '[data-tour="btn-config-oficina"]',
+    title: 'Salve os dados da oficina',
+    body: 'Depois de salvar, seu primeiro ciclo de onboarding estará completo.',
+    action: 'event',
+    event: 'boxcerto:oficina-configurada',
+  },
+  final: {
+    id: 'final',
+    kind: 'final',
+    phase: 3,
+  },
+}
+
+function normalizeStepId(stepId) {
+  const mapped = LEGACY_STEP_MAP[stepId] || stepId
+  return STEP_ORDER.includes(mapped) ? mapped : null
+}
+
+function stepRank(stepId) {
+  const idx = STEP_ORDER.indexOf(stepId)
+  return idx < 0 ? -1 : idx
+}
 
 function getStoredStep(userId) {
   if (!userId) return null
   try {
-    const stepId = localStorage.getItem(`${TOUR_STORAGE_PREFIX}${userId}`)
-    return getIdx(stepId) >= 0 ? stepId : null
+    return normalizeStepId(localStorage.getItem(`${TOUR_STORAGE_PREFIX}${userId}`))
   } catch {
     return null
   }
 }
 
-function getCompletedStep(user) {
+function getStepFromUserFlags(user) {
   if (!user) return null
-  if (user.onboardingOsDone && user.onboardingOrcamentoDone && user.onboardingOficinaD) return 'celebration-final'
-  if (user.onboardingOsDone && user.onboardingOrcamentoDone) return 'configurar-oficina'
-  if (user.onboardingOsDone) return 'enviar-orcamento'
+  if (user.onboardingOficinaD) return 'final'
+  if (user.onboardingOrcamentoDone) return 'config-logo'
+  if (user.onboardingOsDone) return 'send-whatsapp'
   return null
 }
 
-function getLaterStep(...stepIds) {
+function laterStep(...stepIds) {
   return stepIds
-    .filter(stepId => getIdx(stepId) >= 0)
-    .sort((a, b) => getIdx(b) - getIdx(a))[0] || null
+    .map(normalizeStepId)
+    .filter(Boolean)
+    .sort((a, b) => stepRank(b) - stepRank(a))[0] || null
 }
 
-// ── Componente principal ──────────────────────────────────────────────────────
-function isSubstepValueReady(sub, el) {
-  if (!el || (el.tagName !== 'INPUT' && el.tagName !== 'SELECT')) return false
+function setFirstOsSession(active) {
+  try {
+    if (active) sessionStorage.setItem(FIRST_OS_SESSION_KEY, '1')
+    else sessionStorage.removeItem(FIRST_OS_SESSION_KEY)
+  } catch {}
+}
 
+function getVisibleTarget(selector) {
+  const nodes = Array.from(document.querySelectorAll(selector))
+  return nodes.find(el => {
+    const rect = el.getBoundingClientRect()
+    if (rect.width <= 0 || rect.height <= 0) return false
+    const style = window.getComputedStyle(el)
+    return style.display !== 'none' && style.visibility !== 'hidden'
+  }) || null
+}
+
+function getRect(el) {
+  const rect = el.getBoundingClientRect()
+  return {
+    top: rect.top,
+    left: rect.left,
+    width: rect.width,
+    height: rect.height,
+  }
+}
+
+function unionRects(a, b) {
+  if (!a) return b
+  if (!b) return a
+  const top = Math.min(a.top, b.top)
+  const left = Math.min(a.left, b.left)
+  const right = Math.max(a.left + a.width, b.left + b.width)
+  const bottom = Math.max(a.top + a.height, b.top + b.height)
+  return { top, left, width: right - left, height: bottom - top }
+}
+
+function getRectForStep(step, el) {
+  const primary = getRect(el)
+  const extraTargetByStep = {
+    plate: '[data-tour="btn-buscar-placa"]',
+    'client-name': '[data-tour="input-whatsapp"]',
+    'vehicle-model': '[data-tour="btn-criar-os"]',
+    'config-address': '[data-tour="btn-config-oficina"]',
+  }
+  const extraSelector = extraTargetByStep[step.id]
+  if (!extraSelector) return primary
+  const extra = getVisibleTarget(extraSelector)
+  return extra ? unionRects(primary, getRect(extra)) : primary
+}
+
+function cleanPlate(value) {
+  return String(value || '').replace(/[^a-z0-9]/gi, '').toUpperCase()
+}
+
+function isPlateValid(value) {
+  const plate = cleanPlate(value)
+  return /^[A-Z]{3}\d{4}$/.test(plate) || /^[A-Z]{3}\d[A-Z]\d{2}$/.test(plate)
+}
+
+function isStepReady(step, el) {
+  if (!step || !el) return false
   const value = String(el.value || '').trim()
-  if (el.tagName === 'SELECT') return value.length > 0
-  if (sub.sel === '[data-tour="input-placa"]') {
-    return value.replace(/[^a-z0-9]/gi, '').length >= 7
-  }
-  if (sub.sel === '[data-tour="input-nome-cliente"]') return value.length >= 4
-  if (sub.sel === '[data-tour="input-whatsapp"]') {
-    return value.replace(/\D/g, '').length >= 10
+  if (step.id === 'plate') return isPlateValid(value)
+  if (step.id === 'client-name') return value.length >= 4
+  if (step.id === 'client-whatsapp') return value.replace(/\D/g, '').length >= 10
+  if (step.id === 'vehicle-model') return value.length >= 2
+  if (step.id === 'config-address') return value.length >= 5
+  return false
+}
+
+function scrollTargetIntoView(el) {
+  const container = el.closest('[data-tour="nova-os-scroll"]')
+  if (container) {
+    const targetRect = el.getBoundingClientRect()
+    const containerRect = container.getBoundingClientRect()
+    const visualHeight = window.visualViewport?.height || window.innerHeight
+    const availableHeight = Math.min(containerRect.height, Math.max(240, visualHeight - containerRect.top - 24))
+    const wantedCenter = containerRect.top + availableHeight * 0.42
+    const delta = (targetRect.top + targetRect.height / 2) - wantedCenter
+    container.scrollTo({
+      top: Math.max(0, container.scrollTop + delta),
+      behavior: 'smooth',
+    })
+    return
   }
 
-  return value.length > 0
+  el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' })
+}
+
+function preventOverlayScroll(event) {
+  event.preventDefault()
+  event.stopPropagation()
 }
 
 export default function OnboardingTour() {
-  const { user }   = useAuth()
-  const navigate   = useNavigate()
-  const location   = useLocation()
+  const { user, refreshUser } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
 
-  const [stepId,     setStepId]     = useState('welcome')
-  const [rect,       setRect]       = useState(null)      // rect do FAB / btn-config
-  const [formActive, setFormActive] = useState(false)     // true após FAB clicado
-  const [formSubIdx, setFormSubIdx] = useState(0)         // índice em FORM_SUBSTEPS
-  const [formRect,   setFormRect]   = useState(null)      // rect do campo atual
-  const [done,       setDone]       = useState(false)
-  const [skipped,    setSkipped]    = useState(false)
-  const [animIn,     setAnimIn]     = useState(true)
-  const doneRef = useRef(false)
+  const [stepId, setStepId] = useState('welcome')
+  const [targetRect, setTargetRect] = useState(null)
+  const [targetReady, setTargetReady] = useState(false)
+  const [done, setDone] = useState(false)
+  const [skipped, setSkipped] = useState(false)
+  const [legacyChecking, setLegacyChecking] = useState(false)
+
+  const activeTargetRef = useRef(null)
   const resumedUserRef = useRef(null)
+  const legacyCheckedRef = useRef(null)
 
-  const shouldShow = user && !user.isAdmin && !user.isTecnico
-    && !user.onboardingDismissed && !done && !skipped
+  const shouldShow = Boolean(user)
+    && !user.isAdmin
+    && !user.isTecnico
+    && !user.onboardingDismissed
+    && !done
+    && !skipped
 
-  // ── Avança passo principal ────────────────────────────────────────────────
-  const advance = useCallback((toId) => {
-    setAnimIn(false)
-    setTimeout(() => {
-      setStepId(toId)
-      setRect(null)
-      setFormActive(false)
-      setFormSubIdx(0)
-      setFormRect(null)
-      setAnimIn(true)
-    }, 200)
+  const step = STEPS[stepId] || STEPS.welcome
+
+  const goToStep = useCallback((nextId) => {
+    const normalized = normalizeStepId(nextId) || 'welcome'
+    setTargetRect(null)
+    setTargetReady(false)
+    activeTargetRef.current?.removeAttribute('data-tour-active')
+    activeTargetRef.current = null
+    setStepId(normalized)
   }, [])
 
-  const nextStep = useCallback(() => {
-    const idx = getIdx(stepId)
-    if (idx < STEPS.length - 1) advance(STEPS[idx + 1].id)
-  }, [stepId, advance])
+  const patchProfile = useCallback(async (values, refresh = false) => {
+    if (!user?.id) return
+    try {
+      await supabase.from('profiles').update(values).eq('id', user.id)
+      if (refresh) await refreshUser?.()
+    } catch {}
+  }, [refreshUser, user?.id])
 
-  // ── FIX 1: sempre incrementa — nunca retorna prev ─────────────────────────
-  // Antes: fazia scan síncrono e retornava prev se não achava → travado para sempre
-  // Agora: incrementa incondicionalmente; o useEffect poleia pelo novo elemento;
-  //        se não aparecer, o skipAfter do novo sub-passo o avança automaticamente.
-  const nextFormSub = useCallback(() => {
-    setFormRect(null)
-    setFormSubIdx(prev => Math.min(prev + 1, FORM_SUBSTEPS.length - 1))
-  }, [])
+  const finishTour = useCallback(async () => {
+    setDone(true)
+    setFirstOsSession(false)
+    if (user?.id) {
+      try { localStorage.removeItem(`${TOUR_STORAGE_PREFIX}${user.id}`) } catch {}
+    }
+    await patchProfile({
+      onboarding_os_done: true,
+      onboarding_orcamento_done: true,
+      onboarding_oficina_done: true,
+      onboarding_dismissed: true,
+    }, true)
+  }, [patchProfile, user?.id])
 
-  // Retoma o passo salvo no navegador e nunca volta atras de tarefas ja concluidas.
+  const skipTour = useCallback(async () => {
+    setSkipped(true)
+    setFirstOsSession(false)
+    if (user?.id) {
+      try { localStorage.removeItem(`${TOUR_STORAGE_PREFIX}${user.id}`) } catch {}
+    }
+    await patchProfile({ onboarding_dismissed: true }, true)
+  }, [patchProfile, user?.id])
+
   useEffect(() => {
     if (!user?.id || resumedUserRef.current === user.id) return
     resumedUserRef.current = user.id
-    const resumeStep = getLaterStep(getStoredStep(user.id), getCompletedStep(user))
-    if (!resumeStep || resumeStep === stepId) return
-    setStepId(resumeStep)
-    setRect(null)
-    setFormActive(false)
-    setFormSubIdx(0)
-    setFormRect(null)
-  }, [stepId, user])
+    const resumeStep = laterStep(getStoredStep(user.id), getStepFromUserFlags(user))
+    if (resumeStep && resumeStep !== stepId) goToStep(resumeStep)
+  }, [goToStep, stepId, user])
 
   useEffect(() => {
-    if (!user?.id || done || skipped) return
+    if (!shouldShow || !user?.id) return
     try { localStorage.setItem(`${TOUR_STORAGE_PREFIX}${user.id}`, stepId) } catch {}
-  }, [done, skipped, stepId, user?.id])
+  }, [shouldShow, stepId, user?.id])
 
-  // ── Navega ao mudar de passo principal ────────────────────────────────────
   useEffect(() => {
-    const step = STEPS[getIdx(stepId)]
-    if (!step?.page) return
+    if (!shouldShow || !user?.id || !user?.oficina) return
+    if (legacyCheckedRef.current === user.id) return
+    if (user.onboardingOsDone || user.onboardingOrcamentoDone || user.onboardingOficinaD) return
+
+    legacyCheckedRef.current = user.id
+    let cancelled = false
+    // Roda em segundo plano. Se for uma oficina antiga com OS, o tour some;
+    // se for uma conta nova, o usuário já pode começar sem ficar preso em loading.
+    setLegacyChecking(false)
+
+    osStorage.getAll(user.oficina)
+      .then(async orders => {
+        if (cancelled || !orders?.length) return
+        setDone(true)
+        setFirstOsSession(false)
+        try { localStorage.removeItem(`${TOUR_STORAGE_PREFIX}${user.id}`) } catch {}
+        await patchProfile({
+          onboarding_os_done: true,
+          onboarding_orcamento_done: true,
+          onboarding_oficina_done: true,
+          onboarding_dismissed: true,
+        }, true)
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLegacyChecking(false)
+      })
+
+    return () => { cancelled = true }
+  }, [patchProfile, shouldShow, user])
+
+  useEffect(() => {
+    if (!shouldShow || !step.page) return
     if (location.pathname !== step.page) {
       navigate(step.page, step.pageState ? { state: step.pageState } : undefined)
+      return
     }
-  }, [stepId]) // eslint-disable-line
+    if (step.pageState?.tab && location.state?.tab !== step.pageState.tab) {
+      navigate(step.page, { state: step.pageState, replace: true })
+    }
+  }, [location.pathname, location.state?.tab, navigate, shouldShow, step])
 
-  // ── Spotlight do alvo PRINCIPAL (FAB ou btn-config) ───────────────────────
   useEffect(() => {
-    const step = STEPS[getIdx(stepId)]
-    if (!step?.target || step.type !== 'spotlight') return
-    if (formActive) return   // sub-passos assumem o controle
+    if (!shouldShow) return
+    if (FIRST_OS_STEPS.has(stepId)) setFirstOsSession(true)
+    else setFirstOsSession(false)
+  }, [shouldShow, stepId])
+
+  useEffect(() => {
+    if (!shouldShow || stepId !== 'branch-after-search') return
 
     let cancelled = false
-    let rafId
-    let start = null
-
-    const grabRect = () => {
-      const all = document.querySelectorAll(step.target)
-      for (const el of all) {
-        const r = el.getBoundingClientRect()
-        if (r.width > 0 && r.height > 0) {
-          setRect({ top: r.top, left: r.left, width: r.width, height: r.height })
-          el.setAttribute('data-tour-active', 'true')
-          return true
-        }
-      }
-      return false
-    }
-
-    const poll = (ts) => {
-      if (cancelled) return
-      start = start ?? ts
-      if (!grabRect() && ts - start < 5000) rafId = requestAnimationFrame(poll)
-    }
-    rafId = requestAnimationFrame(poll)
-
-    const recalc = () => {
-      if (formActive) return
-      const all = document.querySelectorAll(step.target)
-      for (const el of all) {
-        const r = el.getBoundingClientRect()
-        if (r.width > 0 && r.height > 0) {
-          setRect({ top: r.top, left: r.left, width: r.width, height: r.height })
-          return
-        }
-      }
-    }
-    window.addEventListener('resize', recalc)
-    window.addEventListener('scroll', recalc, true)
-
-    // FAB clicado → ativa modo sub-passos
-    const onFabClick = (e) => {
-      if (e.target.closest(step.target)) setFormActive(true)
-    }
-    document.addEventListener('click', onFabClick, true)
-
-    return () => {
-      cancelled = true
-      cancelAnimationFrame(rafId)
-      window.removeEventListener('resize', recalc)
-      window.removeEventListener('scroll', recalc, true)
-      document.removeEventListener('click', onFabClick, true)
-      document.querySelectorAll(`${step.target}[data-tour-active]`)
-        .forEach(el => el.removeAttribute('data-tour-active'))
-    }
-  }, [stepId, formActive])
-
-  // ── Sub-passos do formulário ──────────────────────────────────────────────
-  useEffect(() => {
-    if (!formActive) return
-    if (STEPS[getIdx(stepId)]?.id !== 'criar-os') return
-
-    const sub = FORM_SUBSTEPS[formSubIdx]
-    if (!sub) return
-
-    let cancelled = false
-    let rafId
-    let skipTimer = null
-    let advanceTimer = null
-    let revealTimer = null
-    let viewportTimer = null
-    let foundVisibleTarget = false
-    let revealedTarget = false
-
-    const scheduleNextFormSub = () => {
-      clearTimeout(advanceTimer)
-      advanceTimer = setTimeout(nextFormSub, 120)
-    }
-
-    const syncFormRect = (el) => {
-      const r = el.getBoundingClientRect()
-      if (r.width <= 0 || r.height <= 0) return false
-
-      foundVisibleTarget = true
-      setFormRect({ top: r.top, left: r.left, width: r.width, height: r.height })
-      el.setAttribute('data-tour-active', 'true')
-      return true
-    }
-
-    const revealFormTarget = (el, force = false, behavior = 'smooth') => {
-      if (!force && revealedTarget) return
-      revealedTarget = true
-      el.scrollIntoView({ block: 'center', inline: 'nearest', behavior })
-      clearTimeout(revealTimer)
-      revealTimer = setTimeout(() => {
-        if (cancelled) return
-        el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' })
-        syncFormRect(el)
-      }, 320)
-    }
-
-    const grabFormRect = () => {
-      const all = document.querySelectorAll(sub.sel)
-      for (const el of all) {
-        if (syncFormRect(el)) {
-          revealFormTarget(el)
-          return true
-        }
-      }
-      return false
-    }
-
-    // Polling contínuo até achar (sem timeout — skipAfter cancela se necessário)
+    const startedAt = Date.now()
     const poll = () => {
       if (cancelled) return
-      if (!grabFormRect()) rafId = requestAnimationFrame(poll)
-    }
-    rafId = requestAnimationFrame(poll)
-
-    // Pula automaticamente se o elemento não aparecer no tempo estipulado
-    if (sub.skipAfter) {
-      skipTimer = setTimeout(() => {
-        if (!cancelled && !foundVisibleTarget) nextFormSub()
-      }, sub.skipAfter)
-    }
-
-    const recalc = () => {
-      const all = document.querySelectorAll(sub.sel)
-      for (const el of all) {
-        if (syncFormRect(el)) return
-      }
-    }
-
-    const recenterCurrentTarget = (behavior = 'auto') => {
-      const all = document.querySelectorAll(sub.sel)
-      for (const el of all) {
-        if (!syncFormRect(el)) continue
-        revealFormTarget(el, true, behavior)
+      if (getVisibleTarget('[data-tour="btn-abrir-os"]')) {
+        goToStep('existing-open')
         return
       }
-    }
-
-    // Mobile keyboards change the visual viewport after focus. Recenter again
-    // after that resize so the active field stays above the keyboard.
-    const onViewportChange = () => {
-      clearTimeout(viewportTimer)
-      viewportTimer = setTimeout(() => recenterCurrentTarget('auto'), 80)
-    }
-    window.addEventListener('resize', onViewportChange)
-    window.addEventListener('scroll', recalc, true)
-    window.visualViewport?.addEventListener('resize', onViewportChange)
-    window.visualViewport?.addEventListener('scroll', onViewportChange)
-
-    const onSubFocusIn = (e) => {
-      const all = document.querySelectorAll(sub.sel)
-      for (const el of all) {
-        if (el === e.target || el.contains(e.target)) {
-          revealFormTarget(el, true)
-          return
-        }
+      if (getVisibleTarget('[data-tour="input-nome-cliente"]')) {
+        goToStep('client-name')
+        return
       }
-    }
-    document.addEventListener('focusin', onSubFocusIn, true)
-
-    // Avanca com botoes reais; inputs ficam no campo ate o usuario pedir o proximo.
-    const onSubClick = (e) => {
-      const all = document.querySelectorAll(sub.sel)
-      for (const el of all) {
-        if (el.contains(e.target) || el === e.target) {
-          const clickedButton = e.target.closest('button')
-          const pickedFipeModel = sub.sel === '[data-tour="select-modelo-container"]'
-            && clickedButton?.matches('[data-tour="btn-modelo-fipe"]')
-          if (el.tagName === 'BUTTON' || pickedFipeModel) {
-            scheduleNextFormSub()
-          }
-          return
-        }
+      if (Date.now() - startedAt > 9000) {
+        goToStep('client-name')
+        return
       }
+      window.setTimeout(poll, 150)
     }
-    document.addEventListener('click', onSubClick, true)
 
-    // Abrir o dropdown nao basta; a troca do select e que avanca o tour.
-    const onSubChange = (e) => {
-      const all = document.querySelectorAll(sub.sel)
-      for (const el of all) {
-        if (el.tagName === 'SELECT' && el === e.target) {
-          scheduleNextFormSub()
-          return
-        }
-      }
-    }
-    document.addEventListener('change', onSubChange, true)
+    poll()
+    return () => { cancelled = true }
+  }, [goToStep, shouldShow, stepId])
 
-    // Inputs advance only after the user leaves a filled guided field.
-    const onSubFocusOut = (e) => {
-      const all = document.querySelectorAll(sub.sel)
-      for (const el of all) {
-        if (el === e.target && isSubstepValueReady(sub, el)) {
-          scheduleNextFormSub()
-          return
-        }
+  useEffect(() => {
+    if (!shouldShow || step.kind !== 'target' || !step.target) return
+
+    let cancelled = false
+    let revealed = false
+    let settleTimer = null
+
+    const sync = (forceReveal = false) => {
+      if (cancelled) return
+      const el = getVisibleTarget(step.target)
+      if (!el) {
+        activeTargetRef.current?.removeAttribute('data-tour-active')
+        activeTargetRef.current = null
+        setTargetRect(null)
+        setTargetReady(false)
+        return
       }
+
+      if (activeTargetRef.current && activeTargetRef.current !== el) {
+        activeTargetRef.current.removeAttribute('data-tour-active')
+      }
+      activeTargetRef.current = el
+      el.setAttribute('data-tour-active', 'true')
+
+      if (!revealed || forceReveal) {
+        revealed = true
+        scrollTargetIntoView(el)
+        clearTimeout(settleTimer)
+        settleTimer = window.setTimeout(() => {
+          if (cancelled) return
+          setTargetRect(getRectForStep(step, el))
+          setTargetReady(isStepReady(step, el))
+        }, 260)
+      }
+
+      setTargetRect(getRectForStep(step, el))
+      setTargetReady(isStepReady(step, el))
     }
-    document.addEventListener('focusout', onSubFocusOut, true)
+
+    const syncNow = () => sync(false)
+    const recenter = () => sync(true)
+    const interval = window.setInterval(syncNow, 220)
+
+    sync(true)
+    window.addEventListener('resize', recenter)
+    window.addEventListener('scroll', syncNow, true)
+    window.visualViewport?.addEventListener('resize', recenter)
+    window.visualViewport?.addEventListener('scroll', syncNow)
+
+    const onInput = event => {
+      const el = activeTargetRef.current
+      if (!el || (event.target !== el && !el.contains(event.target))) return
+      setTargetReady(isStepReady(step, el))
+      window.setTimeout(() => sync(false), 0)
+    }
+
+    const onFocusIn = event => {
+      const el = activeTargetRef.current
+      if (!el || (event.target !== el && !el.contains(event.target))) return
+      window.setTimeout(recenter, 80)
+      window.setTimeout(recenter, 320)
+    }
+
+    document.addEventListener('input', onInput, true)
+    document.addEventListener('change', onInput, true)
+    document.addEventListener('focusin', onFocusIn, true)
 
     return () => {
       cancelled = true
-      cancelAnimationFrame(rafId)
-      clearTimeout(skipTimer)
-      clearTimeout(advanceTimer)
-      clearTimeout(revealTimer)
-      clearTimeout(viewportTimer)
-      window.removeEventListener('resize', onViewportChange)
-      window.removeEventListener('scroll', recalc, true)
-      window.visualViewport?.removeEventListener('resize', onViewportChange)
-      window.visualViewport?.removeEventListener('scroll', onViewportChange)
-      document.removeEventListener('focusin', onSubFocusIn, true)
-      document.removeEventListener('click', onSubClick, true)
-      document.removeEventListener('change', onSubChange, true)
-      document.removeEventListener('focusout', onSubFocusOut, true)
-      document.querySelectorAll(`${sub.sel}[data-tour-active]`)
-        .forEach(el => el.removeAttribute('data-tour-active'))
+      window.clearInterval(interval)
+      window.clearTimeout(settleTimer)
+      window.removeEventListener('resize', recenter)
+      window.removeEventListener('scroll', syncNow, true)
+      window.visualViewport?.removeEventListener('resize', recenter)
+      window.visualViewport?.removeEventListener('scroll', syncNow)
+      document.removeEventListener('input', onInput, true)
+      document.removeEventListener('change', onInput, true)
+      document.removeEventListener('focusin', onFocusIn, true)
+      activeTargetRef.current?.removeAttribute('data-tour-active')
+      activeTargetRef.current = null
     }
-  }, [formSubIdx, formActive, stepId, nextFormSub])
+  }, [shouldShow, step])
 
-  // ── Listener do evento de conclusão do passo principal ────────────────────
   useEffect(() => {
-    const step = STEPS[getIdx(stepId)]
-    if (!step?.completeOn) return
-    const handler = () => {
-      if (step.completeColumn && user?.id) {
-        supabase.from('profiles')
-          .update({ [step.completeColumn]: true })
-          .eq('id', user.id)
-          .then(() => {})
-          .catch(() => {})
+    if (!shouldShow) return
+
+    const onClick = event => {
+      if (event.target.closest('[data-tour="btn-fechar-nova-os"]') && FORM_STEPS.has(stepId)) {
+        window.setTimeout(() => goToStep('open-fab'), 0)
+        return
       }
-      nextStep()
-    }
-    window.addEventListener(step.completeOn, handler)
-    return () => window.removeEventListener(step.completeOn, handler)
-  }, [stepId, nextStep, user?.id])
 
-  // ── Finalizar / pular ─────────────────────────────────────────────────────
-  const finalize = useCallback(async () => {
-    if (doneRef.current) return
-    doneRef.current = true
-    setDone(true)
-    if (user?.id) {
-      try { localStorage.removeItem(`${TOUR_STORAGE_PREFIX}${user.id}`) } catch {}
-    }
-    if (user?.id) {
-      try { await supabase.from('profiles').update({ onboarding_dismissed: true }).eq('id', user.id) } catch {}
-    }
-  }, [user?.id])
+      if (step.kind !== 'target' || !step.target) return
+      const target = event.target.closest(step.target)
+      if (!target) return
 
-  const skip = useCallback(async () => {
-    setSkipped(true)
-    if (user?.id) {
-      try { localStorage.removeItem(`${TOUR_STORAGE_PREFIX}${user.id}`) } catch {}
+      if (step.id === 'open-fab') {
+        setFirstOsSession(true)
+        window.setTimeout(() => goToStep('plate'), 180)
+        return
+      }
+
+      if (step.id === 'search-plate') {
+        window.setTimeout(() => goToStep('branch-after-search'), 180)
+      }
     }
-    if (user?.id) {
-      try { await supabase.from('profiles').update({ onboarding_dismissed: true }).eq('id', user.id) } catch {}
+
+    const onFocusOut = event => {
+      if (step.kind !== 'target' || step.action !== 'blur' || !step.target || !step.next) return
+      const target = activeTargetRef.current
+      if (!target || event.target !== target) return
+      if (!isStepReady(step, target)) return
+      if (step.id === 'plate' && event.relatedTarget?.closest?.('[data-tour="btn-buscar-placa"]')) {
+        window.setTimeout(() => goToStep('branch-after-search'), 180)
+        return
+      }
+      goToStep(step.next)
     }
-  }, [user?.id])
+
+    document.addEventListener('click', onClick, true)
+    document.addEventListener('focusout', onFocusOut, true)
+    return () => {
+      document.removeEventListener('click', onClick, true)
+      document.removeEventListener('focusout', onFocusOut, true)
+    }
+  }, [goToStep, shouldShow, step, stepId])
+
+  useEffect(() => {
+    if (!shouldShow) return
+
+    const onOsCreated = async () => {
+      if (!FIRST_OS_STEPS.has(stepId)) return
+      setFirstOsSession(false)
+      await patchProfile({ onboarding_os_done: true })
+      goToStep('send-whatsapp')
+    }
+
+    const onBudgetSent = async () => {
+      if (stepId !== 'send-whatsapp') return
+      await patchProfile({ onboarding_orcamento_done: true })
+      goToStep('config-logo')
+    }
+
+    const onOfficeSaved = async () => {
+      if (stepId !== 'config-save' && stepId !== 'config-address') return
+      await patchProfile({ onboarding_oficina_done: true })
+      goToStep('final')
+    }
+
+    window.addEventListener('boxcerto:os-criada', onOsCreated)
+    window.addEventListener('boxcerto:orcamento-enviado', onBudgetSent)
+    window.addEventListener('boxcerto:oficina-configurada', onOfficeSaved)
+    return () => {
+      window.removeEventListener('boxcerto:os-criada', onOsCreated)
+      window.removeEventListener('boxcerto:orcamento-enviado', onBudgetSent)
+      window.removeEventListener('boxcerto:oficina-configurada', onOfficeSaved)
+    }
+  }, [goToStep, patchProfile, shouldShow, stepId])
+
+  const phaseIndex = useMemo(() => {
+    if (step.phase <= 1) return 0
+    if (step.phase === 2) return 1
+    return 2
+  }, [step.phase])
 
   if (!shouldShow) return null
-  const step = STEPS[getIdx(stepId)]
-  if (!step) return null
 
-  const NON_CELEBRATION = STEPS.filter(s => s.type !== 'celebration')
-  const progIdx = NON_CELEBRATION.findIndex(s => s.id === stepId)
-  const progPct = progIdx >= 0 ? Math.round((progIdx / (NON_CELEBRATION.length - 1)) * 100) : 100
-
-  // ── MODAL DE BOAS-VINDAS ──────────────────────────────────────────────────
-  if (step.type === 'modal') return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <TourStyles />
-      <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden"
-        style={{ animation: 'tourUp .35s ease' }}>
-        <div className="bg-gradient-to-br from-indigo-600 to-violet-600 px-8 pt-10 pb-8 text-white text-center">
-          <div className="text-6xl mb-4">🔧</div>
-          <h2 className="text-2xl font-extrabold leading-tight mb-2">Vamos configurar sua oficina agora!</h2>
-          <p className="text-indigo-200 text-sm leading-relaxed">
-            São 3 passos rápidos. No final você já terá enviado seu primeiro orçamento profissional.
-          </p>
-        </div>
-        <div className="px-6 py-5 space-y-3">
-          {[
-            { icon: '📋', text: 'Criar sua primeira OS' },
-            { icon: '📲', text: 'Enviar orçamento pelo WhatsApp' },
-            { icon: '⚙️', text: 'Configurar os dados da oficina' },
-          ].map((item, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-lg shrink-0">{item.icon}</div>
-              <span className="text-sm font-medium text-slate-700">{item.text}</span>
-            </div>
-          ))}
-        </div>
-        <div className="px-6 pb-6">
-          <button onClick={nextStep}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-2xl transition-colors text-base">
-            Vamos lá! →
-          </button>
-          <button onClick={skip}
-            className="w-full text-center text-xs text-slate-400 hover:text-slate-600 mt-3 py-1 transition-colors">
-            Pular e explorar sozinho
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-
-  // ── CELEBRAÇÃO ────────────────────────────────────────────────────────────
-  if (step.type === 'celebration') return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <TourStyles />
-      <Confetti />
-      <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden text-center"
-        style={{ animation: 'tourBounce .5s ease' }}>
-        <div className="bg-gradient-to-br from-indigo-600 to-violet-600 px-8 py-10">
-          <div className="text-7xl mb-4">{step.emoji}</div>
-          <h2 className="text-2xl font-extrabold text-white leading-tight">{step.title}</h2>
-        </div>
-        <div className="px-6 py-6">
-          <p className="text-slate-600 text-sm leading-relaxed mb-6">{step.body}</p>
-          <div className="mb-6">
-            <div className="flex justify-between text-xs text-slate-400 mb-1.5">
-              <span>Progresso</span><span>{progPct}%</span>
-            </div>
-            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-indigo-500 rounded-full transition-all duration-700"
-                style={{ width: `${progPct}%` }} />
-            </div>
-          </div>
-          <button
-            onClick={() => step.final ? finalize() : nextStep()}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-2xl transition-colors text-base">
-            {step.cta}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-
-  // ── FLOATING CARD ─────────────────────────────────────────────────────────
-  if (step.type === 'floating') return (
-    <>
-      <TourStyles />
-      <div className="fixed z-[300] left-1/2 -translate-x-1/2 bottom-28 lg:bottom-8 w-[calc(100%-32px)] max-w-sm"
-        style={{ animation: animIn ? 'tourUp .35s ease' : 'none' }}>
-        <div className="bg-white rounded-2xl shadow-2xl border border-indigo-100 overflow-hidden">
-          <div className="bg-indigo-600 px-4 py-2 flex items-center gap-2">
-            <div className="flex gap-1">
-              {NON_CELEBRATION.map((s, i) => (
-                <div key={s.id} className="w-1.5 h-1.5 rounded-full"
-                  style={{ background: i <= progIdx ? '#fff' : 'rgba(255,255,255,0.3)' }} />
-              ))}
-            </div>
-            <span className="text-indigo-200 text-xs ml-auto">{progIdx + 1} de {NON_CELEBRATION.length}</span>
-          </div>
-          <div className="p-4">
-            <h3 className="font-bold text-slate-900 text-sm mb-1.5">{step.title}</h3>
-            <p className="text-slate-500 text-xs leading-relaxed">{step.body}</p>
-            <div className="flex items-center gap-2 mt-3">
-              <div className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin shrink-0" />
-              <span className="text-xs text-indigo-500">Aguardando você completar este passo…</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <button onClick={skip}
-        className="fixed top-4 right-4 z-[301] text-slate-400 hover:text-slate-600 text-xs transition-colors">
-        Pular tour
-      </button>
-    </>
-  )
-
-  // ── SPOTLIGHT ─────────────────────────────────────────────────────────────
-  if (step.type === 'spotlight') {
-    const activeRect = formActive ? formRect : rect
-    const activeSub  = formActive ? FORM_SUBSTEPS[formSubIdx] : null
-
-    const PAD   = 10
-    const color = 'rgba(0,0,0,0.72)'
-    const TIP_W = 288
-
-    // ── Estado de espera — elemento ainda não apareceu ──────────────────────
-    if (!activeRect) return (
-      <>
-        <TourStyles />
-
-        {/* Overlay keeps the guided form on its current field while it loads. */}
-        <div data-tour="spotlight-overlay" className="fixed inset-0 z-[290]"
-          style={{ background: color }} />
-
-        {formActive && activeSub ? (
-          // Card flutuante — não bloqueia a tela, informa o próximo campo
-          <div className="fixed z-[295] left-1/2 -translate-x-1/2 bottom-8 w-[calc(100%-32px)] max-w-sm"
-            style={{ animation: 'tourUp .3s ease' }}>
-            <div className="bg-white rounded-2xl shadow-2xl border border-indigo-100 overflow-hidden">
-              <div className="bg-indigo-600 px-4 py-2 flex items-center gap-2">
-                <div className="flex gap-1">
-                  {NON_CELEBRATION.map((s, i) => (
-                    <div key={s.id} className="w-1.5 h-1.5 rounded-full"
-                      style={{ background: i <= progIdx ? '#fff' : 'rgba(255,255,255,0.3)' }} />
-                  ))}
-                </div>
-                <span className="text-indigo-200 text-xs ml-auto">{progIdx + 1} de {NON_CELEBRATION.length}</span>
-              </div>
-              <div className="p-4">
-                <h3 className="font-bold text-slate-900 text-sm mb-1">{activeSub.title}</h3>
-                {activeSub.body && <p className="text-slate-500 text-xs leading-relaxed">{activeSub.body}</p>}
-                <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-slate-100">
-                  <div className="w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin shrink-0" />
-                  <span className="text-xs text-indigo-400 flex-1">Localizando campo…</span>
-                  <button onClick={nextFormSub}
-                    className="text-xs text-indigo-600 font-semibold hover:text-indigo-800 transition-colors">
-                    Pular →
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          // Spinner genérico (procurando FAB ou btn-config)
-          <div className="fixed inset-0 z-[295] flex items-center justify-center pointer-events-none">
-            <div className="bg-white rounded-2xl px-6 py-4 shadow-xl flex items-center gap-3">
-              <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm text-slate-600">Carregando…</span>
-            </div>
-          </div>
-        )}
-
-        {formActive && (
-          <button onClick={nextStep}
-            className="fixed bottom-28 left-1/2 -translate-x-1/2 z-[296] bg-white/10 backdrop-blur-sm text-white/70 text-xs px-4 py-2 rounded-full hover:text-white hover:bg-white/20 transition-colors">
-            Já criei a OS →
-          </button>
-        )}
-        <button onClick={skip}
-          className="fixed top-4 right-4 z-[296] text-white/50 hover:text-white text-xs transition-colors">
-          Pular tour
-        </button>
-      </>
-    )
-
-    // ── Spotlight ativo — elemento encontrado ───────────────────────────────
-    const sTop   = activeRect.top    - PAD
-    const sLeft  = activeRect.left   - PAD
-    const sWidth = activeRect.width  + PAD * 2
-    const sHeight= activeRect.height + PAD * 2
-
-    const above    = activeRect.top > window.innerHeight * 0.5
-    const SPACING  = 14
-    const tipVert  = above
-      ? { bottom: window.innerHeight - sTop + SPACING }
-      : { top: sTop + sHeight + SPACING }
-
-    const targetCX = sLeft + sWidth / 2
-    const idealLeft= targetCX - TIP_W / 2
-    const tipLeft  = Math.max(12, Math.min(window.innerWidth - TIP_W - 12, idealLeft))
-    const arrowX   = Math.max(20, Math.min(TIP_W - 20, targetCX - tipLeft))
-
-    const title = activeSub ? activeSub.title : step.title
-    const body  = activeSub ? activeSub.body  : step.body
-
+  if (legacyChecking && stepId !== 'welcome') {
     return (
       <>
         <TourStyles />
-
-        {/* ── 4 overlays que formam a moldura escura em volta do spotlight ── */}
-        <div data-tour="spotlight-overlay" className="fixed inset-x-0 top-0 z-[290] pointer-events-auto"
-          style={{ height: sTop, background: color }} />
-        <div data-tour="spotlight-overlay" className="fixed inset-x-0 z-[290] pointer-events-auto"
-          style={{ top: sTop + sHeight, bottom: 0, background: color }} />
-        <div data-tour="spotlight-overlay" className="fixed left-0 z-[290] pointer-events-auto"
-          style={{ top: sTop, width: sLeft, height: sHeight, background: color }} />
-        <div data-tour="spotlight-overlay" className="fixed right-0 z-[290] pointer-events-auto"
-          style={{ top: sTop, left: sLeft + sWidth, height: sHeight, background: color }} />
-
-        {/* Borda pulsante ao redor do elemento */}
-        <div className="fixed z-[291] pointer-events-none rounded-xl"
-          style={{
-            top: sTop, left: sLeft, width: sWidth, height: sHeight,
-            boxShadow: '0 0 0 3px #4f46e5, 0 0 0 6px rgba(79,70,229,0.3)',
-            animation: 'tourPulse 1.4s ease-in-out infinite',
-          }} />
-
-        {/* ── Tooltip ── */}
-        <div className="fixed z-[295]" style={{ left: tipLeft, width: TIP_W, ...tipVert }}>
-
-          {/* Seta apontando para cima (tooltip abaixo do elemento) */}
-          {!above && (
-            <div style={{
-              position: 'absolute', bottom: '100%', left: arrowX - 7, marginBottom: -1,
-              width: 0, height: 0,
-              borderLeft: '7px solid transparent',
-              borderRight: '7px solid transparent',
-              borderBottom: '7px solid #4f46e5',
-            }} />
-          )}
-
-          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden"
-            style={{ animation: 'tourUp .3s ease' }}>
-            <div className="bg-indigo-600 px-4 py-2 flex items-center gap-2">
-              <div className="flex gap-1">
-                {NON_CELEBRATION.map((s, i) => (
-                  <div key={s.id} className="w-1.5 h-1.5 rounded-full transition-all"
-                    style={{ background: i <= progIdx ? '#fff' : 'rgba(255,255,255,0.35)' }} />
-                ))}
-              </div>
-              <span className="text-indigo-200 text-xs ml-auto">{progIdx + 1} de {NON_CELEBRATION.length}</span>
-            </div>
-            <div className="p-4">
-              <h3 className="font-bold text-slate-900 text-sm mb-1">{title}</h3>
-              {body ? <p className="text-slate-500 text-xs leading-relaxed">{body}</p> : null}
-
-              {/* Botões de escape no modo sub-passos */}
-              {formActive && (
-                <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
-                  <button onClick={nextFormSub}
-                    className="text-xs text-indigo-500 hover:text-indigo-700 font-semibold transition-colors">
-                    Próximo campo →
-                  </button>
-                  <button onClick={nextStep}
-                    className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
-                    Já criei a OS
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Seta apontando para baixo (tooltip acima do elemento) */}
-          {above && (
-            <div style={{
-              position: 'absolute', top: '100%', left: arrowX - 7, marginTop: -1,
-              width: 0, height: 0,
-              borderLeft: '7px solid transparent',
-              borderRight: '7px solid transparent',
-              borderTop: '7px solid white',
-            }} />
-          )}
-        </div>
-
-        {/* Botão pular */}
-        <button onClick={skip}
-          className="fixed top-4 right-4 z-[297] text-white/50 hover:text-white text-xs transition-colors">
-          Pular tour
-        </button>
+        <WaitingOverlay title="Preparando seu tour" body="Estou verificando se sua oficina já tem OS criada." />
       </>
     )
   }
 
-  return null
+  if (step.kind === 'modal') {
+    return (
+      <div className="fixed inset-0 z-[400] flex items-end justify-center bg-slate-950/70 p-0 sm:items-center sm:p-4">
+        <TourStyles />
+        <div className="w-full max-w-sm rounded-t-[28px] bg-white shadow-2xl sm:rounded-[28px]">
+          <div className="px-6 pb-5 pt-7">
+            <div className="mb-4 flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-indigo-600" />
+              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-600">Tour guiado</span>
+            </div>
+            <h2 className="text-2xl font-extrabold leading-tight text-slate-950">
+              Vamos abrir sua primeira OS juntos
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-slate-500">
+              Você vai criar uma OS real, enviar pelo WhatsApp e finalizar os dados da oficina. Eu vou guiar campo por campo.
+            </p>
+          </div>
+          <div className="border-y border-slate-100 px-6 py-4">
+            {[
+              'Criar a primeira OS com serviço exemplo de R$ 470,00',
+              'Enviar o orçamento profissional pelo WhatsApp',
+              'Adicionar logotipo e endereço da oficina',
+            ].map(text => (
+              <div key={text} className="flex items-start gap-3 py-2">
+                <span className="mt-1 h-2 w-2 rounded-full bg-indigo-500" />
+                <span className="text-sm font-medium text-slate-700">{text}</span>
+              </div>
+            ))}
+          </div>
+          <div className="px-6 py-5">
+            <button
+              onClick={() => goToStep('open-fab')}
+              className="w-full rounded-2xl bg-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-200 transition-colors hover:bg-indigo-700"
+            >
+              Começar tour guiado
+            </button>
+            <button
+              onClick={skipTour}
+              className="mt-3 w-full py-2 text-center text-xs font-medium text-slate-400 transition-colors hover:text-slate-600"
+            >
+              Pular tour
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (step.kind === 'final') {
+    return (
+      <div className="fixed inset-0 z-[400] flex items-end justify-center bg-slate-950/75 p-0 sm:items-center sm:p-4">
+        <TourStyles />
+        <CelebrationPieces />
+        <div className="relative w-full max-w-sm rounded-t-[30px] bg-white shadow-2xl sm:rounded-[30px]">
+          <div className="px-6 pb-6 pt-8 text-center">
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-2xl font-black text-white">
+              1%
+            </div>
+            <h2 className="text-2xl font-extrabold leading-tight text-slate-950">
+              Você está no top 1% das oficinas do Brasil
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-slate-500">
+              Sua oficina já tem OS organizada, orçamento com link de aprovação, envio profissional pelo WhatsApp e dados prontos para PDFs mais confiáveis.
+            </p>
+            <button
+              onClick={finishTour}
+              className="mt-6 w-full rounded-2xl bg-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-200 transition-colors hover:bg-indigo-700"
+            >
+              Começar a aproveitar o BoxCerto
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (step.kind === 'waiting') {
+    return (
+      <>
+        <TourStyles />
+        <WaitingOverlay title={step.title} body={step.body} onSkip={skipTour} />
+      </>
+    )
+  }
+
+  if (!targetRect) {
+    return (
+      <>
+        <TourStyles />
+        <WaitingOverlay title={step.title} body="Localizando o item certo na tela." onSkip={skipTour} />
+      </>
+    )
+  }
+
+  return (
+    <>
+      <TourStyles />
+      <TargetOverlay
+        rect={targetRect}
+        step={step}
+        phaseIndex={phaseIndex}
+        targetReady={targetReady}
+        onReadyNext={() => step.next && goToStep(step.next)}
+        onSkipLogo={() => goToStep('config-address')}
+        onSkip={skipTour}
+      />
+    </>
+  )
 }
 
-// ── Confetti ──────────────────────────────────────────────────────────────────
-function Confetti() {
-  const colors = ['#4f46e5','#7c3aed','#06b6d4','#10b981','#f59e0b','#ef4444','#ec4899']
+function WaitingOverlay({ title, body, onSkip }) {
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden z-[302]">
-      {Array.from({ length: 30 }, (_, i) => (
-        <div key={i} className="absolute" style={{
-          left: `${Math.random() * 100}%`,
-          top: `-${Math.random() * 20 + 5}px`,
-          width: `${Math.random() * 8 + 5}px`,
-          height: `${Math.random() * 8 + 5}px`,
-          background: colors[i % colors.length],
-          borderRadius: Math.random() > 0.5 ? '50%' : '2px',
-          animation: `confettiFall ${Math.random() * 2 + 1.5}s ${Math.random() * 0.8}s ease-in forwards`,
-          transform: `rotate(${Math.random() * 360}deg)`,
-        }} />
+    <>
+      <div
+        data-tour="spotlight-overlay"
+        className="fixed inset-0 z-[390] bg-slate-950/70"
+        onWheel={preventOverlayScroll}
+        onTouchMove={preventOverlayScroll}
+        style={{ touchAction: 'none' }}
+      />
+      <div className="fixed inset-0 z-[395] flex items-center justify-center p-4 pointer-events-none">
+        <div className="w-full max-w-xs rounded-2xl bg-white p-5 shadow-2xl">
+          <div className="mb-3 h-1.5 w-16 overflow-hidden rounded-full bg-slate-100">
+            <div className="h-full w-1/2 animate-[tourLoad_1s_ease-in-out_infinite] rounded-full bg-indigo-600" />
+          </div>
+          <h3 className="text-sm font-bold text-slate-950">{title}</h3>
+          <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{body}</p>
+        </div>
+      </div>
+      {onSkip && <SkipButton onClick={onSkip} dark />}
+    </>
+  )
+}
+
+function TargetOverlay({ rect, step, phaseIndex, targetReady, onReadyNext, onSkipLogo, onSkip }) {
+  const pad = 10
+  const top = Math.max(0, rect.top - pad)
+  const left = Math.max(0, rect.left - pad)
+  const width = rect.width + pad * 2
+  const height = rect.height + pad * 2
+  const right = Math.max(0, window.innerWidth - left - width)
+  const bottom = Math.max(0, window.innerHeight - top - height)
+  const color = 'rgba(15, 23, 42, 0.74)'
+
+  const viewportTop = window.visualViewport?.offsetTop || 0
+  const viewportHeight = window.visualViewport?.height || window.innerHeight
+  const viewportBottom = viewportTop + viewportHeight
+  const cardWidth = Math.min(340, window.innerWidth - 24)
+  const cardHeight = step.action === 'optional' || targetReady ? 190 : 166
+  const targetCenter = left + width / 2
+  const cardLeft = Math.max(12, Math.min(window.innerWidth - cardWidth - 12, targetCenter - cardWidth / 2))
+  const roomBelow = viewportBottom - (top + height)
+  const roomAbove = top - viewportTop
+  const placeAbove = roomBelow < cardHeight + 18 && roomAbove > roomBelow
+  const cardTop = placeAbove
+    ? Math.max(viewportTop + 12, top - cardHeight - 14)
+    : Math.min(viewportBottom - cardHeight - 12, top + height + 14)
+
+  const overlayStyle = { background: color, touchAction: 'none' }
+
+  return (
+    <>
+      <div data-tour="spotlight-overlay" className="fixed inset-x-0 top-0 z-[390]" style={{ height: top, ...overlayStyle }} onWheel={preventOverlayScroll} onTouchMove={preventOverlayScroll} />
+      <div data-tour="spotlight-overlay" className="fixed inset-x-0 z-[390]" style={{ top: top + height, bottom: 0, ...overlayStyle }} onWheel={preventOverlayScroll} onTouchMove={preventOverlayScroll} />
+      <div data-tour="spotlight-overlay" className="fixed left-0 z-[390]" style={{ top, width: left, height, ...overlayStyle }} onWheel={preventOverlayScroll} onTouchMove={preventOverlayScroll} />
+      <div data-tour="spotlight-overlay" className="fixed right-0 z-[390]" style={{ top, width: right, height, ...overlayStyle }} onWheel={preventOverlayScroll} onTouchMove={preventOverlayScroll} />
+
+      <div
+        className="pointer-events-none fixed z-[391] rounded-2xl"
+        style={{
+          top,
+          left,
+          width,
+          height,
+          boxShadow: '0 0 0 3px #4f46e5, 0 0 0 8px rgba(79,70,229,.24)',
+          animation: 'tourPulse 1.4s ease-in-out infinite',
+        }}
+      />
+
+      <div className="fixed z-[395]" style={{ top: cardTop, left: cardLeft, width: cardWidth }}>
+        <div className="overflow-hidden rounded-2xl bg-white shadow-2xl">
+          <div className="bg-indigo-600 px-4 py-2.5">
+            <div className="flex items-center gap-2">
+              {PHASES.map((phase, index) => (
+                <div key={phase.id} className="flex items-center gap-1.5">
+                  <span className={`h-2 w-2 rounded-full ${index <= phaseIndex ? 'bg-white' : 'bg-white/30'}`} />
+                  <span className={`text-[10px] font-semibold uppercase tracking-wide ${index <= phaseIndex ? 'text-white' : 'text-white/50'}`}>
+                    {phase.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="p-4">
+            <h3 className="text-sm font-bold text-slate-950">{step.title}</h3>
+            <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{step.body}</p>
+
+            {step.action === 'blur' && (
+              <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                <span className={`text-xs ${targetReady ? 'text-indigo-600' : 'text-slate-400'}`}>
+                  {targetReady ? 'Pronto. Clique fora do campo ou continue.' : 'Preencha o campo para avançar.'}
+                </span>
+                {targetReady && (
+                  <button
+                    onClick={onReadyNext}
+                    className="rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-100"
+                  >
+                    Continuar
+                  </button>
+                )}
+              </div>
+            )}
+
+            {step.action === 'optional' && (
+              <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                <span className="text-xs text-slate-400">Pode adicionar agora ou pular.</span>
+                <button
+                  onClick={onSkipLogo}
+                  className="rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-100"
+                >
+                  Pular logo
+                </button>
+              </div>
+            )}
+
+            {step.action === 'click' && (
+              <div className="mt-3 border-t border-slate-100 pt-3 text-xs font-medium text-indigo-600">
+                Clique no item destacado para seguir.
+              </div>
+            )}
+
+            {step.action === 'event' && (
+              <div className="mt-3 border-t border-slate-100 pt-3 text-xs font-medium text-indigo-600">
+                Aguardando sua ação no botão destacado.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <SkipButton onClick={onSkip} dark />
+    </>
+  )
+}
+
+function SkipButton({ onClick, dark = false }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`fixed right-3 top-3 z-[401] rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors ${
+        dark
+          ? 'bg-white/10 text-white/55 hover:bg-white/15 hover:text-white'
+          : 'bg-slate-950/5 text-slate-400 hover:bg-slate-950/10 hover:text-slate-600'
+      }`}
+    >
+      Pular tour
+    </button>
+  )
+}
+
+function CelebrationPieces() {
+  const pieces = ['#4f46e5', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#ef4444']
+  return (
+    <div className="pointer-events-none fixed inset-0 z-[401] overflow-hidden">
+      {Array.from({ length: 34 }, (_, index) => (
+        <span
+          key={index}
+          className="absolute block"
+          style={{
+            left: `${(index * 37) % 100}%`,
+            top: `-${12 + (index % 9) * 8}px`,
+            width: `${6 + (index % 4)}px`,
+            height: `${8 + (index % 5)}px`,
+            borderRadius: index % 3 === 0 ? '999px' : '2px',
+            background: pieces[index % pieces.length],
+            animation: `tourConfetti ${1.9 + (index % 6) * 0.16}s ${(index % 8) * 0.08}s ease-in forwards`,
+            transform: `rotate(${index * 23}deg)`,
+          }}
+        />
       ))}
     </div>
   )
 }
 
-// ── Animações CSS ─────────────────────────────────────────────────────────────
 function TourStyles() {
   return (
     <style>{`
-      @keyframes tourUp {
-        from { opacity:0; transform:translateY(16px) scale(.97) }
-        to   { opacity:1; transform:translateY(0) scale(1) }
-      }
-      @keyframes tourBounce {
-        0%   { transform:scale(.65); opacity:0 }
-        60%  { transform:scale(1.1) }
-        80%  { transform:scale(.96) }
-        100% { transform:scale(1); opacity:1 }
-      }
       @keyframes tourPulse {
-        0%,100% { box-shadow:0 0 0 3px #4f46e5, 0 0 0 6px rgba(79,70,229,.3) }
-        50%     { box-shadow:0 0 0 3px #4f46e5, 0 0 0 14px rgba(79,70,229,0) }
+        0%, 100% { box-shadow: 0 0 0 3px #4f46e5, 0 0 0 8px rgba(79,70,229,.24); }
+        50% { box-shadow: 0 0 0 3px #4f46e5, 0 0 0 16px rgba(79,70,229,0); }
       }
-      @keyframes confettiFall {
-        0%   { transform:translateY(0) rotate(0deg); opacity:1 }
-        100% { transform:translateY(100vh) rotate(720deg); opacity:0 }
+      @keyframes tourLoad {
+        0% { transform: translateX(-100%); }
+        50% { transform: translateX(70%); }
+        100% { transform: translateX(240%); }
+      }
+      @keyframes tourConfetti {
+        0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(100vh) rotate(600deg); opacity: 0; }
       }
       [data-tour-active="true"] {
-        z-index: 292 !important;
+        position: relative;
       }
     `}</style>
   )
