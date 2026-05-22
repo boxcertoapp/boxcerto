@@ -85,11 +85,12 @@ export default function OnboardingTour() {
   const navigate  = useNavigate()
   const location  = useLocation()
 
-  const [stepId, setStepId] = useState('welcome')
-  const [rect,   setRect]   = useState(null)
-  const [done,   setDone]   = useState(false)
-  const [skipped,setSkipped]= useState(false)
-  const [animIn, setAnimIn] = useState(true)
+  const [stepId,          setStepId]          = useState('welcome')
+  const [rect,            setRect]            = useState(null)
+  const [spotlightDone,   setSpotlightDone]   = useState(false) // alvo foi clicado → remove overlay
+  const [done,            setDone]            = useState(false)
+  const [skipped,         setSkipped]         = useState(false)
+  const [animIn,          setAnimIn]          = useState(true)
   const doneRef = useRef(false)
 
   const shouldShow = user
@@ -105,6 +106,7 @@ export default function OnboardingTour() {
     setTimeout(() => {
       setStepId(toId)
       setRect(null)
+      setSpotlightDone(false)
       setAnimIn(true)
     }, 200)
   }, [])
@@ -129,27 +131,72 @@ export default function OnboardingTour() {
     if (!step?.target || step.type !== 'spotlight') return
 
     let cancelled = false
-    waitForElement(step.target, 5000).then(el => {
-      if (cancelled || !el) return
+
+    // Aguarda o elemento aparecer no DOM com polling em rAF (mais confiável que
+    // MutationObserver quando o elemento é fixed e já existe no DOM mobile oculto)
+    const grabRect = (el) => {
       const r = el.getBoundingClientRect()
+      // Se o elemento está oculto (display:none no bloco mobile/desktop errado),
+      // ele retorna rect zerado — ignora e continua tentando
+      if (r.width === 0 && r.height === 0) return false
       setRect({ top: r.top, left: r.left, width: r.width, height: r.height })
       el.setAttribute('data-tour-active', 'true')
-    })
+      return true
+    }
 
+    // Tenta imediatamente; se não achou ou rect zerado, usa polling via rAF
+    const tryNow = () => {
+      // Pega TODOS os elementos com o seletor e usa o que tiver rect visível
+      const all = document.querySelectorAll(step.target)
+      for (const el of all) {
+        if (grabRect(el)) return
+      }
+    }
+
+    // rAF polling até achar (máx ~5s)
+    let rafId
+    let start = null
+    const poll = (ts) => {
+      if (cancelled) return
+      start = start ?? ts
+      tryNow()
+      const gotRect = document.querySelector(`${step.target}[data-tour-active]`)
+      if (!gotRect && ts - start < 5000) {
+        rafId = requestAnimationFrame(poll)
+      }
+    }
+    rafId = requestAnimationFrame(poll)
+
+    // Recalcula quando resize/scroll (ignora rects zerados)
     const recalc = () => {
-      const el = document.querySelector(step.target)
-      if (!el || cancelled) return
-      const r = el.getBoundingClientRect()
-      setRect({ top: r.top, left: r.left, width: r.width, height: r.height })
+      const all = document.querySelectorAll(step.target)
+      for (const el of all) {
+        const r = el.getBoundingClientRect()
+        if (r.width > 0 || r.height > 0) {
+          setRect({ top: r.top, left: r.left, width: r.width, height: r.height })
+          return
+        }
+      }
     }
     window.addEventListener('resize', recalc)
     window.addEventListener('scroll', recalc, true)
 
+    // Quando o alvo for clicado, remove o overlay mas mantém o tour aguardando
+    const handleTargetClick = () => setSpotlightDone(true)
+    // Delega o listener ao documento para pegar cliques mesmo antes do attach direto
+    const delegatedClick = (e) => {
+      if (e.target.closest(step.target)) handleTargetClick()
+    }
+    document.addEventListener('click', delegatedClick, true)
+
     return () => {
       cancelled = true
+      cancelAnimationFrame(rafId)
       window.removeEventListener('resize', recalc)
       window.removeEventListener('scroll', recalc, true)
-      document.querySelector(step.target)?.removeAttribute('data-tour-active')
+      document.removeEventListener('click', delegatedClick, true)
+      document.querySelectorAll(`${step.target}[data-tour-active]`)
+        .forEach(el => el.removeAttribute('data-tour-active'))
     }
   }, [stepId])
 
@@ -304,6 +351,40 @@ export default function OnboardingTour() {
     // Seta: aponta para o centro do alvo mesmo que tooltip esteja clamped
     const rawArrow = targetCX - tipLeft
     const arrowX   = Math.max(20, Math.min(TIP_W - 20, rawArrow))
+
+    // ── Alvo já foi clicado → remove overlay, mostra card flutuante no topo ──
+    if (spotlightDone) return (
+      <>
+        <TourStyles />
+        <div className="fixed z-[300] top-4 left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-sm"
+          style={{ animation: 'tourUp .25s ease' }}>
+          <div className="bg-white rounded-2xl shadow-2xl border border-indigo-100 overflow-hidden">
+            <div className="bg-indigo-600 px-4 py-2 flex items-center gap-2">
+              <div className="flex gap-1">
+                {NON_CELEBRATION.map((s, i) => (
+                  <div key={s.id} className="w-1.5 h-1.5 rounded-full"
+                    style={{ background: i <= progIdx ? '#fff' : 'rgba(255,255,255,0.3)' }} />
+                ))}
+              </div>
+              <span className="text-indigo-200 text-xs ml-auto">
+                {progIdx + 1} de {NON_CELEBRATION.length}
+              </span>
+            </div>
+            <div className="p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                <h3 className="font-bold text-slate-900 text-sm">{step.title}</h3>
+              </div>
+              <p className="text-slate-500 text-xs leading-relaxed">{step.body}</p>
+            </div>
+          </div>
+        </div>
+        <button onClick={skip}
+          className="fixed top-4 right-4 z-[301] text-slate-400 hover:text-slate-600 text-xs transition-colors">
+          Pular tour
+        </button>
+      </>
+    )
 
     return (
       <>
