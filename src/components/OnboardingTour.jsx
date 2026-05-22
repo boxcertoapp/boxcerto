@@ -13,8 +13,8 @@ const FORM_SUBSTEPS = [
   { sel: '[data-tour="btn-abrir-os"]',             title: 'Veículo encontrado!',         body: 'Clique para abrir a Ordem de Serviço diretamente.',  skipAfter: 3500 },
   // Caminho "novo cliente" — aparece se placa não encontrada
   { sel: '[data-tour="input-nome-cliente"]',       title: 'Nome do cliente *',           body: 'Obrigatório. Digite 4+ letras para ver sugestões.',  skipAfter: 1500 },
-  { sel: '[data-tour="input-whatsapp"]',           title: 'WhatsApp *',                  body: 'Obrigatório — o cliente recebe o orçamento aqui.',   skipAfter: 1500 },
   { sel: '[data-tour="input-cpf"]',                title: 'CPF (opcional)',              body: 'Se informado, deve ter 11 dígitos.',                 skipAfter: 1500 },
+  { sel: '[data-tour="input-whatsapp"]',           title: 'WhatsApp *',                  body: 'Obrigatório — o cliente recebe o orçamento aqui.',   skipAfter: 1500 },
   // FipeSeletor — 3 etapas em cascata
   { sel: '[data-tour="select-marca"]',             title: 'Marca do veículo *',          body: 'Escolha o tipo (carro/moto/caminhão) e a montadora.', skipAfter: 1500 },
   { sel: '[data-tour="select-ano"]',               title: 'Ano do veículo *',            body: 'A lista de anos carrega após escolher a marca.',     skipAfter: 12000 },
@@ -62,12 +62,15 @@ const STEPS = [
   },
   {
     id: 'configurar-oficina',
-    type: 'spotlight',
+    // FIX: era 'spotlight' com target=[data-tour="btn-config-oficina"],
+    // mas esse botão só renderiza quando isDirty||saved → poll nunca achava
+    // → overlay bloqueante cobria a página inteira → usuário não conseguia digitar.
+    // Solução: floating card não-bloqueante; completeOn avança quando o usuário salvar.
+    type: 'floating',
     page: '/app/menu',
     pageState: { tab: 'oficina' },
-    target: '[data-tour="btn-config-oficina"]',
-    title: 'Preencha os dados e clique em Salvar',
-    body: 'Coloque o nome e dados da sua oficina. Eles aparecem nos orçamentos que o cliente recebe.',
+    title: '⚙️ Preencha os dados da oficina',
+    body: 'Digite o nome e telefone da sua oficina e clique em Salvar. Esses dados aparecem nos orçamentos enviados aos clientes.',
     completeOn: 'boxcerto:oficina-configurada',
   },
   {
