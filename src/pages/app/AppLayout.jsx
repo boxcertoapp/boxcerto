@@ -4,7 +4,7 @@ import { Wrench, Clock, TrendingUp, Menu, Package, Zap } from 'lucide-react'
 import { useAuth, hasAccess, trialDaysLeft } from '../../contexts/AuthContext'
 import AnnouncementBanner from '../../components/AnnouncementBanner'
 import Logo from '../../components/Logo'
-import OnboardingChecklist from '../../components/OnboardingChecklist'
+import OnboardingTour from '../../components/OnboardingTour'
 import WelcomeModal from '../../components/WelcomeModal'
 
 const tabs = [
@@ -176,7 +176,7 @@ export default function AppLayout() {
           Mobile: lado ESQUERDO (o FAB "+" está fixed bottom-24 right-4)
           Desktop: canto inferior direito */}
       <WelcomeModal />
-      <OnboardingChecklist />
+      <OnboardingTour />
 
       {/* Fundo decorativo desktop */}
       <div className="fixed inset-0 -z-10 bg-gradient-to-br from-slate-100 to-indigo-50 hidden lg:block" />

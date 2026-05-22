@@ -464,6 +464,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
 
       {/* FAB */}
       <button
+        data-tour="fab-nova-os"
         onClick={onNewOS}
         className="fixed bottom-24 right-4 w-14 h-14 bg-indigo-600 rounded-full shadow-lg shadow-indigo-200 flex items-center justify-center hover:bg-indigo-700 transition-all active:scale-95 z-40"
       >
@@ -1416,6 +1417,7 @@ function OSDetailModal({ os, onClose, officeName }) {
             </a>
             {os.status !== 'entregue' && (
               <button
+                data-tour="btn-enviar-cliente"
                 onClick={handleEnviarCliente}
                 disabled={enviando}
                 title="Enviar link de aprovação para o cliente"

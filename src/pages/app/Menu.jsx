@@ -1126,7 +1126,9 @@ export default function Menu() {
           </div>
 
           {(isDirty || saved) && (
-            <button onClick={handleSave}
+            <button
+              data-tour="btn-config-oficina"
+              onClick={handleSave}
               className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold transition-all ${saved ? 'bg-green-600 text-white' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
               {saved ? <><Check className="w-5 h-5" /> Salvo!</> : <><Save className="w-5 h-5" /> Salvar dados</>}
             </button>
