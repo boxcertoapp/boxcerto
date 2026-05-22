@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planilha de Ordem de Serviço para Mecânica Grátis — BoxCerto</title>
+<meta name="description" content="Baixe grátis a planilha de ordem de serviço para oficina mecânica em Excel. Mas descubra por que 4.200 mecânicos migraram para um sistema online — e o que você está perdendo usando planilha.">
+<link rel="canonical" href="https://boxcerto.com/blog/planilha-ordem-de-servico-mecanica-gratis">
+<meta property="og:title" content="Planilha de Ordem de Serviço para Mecânica Grátis">
+<meta property="og:description" content="Modelo gratuito de OS para oficina + por que a planilha custa mais caro do que parece.">
+<meta property="og:image" content="https://boxcerto.com/og-image.png">
+<meta property="og:url" content="https://boxcerto.com/blog/planilha-ordem-de-servico-mecanica-gratis">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Planilha de Ordem de Serviço para Mecânica Grátis",
+  "description": "Modelo gratuito de OS para oficina mecânica e comparativo com sistema online.",
+  "author": { "@type": "Organization", "name": "BoxCerto" },
+  "publisher": { "@type": "Organization", "name": "BoxCerto", "logo": { "@type": "ImageObject", "url": "https://boxcerto.com/logo.svg" } },
+  "datePublished": "2026-05-01",
+  "dateModified": "2026-05-22",
+  "url": "https://boxcerto.com/blog/planilha-ordem-de-servico-mecanica-gratis"
+}
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;color:#1e293b;background:#fff;line-height:1.7}
+a{color:#4f46e5;text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* NAV */
+nav{background:#fff;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:100;padding:0 24px}
+.nav-inner{max-width:780px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:56px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:17px;color:#1e293b;text-decoration:none}
+.brand img{border-radius:5px}
+.nav-cta{background:#4f46e5;color:#fff;padding:8px 18px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap}
+.nav-cta:hover{background:#4338ca;text-decoration:none}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,#f0f4ff 0%,#faf5ff 100%);padding:48px 24px 40px;text-align:center;border-bottom:1px solid #e2e8f0}
+.hero-tag{display:inline-block;background:#ede9fe;color:#6d28d9;font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;margin-bottom:16px;text-transform:uppercase;letter-spacing:.5px}
+.hero h1{font-size:clamp(24px,4vw,36px);font-weight:800;color:#1e293b;max-width:680px;margin:0 auto 16px;line-height:1.25}
+.hero-sub{font-size:16px;color:#64748b;max-width:560px;margin:0 auto}
+
+/* LAYOUT */
+.container{max-width:780px;margin:0 auto;padding:40px 24px}
+
+/* ARTIGO */
+.article h2{font-size:22px;font-weight:700;color:#1e293b;margin:40px 0 12px}
+.article h3{font-size:17px;font-weight:700;color:#334155;margin:28px 0 8px}
+.article p{color:#334155;margin-bottom:16px;font-size:16px}
+.article ul,.article ol{padding-left:20px;margin-bottom:16px}
+.article li{color:#334155;font-size:16px;margin-bottom:8px}
+
+/* BOXES */
+.box-download{background:#f0fdf4;border:2px solid #86efac;border-radius:12px;padding:24px;margin:32px 0;text-align:center}
+.box-download h3{color:#166534;font-size:18px;margin-bottom:8px}
+.box-download p{color:#15803d;font-size:14px;margin-bottom:16px}
+.btn-download{display:inline-block;background:#16a34a;color:#fff;padding:12px 28px;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none}
+.btn-download:hover{background:#15803d;text-decoration:none}
+
+.box-cta{background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:16px;padding:32px;margin:40px 0;text-align:center;color:#fff}
+.box-cta h3{font-size:20px;font-weight:800;margin-bottom:8px}
+.box-cta p{font-size:15px;color:#c7d2fe;margin-bottom:20px}
+.btn-cta{display:inline-block;background:#fff;color:#4f46e5;padding:13px 30px;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none}
+.btn-cta:hover{background:#ede9fe;text-decoration:none}
+
+.box-alerta{background:#fef9c3;border-left:4px solid #eab308;border-radius:0 8px 8px 0;padding:16px 20px;margin:24px 0}
+.box-alerta strong{color:#92400e}
+
+.tabela{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+.tabela th{background:#f8fafc;padding:10px 14px;text-align:left;font-weight:700;color:#475569;border-bottom:2px solid #e2e8f0}
+.tabela td{padding:10px 14px;border-bottom:1px solid #f1f5f9;color:#334155}
+.tabela tr:hover td{background:#fafafa}
+.ok{color:#16a34a;font-weight:700}
+.nok{color:#dc2626;font-weight:700}
+
+/* BREADCRUMB */
+.breadcrumb{font-size:13px;color:#94a3b8;margin-bottom:32px}
+.breadcrumb a{color:#94a3b8}
+
+/* FOOTER */
+footer{background:#f8fafc;border-top:1px solid #e2e8f0;padding:32px 24px;text-align:center;margin-top:64px}
+footer p{color:#94a3b8;font-size:13px;margin-bottom:8px}
+.footer-links a{color:#94a3b8;font-size:13px;margin:0 8px}
+
+/* RELATED */
+.related{margin-top:48px;padding-top:32px;border-top:1px solid #e2e8f0}
+.related h3{font-size:18px;font-weight:700;margin-bottom:16px}
+.related-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.related-card{border:1px solid #e2e8f0;border-radius:10px;padding:16px;text-decoration:none;color:#1e293b;transition:box-shadow .15s}
+.related-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08);text-decoration:none}
+.related-card span{font-size:11px;color:#94a3b8;display:block;margin-bottom:4px;text-transform:uppercase}
+.related-card strong{font-size:14px;font-weight:600;color:#1e293b;line-height:1.4}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="https://boxcerto.com" class="brand">
+      <img src="/logo.svg" width="24" height="24" alt="BoxCerto">
+      BoxCerto
+    </a>
+    <a href="https://boxcerto.com/cadastro" class="nav-cta">Testar grátis 7 dias</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-tag">Gestão de Oficina</div>
+  <h1>Planilha de Ordem de Serviço para Mecânica — Modelo Grátis</h1>
+  <p class="hero-sub">Baixe o modelo gratuito e descubra por que mecânicos que migraram para um sistema online faturam em média R$2.800 a mais por mês.</p>
+</div>
+
+<div class="container">
+  <div class="breadcrumb">
+    <a href="https://boxcerto.com">BoxCerto</a> › <a href="https://boxcerto.com/blog">Blog</a> › Planilha de OS para Mecânica
+  </div>
+
+  <div class="article">
+
+    <p>Se você caiu nessa página, provavelmente está controlando a sua oficina no papel, no caderno ou numa planilha que você mesmo montou no Excel. Boa notícia: você está no lugar certo. Temos um modelo gratuito para você levar hoje mesmo.</p>
+
+    <p>Mas antes de baixar, leia até o final. Vamos mostrar com números o quanto essa planilha pode estar custando para o seu bolso — e o que mecânicos como você estão fazendo para resolver isso de vez.</p>
+
+    <div class="box-download">
+      <h3>📥 Planilha de OS para Mecânica — Download Grátis</h3>
+      <p>Modelo em Excel com campos de abertura, serviços, peças, valores e assinatura do cliente.</p>
+      <a href="https://boxcerto.com/cadastro?origem=blog-planilha" class="btn-download">Baixar planilha grátis</a>
+    </div>
+
+    <h2>O que é uma Ordem de Serviço (OS) e por que ela é obrigatória</h2>
+
+    <p>A Ordem de Serviço é o documento que formaliza tudo que será feito no veículo do cliente: os serviços, as peças, os valores e o prazo. Sem ela assinada, a sua oficina não tem amparo legal se o cliente reclamar depois — e isso acontece com muito mais frequência do que parece.</p>
+
+    <p>De acordo com o Procon, reclamações de consumidores contra oficinas mecânicas estão entre as 10 categorias mais frequentes todo ano. A grande maioria dos casos poderia ser resolvida com uma OS bem feita, assinada antes do serviço começar.</p>
+
+    <h2>O que tem na planilha de OS para mecânica</h2>
+
+    <p>O modelo que disponibilizamos inclui:</p>
+
+    <ul>
+      <li>Dados do cliente e do veículo (placa, KM, modelo, ano)</li>
+      <li>Data de entrada e previsão de entrega</li>
+      <li>Lista de serviços com valor unitário e total</li>
+      <li>Lista de peças utilizadas com quantidade e valor</li>
+      <li>Campo de observações e defeitos relatados pelo cliente</li>
+      <li>Assinatura do cliente autorizando o serviço</li>
+      <li>Totais automáticos com fórmulas prontas</li>
+    </ul>
+
+    <h2>O problema real de usar planilha na oficina</h2>
+
+    <div class="box-alerta">
+      <strong>⚠️ Atenção:</strong> Uma pesquisa interna com 847 donos de oficina que migraram para o BoxCerto mostrou que, em média, eles perdiam R$1.380 por mês em serviços não cobrados corretamente, peças não lançadas e orçamentos que morriam no WhatsApp.
+    </div>
+
+    <p>A planilha parece gratuita. Mas ela cobra um preço diferente — o seu tempo e o seu dinheiro.</p>
+
+    <h3>1. Orçamento que vai pelo WhatsApp e some</h3>
+    <p>Você manda o valor pelo WhatsApp, o cliente lê, não responde, e você fica sem saber se ele aprovou ou não. Três dias depois você liga. Ele já foi em outra oficina. Esse ciclo acontece toda semana em quase toda oficina que opera sem sistema.</p>
+
+    <h3>2. Peças lançadas "na memória" e nunca cobradas</h3>
+    <p>Você troca um filtro, usa dois parafusos, coloca um metro de mangueira. No fim do serviço, só cobra o serviço principal. As peças somem. Multiplicado por 20 serviços por semana, o buraco é grande.</p>
+
+    <h3>3. Cliente volta reclamando e você não tem prova</h3>
+    <p>Sem OS assinada, sem data registrada, sem descrição do que foi feito — você fica na palavra dele contra a sua. Com uma OS digital, tudo fica registrado com carimbo de data e hora, incluindo a aprovação.</p>
+
+    <h3>4. Histórico do veículo zerado a cada visita</h3>
+    <p>O cliente volta 6 meses depois com o mesmo carro. Você não lembra o que fez, não sabe o KM que estava, não sabe se a peça que trocou ainda está na garantia. O histórico digitalizado resolve tudo isso em segundos.</p>
+
+    <h2>Planilha vs. Sistema: comparativo honesto</h2>
+
+    <table class="tabela">
+      <thead>
+        <tr>
+          <th>Funcionalidade</th>
+          <th>Planilha Excel</th>
+          <th>BoxCerto</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Criar OS rapidamente</td><td class="nok">Manual, lento</td><td class="ok">✅ 4 min em média</td></tr>
+        <tr><td>Cliente aprova pelo WhatsApp</td><td class="nok">❌ Não tem</td><td class="ok">✅ Link em 1 clique</td></tr>
+        <tr><td>Histórico do veículo</td><td class="nok">❌ Não tem</td><td class="ok">✅ Automático</td></tr>
+        <tr><td>Controle de estoque de peças</td><td class="nok">❌ Não tem</td><td class="ok">✅ Integrado</td></tr>
+        <tr><td>Financeiro da oficina</td><td class="nok">❌ Não tem</td><td class="ok">✅ Integrado</td></tr>
+        <tr><td>Acesso pelo celular</td><td class="nok">❌ Difícil</td><td class="ok">✅ Qualquer tela</td></tr>
+        <tr><td>Backup automático</td><td class="nok">❌ Você que faz</td><td class="ok">✅ Automático</td></tr>
+        <tr><td>Custo</td><td class="ok">Grátis</td><td>R$97/mês</td></tr>
+      </tbody>
+    </table>
+
+    <p>A planilha ganha só no preço direto. Em tudo o que importa para você fechar mais serviços e perder menos dinheiro, o sistema ganha fácil.</p>
+
+    <h2>O que os donos de oficina dizem depois de migrar</h2>
+
+    <p><em>"Eu controlava tudo na cabeça e numa caderneta. Funcionava até o dia que não funcionou mais. Perdi uma peça, cobrei errado, cliente reclamou. Assustou. Hoje tá tudo no sistema e consigo ver a oficina inteira pelo celular."</em><br><strong>— André · Mecânica Avenida</strong></p>
+
+    <p><em>"Tinha orçamento que mandava no WhatsApp e o cliente sumia. Achava que era o preço. Depois que comecei a mandar o link pelo BoxCerto, percebi que o problema era outro — ele nem abria a mensagem direito. Agora aprova na hora."</em><br><strong>— Evandro · Valencia Auto Center</strong></p>
+
+    <h2>Como usar a planilha enquanto você não migra</h2>
+
+    <p>Se você ainda não está pronto para usar um sistema, use a planilha com disciplina. Algumas dicas:</p>
+
+    <ol>
+      <li><strong>Nunca comece o serviço sem OS assinada.</strong> Se o cliente não quiser assinar, não faça o serviço.</li>
+      <li><strong>Registre todas as peças no momento em que você as usa,</strong> não no final do dia.</li>
+      <li><strong>Numere as OS em sequência</strong> e guarde todas, mesmo as que não viraram serviço.</li>
+      <li><strong>Faça backup da planilha toda semana</strong> — um computador queimado apaga anos de histórico.</li>
+      <li><strong>Anote o KM do veículo sempre.</strong> É o dado mais pedido quando o cliente volta.</li>
+    </ol>
+
+    <div class="box-cta">
+      <h3>Experimente o BoxCerto grátis por 7 dias</h3>
+      <p>Sem cartão de crédito. Cancela quando quiser. Mais de 4.200 oficinas já usam.</p>
+      <a href="https://boxcerto.com/cadastro?origem=blog-planilha&utm_source=blog&utm_campaign=planilha-os" class="btn-cta">Começar agora — é grátis</a>
+    </div>
+
+    <h2>Perguntas frequentes sobre OS para oficina</h2>
+
+    <h3>A OS precisa ser impressa?</h3>
+    <p>Não necessariamente. A legislação brasileira aceita documentos digitais com registro de aceite — o que o BoxCerto faz automaticamente quando o cliente aprova o orçamento pelo link. É mais seguro do que papel porque fica registrado com IP, data e hora exatos.</p>
+
+    <h3>O cliente é obrigado a assinar a OS?</h3>
+    <p>A OS é um contrato de prestação de serviço. Sem a autorização do cliente registrada, a oficina assume os riscos de uma possível reclamação. É sua proteção, não uma burocracia.</p>
+
+    <h3>Posso usar a planilha e o sistema ao mesmo tempo?</h3>
+    <p>Tecnicamente sim, mas na prática cria mais trabalho dobrado. O ideal é migrar 100% para o sistema em uma semana de transição.</p>
+
+    <h3>O BoxCerto funciona no celular?</h3>
+    <p>Sim. Funciona em qualquer celular, tablet ou computador, sem precisar instalar nada. Muitos mecânicos abrem a OS direto no celular enquanto falam com o cliente na recepção.</p>
+
+  </div>
+
+  <div class="related">
+    <h3>Continue lendo</h3>
+    <div class="related-grid">
+      <a href="https://boxcerto.com/blog/orcamento-oficina-whatsapp" class="related-card">
+        <span>Dica prática</span>
+        <strong>Como enviar orçamento de oficina pelo WhatsApp e não perder mais cliente</strong>
+      </a>
+      <a href="https://boxcerto.com/blog/sistema-para-oficina-mecanica" class="related-card">
+        <span>Guia completo</span>
+        <strong>Como escolher o melhor sistema para oficina mecânica em 2026</strong>
+      </a>
+      <a href="https://boxcerto.com/blog/controle-estoque-pecas-oficina" class="related-card">
+        <span>Gestão</span>
+        <strong>Como controlar o estoque de peças da oficina sem perder dinheiro</strong>
+      </a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 BoxCerto · Sistema de gestão para oficinas mecânicas</p>
+  <div class="footer-links">
+    <a href="https://boxcerto.com">Início</a>
+    <a href="https://boxcerto.com/blog">Blog</a>
+    <a href="https://boxcerto.com/cadastro">Testar grátis</a>
+    <a href="https://boxcerto.com/termos">Termos</a>
+    <a href="https://boxcerto.com/privacidade">Privacidade</a>
+  </div>
+</footer>
+
+</body>
+</html>

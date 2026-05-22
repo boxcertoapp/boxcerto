@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Como Controlar o Estoque de Peças da Oficina (sem perder dinheiro) — BoxCerto</title>
+<meta name="description" content="Guia prático para controlar o estoque de peças da oficina mecânica. Saiba como evitar perdas, calcular markup e usar tecnologia a favor do seu caixa.">
+<link rel="canonical" href="https://boxcerto.com/blog/controle-estoque-pecas-oficina">
+<meta property="og:title" content="Como Controlar o Estoque de Peças da Oficina sem perder dinheiro">
+<meta property="og:description" content="Guia prático para controlar estoque de peças. Oficinas que controlam o estoque corretamente faturam R$900 a mais por mês em média.">
+<meta property="og:image" content="https://boxcerto.com/og-image.png">
+<meta property="og:url" content="https://boxcerto.com/blog/controle-estoque-pecas-oficina">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Como Controlar o Estoque de Peças da Oficina sem perder dinheiro",
+  "author": { "@type": "Organization", "name": "BoxCerto" },
+  "publisher": { "@type": "Organization", "name": "BoxCerto", "logo": { "@type": "ImageObject", "url": "https://boxcerto.com/logo.svg" } },
+  "datePublished": "2026-05-08",
+  "dateModified": "2026-05-22",
+  "url": "https://boxcerto.com/blog/controle-estoque-pecas-oficina"
+}
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;color:#1e293b;background:#fff;line-height:1.7}
+a{color:#4f46e5;text-decoration:none}a:hover{text-decoration:underline}
+nav{background:#fff;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:100;padding:0 24px}
+.nav-inner{max-width:780px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:56px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:17px;color:#1e293b;text-decoration:none}
+.brand img{border-radius:5px}
+.nav-cta{background:#4f46e5;color:#fff;padding:8px 18px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap}
+.nav-cta:hover{background:#4338ca;text-decoration:none}
+.hero{background:linear-gradient(135deg,#f0f4ff 0%,#faf5ff 100%);padding:48px 24px 40px;text-align:center;border-bottom:1px solid #e2e8f0}
+.hero-tag{display:inline-block;background:#ede9fe;color:#6d28d9;font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;margin-bottom:16px;text-transform:uppercase;letter-spacing:.5px}
+.hero h1{font-size:clamp(24px,4vw,36px);font-weight:800;color:#1e293b;max-width:680px;margin:0 auto 16px;line-height:1.25}
+.hero-sub{font-size:16px;color:#64748b;max-width:560px;margin:0 auto}
+.container{max-width:780px;margin:0 auto;padding:40px 24px}
+.article h2{font-size:22px;font-weight:700;color:#1e293b;margin:40px 0 12px}
+.article h3{font-size:17px;font-weight:700;color:#334155;margin:28px 0 8px}
+.article p{color:#334155;margin-bottom:16px;font-size:16px}
+.article ul,.article ol{padding-left:20px;margin-bottom:16px}
+.article li{color:#334155;font-size:16px;margin-bottom:8px}
+.box-cta{background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:16px;padding:32px;margin:40px 0;text-align:center;color:#fff}
+.box-cta h3{font-size:20px;font-weight:800;margin-bottom:8px}
+.box-cta p{font-size:15px;color:#c7d2fe;margin-bottom:20px}
+.btn-cta{display:inline-block;background:#fff;color:#4f46e5;padding:13px 30px;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none}
+.btn-cta:hover{background:#ede9fe;text-decoration:none}
+.box-alerta{background:#fef9c3;border-left:4px solid #eab308;border-radius:0 8px 8px 0;padding:16px 20px;margin:24px 0}
+.box-verde{background:#f0fdf4;border-left:4px solid #16a34a;border-radius:0 8px 8px 0;padding:16px 20px;margin:24px 0}
+.formula{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 20px;margin:16px 0;font-family:monospace;font-size:15px;color:#1e293b}
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin:32px 0}
+.stat-card{background:#f8fafc;border-radius:12px;padding:20px;text-align:center}
+.stat-card .val{font-size:26px;font-weight:800;color:#4f46e5}
+.stat-card .leg{font-size:13px;color:#64748b;margin-top:4px}
+.breadcrumb{font-size:13px;color:#94a3b8;margin-bottom:32px}
+.breadcrumb a{color:#94a3b8}
+footer{background:#f8fafc;border-top:1px solid #e2e8f0;padding:32px 24px;text-align:center;margin-top:64px}
+footer p{color:#94a3b8;font-size:13px;margin-bottom:8px}
+.footer-links a{color:#94a3b8;font-size:13px;margin:0 8px}
+.related{margin-top:48px;padding-top:32px;border-top:1px solid #e2e8f0}
+.related h3{font-size:18px;font-weight:700;margin-bottom:16px}
+.related-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.related-card{border:1px solid #e2e8f0;border-radius:10px;padding:16px;text-decoration:none;transition:box-shadow .15s}
+.related-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08);text-decoration:none}
+.related-card span{font-size:11px;color:#94a3b8;display:block;margin-bottom:4px;text-transform:uppercase}
+.related-card strong{font-size:14px;font-weight:600;color:#1e293b;line-height:1.4}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="https://boxcerto.com" class="brand"><img src="/logo.svg" width="24" height="24" alt="BoxCerto">BoxCerto</a>
+    <a href="https://boxcerto.com/cadastro" class="nav-cta">Testar grátis 7 dias</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-tag">Gestão de Estoque</div>
+  <h1>Como Controlar o Estoque de Peças da Oficina (sem perder dinheiro)</h1>
+  <p class="hero-sub">Oficinas que controlam o estoque corretamente faturam em média R$900 a mais por mês — só parando de "esquecer" peças que saem sem ser cobradas.</p>
+</div>
+
+<div class="container">
+  <div class="breadcrumb">
+    <a href="https://boxcerto.com">BoxCerto</a> › <a href="https://boxcerto.com/blog">Blog</a> › Controle de Estoque de Peças
+  </div>
+
+  <div class="article">
+
+    <p>O estoque de peças é um dos maiores buracos financeiros de uma oficina mecânica. Não porque as peças somem — mas porque elas saem sem ser registradas, sem ser cobradas, ou compradas errado e ficam paradas por meses.</p>
+
+    <p>Este guia vai te mostrar como montar um controle de estoque eficiente, o que cobrar pelas peças, e como a tecnologia pode fazer isso de forma automática para você.</p>
+
+    <div class="stat-row">
+      <div class="stat-card"><div class="val">R$1.200</div><div class="leg">perdidos por mês em média com peças não registradas</div></div>
+      <div class="stat-card"><div class="val">23%</div><div class="leg">das peças compradas ficam paradas por mais de 90 dias</div></div>
+      <div class="stat-card"><div class="val">R$900</div><div class="leg">de receita adicional ao mês com controle correto</div></div>
+    </div>
+
+    <h2>Por que as peças somem na oficina</h2>
+
+    <p>Não é desonestidade — na maioria das vezes é desorganização. O mecânico pega uma abraçadeira, dois parafusos, meia lata de fluido de freio. São coisas pequenas que "não vale a pena cobrar" — mas cobradas, fazem diferença.</p>
+
+    <p>Numa oficina que faz 25 serviços por semana, se em cada serviço saem R$15 em peças pequenas não registradas, são R$375 por semana. R$1.500 por mês. R$18.000 por ano. Some isso num prazo de 5 anos e você não cobrou o equivalente a um carro zero.</p>
+
+    <div class="box-alerta">
+      <strong>⚠️ Teste rápido:</strong> Pense no último serviço que fez. Quantas peças pequenas — parafusos, abraçadeiras, fluidos, correias — foram no orçamento e quantas você simplesmente usou sem lançar?
+    </div>
+
+    <h2>Os 5 erros mais comuns no controle de estoque da oficina</h2>
+
+    <h3>1. Comprar sem critério e estocar demais</h3>
+    <p>Comprar peças em quantidade porque "sempre tem saída" prende capital. Peça parada por 3 meses é dinheiro emprestado sem juros para o fornecedor.</p>
+
+    <h3>2. Não ter estoque mínimo definido</h3>
+    <p>Você não sabe que acabou a vela até o mecânico precisar dela e não ter. Aí para tudo para ir buscar. Definir um estoque mínimo por item resolve isso.</p>
+
+    <h3>3. Não registrar a saída na hora</h3>
+    <p>Deixar para registrar no final do dia, ou pior, no final da semana, é garantia de esquecimento. A saída precisa ser registrada no momento em que a peça sai da prateleira.</p>
+
+    <h3>4. Não saber o custo real de cada peça</h3>
+    <p>Se você não sabe quanto pagou, não sabe quanto cobrar. E cobrar no chute é cobrar errado — quase sempre abaixo do necessário.</p>
+
+    <h3>5. Misturar peças de clientes com peças do estoque</h3>
+    <p>Peça que o cliente trouxe misturada com a sua é confusão garantida. Marque sempre com fita e caneta, ou use prateleiras separadas.</p>
+
+    <h2>Como calcular o preço de venda das peças</h2>
+
+    <p>Muitos mecânicos cobram o mesmo preço que pagaram, ou adicionam uma margem aleatória. O certo é calcular o markup de forma consistente:</p>
+
+    <div class="formula">
+      Preço de Venda = Custo ÷ (1 - Margem desejada)
+    </div>
+
+    <p>Exemplo prático: você pagou R$80 por um filtro de óleo e quer 40% de margem:</p>
+
+    <div class="formula">
+      R$80 ÷ (1 - 0,40) = R$80 ÷ 0,60 = R$133,33
+    </div>
+
+    <p>Não confunda markup com margem. Dobrar o preço de custo não é 50% de margem — é 50% de markup, que equivale a apenas 33% de margem real.</p>
+
+    <h3>Margem recomendada por categoria de peça</h3>
+    <ul>
+      <li><strong>Peças grandes (amortecedor, câmbio, motor):</strong> 20–30%</li>
+      <li><strong>Peças médias (freio, filtros, correia):</strong> 35–50%</li>
+      <li><strong>Peças pequenas (parafusos, fluidos, abraçadeiras):</strong> 60–100%</li>
+      <li><strong>Consumíveis (estopa, lixa, fita):</strong> embutir no valor do serviço</li>
+    </ul>
+
+    <h2>Como montar o estoque mínimo da sua oficina</h2>
+
+    <p>Estoque mínimo é a quantidade abaixo da qual você precisa repor antes de acabar. Para calcular, analise os últimos 3 meses:</p>
+
+    <ol>
+      <li>Liste as peças que você usa toda semana sem falta</li>
+      <li>Calcule o consumo médio semanal de cada uma</li>
+      <li>Multiplique pelo tempo de reposição do seu fornecedor (geralmente 2–5 dias)</li>
+      <li>Some uma margem de segurança de 20%</li>
+    </ol>
+
+    <p>Exemplo: filtros de óleo. Você usa 8 por semana. Fornecedor entrega em 3 dias (metade da semana). Estoque mínimo = 4 + 20% = 5 unidades. Quando o estoque baixar de 5, peça mais.</p>
+
+    <h2>Como o BoxCerto resolve o controle de estoque</h2>
+
+    <p>No BoxCerto, quando você adiciona uma peça numa OS, ela já é automaticamente descontada do estoque. Sem precisar lançar separado, sem planilha paralela, sem esquecer.</p>
+
+    <p>Você também define o estoque mínimo de cada item e recebe um alerta quando chega perto de acabar. E as vendas de peças no balcão ficam integradas ao financeiro — você vê a receita e o lucro de cada venda separado das OS de serviço.</p>
+
+    <div class="box-verde">
+      <strong>✅ Na prática:</strong> Um mecânico que usa o BoxCerto lançou, em média, 34% mais itens de peças por OS do que quando usava papel — simplesmente porque o sistema facilita o registro na hora certa.
+    </div>
+
+    <div class="box-cta">
+      <h3>Controle o estoque da sua oficina agora</h3>
+      <p>7 dias grátis, sem cartão. Configure o estoque em menos de 30 minutos.</p>
+      <a href="https://boxcerto.com/cadastro?origem=blog-estoque&utm_source=blog&utm_campaign=estoque-pecas" class="btn-cta">Começar agora — é grátis</a>
+    </div>
+
+    <h2>Perguntas frequentes sobre estoque de peças</h2>
+
+    <h3>Preciso controlar peças que custam menos de R$5?</h3>
+    <p>Depende do volume. Se você usa 50 parafusos por semana a R$0,50 cada, são R$1.300 por ano que podem estar saindo sem cobrança. A regra prática: se sai mais de 10 unidades por mês, cadastre no estoque.</p>
+
+    <h3>Como lidar com peças devolvidas pelo cliente?</h3>
+    <p>No BoxCerto você pode reverter uma venda de peça, o que devolve o item ao estoque automaticamente. Sempre registre a devolução no sistema para o financeiro ficar correto.</p>
+
+    <h3>Vale ter estoque de peças de diferentes marcas?</h3>
+    <p>Sim, desde que você registre o custo e o preço de venda separadamente por marca. No BoxCerto você pode cadastrar a mesma peça com nomes diferentes (ex: "Filtro de óleo — Nacional" e "Filtro de óleo — Original") e controlar cada um independentemente.</p>
+
+  </div>
+
+  <div class="related">
+    <h3>Continue lendo</h3>
+    <div class="related-grid">
+      <a href="https://boxcerto.com/blog/software-ordem-de-servico-mecanica" class="related-card">
+        <span>Comparativo</span>
+        <strong>Software de OS para mecânica: qual vale a pena em 2026?</strong>
+      </a>
+      <a href="https://boxcerto.com/blog/orcamento-oficina-whatsapp" class="related-card">
+        <span>Dica prática</span>
+        <strong>Como enviar orçamento pelo WhatsApp e não perder mais cliente</strong>
+      </a>
+      <a href="https://boxcerto.com/blog/sistema-para-oficina-mecanica" class="related-card">
+        <span>Guia completo</span>
+        <strong>Como escolher o melhor sistema para oficina em 2026</strong>
+      </a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 BoxCerto · Sistema de gestão para oficinas mecânicas</p>
+  <div class="footer-links">
+    <a href="https://boxcerto.com">Início</a>
+    <a href="https://boxcerto.com/blog">Blog</a>
+    <a href="https://boxcerto.com/cadastro">Testar grátis</a>
+    <a href="https://boxcerto.com/termos">Termos</a>
+    <a href="https://boxcerto.com/privacidade">Privacidade</a>
+  </div>
+</footer>
+</body>
+</html>

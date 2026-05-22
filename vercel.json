@@ -8,6 +8,12 @@
     { "source": "/lpdiagnostico",                  "destination": "/lpdiagnostico.html" },
     { "source": "/quizdiagnostico",                "destination": "/quizdiagnostico.html" },
     { "source": "/lpquizdiagnostico",              "destination": "/lpquizdiagnostico.html" },
+    { "source": "/blog",                           "destination": "/blog/index.html" },
+    { "source": "/blog/planilha-ordem-de-servico-mecanica-gratis", "destination": "/blog/planilha-ordem-de-servico-mecanica-gratis.html" },
+    { "source": "/blog/sistema-para-oficina-mecanica",             "destination": "/blog/sistema-para-oficina-mecanica.html" },
+    { "source": "/blog/orcamento-oficina-whatsapp",                "destination": "/blog/orcamento-oficina-whatsapp.html" },
+    { "source": "/blog/controle-estoque-pecas-oficina",            "destination": "/blog/controle-estoque-pecas-oficina.html" },
+    { "source": "/blog/software-ordem-de-servico-mecanica",        "destination": "/blog/software-ordem-de-servico-mecanica.html" },
     { "source": "/((?!api/).*)",                   "destination": "/index.html" }
   ],
   "crons": [
