@@ -132,8 +132,6 @@ test('tour waits on required Nova OS inputs on mobile', async ({ page }) => {
   await expect(page.getByText('Digite a placa', { exact: true })).toBeVisible()
 
   await plate.blur()
-  await expect(page.getByRole('heading', { name: 'Busque a placa' })).toBeVisible()
-  await page.locator('[data-tour="btn-buscar-placa"]').click()
 
   const name = page.locator('[data-tour="input-nome-cliente"]')
   await expect(page.getByText('Digite o nome do cliente', { exact: true })).toBeVisible({ timeout: 6000 })
@@ -180,6 +178,19 @@ test('tour restores the latest step saved in the browser', async ({ page }) => {
   await expect(page.getByText(/Adicione o logotipo/i)).toBeVisible()
 })
 
+test('tour reconciles stale saved form step with visible plate field', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('boxcerto:onboarding-tour:e2e-owner', 'client-name')
+  })
+  await openOnboarding(page)
+
+  await page.locator('[data-tour="fab-nova-os"]:visible').click()
+
+  await expect(page.locator('[data-tour="input-placa"]')).toBeVisible()
+  await expect(page.getByText('Digite a placa', { exact: true })).toBeVisible()
+  await expect(page.getByText('Digite o nome do cliente', { exact: true })).toHaveCount(0)
+})
+
 test('guided first OS creates the example service and opens WhatsApp step', async ({ page }) => {
   await openOnboarding(page)
 
@@ -188,8 +199,6 @@ test('guided first OS creates the example service and opens WhatsApp step', asyn
   await expect(page.getByText('Digite a placa', { exact: true })).toBeVisible()
   await page.locator('[data-tour="input-placa"]').fill('ABC1A23')
   await page.locator('[data-tour="input-placa"]').blur()
-  await expect(page.getByRole('heading', { name: 'Busque a placa' })).toBeVisible()
-  await page.locator('[data-tour="btn-buscar-placa"]').click()
 
   await expect(page.getByText('Digite o nome do cliente', { exact: true })).toBeVisible()
   await page.locator('[data-tour="input-nome-cliente"]').fill('Joao da Silva')

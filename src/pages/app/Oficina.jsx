@@ -653,6 +653,10 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
     if (clean.length < 7) return setError('Placa inválida.')
     if (!validatePlate(placa.toUpperCase())) return setError('Formato inválido. Use ABC-1234 ou ABC-1A23 (Mercosul).')
     setError('')
+    if (onboardingMode) {
+      setStep('newClient')
+      return
+    }
     setLoading(true)
     const found = await vehicleStorage.getByPlate(officeName, placa)
     if (found) {
@@ -664,6 +668,15 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
       setStep('newClient')
     }
     setLoading(false)
+  }
+
+  const continueOnboardingFromPlate = () => {
+    if (!onboardingMode || step !== 'plate') return
+    const clean = placa.replace(/[^a-zA-Z0-9]/g, '')
+    if (clean.length < 7) return
+    if (!validatePlate(placa.toUpperCase())) return
+    setError('')
+    setStep('newClient')
   }
 
   const handleNomeChange = (val) => {
@@ -775,11 +788,12 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Placa do Veículo</label>
                 <input data-tour="input-placa" type="text" value={placa} onChange={e => setPlaca(formatPlate(e.target.value))}
+                  onBlur={continueOnboardingFromPlate}
                   placeholder="ABC-1D23" maxLength={8} autoFocus
                   className="w-full px-4 py-4 text-center text-2xl font-bold plate-mercosul rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 uppercase tracking-widest" />
               </div>
               <button data-tour="btn-buscar-placa" onClick={searchPlate} disabled={loading} className="w-full bg-indigo-600 text-white font-semibold py-3.5 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-60">
-                <Search className="w-5 h-5 inline mr-2" />{loading ? 'Buscando...' : 'Buscar / Abrir OS'}
+                <Search className="w-5 h-5 inline mr-2" />{loading ? 'Buscando...' : onboardingMode ? 'Continuar' : 'Buscar / Abrir OS'}
               </button>
             </div>
           )}

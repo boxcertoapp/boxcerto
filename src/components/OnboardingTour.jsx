@@ -27,6 +27,9 @@ const STEP_ORDER = [
 
 const LEGACY_STEP_MAP = {
   'criar-os': 'open-fab',
+  'search-plate': 'plate',
+  'branch-after-search': 'plate',
+  'existing-open': 'plate',
   'enviar-orcamento': 'send-whatsapp',
   'configurar-oficina': 'config-logo',
   'celebration-final': 'final',
@@ -84,9 +87,9 @@ const STEPS = {
     page: '/app/oficina',
     target: '[data-tour="input-placa"]',
     title: 'Digite a placa',
-    body: 'Use uma placa real ou de teste. Formatos aceitos: ABC-1234 ou ABC-1A23.',
+    body: 'Use uma placa real ou de teste. No tour da primeira OS, não vamos buscar cadastro antigo.',
     action: 'blur',
-    next: 'search-plate',
+    next: 'client-name',
   },
   'search-plate': {
     id: 'search-plate',
@@ -288,7 +291,6 @@ function unionRects(a, b) {
 function getRectForStep(step, el) {
   const primary = getRect(el)
   const extraTargetByStep = {
-    plate: '[data-tour="btn-buscar-placa"]',
     'client-name': '[data-tour="input-whatsapp"]',
     'vehicle-model': '[data-tour="btn-criar-os"]',
     'config-address': '[data-tour="btn-config-oficina"]',
@@ -297,6 +299,29 @@ function getRectForStep(step, el) {
   if (!extraSelector) return primary
   const extra = getVisibleTarget(extraSelector)
   return extra ? unionRects(primary, getRect(extra)) : primary
+}
+
+function getCurrentFirstOsStepFromDom(preferredStepId) {
+  if (getVisibleTarget('[data-tour="btn-enviar-cliente"]')) return 'send-whatsapp'
+  if (getVisibleTarget('[data-tour="btn-abrir-os"]')) return 'existing-open'
+
+  if (getVisibleTarget('[data-tour="input-placa"]')) return 'plate'
+
+  const nameInput = getVisibleTarget('[data-tour="input-nome-cliente"]')
+  const whatsappInput = getVisibleTarget('[data-tour="input-whatsapp"]')
+  const modelInput = getVisibleTarget('[data-tour="input-modelo-manual"]')
+  const createButton = getVisibleTarget('[data-tour="btn-criar-os"]')
+
+  if (preferredStepId === 'create-os' && createButton) return 'create-os'
+  if (preferredStepId === 'vehicle-model' && modelInput) return 'vehicle-model'
+  if (preferredStepId === 'client-whatsapp' && whatsappInput) return 'client-whatsapp'
+  if (nameInput) return 'client-name'
+  if (whatsappInput) return 'client-whatsapp'
+  if (modelInput) return 'vehicle-model'
+  if (createButton) return 'create-os'
+  if (getVisibleTarget('[data-tour="fab-nova-os"]')) return 'open-fab'
+
+  return null
 }
 
 function cleanPlate(value) {
@@ -485,7 +510,7 @@ export default function OnboardingTour() {
         return
       }
       if (Date.now() - startedAt > 9000) {
-        goToStep('client-name')
+        goToStep(getCurrentFirstOsStepFromDom('search-plate') || 'search-plate')
         return
       }
       window.setTimeout(poll, 150)
@@ -501,6 +526,7 @@ export default function OnboardingTour() {
     let cancelled = false
     let revealed = false
     let settleTimer = null
+    let missingSince = null
 
     const sync = (forceReveal = false) => {
       if (cancelled) return
@@ -510,9 +536,15 @@ export default function OnboardingTour() {
         activeTargetRef.current = null
         setTargetRect(null)
         setTargetReady(false)
+        if (!missingSince) missingSince = Date.now()
+        if (FORM_STEPS.has(stepId) && Date.now() - missingSince > 500) {
+          const realStep = getCurrentFirstOsStepFromDom(stepId)
+          if (realStep && realStep !== stepId) goToStep(realStep)
+        }
         return
       }
 
+      missingSince = null
       if (activeTargetRef.current && activeTargetRef.current !== el) {
         activeTargetRef.current.removeAttribute('data-tour-active')
       }
@@ -607,10 +639,6 @@ export default function OnboardingTour() {
       const target = activeTargetRef.current
       if (!target || event.target !== target) return
       if (!isStepReady(step, target)) return
-      if (step.id === 'plate' && event.relatedTarget?.closest?.('[data-tour="btn-buscar-placa"]')) {
-        window.setTimeout(() => goToStep('branch-after-search'), 180)
-        return
-      }
       goToStep(step.next)
     }
 
