@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   X, Check, ChevronRight, ChevronLeft, Loader2, AlertCircle,
-  Camera, MapPin, Send, Sparkles, MessageCircle,
+  Camera, MapPin, Send, MessageCircle, Sparkles,
+  Rocket, Zap, Smartphone, CheckCircle2, Plus,
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -120,10 +121,16 @@ export default function OnboardingWizard() {
     && !hidden
 
   const phaseIndex = useMemo(() => {
-    if (view === 'phase1' || view === 'intro') return 0
+    if (view === 'phase1' || view === 'intro' || view === 'fab-coachmark') return 0
     if (view === 'phase2') return 1
     return 2
   }, [view])
+
+  const firstName = useMemo(() => {
+    const raw = user?.responsavel || user?.oficina || ''
+    const first = String(raw).trim().split(/\s+/)[0]
+    return first || 'parceiro'
+  }, [user?.responsavel, user?.oficina])
 
   const setVisualVh = useCallback(() => {
     if (typeof window === 'undefined') return
@@ -142,13 +149,40 @@ export default function OnboardingWizard() {
     }
   }, [shouldShow, setVisualVh])
 
-  // Travar scroll do body enquanto o wizard estiver visível
+  // Travar scroll do body enquanto o wizard estiver visível (exceto views que precisam interagir com a página)
   useEffect(() => {
     if (!shouldShow) return
-    if (view === 'coachmark' || view === 'done') return
+    if (view === 'coachmark' || view === 'done' || view === 'fab-coachmark') return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = prev }
+  }, [shouldShow, view])
+
+  // Navegar para a Oficina quando entrar na view do coachmark do FAB
+  useEffect(() => {
+    if (!shouldShow || view !== 'fab-coachmark') return
+    if (window.location.pathname !== '/app/oficina') {
+      navigate('/app/oficina', { replace: true })
+    }
+  }, [navigate, shouldShow, view])
+
+  // Interceptar o clique no FAB quando estiver no coachmark dele
+  useEffect(() => {
+    if (!shouldShow || view !== 'fab-coachmark') return
+
+    const onClickCapture = (event) => {
+      const fab = event.target?.closest?.('[data-tour="fab-nova-os"]')
+      if (!fab) return
+      event.preventDefault()
+      event.stopPropagation()
+      if (typeof event.stopImmediatePropagation === 'function') {
+        event.stopImmediatePropagation()
+      }
+      setView('phase1')
+    }
+
+    document.addEventListener('click', onClickCapture, true)
+    return () => document.removeEventListener('click', onClickCapture, true)
   }, [shouldShow, view])
 
   // Resume do localStorage / flags do usuário
@@ -176,7 +210,7 @@ export default function OnboardingWizard() {
     }
 
     const stored = readStored(user.id)
-    if (stored?.view && ['intro', 'phase1', 'phase2', 'phase3'].includes(stored.view)) {
+    if (stored?.view && ['intro', 'fab-coachmark', 'phase1', 'phase2', 'phase3'].includes(stored.view)) {
       setView(stored.view)
       if (stored.osStep) setOsStep(stored.osStep)
       if (stored.form) setForm(prev => ({ ...prev, ...stored.form }))
@@ -437,16 +471,32 @@ export default function OnboardingWizard() {
     return (
       <FullscreenShell>
         <CelebrationConfetti />
-        <div className="flex w-full max-w-md flex-col items-center px-6 pb-8 pt-12 text-center">
-          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-indigo-600 text-2xl font-black text-white shadow-lg shadow-indigo-200">
-            1%
+        <div className="flex w-full flex-1 flex-col items-center justify-center px-6 pb-8 pt-10 text-center">
+          <div className="mb-2 text-5xl" aria-hidden>🎉</div>
+          <div className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1">
+            <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+            <span className="text-[11px] font-bold uppercase tracking-wide text-indigo-600">Parabéns, {firstName}!</span>
           </div>
-          <h2 className="text-2xl font-extrabold leading-tight text-slate-950">
-            Você está no top 1% das oficinas do Brasil
+          <h2 className="text-[26px] font-extrabold leading-tight text-slate-950">
+            Você entrou para o top<br />das oficinas do Brasil
           </h2>
-          <p className="mt-3 text-sm leading-relaxed text-slate-500">
-            Sua oficina já tem OS organizada, orçamento aprovado por link, envio profissional pelo WhatsApp e dados completos para PDFs com mais confiança.
+          <p className="mt-4 text-sm leading-relaxed text-slate-500">
+            Sua oficina agora tem <strong className="text-slate-700">organização</strong> e <strong className="text-slate-700">profissionalismo</strong>: OS estruturada, orçamento aprovado por link, envio profissional pelo WhatsApp e dados prontos para PDFs que passam confiança ao cliente.
           </p>
+
+          <div className="mt-6 grid w-full grid-cols-3 gap-2">
+            {[
+              { icon: '🛠', label: 'OS organizada' },
+              { icon: '📲', label: 'WhatsApp pro' },
+              { icon: '📄', label: 'PDFs prontos' },
+            ].map(item => (
+              <div key={item.label} className="rounded-2xl bg-slate-50 p-3 text-center">
+                <div className="text-xl" aria-hidden>{item.icon}</div>
+                <p className="mt-1 text-[11px] font-semibold text-slate-600">{item.label}</p>
+              </div>
+            ))}
+          </div>
+
           <button
             onClick={finishAndShowCoachmark}
             className="mt-7 w-full rounded-2xl bg-indigo-600 py-4 text-sm font-extrabold text-white shadow-lg shadow-indigo-200 transition-colors hover:bg-indigo-700"
@@ -461,43 +511,67 @@ export default function OnboardingWizard() {
   if (view === 'intro') {
     return (
       <FullscreenShell>
-        <div className="flex w-full max-w-md flex-col px-6 pb-8 pt-10">
-          <div className="mb-5 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-indigo-600" />
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-indigo-600">Tour guiado</span>
+        <div className="flex w-full flex-1 flex-col overflow-y-auto bg-white">
+          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-600 to-indigo-700 px-6 pt-10 pb-10 text-center text-white">
+            <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-white/10" />
+            <div className="pointer-events-none absolute -bottom-12 -left-8 h-32 w-32 rounded-full bg-white/10" />
+            <div className="pointer-events-none absolute top-1/2 right-1/4 h-16 w-16 rounded-full bg-white/5" />
+
+            <div className="relative mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25 backdrop-blur-sm">
+              <Rocket className="h-7 w-7 text-white" />
+            </div>
+            <h2 className="relative text-[26px] font-extrabold leading-[1.15]">
+              Pronto, {firstName}.
+              <br />
+              Sua oficina já está no controle.
+            </h2>
+            <p className="relative mt-3 text-sm leading-relaxed text-indigo-100">
+              Crie seu primeiro orçamento e envie para o<br />cliente aprovar pelo WhatsApp em<br />menos de 2 minutos.
+            </p>
           </div>
-          <h2 className="text-[26px] font-extrabold leading-tight text-slate-950">
-            Vamos abrir sua primeira OS juntos
-          </h2>
-          <p className="mt-3 text-sm leading-relaxed text-slate-500">
-            Em 3 etapas você cria uma OS real, envia o orçamento pelo WhatsApp e deixa sua oficina pronta para os PDFs profissionais.
-          </p>
-          <div className="mt-6 space-y-3">
-            {[
-              { icon: '🛠', text: 'Criar primeira OS com serviço exemplo de R$ 470,00' },
-              { icon: '📲', text: 'Enviar orçamento pelo WhatsApp com link de aprovação' },
-              { icon: '🏷', text: 'Logotipo e endereço para PDFs profissionais' },
-            ].map(item => (
-              <div key={item.text} className="flex items-start gap-3 rounded-2xl bg-slate-50 px-4 py-3">
-                <span className="text-lg">{item.icon}</span>
-                <span className="text-sm font-medium text-slate-700">{item.text}</span>
-              </div>
-            ))}
+
+          <div className="flex flex-1 flex-col px-6 pb-6 pt-5">
+            <div className="space-y-2">
+              {[
+                { icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50', text: 'Orçamento pronto em poucos minutos' },
+                { icon: Smartphone, color: 'text-indigo-500', bg: 'bg-indigo-50', text: 'Cliente aprova pelo link no WhatsApp' },
+                { icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50', text: 'Tudo organizado: pendente, aprovado e em andamento' },
+              ].map(item => (
+                <div key={item.text} className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3 ring-1 ring-slate-100">
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${item.bg}`}>
+                    <item.icon className={`h-5 w-5 ${item.color}`} />
+                  </span>
+                  <span className="text-sm font-medium leading-snug text-slate-700">{item.text}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-auto pt-6">
+              <button
+                onClick={() => setView('fab-coachmark')}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 py-4 text-[15px] font-extrabold text-white shadow-lg shadow-indigo-200 transition-colors hover:bg-indigo-700"
+              >
+                Criar primeiro orçamento agora <ChevronRight className="h-4 w-4" />
+              </button>
+              <button
+                onClick={skipAll}
+                className="mt-2 w-full py-3 text-center text-sm font-medium text-slate-400 hover:text-slate-600"
+              >
+                Ver o painel antes
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => setView('phase1')}
-            className="mt-7 w-full rounded-2xl bg-indigo-600 py-4 text-sm font-extrabold text-white shadow-lg shadow-indigo-200 transition-colors hover:bg-indigo-700"
-          >
-            Começar tour
-          </button>
-          <button
-            onClick={skipAll}
-            className="mt-3 w-full py-2 text-center text-xs font-medium text-slate-400 hover:text-slate-600"
-          >
-            Pular tour
-          </button>
         </div>
       </FullscreenShell>
+    )
+  }
+
+  if (view === 'fab-coachmark') {
+    return (
+      <FabCoachmark
+        firstName={firstName}
+        onSkip={skipAll}
+      />
     )
   }
 
@@ -860,6 +934,132 @@ function FullscreenShell({ children }) {
   )
 }
 
+function FabCoachmark({ firstName, onSkip }) {
+  const [rect, setRect] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const findRect = () => {
+      if (cancelled) return null
+      const el = document.querySelector('[data-tour="fab-nova-os"]')
+      if (!el) return null
+      const r = el.getBoundingClientRect()
+      if (r.width <= 0 || r.height <= 0) return null
+      return { top: r.top, left: r.left, width: r.width, height: r.height }
+    }
+
+    const sync = () => {
+      if (cancelled) return
+      setRect(findRect())
+    }
+
+    sync()
+    const intervalId = window.setInterval(sync, 240)
+    window.addEventListener('resize', sync)
+    window.addEventListener('scroll', sync, true)
+    window.visualViewport?.addEventListener('resize', sync)
+    window.visualViewport?.addEventListener('scroll', sync)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(intervalId)
+      window.removeEventListener('resize', sync)
+      window.removeEventListener('scroll', sync, true)
+      window.visualViewport?.removeEventListener('resize', sync)
+      window.visualViewport?.removeEventListener('scroll', sync)
+    }
+  }, [])
+
+  const cardWidth = Math.min(320, (typeof window !== 'undefined' ? window.innerWidth : 360) - 24)
+
+  let ring = null
+  let cardTop = 24
+  let cardLeft = 12
+
+  if (rect) {
+    const pad = 10
+    const ringTop = Math.max(0, rect.top - pad)
+    const ringLeft = Math.max(0, rect.left - pad)
+    const ringWidth = rect.width + pad * 2
+    const ringHeight = rect.height + pad * 2
+    ring = { top: ringTop, left: ringLeft, width: ringWidth, height: ringHeight }
+
+    const estimatedCardHeight = 158
+    const viewportTop = window.visualViewport?.offsetTop || 0
+    const gap = 14
+    const roomAbove = ringTop - viewportTop
+    if (roomAbove >= estimatedCardHeight + gap) {
+      cardTop = ringTop - estimatedCardHeight - gap
+    } else {
+      cardTop = Math.max(viewportTop + 12, ringTop - estimatedCardHeight - gap)
+    }
+    cardLeft = Math.max(12, Math.min(window.innerWidth - cardWidth - 12, ringLeft + ringWidth / 2 - cardWidth / 2))
+  }
+
+  return (
+    <>
+      <WizardStyles />
+      {/* backdrop sutil que NÃO bloqueia o clique no FAB — só escurece o resto */}
+      {ring && (
+        <div
+          className="pointer-events-none fixed inset-0 z-[389] bg-slate-900/35"
+          style={{
+            WebkitMaskImage: `radial-gradient(circle at ${ring.left + ring.width / 2}px ${ring.top + ring.height / 2}px, transparent 0px, transparent ${Math.max(ring.width, ring.height) / 2 + 18}px, black ${Math.max(ring.width, ring.height) / 2 + 32}px)`,
+            maskImage: `radial-gradient(circle at ${ring.left + ring.width / 2}px ${ring.top + ring.height / 2}px, transparent 0px, transparent ${Math.max(ring.width, ring.height) / 2 + 18}px, black ${Math.max(ring.width, ring.height) / 2 + 32}px)`,
+          }}
+        />
+      )}
+
+      {ring && (
+        <div
+          className="pointer-events-none fixed z-[391] rounded-full"
+          style={{
+            top: ring.top,
+            left: ring.left,
+            width: ring.width,
+            height: ring.height,
+            boxShadow: '0 0 0 3px #4f46e5, 0 0 0 8px rgba(79,70,229,.32)',
+            animation: 'wizardPulseIndigo 1.4s ease-in-out infinite',
+          }}
+        />
+      )}
+
+      <div
+        className="fixed z-[395]"
+        style={{ top: cardTop, left: cardLeft, width: cardWidth }}
+      >
+        <div className="relative rounded-2xl bg-white p-4 shadow-2xl ring-1 ring-slate-900/5">
+          <button
+            type="button"
+            onClick={onSkip}
+            className="absolute right-2.5 top-2.5 rounded-full px-2 py-1 text-[11px] font-semibold text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+          >
+            Pular
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600">
+              <Plus className="h-4 w-4 text-white" />
+            </span>
+            <span className="text-[11px] font-bold uppercase tracking-wide text-indigo-600">Passo 1</span>
+          </div>
+          <h4 className="mt-2 pr-8 text-[15px] font-extrabold leading-snug text-slate-950">
+            Toque no <span className="text-indigo-600">+</span> para abrir sua primeira OS
+          </h4>
+          <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+            {firstName}, é esse botão que você vai usar todos os dias para criar uma nova OS.
+          </p>
+          {!ring && (
+            <p className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-400">
+              <Loader2 className="h-3 w-3 animate-spin" /> Localizando o botão na tela...
+            </p>
+          )}
+        </div>
+      </div>
+    </>
+  )
+}
+
 function FinalCoachmark({ onDismiss }) {
   const [rect, setRect] = useState(null)
   const dismissedRef = useRef(false)
@@ -1000,6 +1200,10 @@ function WizardStyles() {
       @keyframes wizardPulse {
         0%, 100% { box-shadow: 0 0 0 3px #10b981, 0 0 0 8px rgba(16,185,129,.24); }
         50% { box-shadow: 0 0 0 3px #10b981, 0 0 0 16px rgba(16,185,129,0); }
+      }
+      @keyframes wizardPulseIndigo {
+        0%, 100% { box-shadow: 0 0 0 3px #4f46e5, 0 0 0 8px rgba(79,70,229,.32); }
+        50% { box-shadow: 0 0 0 3px #4f46e5, 0 0 0 18px rgba(79,70,229,0); }
       }
       @keyframes wizardConfetti {
         0% { transform: translateY(0) rotate(0deg); opacity: 1; }
