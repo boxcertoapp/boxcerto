@@ -10,6 +10,7 @@ const FIRST_OS_SESSION_KEY = 'boxcerto:onboarding:first-os-active'
 const STEP_ORDER = [
   'welcome',
   'open-fab',
+  'first-os-wizard',
   'plate',
   'search-plate',
   'branch-after-search',
@@ -46,6 +47,7 @@ const PHASES = [
 
 const FIRST_OS_STEPS = new Set([
   'open-fab',
+  'first-os-wizard',
   'plate',
   'search-plate',
   'branch-after-search',
@@ -58,6 +60,7 @@ const FIRST_OS_STEPS = new Set([
 
 const FORM_STEPS = new Set([
   'plate',
+  'first-os-wizard',
   'search-plate',
   'branch-after-search',
   'existing-open',
@@ -82,6 +85,12 @@ const STEPS = {
     title: 'Toque no + para abrir sua primeira OS',
     body: 'Vamos criar uma OS de exemplo dentro do fluxo real do sistema.',
     action: 'click',
+  },
+  'first-os-wizard': {
+    id: 'first-os-wizard',
+    kind: 'passive',
+    phase: 1,
+    page: '/app/oficina',
   },
   plate: {
     id: 'plate',
@@ -484,7 +493,8 @@ export default function OnboardingTour() {
 
   useEffect(() => {
     if (!shouldShow || !user?.id) return
-    try { localStorage.setItem(`${TOUR_STORAGE_PREFIX}${user.id}`, stepId) } catch {}
+    const storedStep = stepId === 'first-os-wizard' ? 'open-fab' : stepId
+    try { localStorage.setItem(`${TOUR_STORAGE_PREFIX}${user.id}`, storedStep) } catch {}
   }, [shouldShow, stepId, user?.id])
 
   useEffect(() => {
@@ -667,7 +677,8 @@ export default function OnboardingTour() {
 
       if (step.id === 'open-fab') {
         setFirstOsSession(true)
-        window.setTimeout(() => goToStep('plate'), 180)
+        const nextStep = isMobileViewport() ? 'first-os-wizard' : 'plate'
+        window.setTimeout(() => goToStep(nextStep), 180)
         return
       }
 
@@ -814,6 +825,10 @@ export default function OnboardingTour() {
         />
       </>
     )
+  }
+
+  if (step.kind === 'passive') {
+    return null
   }
 
   if (step.kind === 'final') {

@@ -163,54 +163,65 @@ async function openOnboarding(page, user = {}, options = {}) {
   await page.goto('/app/oficina')
 }
 
-test('tour waits on required Nova OS inputs on mobile', async ({ page }) => {
+async function fillFirstOsWizardUntilConfirm(page) {
+  await expect(page.locator('[data-tour="onboarding-first-os-wizard"]')).toBeVisible()
+  await expect(page.locator('[data-tour="spotlight-overlay"]')).toHaveCount(0)
+
+  await expect(page.getByText('Digite a placa', { exact: true })).toBeVisible()
+  await page.locator('[data-tour="input-placa"]').fill('ABC1A23')
+  await page.getByRole('button', { name: /Continuar/i }).click()
+
+  await expect(page.getByText('Nome do cliente', { exact: true })).toBeVisible()
+  await page.locator('[data-tour="input-nome-cliente"]').fill('Joao da Silva')
+  await page.getByRole('button', { name: /Continuar/i }).click()
+
+  await expect(page.getByText('WhatsApp do cliente', { exact: true })).toBeVisible()
+  await page.locator('[data-tour="input-whatsapp"]').fill('51999999999')
+  await page.getByRole('button', { name: /Continuar/i }).click()
+
+  await expect(page.getByText('Modelo do veículo', { exact: true })).toBeVisible()
+  await page.locator('[data-tour="input-modelo-manual"]').fill('Honda CG 160 2022')
+  await page.getByRole('button', { name: /Continuar/i }).click()
+
+  await expect(page.getByText('Tudo pronto para criar', { exact: true })).toBeVisible()
+  await expect(page.locator('[data-tour="btn-criar-os"]')).toBeVisible()
+}
+
+test('tour uses the stable first OS wizard on mobile', async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 740 })
   await openOnboarding(page)
 
   await page.getByRole('button', { name: /comecar tour guiado|começar tour guiado/i }).click()
   await page.locator('[data-tour="fab-nova-os"]:visible').click()
 
+  const wizard = page.locator('[data-tour="onboarding-first-os-wizard"]')
   const plate = page.locator('[data-tour="input-placa"]')
-  const mobileCard = page.locator('[data-tour="mobile-tour-card"]')
+  await expect(wizard).toBeVisible()
+  await expect(page.locator('[data-tour="spotlight-overlay"]')).toHaveCount(0)
   await expect(page.getByText('Digite a placa', { exact: true })).toBeVisible()
-  await expect(mobileCard).toBeVisible()
-  await expect(page.locator('[data-tour="spotlight-overlay"]').first()).toHaveCSS('pointer-events', 'none')
+
   await plate.fill('ABC1A23')
   await page.setViewportSize({ width: 393, height: 420 })
+  await expect(wizard).toBeVisible()
   await expect(plate).toBeInViewport()
-  await page.waitForTimeout(900)
-  await expect(page.getByText('Digite a placa', { exact: true })).toBeVisible()
-
-  await plate.blur()
+  await page.getByRole('button', { name: /Continuar/i }).click()
 
   const name = page.locator('[data-tour="input-nome-cliente"]')
-  await expect(page.getByText('Digite o nome do cliente', { exact: true })).toBeVisible({ timeout: 6000 })
-  const modalScroll = page.locator('[data-tour="nova-os-scroll"]')
-  await expect.poll(() => modalScroll.evaluate(el => el.scrollHeight > el.clientHeight)).toBeTruthy()
+  await expect(page.getByText('Nome do cliente', { exact: true })).toBeVisible({ timeout: 6000 })
   await expect(name).toBeInViewport()
-  await page.waitForTimeout(500)
-  const cardBottom = await mobileCard.evaluate(el => el.getBoundingClientRect().bottom)
-  const nameTop = await name.evaluate(el => el.getBoundingClientRect().top)
-  expect(nameTop).toBeGreaterThan(cardBottom - 8)
 
   await name.fill('Joao da Silva')
-  await page.waitForTimeout(900)
-  await expect(page.getByText('Digite o nome do cliente', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: /Continuar/i }).click()
 
-  await name.blur()
   const whatsapp = page.locator('[data-tour="input-whatsapp"]')
-  await expect(page.getByRole('heading', { name: 'Digite o WhatsApp' })).toBeVisible()
+  await expect(page.getByText('WhatsApp do cliente', { exact: true })).toBeVisible()
   await whatsapp.fill('51999999999')
-  const cardTopBeforeKeyboard = await mobileCard.evaluate(el => Math.round(el.getBoundingClientRect().top))
   await page.setViewportSize({ width: 393, height: 360 })
-  const cardTopAfterKeyboard = await mobileCard.evaluate(el => Math.round(el.getBoundingClientRect().top))
-  expect(cardTopAfterKeyboard).toBe(cardTopBeforeKeyboard)
+  await expect(wizard).toBeVisible()
   await expect(whatsapp).toBeInViewport()
-  await page.waitForTimeout(900)
-  await expect(page.getByRole('heading', { name: 'Digite o WhatsApp' })).toBeVisible()
+  await page.getByRole('button', { name: /Continuar/i }).click()
 
-  await whatsapp.blur()
-  await expect(page.getByRole('heading', { name: 'Digite o modelo do veículo' })).toBeVisible()
+  await expect(page.getByText('Modelo do veículo', { exact: true })).toBeVisible()
   await expect(page.locator('[data-tour="input-modelo-manual"]')).toBeInViewport()
 })
 
@@ -240,9 +251,10 @@ test('tour reconciles stale saved form step with visible plate field', async ({ 
 
   await page.locator('[data-tour="fab-nova-os"]:visible').click()
 
+  await expect(page.locator('[data-tour="onboarding-first-os-wizard"]')).toBeVisible()
   await expect(page.locator('[data-tour="input-placa"]')).toBeVisible()
   await expect(page.getByText('Digite a placa', { exact: true })).toBeVisible()
-  await expect(page.getByText('Digite o nome do cliente', { exact: true })).toHaveCount(0)
+  await expect(page.getByText('Nome do cliente', { exact: true })).toHaveCount(0)
 })
 
 test('guided first OS creates the example service and opens WhatsApp step', async ({ page }) => {
@@ -250,20 +262,7 @@ test('guided first OS creates the example service and opens WhatsApp step', asyn
 
   await page.getByRole('button', { name: /comecar tour guiado|começar tour guiado/i }).click()
   await page.locator('[data-tour="fab-nova-os"]:visible').click()
-  await expect(page.getByText('Digite a placa', { exact: true })).toBeVisible()
-  await page.locator('[data-tour="input-placa"]').fill('ABC1A23')
-  await page.locator('[data-tour="input-placa"]').blur()
-
-  await expect(page.getByText('Digite o nome do cliente', { exact: true })).toBeVisible()
-  await page.locator('[data-tour="input-nome-cliente"]').fill('Joao da Silva')
-  await page.locator('[data-tour="input-nome-cliente"]').blur()
-  await expect(page.getByRole('heading', { name: 'Digite o WhatsApp' })).toBeVisible()
-  await page.locator('[data-tour="input-whatsapp"]').fill('51999999999')
-  await page.locator('[data-tour="input-whatsapp"]').blur()
-  await expect(page.getByRole('heading', { name: 'Digite o modelo do veículo' })).toBeVisible()
-  await page.locator('[data-tour="input-modelo-manual"]').fill('Honda CG 160 2022')
-  await page.locator('[data-tour="input-modelo-manual"]').blur()
-  await expect(page.getByRole('heading', { name: 'Crie e abra a primeira OS' })).toBeVisible()
+  await fillFirstOsWizardUntilConfirm(page)
   await page.locator('[data-tour="btn-criar-os"]').click()
 
   await expect(page.getByText(/Conclu.mos nossa primeira OS/i)).toBeVisible()
