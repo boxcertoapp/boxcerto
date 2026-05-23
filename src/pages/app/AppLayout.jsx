@@ -4,7 +4,7 @@ import { Wrench, Clock, TrendingUp, Menu, Package, Zap } from 'lucide-react'
 import { useAuth, hasAccess, trialDaysLeft } from '../../contexts/AuthContext'
 import AnnouncementBanner from '../../components/AnnouncementBanner'
 import Logo from '../../components/Logo'
-import OnboardingTour from '../../components/OnboardingTour'
+import OnboardingWizard from '../../components/OnboardingWizard'
 
 const tabs = [
   { to: '/app/oficina',    icon: Wrench,     label: 'Oficina' },
@@ -171,10 +171,8 @@ export default function AppLayout() {
         </nav>
       </div>
 
-      {/* Onboarding checklist flutuante
-          Mobile: lado ESQUERDO (o FAB "+" está fixed bottom-24 right-4)
-          Desktop: canto inferior direito */}
-      <OnboardingTour />
+      {/* Onboarding wizard fullscreen — 3 fases (criar OS, enviar WhatsApp, configurar oficina) */}
+      <OnboardingWizard />
 
       {/* Fundo decorativo desktop */}
       <div className="fixed inset-0 -z-10 bg-gradient-to-br from-slate-100 to-indigo-50 hidden lg:block" />

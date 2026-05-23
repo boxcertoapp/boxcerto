@@ -58,30 +58,6 @@ const WPP_MESSAGES = {
     `Olá ${cliente}! 🎂 Hoje é seu aniversário! A equipe da oficina deseja um dia incrível. Aproveite nosso desconto especial de aniversário! 🎁`,
 }
 
-const ONBOARDING_FIRST_OS_KEY = 'boxcerto:onboarding:first-os-active'
-const ONBOARDING_EXAMPLE_ITEM = {
-  descricao: 'SERVIÇO EXEMPLO PRIMEIRA OS',
-  custo: 0,
-  venda: 470,
-  garantia: '',
-}
-
-const ONBOARDING_WIZARD_STEPS = [
-  { key: 'plate', label: 'Placa' },
-  { key: 'name', label: 'Cliente' },
-  { key: 'whatsapp', label: 'WhatsApp' },
-  { key: 'model', label: 'Veículo' },
-  { key: 'confirm', label: 'Criar OS' },
-]
-
-function isOnboardingFirstOS() {
-  try {
-    return sessionStorage.getItem(ONBOARDING_FIRST_OS_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-
 function PlateTag({ placa }) {
   return (
     <div className="bg-slate-800 px-2.5 py-1.5 rounded-lg flex flex-col items-center min-w-[80px]">
@@ -517,12 +493,24 @@ export default function Oficina() {
     }
   }, [])
 
-  // Onboarding: abre modal quando o checklist dispara o evento
+  // Onboarding: abre OS específica quando o wizard termina (para mostrar coachmark no botão WhatsApp)
   useEffect(() => {
-    const handler = () => { setPrefillPlate(''); setShowNewOS(true) }
-    window.addEventListener('boxcerto:abrir-nova-os', handler)
-    return () => window.removeEventListener('boxcerto:abrir-nova-os', handler)
-  }, [])
+    if (!user?.oficina) return
+    const handler = async (event) => {
+      const osId = event?.detail?.osId
+      if (!osId) return
+      try {
+        const all = await osStorage.getAll(user.oficina)
+        const target = all.find(o => o.id === osId)
+        if (target) {
+          const items = await itemStorage.getByOS(osId)
+          setSelectedOS({ ...target, items, totals: itemStorage.totals(items) })
+        }
+      } catch {}
+    }
+    window.addEventListener('boxcerto:onboarding-abrir-os', handler)
+    return () => window.removeEventListener('boxcerto:onboarding-abrir-os', handler)
+  }, [user?.oficina])
 
   // Rastreia primeira OS criada — ativa o usuário e dispara CreatedFirstBudget
   useEffect(() => {
@@ -602,25 +590,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
   const [allClients, setAllClients] = useState([]) // pre-loaded for suggestions
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [onboardingMode] = useState(isOnboardingFirstOS)
-  const [wizardStep, setWizardStep] = useState('plate')
-  const [useMobileWizard, setUseMobileWizard] = useState(() => {
-    if (!isOnboardingFirstOS()) return false
-    return typeof window !== 'undefined' && window.innerWidth < 768
-  })
-  const [showFipe, setShowFipe] = useState(() => !isOnboardingFirstOS())
-
-  useEffect(() => {
-    if (!onboardingMode) return
-    const updateMode = () => setUseMobileWizard(window.innerWidth < 768)
-    updateMode()
-    window.addEventListener('resize', updateMode)
-    window.visualViewport?.addEventListener('resize', updateMode)
-    return () => {
-      window.removeEventListener('resize', updateMode)
-      window.visualViewport?.removeEventListener('resize', updateMode)
-    }
-  }, [onboardingMode])
+  const [showFipe, setShowFipe] = useState(true)
 
   useEffect(() => {
     const root = document.documentElement
@@ -698,10 +668,6 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
     if (clean.length < 7) return setError('Placa inválida.')
     if (!validatePlate(placa.toUpperCase())) return setError('Formato inválido. Use ABC-1234 ou ABC-1A23 (Mercosul).')
     setError('')
-    if (onboardingMode) {
-      setStep('newClient')
-      return
-    }
     setLoading(true)
     const found = await vehicleStorage.getByPlate(officeName, placa)
     if (found) {
@@ -713,15 +679,6 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
       setStep('newClient')
     }
     setLoading(false)
-  }
-
-  const continueOnboardingFromPlate = () => {
-    if (!onboardingMode || step !== 'plate') return
-    const clean = placa.replace(/[^a-zA-Z0-9]/g, '')
-    if (clean.length < 7) return
-    if (!validatePlate(placa.toUpperCase())) return
-    setError('')
-    setStep('newClient')
   }
 
   const handleNomeChange = (val) => {
@@ -765,18 +722,14 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
         : await clientStorage.create({ officeName, ...newClient, dataNascimento: dataBRtoISO(newClient.dataNascimento) || newClient.dataNascimento })
       const v = await vehicleStorage.create({ officeName, clientId: c.id, placa, modelo: newClient.modelo })
       const createdOS = await osStorage.create({ officeName, vehicleId: v.id, km, agendadoPara: dataBRtoISO(agendadoPara) ? dataBRtoISO(agendadoPara) + 'T12:00' : null })
-      const items = []
-      if (onboardingMode) {
-        items.push(await itemStorage.add({ osId: createdOS.id, ...ONBOARDING_EXAMPLE_ITEM }))
-      }
       const hydratedOS = {
         ...createdOS,
         vehicle: { ...v, client: c },
         client: c,
-        items,
-        totals: itemStorage.totals(items),
+        items: [],
+        totals: itemStorage.totals([]),
       }
-      window.dispatchEvent(new CustomEvent('boxcerto:os-criada', { detail: { osId: createdOS.id, onboarding: onboardingMode } }))
+      window.dispatchEvent(new CustomEvent('boxcerto:os-criada', { detail: { osId: createdOS.id } }))
       if (onCreated) onCreated(hydratedOS)
       else onClose()
     } catch (e) {
@@ -789,18 +742,14 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
     setLoading(true)
     try {
       const createdOS = await osStorage.create({ officeName, vehicleId: vehicle.id, km, agendadoPara: dataBRtoISO(agendadoPara) ? dataBRtoISO(agendadoPara) + 'T12:00' : null })
-      const items = []
-      if (onboardingMode) {
-        items.push(await itemStorage.add({ osId: createdOS.id, ...ONBOARDING_EXAMPLE_ITEM }))
-      }
       const hydratedOS = {
         ...createdOS,
         vehicle: { ...vehicle, client },
         client,
-        items,
-        totals: itemStorage.totals(items),
+        items: [],
+        totals: itemStorage.totals([]),
       }
-      window.dispatchEvent(new CustomEvent('boxcerto:os-criada', { detail: { osId: createdOS.id, onboarding: onboardingMode } }))
+      window.dispatchEvent(new CustomEvent('boxcerto:os-criada', { detail: { osId: createdOS.id } }))
       if (onCreated) onCreated(hydratedOS)
       else onClose()
     } catch (e) {
@@ -809,245 +758,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
     }
   }
 
-  const wizardIndex = ONBOARDING_WIZARD_STEPS.findIndex(s => s.key === wizardStep)
-  const wizardProgress = Math.max(0, wizardIndex)
-
-  const goWizardBack = () => {
-    setError('')
-    const previous = ONBOARDING_WIZARD_STEPS[wizardProgress - 1]
-    if (previous) setWizardStep(previous.key)
-  }
-
-  const goWizardNext = () => {
-    setError('')
-
-    if (wizardStep === 'plate') {
-      const clean = placa.replace(/[^a-zA-Z0-9]/g, '')
-      if (clean.length < 7) return setError('Digite uma placa para continuar.')
-      if (!validatePlate(placa.toUpperCase())) return setError('Use uma placa no formato ABC-1234 ou ABC-1A23.')
-      setStep('newClient')
-      setWizardStep('name')
-      return
-    }
-
-    if (wizardStep === 'name') {
-      if (newClient.nome.trim().length < 4) return setError('Digite o nome do cliente.')
-      setWizardStep('whatsapp')
-      return
-    }
-
-    if (wizardStep === 'whatsapp') {
-      if (newClient.whatsapp.replace(/\D/g, '').length < 10) return setError('Digite o WhatsApp do cliente.')
-      setWizardStep('model')
-      return
-    }
-
-    if (wizardStep === 'model') {
-      if (newClient.modelo.trim().length < 2) return setError('Digite o modelo do veículo.')
-      setWizardStep('confirm')
-    }
-  }
-
-  const handleWizardEnter = event => {
-    if (event.key !== 'Enter') return
-    event.preventDefault()
-    goWizardNext()
-  }
-
   const inp = 'w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 text-sm'
-
-  if (onboardingMode && useMobileWizard) {
-    return (
-      <div
-        data-tour="onboarding-first-os-wizard"
-        className="fixed inset-x-0 top-0 z-[60] flex items-stretch justify-center bg-white"
-        style={{ height: 'var(--boxcerto-visual-vh, 100dvh)' }}
-      >
-        <div className="flex h-full w-full max-w-lg flex-col bg-white">
-          <div className="shrink-0 border-b border-slate-100 px-5 pb-4 pt-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-600">Primeira OS</p>
-                <h2 className="mt-1 truncate text-xl font-extrabold text-slate-950">Vamos criar juntos</h2>
-              </div>
-              <button data-tour="btn-fechar-nova-os" type="button" onClick={onClose} className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="mt-4 grid grid-cols-5 gap-1.5">
-              {ONBOARDING_WIZARD_STEPS.map((item, index) => (
-                <div key={item.key} className={`h-1.5 rounded-full ${index <= wizardProgress ? 'bg-indigo-600' : 'bg-slate-100'}`} />
-              ))}
-            </div>
-          </div>
-
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-5 py-5">
-            {error && (
-              <div className="mb-4 flex items-center gap-2 rounded-xl bg-red-50 p-3 text-sm font-medium text-red-600">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                {error}
-              </div>
-            )}
-
-            {wizardStep === 'plate' && (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-semibold text-slate-500">Passo 1 de 5</p>
-                  <h3 className="mt-2 text-2xl font-extrabold leading-tight text-slate-950">Digite a placa</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-500">Pode ser uma placa real ou de teste. Na primeira OS não vamos buscar cadastro antigo.</p>
-                </div>
-                <input
-                  data-tour="input-placa"
-                  type="text"
-                  value={placa}
-                  onChange={e => { setError(''); setPlaca(formatPlate(e.target.value)) }}
-                  onKeyDown={handleWizardEnter}
-                  placeholder="ABC-1D23"
-                  maxLength={8}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-5 text-center text-3xl font-black uppercase tracking-widest text-slate-950 plate-mercosul focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100"
-                />
-              </div>
-            )}
-
-            {wizardStep === 'name' && (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-semibold text-slate-500">Passo 2 de 5</p>
-                  <h3 className="mt-2 text-2xl font-extrabold leading-tight text-slate-950">Nome do cliente</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-500">Só o nome é obrigatório aqui. CPF pode ficar em branco.</p>
-                </div>
-                <input
-                  data-tour="input-nome-cliente"
-                  type="text"
-                  value={newClient.nome}
-                  onChange={e => { setError(''); handleNomeChange(e.target.value) }}
-                  onKeyDown={handleWizardEnter}
-                  placeholder="João da Silva Santos"
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-4 text-lg font-semibold text-slate-950 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100"
-                />
-              </div>
-            )}
-
-            {wizardStep === 'whatsapp' && (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-semibold text-slate-500">Passo 3 de 5</p>
-                  <h3 className="mt-2 text-2xl font-extrabold leading-tight text-slate-950">WhatsApp do cliente</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-500">Esse número vai receber o orçamento profissional pelo BoxCerto.</p>
-                </div>
-                <input
-                  data-tour="input-whatsapp"
-                  type="tel"
-                  inputMode="tel"
-                  value={newClient.whatsapp}
-                  onChange={e => { setError(''); setNewClient(p => ({ ...p, whatsapp: formatWpp(e.target.value) })) }}
-                  onKeyDown={handleWizardEnter}
-                  placeholder="(51) 99999-9999"
-                  maxLength={15}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-4 text-lg font-semibold text-slate-950 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100"
-                />
-              </div>
-            )}
-
-            {wizardStep === 'model' && (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-semibold text-slate-500">Passo 4 de 5</p>
-                  <h3 className="mt-2 text-2xl font-extrabold leading-tight text-slate-950">Modelo do veículo</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-500">Digite manualmente para terminar rápido. Exemplo: Honda CG 160 2022.</p>
-                </div>
-                <input
-                  data-tour="input-modelo-manual"
-                  type="text"
-                  value={newClient.modelo}
-                  onChange={e => { setError(''); setNewClient(p => ({ ...p, modelo: e.target.value })) }}
-                  onKeyDown={handleWizardEnter}
-                  placeholder="Honda CG 160 2022"
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-4 text-lg font-semibold text-slate-950 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100"
-                />
-              </div>
-            )}
-
-            {wizardStep === 'confirm' && (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-semibold text-slate-500">Passo 5 de 5</p>
-                  <h3 className="mt-2 text-2xl font-extrabold leading-tight text-slate-950">Tudo pronto para criar</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-500">Vou criar a OS e adicionar automaticamente o serviço exemplo de R$ 470,00.</p>
-                </div>
-
-                <div className="space-y-2 rounded-2xl bg-slate-50 p-4">
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-slate-500">Placa</span>
-                    <strong className="text-slate-950">{placa}</strong>
-                  </div>
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-slate-500">Cliente</span>
-                    <strong className="truncate text-slate-950">{newClient.nome}</strong>
-                  </div>
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-slate-500">WhatsApp</span>
-                    <strong className="text-slate-950">{newClient.whatsapp}</strong>
-                  </div>
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-slate-500">Veículo</span>
-                    <strong className="truncate text-slate-950">{newClient.modelo}</strong>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-                    <div>
-                      <p className="text-sm font-bold text-emerald-800">SERVIÇO EXEMPLO PRIMEIRA OS</p>
-                      <p className="mt-1 text-sm text-emerald-700">Valor: R$ 470,00</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="shrink-0 border-t border-slate-100 bg-white px-5 pb-4 pt-3">
-            <div className="flex items-center gap-3">
-              {wizardProgress > 0 && (
-                <button
-                  type="button"
-                  onClick={goWizardBack}
-                  className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50"
-                >
-                  Voltar
-                </button>
-              )}
-
-              {wizardStep === 'confirm' ? (
-                <button
-                  data-tour="btn-criar-os"
-                  type="button"
-                  onClick={createAndOpen}
-                  disabled={loading}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-indigo-200 transition-colors hover:bg-indigo-700 disabled:opacity-60"
-                >
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                  {loading ? 'Criando...' : 'Criar primeira OS'}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={goWizardNext}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-indigo-200 transition-colors hover:bg-indigo-700"
-                >
-                  Continuar
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="fixed inset-x-0 top-0 z-[60] h-screen flex items-end justify-center bg-black/40"
@@ -1071,12 +782,11 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Placa do Veículo</label>
                 <input data-tour="input-placa" type="text" value={placa} onChange={e => setPlaca(formatPlate(e.target.value))}
-                  onBlur={continueOnboardingFromPlate}
-                  placeholder="ABC-1D23" maxLength={8} autoFocus={!onboardingMode}
+                  placeholder="ABC-1D23" maxLength={8} autoFocus
                   className="w-full px-4 py-4 text-center text-2xl font-bold plate-mercosul rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 uppercase tracking-widest" />
               </div>
               <button data-tour="btn-buscar-placa" onClick={searchPlate} disabled={loading} className="w-full bg-indigo-600 text-white font-semibold py-3.5 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-60">
-                <Search className="w-5 h-5 inline mr-2" />{loading ? 'Buscando...' : onboardingMode ? 'Continuar' : 'Buscar / Abrir OS'}
+                <Search className="w-5 h-5 inline mr-2" />{loading ? 'Buscando...' : 'Buscar / Abrir OS'}
               </button>
             </div>
           )}
@@ -1131,7 +841,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
                       placeholder="João da Silva Santos"
                       value={newClient.nome}
                       onChange={e => handleNomeChange(e.target.value)}
-                      autoFocus={!onboardingMode}
+                      autoFocus
                       className={`${inp} ${existingClient ? 'border-green-400 bg-green-50' : ''}`}
                     />
                     {existingClient && (
@@ -1229,12 +939,10 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
                           value={newClient.modelo}
                           onChange={e => setNewClient(p => ({ ...p, modelo: e.target.value }))}
                           className={inp} />
-                        {!onboardingMode && (
                         <button type="button" onClick={() => { setNewClient(p => ({ ...p, modelo: '' })); setShowFipe(true) }}
                           className="w-full py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-xs text-indigo-600 font-semibold hover:bg-indigo-100 transition-colors">
                           🔍 Busca fácil por marca e modelo
                         </button>
-                        )}
                       </div>
                     )}
                   </div>
