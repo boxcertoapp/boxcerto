@@ -18,8 +18,10 @@ const STEP_ORDER = [
   'client-whatsapp',
   'vehicle-model',
   'create-os',
+  'os-done',
   'open-os-detail',
   'send-whatsapp',
+  'whatsapp-done',
   'config-logo',
   'config-address',
   'config-save',
@@ -31,7 +33,7 @@ const LEGACY_STEP_MAP = {
   'search-plate': 'plate',
   'branch-after-search': 'plate',
   'existing-open': 'plate',
-  'enviar-orcamento': 'send-whatsapp',
+  'enviar-orcamento': 'open-os-detail',
   'configurar-oficina': 'config-logo',
   'celebration-final': 'final',
 }
@@ -164,6 +166,15 @@ const STEPS = {
     action: 'event',
     event: 'boxcerto:os-criada',
   },
+  'os-done': {
+    id: 'os-done',
+    kind: 'message',
+    phase: 2,
+    title: 'Concluímos nossa primeira OS',
+    body: 'Perfeito. Agora vamos abrir essa OS e enviar o orçamento profissional pelo WhatsApp.',
+    cta: 'Enviar pelo WhatsApp',
+    next: 'open-os-detail',
+  },
   'open-os-detail': {
     id: 'open-os-detail',
     kind: 'target',
@@ -184,6 +195,15 @@ const STEPS = {
     body: 'Clique em Enviar para cliente. O cliente recebe o link de aprovação da OS no WhatsApp.',
     action: 'event',
     event: 'boxcerto:orcamento-enviado',
+  },
+  'whatsapp-done': {
+    id: 'whatsapp-done',
+    kind: 'message',
+    phase: 3,
+    title: 'Ótimo, orçamento enviado',
+    body: 'Agora vamos terminar de configurar sua oficina para seus PDFs e orçamentos saírem com mais confiança.',
+    cta: 'Configurar oficina',
+    next: 'config-logo',
   },
   'config-logo': {
     id: 'config-logo',
@@ -356,6 +376,10 @@ function isStepReady(step, el) {
   return false
 }
 
+function isMobileViewport() {
+  return typeof window !== 'undefined' && window.innerWidth < 768
+}
+
 function scrollTargetIntoView(el) {
   const container = el.closest('[data-tour="nova-os-scroll"]')
   if (container) {
@@ -363,7 +387,13 @@ function scrollTargetIntoView(el) {
     const containerRect = container.getBoundingClientRect()
     const visualHeight = window.visualViewport?.height || window.innerHeight
     const availableHeight = Math.min(containerRect.height, Math.max(240, visualHeight - containerRect.top - 24))
-    const wantedCenter = containerRect.top + availableHeight * 0.42
+    const mobile = isMobileViewport()
+    const safeTop = containerRect.top + (mobile ? 148 : 0)
+    const safeBottom = containerRect.top + availableHeight - (mobile ? 18 : 0)
+    const safeHeight = Math.max(90, safeBottom - safeTop)
+    const wantedCenter = mobile
+      ? safeTop + safeHeight * 0.42
+      : containerRect.top + availableHeight * 0.42
     const delta = (targetRect.top + targetRect.height / 2) - wantedCenter
     container.scrollTo({
       top: Math.max(0, container.scrollTop + delta),
@@ -674,13 +704,13 @@ export default function OnboardingTour() {
       if (!FIRST_OS_STEPS.has(stepId)) return
       setFirstOsSession(false)
       await patchProfile({ onboarding_os_done: true })
-      goToStep('open-os-detail')
+      goToStep('os-done')
     }
 
     const onBudgetSent = async () => {
       if (stepId !== 'send-whatsapp') return
       await patchProfile({ onboarding_orcamento_done: true })
-      goToStep('config-logo')
+      goToStep('whatsapp-done')
     }
 
     const onOfficeSaved = async () => {
@@ -704,6 +734,14 @@ export default function OnboardingTour() {
     if (step.phase === 2) return 1
     return 2
   }, [step.phase])
+
+  const continueMessage = useCallback(() => {
+    if (stepId === 'os-done') {
+      goToStep(getCurrentFirstOsStepFromDom('open-os-detail') || 'open-os-detail')
+      return
+    }
+    goToStep(step.next || 'config-logo')
+  }, [goToStep, step, stepId])
 
   if (!shouldShow) return null
 
@@ -761,6 +799,20 @@ export default function OnboardingTour() {
           </div>
         </div>
       </div>
+    )
+  }
+
+  if (step.kind === 'message') {
+    return (
+      <>
+        <TourStyles />
+        <MessageOverlay
+          step={step}
+          phaseIndex={phaseIndex}
+          onContinue={continueMessage}
+          onSkip={skipTour}
+        />
+      </>
     )
   }
 
@@ -826,6 +878,39 @@ export default function OnboardingTour() {
   )
 }
 
+function MessageOverlay({ step, phaseIndex, onContinue, onSkip }) {
+  return (
+    <div className="fixed inset-0 z-[400] flex items-end justify-center bg-slate-950/70 p-0 sm:items-center sm:p-4">
+      <div data-tour="tour-message" className="w-full max-w-sm rounded-t-[28px] bg-white shadow-2xl sm:rounded-[28px]">
+        <div className="px-6 pb-6 pt-7">
+          <div className="mb-4 grid grid-cols-3 gap-1.5">
+            {PHASES.map((phase, index) => (
+              <span
+                key={phase.id}
+                className={`h-1.5 rounded-full ${index <= phaseIndex ? 'bg-indigo-600' : 'bg-slate-100'}`}
+              />
+            ))}
+          </div>
+          <h2 className="text-2xl font-extrabold leading-tight text-slate-950">{step.title}</h2>
+          <p className="mt-3 text-sm leading-relaxed text-slate-500">{step.body}</p>
+          <button
+            onClick={onContinue}
+            className="mt-6 w-full rounded-2xl bg-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-200 transition-colors hover:bg-indigo-700"
+          >
+            {step.cta || 'Continuar'}
+          </button>
+          <button
+            onClick={onSkip}
+            className="mt-3 w-full py-2 text-center text-xs font-medium text-slate-400 transition-colors hover:text-slate-600"
+          >
+            Pular tour
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function WaitingOverlay({ title, body, onSkip }) {
   return (
     <>
@@ -851,6 +936,20 @@ function WaitingOverlay({ title, body, onSkip }) {
 }
 
 function TargetOverlay({ rect, step, phaseIndex, targetReady, onReadyNext, onSkipLogo, onSkip }) {
+  if (isMobileViewport()) {
+    return (
+      <MobileTargetOverlay
+        rect={rect}
+        step={step}
+        phaseIndex={phaseIndex}
+        targetReady={targetReady}
+        onReadyNext={onReadyNext}
+        onSkipLogo={onSkipLogo}
+        onSkip={onSkip}
+      />
+    )
+  }
+
   const pad = 10
   const top = Math.max(0, rect.top - pad)
   const left = Math.max(0, rect.left - pad)
@@ -953,6 +1052,94 @@ function TargetOverlay({ rect, step, phaseIndex, targetReady, onReadyNext, onSki
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      <SkipButton onClick={onSkip} dark />
+    </>
+  )
+}
+
+function MobileTargetOverlay({ rect, step, phaseIndex, targetReady, onReadyNext, onSkipLogo, onSkip }) {
+  const pad = 6
+  const viewportTop = window.visualViewport?.offsetTop || 0
+  const top = Math.max(0, rect.top - pad)
+  const left = Math.max(8, rect.left - pad)
+  const width = Math.max(44, Math.min(window.innerWidth - left - 8, rect.width + pad * 2))
+  const height = rect.height + pad * 2
+  const cardTop = Math.max(42, viewportTop + 42)
+
+  return (
+    <>
+      <div
+        data-tour="spotlight-overlay"
+        className="pointer-events-none fixed inset-0 z-[390] bg-slate-950/45"
+      />
+
+      <div
+        className="pointer-events-none fixed z-[391] rounded-2xl"
+        style={{
+          top,
+          left,
+          width,
+          height,
+          boxShadow: '0 0 0 3px #4f46e5, 0 0 0 7px rgba(79,70,229,.26)',
+          animation: 'tourPulse 1.4s ease-in-out infinite',
+        }}
+      />
+
+      <div data-tour="mobile-tour-card" className="fixed left-3 right-3 z-[395]" style={{ top: cardTop }}>
+        <div className="rounded-2xl bg-white p-4 shadow-2xl ring-1 ring-slate-900/5">
+          <div className="mb-3 grid grid-cols-3 gap-1.5">
+            {PHASES.map((phase, index) => (
+              <span
+                key={phase.id}
+                className={`h-1.5 rounded-full ${index <= phaseIndex ? 'bg-indigo-600' : 'bg-slate-100'}`}
+              />
+            ))}
+          </div>
+          <h3 className="text-[15px] font-extrabold leading-tight text-slate-950">{step.title}</h3>
+          <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{step.body}</p>
+
+          {step.action === 'blur' && (
+            <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+              <span className={`text-xs ${targetReady ? 'text-indigo-600' : 'text-slate-400'}`}>
+                {targetReady ? 'Pronto. Toque fora do campo ou continue.' : 'Preencha o campo para avançar.'}
+              </span>
+              {targetReady && (
+                <button
+                  onClick={onReadyNext}
+                  className="shrink-0 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-100"
+                >
+                  Continuar
+                </button>
+              )}
+            </div>
+          )}
+
+          {step.action === 'optional' && (
+            <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+              <span className="text-xs text-slate-400">Pode adicionar agora ou pular.</span>
+              <button
+                onClick={onSkipLogo}
+                className="shrink-0 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-100"
+              >
+                Pular logo
+              </button>
+            </div>
+          )}
+
+          {step.action === 'click' && (
+            <div className="mt-3 border-t border-slate-100 pt-3 text-xs font-medium text-indigo-600">
+              Toque no item destacado para seguir.
+            </div>
+          )}
+
+          {step.action === 'event' && (
+            <div className="mt-3 border-t border-slate-100 pt-3 text-xs font-medium text-indigo-600">
+              Aguardando sua ação no botão destacado.
+            </div>
+          )}
         </div>
       </div>
 

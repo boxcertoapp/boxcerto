@@ -598,6 +598,26 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
   const [showFipe, setShowFipe] = useState(() => !isOnboardingFirstOS())
 
   useEffect(() => {
+    const root = document.documentElement
+    const updateVisualViewportHeight = () => {
+      const height = window.visualViewport?.height || window.innerHeight
+      root.style.setProperty('--boxcerto-visual-vh', `${height}px`)
+    }
+
+    updateVisualViewportHeight()
+    window.addEventListener('resize', updateVisualViewportHeight)
+    window.visualViewport?.addEventListener('resize', updateVisualViewportHeight)
+    window.visualViewport?.addEventListener('scroll', updateVisualViewportHeight)
+
+    return () => {
+      window.removeEventListener('resize', updateVisualViewportHeight)
+      window.visualViewport?.removeEventListener('resize', updateVisualViewportHeight)
+      window.visualViewport?.removeEventListener('scroll', updateVisualViewportHeight)
+      root.style.removeProperty('--boxcerto-visual-vh')
+    }
+  }, [])
+
+  useEffect(() => {
     clientStorage.getAll(officeName).then(setAllClients)
   }, [officeName])
 
@@ -768,9 +788,9 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
 
   return (
     <div className="fixed inset-x-0 top-0 z-[60] h-screen flex items-end justify-center bg-black/40"
-      style={{ height: '100dvh' }}>
-      <div className="bg-white rounded-t-3xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-x-hidden"
-        style={{ maxHeight: '92dvh' }}>
+      style={{ height: 'var(--boxcerto-visual-vh, 100dvh)' }}>
+      <div className="bg-white rounded-t-3xl w-full max-w-lg flex flex-col overflow-x-hidden"
+        style={{ maxHeight: 'calc(var(--boxcerto-visual-vh, 100dvh) - 8px)' }}>
         <div className="flex items-center justify-between p-5 pb-3 shrink-0">
           <h2 className="text-lg font-bold text-slate-900">Nova Ordem de Serviço</h2>
           <button data-tour="btn-fechar-nova-os" onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-slate-500" /></button>
@@ -789,7 +809,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
                 <label className="block text-sm font-medium text-slate-700 mb-2">Placa do Veículo</label>
                 <input data-tour="input-placa" type="text" value={placa} onChange={e => setPlaca(formatPlate(e.target.value))}
                   onBlur={continueOnboardingFromPlate}
-                  placeholder="ABC-1D23" maxLength={8} autoFocus
+                  placeholder="ABC-1D23" maxLength={8} autoFocus={!onboardingMode}
                   className="w-full px-4 py-4 text-center text-2xl font-bold plate-mercosul rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 uppercase tracking-widest" />
               </div>
               <button data-tour="btn-buscar-placa" onClick={searchPlate} disabled={loading} className="w-full bg-indigo-600 text-white font-semibold py-3.5 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-60">
@@ -848,7 +868,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
                       placeholder="João da Silva Santos"
                       value={newClient.nome}
                       onChange={e => handleNomeChange(e.target.value)}
-                      autoFocus
+                      autoFocus={!onboardingMode}
                       className={`${inp} ${existingClient ? 'border-green-400 bg-green-50' : ''}`}
                     />
                     {existingClient && (

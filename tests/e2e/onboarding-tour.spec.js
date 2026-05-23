@@ -164,14 +164,17 @@ async function openOnboarding(page, user = {}, options = {}) {
 }
 
 test('tour waits on required Nova OS inputs on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 740 })
   await openOnboarding(page)
 
   await page.getByRole('button', { name: /comecar tour guiado|começar tour guiado/i }).click()
   await page.locator('[data-tour="fab-nova-os"]:visible').click()
 
   const plate = page.locator('[data-tour="input-placa"]')
+  const mobileCard = page.locator('[data-tour="mobile-tour-card"]')
   await expect(page.getByText('Digite a placa', { exact: true })).toBeVisible()
-  await expect(page.locator('[data-tour="spotlight-overlay"]').first()).toHaveCSS('pointer-events', 'auto')
+  await expect(mobileCard).toBeVisible()
+  await expect(page.locator('[data-tour="spotlight-overlay"]').first()).toHaveCSS('pointer-events', 'none')
   await plate.fill('ABC1A23')
   await page.setViewportSize({ width: 393, height: 420 })
   await expect(plate).toBeInViewport()
@@ -184,11 +187,11 @@ test('tour waits on required Nova OS inputs on mobile', async ({ page }) => {
   await expect(page.getByText('Digite o nome do cliente', { exact: true })).toBeVisible({ timeout: 6000 })
   const modalScroll = page.locator('[data-tour="nova-os-scroll"]')
   await expect.poll(() => modalScroll.evaluate(el => el.scrollHeight > el.clientHeight)).toBeTruthy()
+  await expect(name).toBeInViewport()
   await page.waitForTimeout(500)
-  const guidedScrollTop = await modalScroll.evaluate(el => el.scrollTop)
-  await page.mouse.move(10, 10)
-  await page.mouse.wheel(0, 700)
-  await expect.poll(() => modalScroll.evaluate(el => el.scrollTop)).toBe(guidedScrollTop)
+  const cardBottom = await mobileCard.evaluate(el => el.getBoundingClientRect().bottom)
+  const nameTop = await name.evaluate(el => el.getBoundingClientRect().top)
+  expect(nameTop).toBeGreaterThan(cardBottom - 8)
 
   await name.fill('Joao da Silva')
   await page.waitForTimeout(900)
@@ -198,7 +201,10 @@ test('tour waits on required Nova OS inputs on mobile', async ({ page }) => {
   const whatsapp = page.locator('[data-tour="input-whatsapp"]')
   await expect(page.getByRole('heading', { name: 'Digite o WhatsApp' })).toBeVisible()
   await whatsapp.fill('51999999999')
+  const cardTopBeforeKeyboard = await mobileCard.evaluate(el => Math.round(el.getBoundingClientRect().top))
   await page.setViewportSize({ width: 393, height: 360 })
+  const cardTopAfterKeyboard = await mobileCard.evaluate(el => Math.round(el.getBoundingClientRect().top))
+  expect(cardTopAfterKeyboard).toBe(cardTopBeforeKeyboard)
   await expect(whatsapp).toBeInViewport()
   await page.waitForTimeout(900)
   await expect(page.getByRole('heading', { name: 'Digite o WhatsApp' })).toBeVisible()
@@ -260,9 +266,18 @@ test('guided first OS creates the example service and opens WhatsApp step', asyn
   await expect(page.getByRole('heading', { name: 'Crie e abra a primeira OS' })).toBeVisible()
   await page.locator('[data-tour="btn-criar-os"]').click()
 
+  await expect(page.getByText(/Conclu.mos nossa primeira OS/i)).toBeVisible()
+  await expect(page.getByText(/SERVI.O EXEMPLO PRIMEIRA OS/i)).toBeVisible()
+  await page.getByRole('button', { name: /Enviar pelo WhatsApp/i }).click()
+
   await expect(page.locator('[data-tour="btn-enviar-cliente"]')).toBeVisible()
   await expect(page.getByText(/SERVIÇO EXEMPLO PRIMEIRA OS/i)).toBeVisible()
   await expect(page.getByText(/Envie pelo WhatsApp/i)).toBeVisible()
+  await page.locator('[data-tour="btn-enviar-cliente"]').click()
+  await expect(page.getByText(/or.amento enviado/i)).toBeVisible()
+  await page.getByRole('button', { name: /Configurar oficina/i }).click()
+  await expect(page).toHaveURL(/\/app\/menu$/)
+  await expect(page.getByText(/Adicione o logotipo/i)).toBeVisible()
 })
 
 test('tour opens the created OS card before WhatsApp when detail is closed', async ({ page }) => {
