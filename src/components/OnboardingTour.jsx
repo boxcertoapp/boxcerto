@@ -18,6 +18,7 @@ const STEP_ORDER = [
   'client-whatsapp',
   'vehicle-model',
   'create-os',
+  'open-os-detail',
   'send-whatsapp',
   'config-logo',
   'config-address',
@@ -163,6 +164,16 @@ const STEPS = {
     action: 'event',
     event: 'boxcerto:os-criada',
   },
+  'open-os-detail': {
+    id: 'open-os-detail',
+    kind: 'target',
+    phase: 2,
+    page: '/app/oficina',
+    target: '[data-tour="card-onboarding-os"]',
+    title: 'Abra a OS criada',
+    body: 'Toque na OS que acabou de aparecer. Dentro dela fica o botão de enviar para o cliente.',
+    action: 'click',
+  },
   'send-whatsapp': {
     id: 'send-whatsapp',
     kind: 'target',
@@ -240,7 +251,7 @@ function getStepFromUserFlags(user) {
   if (!user) return null
   if (user.onboardingOficinaD) return 'final'
   if (user.onboardingOrcamentoDone) return 'config-logo'
-  if (user.onboardingOsDone) return 'send-whatsapp'
+  if (user.onboardingOsDone) return 'open-os-detail'
   return null
 }
 
@@ -303,6 +314,7 @@ function getRectForStep(step, el) {
 
 function getCurrentFirstOsStepFromDom(preferredStepId) {
   if (getVisibleTarget('[data-tour="btn-enviar-cliente"]')) return 'send-whatsapp'
+  if (getVisibleTarget('[data-tour="card-onboarding-os"]')) return 'open-os-detail'
   if (getVisibleTarget('[data-tour="btn-abrir-os"]')) return 'existing-open'
 
   if (getVisibleTarget('[data-tour="input-placa"]')) return 'plate'
@@ -537,7 +549,7 @@ export default function OnboardingTour() {
         setTargetRect(null)
         setTargetReady(false)
         if (!missingSince) missingSince = Date.now()
-        if (FORM_STEPS.has(stepId) && Date.now() - missingSince > 500) {
+        if ((FORM_STEPS.has(stepId) || stepId === 'open-os-detail' || stepId === 'send-whatsapp') && Date.now() - missingSince > 500) {
           const realStep = getCurrentFirstOsStepFromDom(stepId)
           if (realStep && realStep !== stepId) goToStep(realStep)
         }
@@ -631,6 +643,11 @@ export default function OnboardingTour() {
 
       if (step.id === 'search-plate') {
         window.setTimeout(() => goToStep('branch-after-search'), 180)
+        return
+      }
+
+      if (step.id === 'open-os-detail') {
+        window.setTimeout(() => goToStep('send-whatsapp'), 220)
       }
     }
 
@@ -657,7 +674,7 @@ export default function OnboardingTour() {
       if (!FIRST_OS_STEPS.has(stepId)) return
       setFirstOsSession(false)
       await patchProfile({ onboarding_os_done: true })
-      goToStep('send-whatsapp')
+      goToStep('open-os-detail')
     }
 
     const onBudgetSent = async () => {

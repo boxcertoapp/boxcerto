@@ -439,7 +439,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
           </p>
           <div className="space-y-2">
             {data.orcamento.map(os => (
-              <button key={os.id} onClick={() => onOpenOS(os)}
+              <button key={os.id} data-tour="card-onboarding-os" onClick={() => onOpenOS(os)}
                 className={`w-full bg-white rounded-2xl border p-3 flex items-center gap-3 text-left transition-colors ${
                   os.aprovacaoStatus === 'aprovado'
                     ? 'border-green-200 hover:border-green-300 bg-green-50/30'

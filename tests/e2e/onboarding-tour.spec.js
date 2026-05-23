@@ -15,7 +15,7 @@ const baseUser = {
   onboardingDismissed: false,
 }
 
-async function openOnboarding(page, user = {}) {
+async function openOnboarding(page, user = {}, options = {}) {
   await page.addInitScript(e2eUser => {
     window.__BOXCERTO_E2E_USER__ = e2eUser
     window.open = (...args) => {
@@ -29,6 +29,48 @@ async function openOnboarding(page, user = {}) {
     vehicle: null,
     os: null,
     items: [],
+  }
+
+  if (options.existingOrder) {
+    db.client = {
+      id: 'client-1',
+      nome: 'Rogerio Silva',
+      whatsapp: '51999999999',
+      created_at: '2026-05-22T12:00:00.000Z',
+    }
+    db.vehicle = {
+      id: 'vehicle-1',
+      client_id: 'client-1',
+      placa: 'IOL-8888',
+      modelo: 'Honda CG 125 2012',
+      created_at: '2026-05-22T12:00:00.000Z',
+      clients: db.client,
+    }
+    db.items = [{
+      id: 'item-1',
+      os_id: 'os-1',
+      descricao: 'SERVIÇO EXEMPLO PRIMEIRA OS',
+      custo: 0,
+      venda: 470,
+      garantia: '',
+      created_at: '2026-05-22T12:00:00.000Z',
+    }]
+    db.os = {
+      id: 'os-1',
+      vehicle_id: 'vehicle-1',
+      status: 'orcamento',
+      km: '',
+      observacoes: '',
+      agendado_para: null,
+      payments: [],
+      desconto: { tipo: 'valor', valor: 0 },
+      aprovacao_token: null,
+      aprovacao_status: 'pendente',
+      created_at: '2026-05-22T12:00:00.000Z',
+      updated_at: '2026-05-22T12:00:00.000Z',
+      vehicles: db.vehicle,
+      service_items: db.items,
+    }
   }
 
   await page.route('**/rest/v1/**', async route => {
@@ -104,6 +146,11 @@ async function openOnboarding(page, user = {}) {
       return
     }
 
+    if (method === 'GET' && table === 'service_orders') {
+      await json(db.os ? [{ ...db.os, vehicles: db.vehicle, service_items: db.items }] : [])
+      return
+    }
+
     await json([])
   })
 
@@ -162,9 +209,10 @@ test('tour waits on required Nova OS inputs on mobile', async ({ page }) => {
 })
 
 test('tour resumes after the first OS is already complete', async ({ page }) => {
-  await openOnboarding(page, { onboardingOsDone: true })
+  await openOnboarding(page, { onboardingOsDone: true }, { existingOrder: true })
 
-  await expect(page.getByText(/Envie pelo WhatsApp/i)).toBeVisible()
+  await expect(page.getByText(/Abra a OS criada/i)).toBeVisible()
+  await expect(page.locator('[data-tour="card-onboarding-os"]:visible')).toBeVisible()
   await expect(page.getByText(/Vamos abrir sua primeira OS juntos/i)).toHaveCount(0)
 })
 
@@ -214,5 +262,15 @@ test('guided first OS creates the example service and opens WhatsApp step', asyn
 
   await expect(page.locator('[data-tour="btn-enviar-cliente"]')).toBeVisible()
   await expect(page.getByText(/SERVIÇO EXEMPLO PRIMEIRA OS/i)).toBeVisible()
+  await expect(page.getByText(/Envie pelo WhatsApp/i)).toBeVisible()
+})
+
+test('tour opens the created OS card before WhatsApp when detail is closed', async ({ page }) => {
+  await openOnboarding(page, { onboardingOsDone: true }, { existingOrder: true })
+
+  await expect(page.getByText(/Abra a OS criada/i)).toBeVisible()
+  await page.locator('[data-tour="card-onboarding-os"]:visible').click()
+
+  await expect(page.locator('[data-tour="btn-enviar-cliente"]')).toBeVisible()
   await expect(page.getByText(/Envie pelo WhatsApp/i)).toBeVisible()
 })
