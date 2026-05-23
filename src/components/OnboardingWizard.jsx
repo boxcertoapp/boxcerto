@@ -971,127 +971,40 @@ function FullscreenShell({ children }) {
 }
 
 function FabCoachmark({ firstName, onSkip, onManualProceed }) {
-  const [rect, setRect] = useState(null)
-  const [searching, setSearching] = useState(true)
-
-  useEffect(() => {
-    let cancelled = false
-    let rafId = null
-    let fastDeadline = Date.now() + 2500
-    let slowInterval = null
-    let observer = null
-
-    const findRect = () => {
-      const el = document.querySelector('[data-tour="fab-nova-os"]')
-      if (!el) return null
-      const r = el.getBoundingClientRect()
-      if (r.width <= 0 || r.height <= 0) return null
-      return { top: r.top, left: r.left, width: r.width, height: r.height }
-    }
-
-    const sync = () => {
-      if (cancelled) return
-      const next = findRect()
-      setRect(next)
-      if (next) setSearching(false)
-    }
-
-    // Fase 1: rAF agressivo nos primeiros 2.5s para captar o FAB assim que mounta
-    const tickRAF = () => {
-      if (cancelled) return
-      sync()
-      if (Date.now() < fastDeadline) {
-        rafId = requestAnimationFrame(tickRAF)
-      } else {
-        setSearching(false) // se não achou em 2.5s, mostra fallback no card
-      }
-    }
-    tickRAF()
-
-    // Fase 2: MutationObserver para detectar quando o FAB entra no DOM
-    if (typeof MutationObserver !== 'undefined') {
-      observer = new MutationObserver(() => sync())
-      observer.observe(document.body, { childList: true, subtree: true })
-    }
-
-    // Fase 3: interval lento para acompanhar mudanças de layout (scroll, teclado)
-    slowInterval = window.setInterval(sync, 320)
-
-    window.addEventListener('resize', sync)
-    window.addEventListener('scroll', sync, true)
-    window.visualViewport?.addEventListener('resize', sync)
-    window.visualViewport?.addEventListener('scroll', sync)
-
-    return () => {
-      cancelled = true
-      if (rafId) cancelAnimationFrame(rafId)
-      if (slowInterval) window.clearInterval(slowInterval)
-      if (observer) observer.disconnect()
-      window.removeEventListener('resize', sync)
-      window.removeEventListener('scroll', sync, true)
-      window.visualViewport?.removeEventListener('resize', sync)
-      window.visualViewport?.removeEventListener('scroll', sync)
-    }
-  }, [])
-
-  const cardWidth = Math.min(320, (typeof window !== 'undefined' ? window.innerWidth : 360) - 24)
-
-  let ring = null
-  let cardTop = 24
-  let cardLeft = 12
-
-  if (rect) {
-    const pad = 10
-    const ringTop = Math.max(0, rect.top - pad)
-    const ringLeft = Math.max(0, rect.left - pad)
-    const ringWidth = rect.width + pad * 2
-    const ringHeight = rect.height + pad * 2
-    ring = { top: ringTop, left: ringLeft, width: ringWidth, height: ringHeight }
-
-    const estimatedCardHeight = 158
-    const viewportTop = window.visualViewport?.offsetTop || 0
-    const gap = 14
-    const roomAbove = ringTop - viewportTop
-    if (roomAbove >= estimatedCardHeight + gap) {
-      cardTop = ringTop - estimatedCardHeight - gap
-    } else {
-      cardTop = Math.max(viewportTop + 12, ringTop - estimatedCardHeight - gap)
-    }
-    cardLeft = Math.max(12, Math.min(window.innerWidth - cardWidth - 12, ringLeft + ringWidth / 2 - cardWidth / 2))
-  }
-
+  // O FAB real está em `fixed bottom-24 right-4 w-14 h-14` ([data-tour="fab-nova-os"]
+  // dentro de Dashboard, em Oficina.jsx). Em vez de tentar localizar via DOM
+  // (frágil entre route lazy-load + iOS Safari URL bar), renderizamos um
+  // FAB fantasma na mesma posição, por cima, com anel pulsante. O clique
+  // no fantasma avança o wizard direto para fase 1.
   return (
     <>
       <WizardStyles />
-      {/* backdrop sutil que NÃO bloqueia o clique no FAB — só escurece o resto */}
-      {ring && (
-        <div
-          className="pointer-events-none fixed inset-0 z-[389] bg-slate-900/35"
-          style={{
-            WebkitMaskImage: `radial-gradient(circle at ${ring.left + ring.width / 2}px ${ring.top + ring.height / 2}px, transparent 0px, transparent ${Math.max(ring.width, ring.height) / 2 + 18}px, black ${Math.max(ring.width, ring.height) / 2 + 32}px)`,
-            maskImage: `radial-gradient(circle at ${ring.left + ring.width / 2}px ${ring.top + ring.height / 2}px, transparent 0px, transparent ${Math.max(ring.width, ring.height) / 2 + 18}px, black ${Math.max(ring.width, ring.height) / 2 + 32}px)`,
-          }}
-        />
-      )}
 
-      {ring && (
-        <div
-          className="pointer-events-none fixed z-[391] rounded-full"
-          style={{
-            top: ring.top,
-            left: ring.left,
-            width: ring.width,
-            height: ring.height,
-            boxShadow: '0 0 0 3px #4f46e5, 0 0 0 8px rgba(79,70,229,.32)',
-            animation: 'wizardPulseIndigo 1.4s ease-in-out infinite',
-          }}
-        />
-      )}
-
+      {/* Anel pulsante na mesma posição do FAB real */}
       <div
-        className="fixed z-[395]"
-        style={{ top: cardTop, left: cardLeft, width: cardWidth }}
+        className="pointer-events-none fixed z-[391] rounded-full"
+        style={{
+          bottom: '86px',
+          right: '6px',
+          width: '76px',
+          height: '76px',
+          boxShadow: '0 0 0 3px #4f46e5, 0 0 0 8px rgba(79,70,229,.32)',
+          animation: 'wizardPulseIndigo 1.4s ease-in-out infinite',
+        }}
+      />
+
+      {/* FAB fantasma — visualmente idêntico, fica acima do real e captura o toque */}
+      <button
+        type="button"
+        onClick={onManualProceed}
+        aria-label="Abrir primeira OS"
+        className="fixed bottom-24 right-4 z-[392] flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 shadow-lg shadow-indigo-200 transition-transform active:scale-95"
       >
+        <Plus className="h-7 w-7 text-white" strokeWidth={2.5} />
+      </button>
+
+      {/* Card explicativo no topo */}
+      <div className="fixed left-3 right-3 top-3 z-[395] mx-auto max-w-sm">
         <div className="relative rounded-2xl bg-white p-4 shadow-2xl ring-1 ring-slate-900/5">
           <button
             type="button"
@@ -1112,20 +1025,6 @@ function FabCoachmark({ firstName, onSkip, onManualProceed }) {
           <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
             {firstName}, é esse botão que você vai usar todos os dias para criar uma nova OS.
           </p>
-          {!ring && searching && (
-            <p className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-400">
-              <Loader2 className="h-3 w-3 animate-spin" /> Localizando o botão na tela...
-            </p>
-          )}
-          {!ring && !searching && (
-            <button
-              type="button"
-              onClick={onManualProceed}
-              className="mt-3 w-full rounded-xl bg-indigo-600 px-3 py-2.5 text-xs font-extrabold text-white hover:bg-indigo-700"
-            >
-              Já estou na tela inicial, continuar →
-            </button>
-          )}
         </div>
       </div>
     </>
