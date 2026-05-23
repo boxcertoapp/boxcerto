@@ -4,6 +4,7 @@ import {
   X, Check, ChevronRight, ChevronLeft, Loader2, AlertCircle,
   Camera, MapPin, Send, MessageCircle, Sparkles,
   Rocket, Zap, Smartphone, CheckCircle2, Plus,
+  Trophy, Sliders, ClipboardCheck, BarChart3,
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -434,11 +435,10 @@ export default function OnboardingWizard() {
     }
   }, [officeForm, patchProfile, user?.oficina])
 
-  const finishAndShowCoachmark = useCallback(async () => {
-    await patchProfile({ onboarding_dismissed: true }, true)
+  const finishAndShowCoachmark = useCallback(() => {
     if (createdOs?.id) {
       navigate('/app/oficina', { replace: true })
-      setTimeout(() => {
+      window.setTimeout(() => {
         window.dispatchEvent(new CustomEvent('boxcerto:onboarding-abrir-os', {
           detail: { osId: createdOs.id },
         }))
@@ -449,8 +449,17 @@ export default function OnboardingWizard() {
       setView('done')
       setHidden(true)
       clearStored(user?.id)
+      patchProfile({ onboarding_dismissed: true }, true)
     }
   }, [createdOs, navigate, patchProfile, user?.id])
+
+  const finishToDashboard = useCallback(() => {
+    setView('done')
+    setHidden(true)
+    clearStored(user?.id)
+    navigate('/app/oficina', { replace: true })
+    patchProfile({ onboarding_dismissed: true }, true)
+  }, [navigate, patchProfile, user?.id])
 
   if (!shouldShow) return null
   if (view === 'done') return null
@@ -462,6 +471,7 @@ export default function OnboardingWizard() {
           setView('done')
           setHidden(true)
           clearStored(user?.id)
+          patchProfile({ onboarding_dismissed: true }, true)
         }}
       />
     )
@@ -471,38 +481,63 @@ export default function OnboardingWizard() {
     return (
       <FullscreenShell>
         <CelebrationConfetti />
-        <div className="flex w-full flex-1 flex-col items-center justify-center px-6 pb-8 pt-10 text-center">
-          <div className="mb-2 text-5xl" aria-hidden>🎉</div>
-          <div className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1">
-            <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
-            <span className="text-[11px] font-bold uppercase tracking-wide text-indigo-600">Parabéns, {firstName}!</span>
-          </div>
-          <h2 className="text-[26px] font-extrabold leading-tight text-slate-950">
-            Você entrou para o top<br />das oficinas do Brasil
-          </h2>
-          <p className="mt-4 text-sm leading-relaxed text-slate-500">
-            Sua oficina agora tem <strong className="text-slate-700">organização</strong> e <strong className="text-slate-700">profissionalismo</strong>: OS estruturada, orçamento aprovado por link, envio profissional pelo WhatsApp e dados prontos para PDFs que passam confiança ao cliente.
-          </p>
+        <div className="flex w-full flex-1 flex-col overflow-y-auto bg-white">
+          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-600 to-indigo-700 px-6 pt-10 pb-9 text-center text-white">
+            <SparkleField />
 
-          <div className="mt-6 grid w-full grid-cols-3 gap-2">
-            {[
-              { icon: '🛠', label: 'OS organizada' },
-              { icon: '📲', label: 'WhatsApp pro' },
-              { icon: '📄', label: 'PDFs prontos' },
-            ].map(item => (
-              <div key={item.label} className="rounded-2xl bg-slate-50 p-3 text-center">
-                <div className="text-xl" aria-hidden>{item.icon}</div>
-                <p className="mt-1 text-[11px] font-semibold text-slate-600">{item.label}</p>
-              </div>
-            ))}
+            <div className="relative mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white/15 ring-2 ring-white/30 backdrop-blur-sm">
+              <Trophy className="h-9 w-9 text-white" />
+            </div>
+
+            <div className="relative mx-auto mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 ring-1 ring-white/30 backdrop-blur-sm">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400">
+                <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />
+              </span>
+              <span className="text-[11px] font-bold uppercase tracking-wide text-white">Tour concluído</span>
+            </div>
+
+            <h2 className="relative text-[24px] font-extrabold leading-[1.2]">
+              Parabéns, {firstName}!<br />
+              Você concluiu os passos iniciais.
+            </h2>
+            <p className="relative mt-3 text-[13px] leading-relaxed text-indigo-100">
+              Sua oficina agora está em outro nível<br />
+              de organização. Tudo pronto para começar<br />
+              a usar o BoxCerto de verdade.
+            </p>
           </div>
 
-          <button
-            onClick={finishAndShowCoachmark}
-            className="mt-7 w-full rounded-2xl bg-indigo-600 py-4 text-sm font-extrabold text-white shadow-lg shadow-indigo-200 transition-colors hover:bg-indigo-700"
-          >
-            Ver minha primeira OS
-          </button>
+          <div className="flex flex-1 flex-col px-5 pb-5 pt-4">
+            <div className="space-y-2">
+              {[
+                { Icon: Sliders, bg: 'bg-indigo-50', color: 'text-indigo-500', text: 'Sistema configurado e pronto para uso' },
+                { Icon: ClipboardCheck, bg: 'bg-violet-50', color: 'text-violet-500', text: 'Orçamentos, aprovações e andamento sob controle' },
+                { Icon: BarChart3, bg: 'bg-fuchsia-50', color: 'text-fuchsia-500', text: 'Mais organização desde o primeiro dia' },
+              ].map(item => (
+                <div key={item.text} className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3 ring-1 ring-slate-100">
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${item.bg}`}>
+                    <item.Icon className={`h-5 w-5 ${item.color}`} />
+                  </span>
+                  <span className="text-sm font-medium leading-snug text-slate-700">{item.text}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-auto pt-5">
+              <button
+                onClick={finishAndShowCoachmark}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 py-4 text-[15px] font-extrabold text-white shadow-lg shadow-indigo-200 transition-colors hover:bg-indigo-700"
+              >
+                Ir para meu painel <ChevronRight className="h-4 w-4" />
+              </button>
+              <button
+                onClick={finishToDashboard}
+                className="mt-2 w-full py-3 text-center text-sm font-medium text-slate-400 hover:text-slate-600"
+              >
+                Criar outro orçamento
+              </button>
+            </div>
+          </div>
         </div>
       </FullscreenShell>
     )
@@ -571,6 +606,7 @@ export default function OnboardingWizard() {
       <FabCoachmark
         firstName={firstName}
         onSkip={skipAll}
+        onManualProceed={() => setView('phase1')}
       />
     )
   }
@@ -934,14 +970,18 @@ function FullscreenShell({ children }) {
   )
 }
 
-function FabCoachmark({ firstName, onSkip }) {
+function FabCoachmark({ firstName, onSkip, onManualProceed }) {
   const [rect, setRect] = useState(null)
+  const [searching, setSearching] = useState(true)
 
   useEffect(() => {
     let cancelled = false
+    let rafId = null
+    let fastDeadline = Date.now() + 2500
+    let slowInterval = null
+    let observer = null
 
     const findRect = () => {
-      if (cancelled) return null
       const el = document.querySelector('[data-tour="fab-nova-os"]')
       if (!el) return null
       const r = el.getBoundingClientRect()
@@ -951,11 +991,32 @@ function FabCoachmark({ firstName, onSkip }) {
 
     const sync = () => {
       if (cancelled) return
-      setRect(findRect())
+      const next = findRect()
+      setRect(next)
+      if (next) setSearching(false)
     }
 
-    sync()
-    const intervalId = window.setInterval(sync, 240)
+    // Fase 1: rAF agressivo nos primeiros 2.5s para captar o FAB assim que mounta
+    const tickRAF = () => {
+      if (cancelled) return
+      sync()
+      if (Date.now() < fastDeadline) {
+        rafId = requestAnimationFrame(tickRAF)
+      } else {
+        setSearching(false) // se não achou em 2.5s, mostra fallback no card
+      }
+    }
+    tickRAF()
+
+    // Fase 2: MutationObserver para detectar quando o FAB entra no DOM
+    if (typeof MutationObserver !== 'undefined') {
+      observer = new MutationObserver(() => sync())
+      observer.observe(document.body, { childList: true, subtree: true })
+    }
+
+    // Fase 3: interval lento para acompanhar mudanças de layout (scroll, teclado)
+    slowInterval = window.setInterval(sync, 320)
+
     window.addEventListener('resize', sync)
     window.addEventListener('scroll', sync, true)
     window.visualViewport?.addEventListener('resize', sync)
@@ -963,7 +1024,9 @@ function FabCoachmark({ firstName, onSkip }) {
 
     return () => {
       cancelled = true
-      window.clearInterval(intervalId)
+      if (rafId) cancelAnimationFrame(rafId)
+      if (slowInterval) window.clearInterval(slowInterval)
+      if (observer) observer.disconnect()
       window.removeEventListener('resize', sync)
       window.removeEventListener('scroll', sync, true)
       window.visualViewport?.removeEventListener('resize', sync)
@@ -1049,10 +1112,19 @@ function FabCoachmark({ firstName, onSkip }) {
           <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
             {firstName}, é esse botão que você vai usar todos os dias para criar uma nova OS.
           </p>
-          {!ring && (
+          {!ring && searching && (
             <p className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-400">
               <Loader2 className="h-3 w-3 animate-spin" /> Localizando o botão na tela...
             </p>
+          )}
+          {!ring && !searching && (
+            <button
+              type="button"
+              onClick={onManualProceed}
+              className="mt-3 w-full rounded-xl bg-indigo-600 px-3 py-2.5 text-xs font-extrabold text-white hover:bg-indigo-700"
+            >
+              Já estou na tela inicial, continuar →
+            </button>
           )}
         </div>
       </div>
@@ -1170,6 +1242,41 @@ function FinalCoachmark({ onDismiss }) {
   )
 }
 
+function SparkleField() {
+  const sparkles = Array.from({ length: 22 }, (_, i) => ({
+    left: (i * 41 + 11) % 100,
+    top: (i * 23 + 7) % 90,
+    size: 4 + (i % 4),
+    delay: (i % 7) * 0.18,
+    duration: 1.8 + (i % 5) * 0.25,
+    rotate: (i * 47) % 360,
+  }))
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute -top-10 -right-12 h-44 w-44 rounded-full bg-white/10" />
+      <div className="absolute -bottom-14 -left-10 h-36 w-36 rounded-full bg-white/8" />
+      <div className="absolute top-1/3 right-1/4 h-20 w-20 rounded-full bg-white/5" />
+      {sparkles.map((s, i) => (
+        <span
+          key={i}
+          className="absolute block"
+          style={{
+            left: `${s.left}%`,
+            top: `${s.top}%`,
+            width: `${s.size}px`,
+            height: `${s.size}px`,
+            borderRadius: '999px',
+            background: 'rgba(255,255,255,0.9)',
+            boxShadow: '0 0 6px rgba(255,255,255,0.6)',
+            transform: `rotate(${s.rotate}deg)`,
+            animation: `wizardSparkle ${s.duration}s ${s.delay}s ease-in-out infinite`,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
 function CelebrationConfetti() {
   const colors = ['#4f46e5', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#ef4444']
   return (
@@ -1208,6 +1315,10 @@ function WizardStyles() {
       @keyframes wizardConfetti {
         0% { transform: translateY(0) rotate(0deg); opacity: 1; }
         100% { transform: translateY(100vh) rotate(600deg); opacity: 0; }
+      }
+      @keyframes wizardSparkle {
+        0%, 100% { opacity: 0.2; transform: scale(0.7); }
+        50% { opacity: 1; transform: scale(1.15); }
       }
     `}</style>
   )
