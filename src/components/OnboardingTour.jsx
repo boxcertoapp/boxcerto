@@ -34,7 +34,8 @@ const LEGACY_STEP_MAP = {
   'search-plate': 'plate',
   'branch-after-search': 'plate',
   'existing-open': 'plate',
-  'enviar-orcamento': 'open-os-detail',
+  'open-os-detail': 'send-whatsapp',
+  'enviar-orcamento': 'send-whatsapp',
   'configurar-oficina': 'config-logo',
   'celebration-final': 'final',
 }
@@ -180,9 +181,9 @@ const STEPS = {
     kind: 'message',
     phase: 2,
     title: 'Concluímos nossa primeira OS',
-    body: 'Perfeito. Agora vamos abrir essa OS e enviar o orçamento profissional pelo WhatsApp.',
+    body: 'Perfeito. Agora vamos enviar o orçamento profissional pelo WhatsApp.',
     cta: 'Enviar pelo WhatsApp',
-    next: 'open-os-detail',
+    next: 'send-whatsapp',
   },
   'open-os-detail': {
     id: 'open-os-detail',
@@ -280,7 +281,7 @@ function getStepFromUserFlags(user) {
   if (!user) return null
   if (user.onboardingOficinaD) return 'final'
   if (user.onboardingOrcamentoDone) return 'config-logo'
-  if (user.onboardingOsDone) return 'open-os-detail'
+  if (user.onboardingOsDone) return 'send-whatsapp'
   return null
 }
 
@@ -333,7 +334,6 @@ function getRectForStep(step, el) {
   const extraTargetByStep = {
     'client-name': '[data-tour="input-whatsapp"]',
     'vehicle-model': '[data-tour="btn-criar-os"]',
-    'config-address': '[data-tour="btn-config-oficina"]',
   }
   const extraSelector = extraTargetByStep[step.id]
   if (!extraSelector) return primary
@@ -343,7 +343,7 @@ function getRectForStep(step, el) {
 
 function getCurrentFirstOsStepFromDom(preferredStepId) {
   if (getVisibleTarget('[data-tour="btn-enviar-cliente"]')) return 'send-whatsapp'
-  if (getVisibleTarget('[data-tour="card-onboarding-os"]')) return 'open-os-detail'
+  if (getVisibleTarget('[data-tour="card-onboarding-os"]')) return 'send-whatsapp'
   if (getVisibleTarget('[data-tour="btn-abrir-os"]')) return 'existing-open'
 
   if (getVisibleTarget('[data-tour="input-placa"]')) return 'plate'
@@ -579,6 +579,7 @@ export default function OnboardingTour() {
     let revealed = false
     let settleTimer = null
     let missingSince = null
+    let autoOpenedOsCard = false
 
     const sync = (forceReveal = false) => {
       if (cancelled) return
@@ -589,7 +590,24 @@ export default function OnboardingTour() {
         setTargetRect(null)
         setTargetReady(false)
         if (!missingSince) missingSince = Date.now()
-        if ((FORM_STEPS.has(stepId) || stepId === 'open-os-detail' || stepId === 'send-whatsapp') && Date.now() - missingSince > 500) {
+
+        if (stepId === 'send-whatsapp' && !autoOpenedOsCard) {
+          const osCard = getVisibleTarget('[data-tour="card-onboarding-os"]')
+          if (osCard) {
+            autoOpenedOsCard = true
+            scrollTargetIntoView(osCard)
+            window.setTimeout(() => {
+              if (!cancelled) osCard.click()
+            }, 120)
+            return
+          }
+        }
+
+        if (stepId === 'send-whatsapp' && Date.now() - missingSince < 6000) {
+          return
+        }
+
+        if ((FORM_STEPS.has(stepId) || stepId === 'open-os-detail' || stepId === 'send-whatsapp' || stepId === 'config-save') && Date.now() - missingSince > 500) {
           const realStep = getCurrentFirstOsStepFromDom(stepId)
           if (realStep && realStep !== stepId) goToStep(realStep)
         }
@@ -660,7 +678,7 @@ export default function OnboardingTour() {
       activeTargetRef.current?.removeAttribute('data-tour-active')
       activeTargetRef.current = null
     }
-  }, [shouldShow, step])
+  }, [goToStep, shouldShow, step, stepId])
 
   useEffect(() => {
     if (!shouldShow) return
@@ -747,12 +765,8 @@ export default function OnboardingTour() {
   }, [step.phase])
 
   const continueMessage = useCallback(() => {
-    if (stepId === 'os-done') {
-      goToStep(getCurrentFirstOsStepFromDom('open-os-detail') || 'open-os-detail')
-      return
-    }
     goToStep(step.next || 'config-logo')
-  }, [goToStep, step, stepId])
+  }, [goToStep, step])
 
   if (!shouldShow) return null
 
@@ -1103,8 +1117,15 @@ function MobileTargetOverlay({ rect, step, phaseIndex, targetReady, onReadyNext,
         }}
       />
 
-      <div data-tour="mobile-tour-card" className="fixed left-3 right-3 z-[395]" style={{ top: cardTop }}>
-        <div className="rounded-2xl bg-white p-4 shadow-2xl ring-1 ring-slate-900/5">
+      <div data-tour="mobile-tour-card" className="pointer-events-none fixed left-3 right-3 z-[395]" style={{ top: cardTop }}>
+        <div className="relative rounded-2xl bg-white p-4 shadow-2xl ring-1 ring-slate-900/5">
+          <button
+            type="button"
+            onClick={onSkip}
+            className="pointer-events-auto absolute right-3 top-3 rounded-full px-2 py-1 text-[11px] font-semibold text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600"
+          >
+            Pular
+          </button>
           <div className="mb-3 grid grid-cols-3 gap-1.5">
             {PHASES.map((phase, index) => (
               <span
@@ -1124,7 +1145,7 @@ function MobileTargetOverlay({ rect, step, phaseIndex, targetReady, onReadyNext,
               {targetReady && (
                 <button
                   onClick={onReadyNext}
-                  className="shrink-0 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-100"
+                  className="pointer-events-auto shrink-0 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-100"
                 >
                   Continuar
                 </button>
@@ -1137,7 +1158,7 @@ function MobileTargetOverlay({ rect, step, phaseIndex, targetReady, onReadyNext,
               <span className="text-xs text-slate-400">Pode adicionar agora ou pular.</span>
               <button
                 onClick={onSkipLogo}
-                className="shrink-0 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-100"
+                className="pointer-events-auto shrink-0 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-100"
               >
                 Pular logo
               </button>
@@ -1157,8 +1178,6 @@ function MobileTargetOverlay({ rect, step, phaseIndex, targetReady, onReadyNext,
           )}
         </div>
       </div>
-
-      <SkipButton onClick={onSkip} dark />
     </>
   )
 }

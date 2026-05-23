@@ -642,6 +642,7 @@ export default function Menu() {
   }, [location.state?.tab])
 
   const isDirty = ['nome','cnpj','telefone','endereco'].some(k => officeData[k] !== savedFields[k])
+  const showSaveButton = isDirty || saved || (activeTab === 'oficina' && user && !user.onboardingOficinaD && !user.onboardingDismissed)
 
   useEffect(() => {
     if (user?.oficina) {
@@ -1126,7 +1127,7 @@ export default function Menu() {
             )}
           </div>
 
-          {(isDirty || saved) && (
+          {showSaveButton && (
             <button
               data-tour="btn-config-oficina"
               onClick={handleSave}

@@ -1766,7 +1766,7 @@ function OSDetailModal({ os, onClose, officeName }) {
             </a>
             {os.status !== 'entregue' && (
               <button
-                data-tour="btn-enviar-cliente"
+                data-tour="btn-enviar-cliente-top"
                 onClick={handleEnviarCliente}
                 disabled={enviando}
                 title="Enviar link de aprovação para o cliente"
@@ -1839,6 +1839,22 @@ function OSDetailModal({ os, onClose, officeName }) {
               </div>
             )
           })()}
+
+          {os.status !== 'entregue' && (
+            <button
+              data-tour="btn-enviar-cliente"
+              onClick={handleEnviarCliente}
+              disabled={enviando}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-green-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-green-100 transition-colors hover:bg-green-700 disabled:opacity-60"
+            >
+              {enviando ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              Enviar orçamento pelo WhatsApp
+            </button>
+          )}
 
           {/* KM + Urgente + badge Aprovado na mesma linha */}
           <div className="flex items-center gap-2">

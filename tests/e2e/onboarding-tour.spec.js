@@ -228,8 +228,9 @@ test('tour uses the stable first OS wizard on mobile', async ({ page }) => {
 test('tour resumes after the first OS is already complete', async ({ page }) => {
   await openOnboarding(page, { onboardingOsDone: true }, { existingOrder: true })
 
-  await expect(page.getByText(/Abra a OS criada/i)).toBeVisible()
-  await expect(page.locator('[data-tour="card-onboarding-os"]:visible')).toBeVisible()
+  await expect(page.getByText(/Abra a OS criada/i)).toHaveCount(0)
+  await expect(page.locator('[data-tour="btn-enviar-cliente"]')).toBeVisible()
+  await expect(page.getByText(/Envie pelo WhatsApp/i)).toBeVisible()
   await expect(page.getByText(/Vamos abrir sua primeira OS juntos/i)).toHaveCount(0)
 })
 
@@ -277,14 +278,26 @@ test('guided first OS creates the example service and opens WhatsApp step', asyn
   await page.getByRole('button', { name: /Configurar oficina/i }).click()
   await expect(page).toHaveURL(/\/app\/menu$/)
   await expect(page.getByText(/Adicione o logotipo/i)).toBeVisible()
+  await page.getByRole('button', { name: /Pular logo/i }).click()
+
+  const address = page.locator('[data-tour="input-endereco-oficina"][data-tour-active="true"]')
+  await expect(page.getByText(/Preencha o endere.o/i)).toBeVisible()
+  await expect(address).toBeVisible()
+  await address.fill('Rua 1 N 12')
+  await expect(page.getByRole('button', { name: /Continuar/i })).toBeVisible()
+  await page.getByRole('button', { name: /Continuar/i }).click()
+
+  await expect(page.getByText(/Salve os dados da oficina/i)).toBeVisible()
+  const saveOffice = page.locator('[data-tour="btn-config-oficina"][data-tour-active="true"]')
+  await expect(saveOffice).toBeVisible()
+  await saveOffice.click()
+  await expect(page.getByText(/top 1% das oficinas/i)).toBeVisible()
 })
 
-test('tour opens the created OS card before WhatsApp when detail is closed', async ({ page }) => {
+test('tour opens the created OS automatically before WhatsApp when detail is closed', async ({ page }) => {
   await openOnboarding(page, { onboardingOsDone: true }, { existingOrder: true })
 
-  await expect(page.getByText(/Abra a OS criada/i)).toBeVisible()
-  await page.locator('[data-tour="card-onboarding-os"]:visible').click()
-
+  await expect(page.getByText(/Abra a OS criada/i)).toHaveCount(0)
   await expect(page.locator('[data-tour="btn-enviar-cliente"]')).toBeVisible()
   await expect(page.getByText(/Envie pelo WhatsApp/i)).toBeVisible()
 })
