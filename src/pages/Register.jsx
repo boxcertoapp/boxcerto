@@ -5,6 +5,7 @@ import Logo from '../components/Logo'
 import { useAuth } from '../contexts/AuthContext'
 import { usePageView } from '../hooks/usePageView'
 import { supabase } from '../lib/supabase'
+import { titleCaseName } from '../lib/text'
 
 const WPP_SUPORTE = 'https://wa.me/5553997065725?text=' + encodeURIComponent('Olá! Tenho dúvidas sobre o BoxCerto e quero ajuda para me cadastrar.')
 
@@ -216,9 +217,12 @@ export default function Register() {
     track('cadastro_submit_click', { campos_preenchidos: filled })
     setLoading(true)
 
+    const oficinaNormalized = titleCaseName(form.oficina)
+    const responsavelNormalized = titleCaseName(form.responsavel)
+
     const result = await register({
-      oficina:     form.oficina.trim(),
-      responsavel: form.responsavel.trim(),
+      oficina:     oficinaNormalized,
+      responsavel: responsavelNormalized,
       whatsapp:    form.whatsapp,
       email:       form.email.trim(),
       password:    form.password,
@@ -240,7 +244,7 @@ export default function Register() {
     window.dataLayer = window.dataLayer || []
     window.dataLayer.push({
       event:          'iniciou_teste_gratis',
-      user_name:      form.responsavel.trim(),
+      user_name:      responsavelNormalized,
       user_whatsapp:  '55' + wppClean,
       user_email:     form.email.trim(),
     })
@@ -262,11 +266,11 @@ export default function Register() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         type: 'welcome', to: form.email.trim(),
-        nome: form.responsavel.trim(), oficina: form.oficina.trim(), trialDias: 7,
+        nome: responsavelNormalized, oficina: oficinaNormalized, trialDias: 7,
       }),
     }).catch(() => {})
 
-    navigate(`/bem-vindo?nome=${encodeURIComponent(form.responsavel.trim())}`)
+    navigate(`/bem-vindo?nome=${encodeURIComponent(responsavelNormalized)}`)
   }
 
   const loginGoogle = async () => {

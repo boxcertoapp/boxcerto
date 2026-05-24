@@ -12,6 +12,7 @@ import {
   clientStorage, vehicleStorage, osStorage, itemStorage,
   officeDataStorage, formatCurrency,
 } from '../lib/storage'
+import { titleCaseName } from '../lib/text'
 
 const STORAGE_KEY_PREFIX = 'boxcerto:onboarding:'
 
@@ -130,7 +131,7 @@ export default function OnboardingWizard() {
   const firstName = useMemo(() => {
     const raw = user?.responsavel || user?.oficina || ''
     const first = String(raw).trim().split(/\s+/)[0]
-    return first || 'parceiro'
+    return titleCaseName(first) || 'Parceiro'
   }, [user?.responsavel, user?.oficina])
 
   const setVisualVh = useCallback(() => {
