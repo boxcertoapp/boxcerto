@@ -191,27 +191,38 @@ export default function OnboardingWizard() {
     if (!user?.id || resumedRef.current === user.id) return
     resumedRef.current = user.id
 
-    if (user.onboardingOficinaD) {
+    const stored = readStored(user.id)
+
+    // Dismissed = tour concluído permanentemente, esconde
+    if (user.onboardingDismissed) {
       setView('done')
       setHidden(true)
       return
     }
-    if (user.onboardingOrcamentoDone) {
-      setView('phase3')
-      const stored = readStored(user.id)
-      if (stored?.officeForm) setOfficeForm(prev => ({ ...prev, ...stored.officeForm }))
-      return
-    }
-    if (user.onboardingOsDone) {
-      setView('phase2')
-      const stored = readStored(user.id)
+
+    // Completou as 3 fases mas ainda não dispensou → mostra celebração
+    // (cobre o caso de o usuário recarregar a página depois do save da fase 3)
+    if (user.onboardingOficinaD) {
+      setView('celebration')
       if (stored?.createdOs) setCreatedOs(stored.createdOs)
       if (stored?.approvalLink) setApprovalLink(stored.approvalLink)
       return
     }
 
-    const stored = readStored(user.id)
-    if (stored?.view && ['intro', 'fab-coachmark', 'phase1', 'phase2', 'phase3'].includes(stored.view)) {
+    if (user.onboardingOrcamentoDone) {
+      setView('phase3')
+      if (stored?.officeForm) setOfficeForm(prev => ({ ...prev, ...stored.officeForm }))
+      if (stored?.createdOs) setCreatedOs(stored.createdOs)
+      return
+    }
+    if (user.onboardingOsDone) {
+      setView('phase2')
+      if (stored?.createdOs) setCreatedOs(stored.createdOs)
+      if (stored?.approvalLink) setApprovalLink(stored.approvalLink)
+      return
+    }
+
+    if (stored?.view && ['intro', 'fab-coachmark', 'phase1', 'phase2', 'phase3', 'celebration'].includes(stored.view)) {
       setView(stored.view)
       if (stored.osStep) setOsStep(stored.osStep)
       if (stored.form) setForm(prev => ({ ...prev, ...stored.form }))
@@ -426,8 +437,12 @@ export default function OnboardingWizard() {
         endereco: officeForm.endereco.trim(),
       })
       window.dispatchEvent(new CustomEvent('boxcerto:oficina-configurada'))
-      await patchProfile({ onboarding_oficina_done: true }, true)
+      // Mostra celebração IMEDIATAMENTE. Persistência do flag e refresh do
+      // user vão em background — qualquer mudança em user.onboardingOficinaD
+      // que dispare re-render do wizard cai no resume effect, que agora
+      // entende OficinaD+não-dispensado como "mostrar celebração".
       setView('celebration')
+      patchProfile({ onboarding_oficina_done: true }, false)
     } catch (e) {
       setError(e?.message || 'Erro ao salvar dados da oficina.')
     } finally {
