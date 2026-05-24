@@ -8,7 +8,7 @@ import Logo from '../components/Logo'
 import {
   CheckCircle, ArrowRight, Star, MessageCircle,
   Clock, TrendingUp, ShieldCheck, AlertTriangle, X,
-  Zap, Users, DollarSign, ThumbsUp,
+  Zap, Users, DollarSign, ThumbsUp, Instagram,
 } from 'lucide-react'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { usePageView } from '../hooks/usePageView'
@@ -43,34 +43,63 @@ const AVATAR_COLORS = [
   ['#1B5E20','#003300'],
 ]
 
+// Pausa global quando o usuário interage com a calculadora.
+// MiniCalc dispara 'boxcerto:calc-active' (true/false) via CustomEvent.
+const CALC_PAUSE_EVENT = 'boxcerto:calc-active'
+
 function SocialNotification() {
   const [visible, setVisible] = useState(false)
   const [idx, setIdx] = useState(0)
   const [off, setOff] = useState(false)
+  const [paused, setPaused] = useState(false)
+
+  // Escuta sinalização da calculadora para pausar
   useEffect(() => {
-    if (off) return
-    const t1 = setTimeout(() => setVisible(true), 6000)
-    const t2 = setTimeout(() => setVisible(false), 11000)
-    const t3 = setTimeout(() => { setIdx(i => (i + 1) % NOTIFS.length); setVisible(true) }, 16000)
-    const t4 = setTimeout(() => setVisible(false), 21000)
-    return () => [t1, t2, t3, t4].forEach(clearTimeout)
-  }, [off, idx])
-  if (!visible || off) return null
+    const onPause = (e) => setPaused(!!e?.detail?.active)
+    window.addEventListener(CALC_PAUSE_EVENT, onPause)
+    return () => window.removeEventListener(CALC_PAUSE_EVENT, onPause)
+  }, [])
+
+  // Fila contínua: visível por 5s, oculto por 8s, próximo toast.
+  // Pausa total se off=true (X clicado) ou paused=true (user mexendo na calc).
+  useEffect(() => {
+    if (off || paused) {
+      setVisible(false)
+      return
+    }
+    // Primeira aparição com delay inicial maior, depois entra no ciclo
+    const initialDelay = idx === 0 ? 6000 : 0
+    const showTimer = setTimeout(() => setVisible(true), initialDelay)
+    const hideTimer = setTimeout(() => setVisible(false), initialDelay + 5000)
+    const nextTimer = setTimeout(() => setIdx(i => (i + 1) % NOTIFS.length), initialDelay + 5000 + 8000)
+    return () => [showTimer, hideTimer, nextTimer].forEach(clearTimeout)
+  }, [off, paused, idx])
+
   const n = NOTIFS[idx]
   return (
-    <div className="fixed bottom-24 left-3 z-50 max-w-[260px]">
-      <div className="bg-white border border-gray-100 rounded-2xl shadow-xl p-3 flex items-center gap-3">
-        <div className="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
-          <ThumbsUp className="w-4 h-4 text-emerald-600" />
+    <div
+      className="fixed bottom-24 left-3 z-30 max-w-[260px]"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {visible && !off && !paused && (
+        <div className="bg-white border border-gray-100 rounded-2xl shadow-xl p-3 flex items-center gap-3">
+          <div className="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center shrink-0" aria-hidden="true">
+            <ThumbsUp className="w-4 h-4 text-emerald-600" aria-hidden="true" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-slate-900 truncate">{n.nome} se cadastrou</p>
+            <p className="text-[11px] text-slate-400">{n.cidade} · {n.tempo}</p>
+          </div>
+          <button
+            onClick={() => setOff(true)}
+            aria-label="Fechar notificações de cadastro"
+            className="text-slate-300 hover:text-slate-500 ml-1 shrink-0"
+          >
+            <X className="w-3.5 h-3.5" aria-hidden="true" />
+          </button>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold text-slate-900 truncate">{n.nome} se cadastrou</p>
-          <p className="text-[11px] text-slate-400">{n.cidade} · {n.tempo}</p>
-        </div>
-        <button onClick={() => setOff(true)} className="text-slate-300 hover:text-slate-500 ml-1 shrink-0">
-          <X className="w-3.5 h-3.5" />
-        </button>
-      </div>
+      )}
     </div>
   )
 }
@@ -80,10 +109,33 @@ function MiniCalc({ onCTA }) {
   const [carros, setCarros] = useState(20)
   const [ticket, setTicket] = useState(500)
   const perda = Math.round(carros * ticket * 0.18)
+
+  // Sinaliza aos toasts para pausarem enquanto o usuário interage.
+  // Retoma 4s após a última interação para não voltar imediatamente.
+  useEffect(() => {
+    const dispatch = (active) => window.dispatchEvent(new CustomEvent(CALC_PAUSE_EVENT, { detail: { active } }))
+    let resumeTimer = null
+    const setActive = () => {
+      if (resumeTimer) clearTimeout(resumeTimer)
+      dispatch(true)
+      resumeTimer = setTimeout(() => dispatch(false), 4000)
+    }
+    const root = document.getElementById('calc-perdas')
+    if (!root) return
+    root.addEventListener('input', setActive)
+    root.addEventListener('focusin', setActive)
+    return () => {
+      root.removeEventListener('input', setActive)
+      root.removeEventListener('focusin', setActive)
+      if (resumeTimer) clearTimeout(resumeTimer)
+      dispatch(false)
+    }
+  }, [])
+
   return (
-    <div className="bg-white border-2 border-indigo-100 rounded-3xl p-6 shadow-lg max-w-xl mx-auto">
-      <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-5 text-center">
-        📊 Calculadora de perdas
+    <div id="calc-perdas" className="bg-white border-2 border-indigo-100 rounded-3xl p-6 shadow-lg max-w-xl mx-auto">
+      <p className="text-xs font-semibold text-indigo-600 uppercase tracking-[0.1em] mb-5 text-center">
+        <span aria-hidden="true">📊 </span>Calculadora de perdas
       </p>
       <div className="space-y-5 mb-6">
         <div>
@@ -111,8 +163,9 @@ function MiniCalc({ onCTA }) {
         <p className="text-xs text-red-400 mt-1">≈ R$ {(perda * 12).toLocaleString('pt-BR')} por ano</p>
       </div>
       <button onClick={onCTA}
-        className="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-2xl text-sm flex items-center justify-center gap-2 hover:bg-indigo-700 transition-colors">
-        Parar de perder agora <ArrowRight className="w-4 h-4" />
+        aria-label="Parar de perder dinheiro — começar teste grátis"
+        className="w-full bg-emerald-500 text-white font-bold py-3.5 rounded-2xl text-sm flex items-center justify-center gap-2 hover:bg-emerald-600 transition-colors">
+        Parar de perder agora <ArrowRight className="w-4 h-4" aria-hidden="true" />
       </button>
     </div>
   )
@@ -165,7 +218,7 @@ function WppPrint({ nome, tipo, cidade, msg, hora, resultado, avatarIdx = 0 }) {
           </div>
           {resultado && (
             <div className="ml-6 mt-2 bg-emerald-100 border border-emerald-200 rounded-xl px-2.5 py-1.5 flex items-center gap-1.5">
-              <TrendingUp className="w-3 h-3 text-emerald-600 shrink-0" />
+              <TrendingUp className="w-3 h-3 text-emerald-600 shrink-0" aria-hidden="true" />
               <p className="text-emerald-700 text-[10px] font-bold leading-tight">{resultado}</p>
             </div>
           )}
@@ -182,7 +235,7 @@ function AprovacaoMock() {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto items-start">
       {/* Passo 1 */}
       <div className="space-y-3">
-        <p className="text-xs font-bold text-indigo-300 uppercase tracking-widest text-center">
+        <p className="text-xs font-semibold text-indigo-300 uppercase tracking-[0.1em] text-center">
           Passo 1 — você envia o link
         </p>
         <div className="rounded-2xl overflow-hidden shadow border border-white/10">
@@ -208,19 +261,19 @@ function AprovacaoMock() {
           </div>
         </div>
         <div className="flex justify-center items-center gap-2 py-1">
-          <ArrowRight className="w-4 h-4 text-indigo-400 rotate-90 md:rotate-0" />
+          <ArrowRight className="w-4 h-4 text-indigo-400 rotate-90 md:rotate-0" aria-hidden="true" />
           <p className="text-indigo-400 text-[10px]">cliente abre no celular</p>
         </div>
       </div>
 
       {/* Passo 2 */}
       <div className="space-y-3">
-        <p className="text-xs font-bold text-indigo-300 uppercase tracking-widest text-center">
+        <p className="text-xs font-semibold text-indigo-300 uppercase tracking-[0.1em] text-center">
           Passo 2 — cliente aprova no celular
         </p>
         <div className="rounded-2xl overflow-hidden shadow border border-white/10 bg-white">
           <div className="bg-gray-100 px-3 py-1.5 flex items-center gap-1.5 border-b border-gray-200">
-            <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
+            <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" aria-hidden="true" />
             <span className="text-[10px] text-slate-500 truncate">boxcerto.com/o/abc123</span>
           </div>
           <div className="p-4 space-y-3">
@@ -237,13 +290,14 @@ function AprovacaoMock() {
               </div>
             </div>
             <button onClick={() => setAprovado(true)}
+              aria-label={aprovado ? 'Orçamento aprovado' : 'Aprovar orçamento (demonstração)'}
               className={`w-full font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 transition-all ${aprovado ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-md active:scale-95'}`}>
-              <CheckCircle className="w-4 h-4" />
+              <CheckCircle className="w-4 h-4" aria-hidden="true" />
               {aprovado ? 'Aprovado ✓' : 'Aprovar orçamento'}
             </button>
           </div>
           <div className={`px-4 py-2 flex items-center gap-2 transition-all ${aprovado ? 'bg-emerald-500' : 'bg-emerald-50 border-t border-emerald-100'}`}>
-            <CheckCircle className={`w-3.5 h-3.5 shrink-0 ${aprovado ? 'text-white' : 'text-emerald-600'}`} />
+            <CheckCircle className={`w-3.5 h-3.5 shrink-0 ${aprovado ? 'text-white' : 'text-emerald-600'}`} aria-hidden="true" />
             <p className={`text-[11px] font-semibold ${aprovado ? 'text-white' : 'text-emerald-700'}`}>
               {aprovado ? '✅ Aprovado agora — registrado automaticamente!' : 'Aprovado · 25/04 às 14:35 — registrado'}
             </p>
@@ -261,10 +315,11 @@ function AprovacaoMock() {
 
 // ─── stepper de status ────────────────────────────────────────────────────────
 const STEPS = [
-  { label: 'Orçamento', desc: 'enviado',       bg: 'bg-slate-700', ring: false },
-  { label: 'Aprovado',  desc: 'pelo cliente',  bg: 'bg-indigo-600', ring: false },
-  { label: 'Em serviço',desc: 'mãos na massa', bg: 'bg-amber-500',  ring: true  },
-  { label: 'Pronto',    desc: 'para retirada', bg: 'bg-emerald-500',ring: false },
+  { label: 'Orçamento', desc: 'enviado',       bg: 'bg-slate-700',  text: 'text-white',     sub: 'text-white/70',     ring: false },
+  { label: 'Aprovado',  desc: 'pelo cliente',  bg: 'bg-indigo-600', text: 'text-white',     sub: 'text-white/70',     ring: false },
+  // amber-500 com texto branco falha WCAG (~2.5:1). Texto amber-900 atinge contraste AA.
+  { label: 'Em serviço',desc: 'mãos na massa', bg: 'bg-amber-500',  text: 'text-amber-950', sub: 'text-amber-900',    ring: true  },
+  { label: 'Pronto',    desc: 'para retirada', bg: 'bg-emerald-500',text: 'text-white',     sub: 'text-white/80',     ring: false },
 ]
 
 function StatusStepper() {
@@ -272,12 +327,12 @@ function StatusStepper() {
     <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-0">
       {STEPS.map((step, i) => (
         <div key={i} className="flex flex-col sm:flex-row items-center">
-          <div className={`flex flex-col items-center justify-center px-5 py-3 rounded-2xl min-w-[110px] text-white ${step.bg} ${step.ring ? 'ring-4 ring-amber-300 shadow-xl scale-105 z-10' : 'opacity-90'}`}>
+          <div className={`flex flex-col items-center justify-center px-5 py-3 rounded-2xl min-w-[110px] ${step.bg} ${step.text} ${step.ring ? 'ring-4 ring-amber-300 shadow-xl scale-105 z-10' : 'opacity-90'}`}>
             <span className="text-xs font-extrabold">{step.label}</span>
-            <span className="text-[10px] text-white/70 mt-0.5">{step.desc}</span>
+            <span className={`text-[10px] mt-0.5 ${step.sub}`}>{step.desc}</span>
           </div>
           {i < STEPS.length - 1 && (
-            <div className="w-px h-3 sm:h-px sm:w-5 bg-slate-300 my-0.5 sm:my-0 sm:mx-0.5" />
+            <div className="w-px h-3 sm:h-px sm:w-5 bg-slate-300 my-0.5 sm:my-0 sm:mx-0.5" aria-hidden="true" />
           )}
         </div>
       ))}
@@ -301,11 +356,11 @@ function AntesDepois() {
       {COMPARATIVO.map(([a, d], i) => (
         <div key={i} className="grid grid-cols-2 gap-2 text-xs">
           <div className="bg-red-50 border border-red-100 rounded-xl p-3 flex gap-1.5 items-start">
-            <X className="w-3 h-3 text-red-400 shrink-0 mt-0.5" />
+            <X className="w-3 h-3 text-red-400 shrink-0 mt-0.5" aria-hidden="true" />
             <span className="text-red-700 leading-relaxed">{a}</span>
           </div>
           <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex gap-1.5 items-start">
-            <CheckCircle className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" />
+            <CheckCircle className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" aria-hidden="true" />
             <span className="text-emerald-700 leading-relaxed">{d}</span>
           </div>
         </div>
@@ -352,8 +407,12 @@ export default function LandingAds() {
       {/* NAV */}
       <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-gray-100 shadow-sm px-4 py-3 flex items-center justify-between">
         <Logo size="md" priority />
-        <button onClick={goRegister} className="bg-indigo-600 text-white font-bold text-sm px-4 py-2 rounded-xl hover:bg-indigo-700 transition-colors">
-          Testar grátis
+        <button
+          onClick={goRegister}
+          aria-label="Começar teste grátis por 7 dias, sem cartão de crédito"
+          className="bg-emerald-500 text-white font-bold text-sm px-4 py-2 rounded-xl hover:bg-emerald-600 transition-colors"
+        >
+          Começar grátis
         </button>
       </nav>
 
@@ -361,7 +420,7 @@ export default function LandingAds() {
       <section className="px-4 pt-12 pb-16 text-center bg-gradient-to-b from-slate-900 to-indigo-950">
         <div className="max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-2 bg-amber-400/10 border border-amber-400/20 text-amber-300 text-xs font-bold px-3 py-1.5 rounded-full mb-6">
-            <Zap className="w-3.5 h-3.5" /> +347 oficinas já pararam de perder orçamento
+            <Zap className="w-3.5 h-3.5" aria-hidden="true" /> +347 oficinas já pararam de perder orçamento
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-white leading-tight mb-5 max-w-xl mx-auto">
             Sua oficina perde em média{' '}
@@ -373,17 +432,18 @@ export default function LandingAds() {
             <strong className="text-white"> O BoxCerto resolve isso hoje.</strong>
           </p>
           <div className="flex items-center justify-center gap-2 mb-8">
-            <div className="flex -space-x-2">
+            <div className="flex -space-x-2" aria-label="Avatares de clientes BoxCerto">
               {['J','R','A','L','C','T'].map((l,i) => (
-                <div key={i} className="w-7 h-7 rounded-full border-2 border-indigo-950 flex items-center justify-center text-white text-xs font-bold"
+                <div key={i} aria-hidden="true" className="w-7 h-7 rounded-full border-2 border-indigo-950 flex items-center justify-center text-white text-xs font-bold"
                   style={{ background: AVATAR_COLORS[i][0] }}>{l}</div>
               ))}
             </div>
             <p className="text-slate-400 text-xs"><span className="text-white font-bold">+347 oficinas</span> já resolveram</p>
           </div>
           <button onClick={goRegister}
-            className="w-full max-w-sm mx-auto flex items-center justify-center gap-2 bg-emerald-500 text-white font-extrabold py-4 rounded-2xl hover:bg-emerald-400 transition-colors shadow-2xl shadow-emerald-900 text-base mb-3">
-            Começar grátis por 7 dias <ArrowRight className="w-5 h-5" />
+            aria-label="Começar teste grátis por 7 dias, sem cartão de crédito"
+            className="w-full max-w-sm mx-auto flex items-center justify-center gap-2 bg-emerald-500 text-white font-extrabold py-4 rounded-2xl hover:bg-emerald-600 transition-colors shadow-2xl shadow-emerald-900 text-base mb-3">
+            Começar grátis por 7 dias <ArrowRight className="w-5 h-5" aria-hidden="true" />
           </button>
           <p className="text-slate-500 text-xs">Sem cartão · Cancele quando quiser · 2 minutos para configurar</p>
         </div>
@@ -392,29 +452,98 @@ export default function LandingAds() {
       {/* BARRA DE CONFIANÇA */}
       <section className="bg-white border-b border-gray-100 px-4 py-4">
         <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-slate-500 max-w-2xl mx-auto">
-          <span className="flex items-center gap-1"><Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />4,9 de avaliação</span>
-          <span className="flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />Dados 100% seus</span>
-          <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-indigo-500" />Pronto em 2 min</span>
-          <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5 text-indigo-500" />+347 oficinas ativas</span>
+          <span className="flex items-center gap-1"><Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />4,9 de avaliação</span>
+          <span className="flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-emerald-500" aria-hidden="true" />Dados 100% seus</span>
+          <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />Pronto em 2 min</span>
+          <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />+347 oficinas ativas</span>
         </div>
       </section>
 
       {/* PRODUTO VISUAL */}
-      <section className="bg-white px-4 py-10 border-b border-gray-100">
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-5 text-center">
-          O sistema na prática
-        </p>
-        <div className="relative max-w-2xl mx-auto">
-          <div className="absolute -inset-3 bg-indigo-50 rounded-3xl blur-2xl opacity-60 pointer-events-none" />
-          <img
-            src="/mockup01.webp"
-            alt="BoxCerto — gestão de oficina no celular e no computador"
-            className="relative w-full h-auto"
-            loading="lazy"
-            decoding="async"
-            width="1448"
-            height="1086"
-          />
+      <section className="bg-white px-4 py-12 border-b border-gray-100">
+        <div className="max-w-4xl mx-auto">
+          <p className="text-xs font-semibold text-indigo-600 uppercase tracking-[0.1em] mb-3 text-center">
+            O sistema na prática
+          </p>
+          <h2 className="text-2xl font-extrabold text-slate-900 text-center mb-2">
+            Tudo que sua oficina precisa, em telas simples
+          </h2>
+          <p className="text-slate-500 text-sm text-center mb-8 max-w-lg mx-auto">
+            Veja por dentro: ordem de serviço, orçamento pelo WhatsApp e financeiro em tempo real.
+          </p>
+
+          {/* Mockup geral */}
+          <div className="relative max-w-2xl mx-auto mb-10">
+            <div className="absolute -inset-3 bg-indigo-50 rounded-3xl blur-2xl opacity-60 pointer-events-none" aria-hidden="true" />
+            <img
+              src="/mockup01.webp"
+              alt="BoxCerto — gestão de oficina no celular e no computador"
+              className="relative w-full h-auto"
+              loading="lazy"
+              decoding="async"
+              width="1448"
+              height="1086"
+            />
+          </div>
+
+          {/* Cards de zoom — 4 funcionalidades específicas */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                src: '/screenshots/lp-os-list.png',
+                alt: 'Listagem de Ordens de Serviço com status coloridos',
+                badge: 'Status em tempo real',
+                title: 'OS em andamento',
+                desc: 'Todas as ordens com status colorido — prontos, manutenção, orçamentos, agendados.',
+              },
+              {
+                src: '/screenshots/lp-os-detalhe.png',
+                alt: 'Detalhe da OS com botão Enviar para cliente pelo WhatsApp',
+                badge: 'Enviar no WhatsApp',
+                title: 'Orçamento aprovado pelo cliente',
+                desc: 'Um toque envia o link de aprovação pro WhatsApp. Tudo registrado com data e hora.',
+              },
+              {
+                src: '/screenshots/lp-financeiro.png',
+                alt: 'Tela do financeiro com lucro líquido, receitas e despesas do mês',
+                badge: 'Lucro em tempo real',
+                title: 'Financeiro do mês',
+                desc: 'Receitas, custos, despesas e lucro líquido consolidados — sem planilha.',
+              },
+              {
+                src: '/screenshots/lp-estoque.png',
+                alt: 'Tela de estoque com produtos, custos e botão de venda',
+                badge: 'Sem ruptura de peças',
+                title: 'Estoque e vendas',
+                desc: 'Entradas, saídas e alerta de estoque mínimo. Venda direto da tela.',
+              },
+            ].map((card, i) => (
+              <div key={i} className="rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <div className="relative bg-slate-50 aspect-[3/4] flex items-center justify-center overflow-hidden">
+                  <img
+                    src={card.src}
+                    alt={card.alt}
+                    className="absolute inset-0 w-full h-full object-cover object-top"
+                    loading="lazy"
+                    decoding="async"
+                    onError={(e) => { e.currentTarget.style.display = 'none' }}
+                  />
+                  {/* Placeholder enquanto a imagem real não está disponível */}
+                  <div className="text-center px-4 text-slate-300">
+                    <div className="text-4xl mb-2" aria-hidden="true">📱</div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider">Screenshot</p>
+                  </div>
+                  <span className="absolute bottom-3 left-3 bg-indigo-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-md">
+                    {card.badge}
+                  </span>
+                </div>
+                <div className="p-4">
+                  <h3 className="font-bold text-slate-900 text-sm">{card.title}</h3>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">{card.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -422,16 +551,16 @@ export default function LandingAds() {
       <section className="bg-gray-50 px-4 py-14">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center gap-2 justify-center mb-2">
-            <AlertTriangle className="w-5 h-5 text-amber-500" />
+            <AlertTriangle className="w-5 h-5 text-amber-500" aria-hidden="true" />
             <h2 className="text-2xl font-extrabold text-slate-900">Isso acontece na sua oficina?</h2>
           </div>
           <p className="text-slate-500 text-sm text-center mb-8">Se você se identificar em 2 ou mais, você está perdendo dinheiro todo dia.</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
-              { icon: <MessageCircle className="w-5 h-5 text-red-500" />, t: '"Mandei o orçamento no zap e o cliente sumiu"', d: 'Você digita, manda, fica esperando. O cliente abre, vê — e ignora. Sem como cobrar, sem registro.' },
-              { icon: <ShieldCheck className="w-5 h-5 text-red-500" />,  t: '"Fiz o serviço e o cliente disse que não autorizou"', d: 'Acontece mais do que você imagina. Sem prova de aprovação, você fica no prejuízo ou perde o cliente.' },
-              { icon: <DollarSign className="w-5 h-5 text-red-500" />,  t: '"Não sei exatamente quanto entrou esse mês"', d: 'O dinheiro passa pela mão e some. No fim do mês você não sabe se teve lucro ou prejuízo.' },
-              { icon: <Clock className="w-5 h-5 text-red-500" />,       t: '"Fico ligando para cliente confirmar e ninguém atende"', d: 'Você poderia estar trabalhando no carro. Em vez disso, fica caçando aprovação no telefone.' },
+              { icon: <MessageCircle className="w-5 h-5 text-red-500" aria-hidden="true" />, t: '"Mandei o orçamento no zap e o cliente sumiu"', d: 'Você digita, manda, fica esperando. O cliente abre, vê — e ignora. Sem como cobrar, sem registro.' },
+              { icon: <ShieldCheck className="w-5 h-5 text-red-500" aria-hidden="true" />,  t: '"Fiz o serviço e o cliente disse que não autorizou"', d: 'Acontece mais do que você imagina. Sem prova de aprovação, você fica no prejuízo ou perde o cliente.' },
+              { icon: <DollarSign className="w-5 h-5 text-red-500" aria-hidden="true" />,  t: '"Não sei exatamente quanto entrou esse mês"', d: 'O dinheiro passa pela mão e some. No fim do mês você não sabe se teve lucro ou prejuízo.' },
+              { icon: <Clock className="w-5 h-5 text-red-500" aria-hidden="true" />,       t: '"Fico ligando para cliente confirmar e ninguém atende"', d: 'Você poderia estar trabalhando no carro. Em vez disso, fica caçando aprovação no telefone.' },
             ].map((item, i) => (
               <div key={i} className="bg-white border border-red-100 rounded-2xl p-4 flex gap-3 shadow-sm">
                 <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center shrink-0">{item.icon}</div>
@@ -458,7 +587,7 @@ export default function LandingAds() {
       <section className="bg-gradient-to-b from-indigo-950 to-indigo-900 px-4 py-16">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
-            <span className="inline-block bg-emerald-500 text-white text-xs font-extrabold px-3 py-1 rounded-full mb-3 tracking-wide">EXCLUSIVO BOXCERTO</span>
+            <span className="inline-block bg-emerald-500 text-white text-xs font-extrabold px-4 py-1.5 rounded-full mb-3 tracking-[0.1em] uppercase">Exclusivo BoxCerto</span>
             <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-3">Aprovação de orçamento em 1 clique</h2>
             <p className="text-indigo-300 text-sm leading-relaxed max-w-lg mx-auto">
               Você monta o orçamento e manda o link pelo WhatsApp. O cliente abre no celular e aprova na hora.
@@ -468,8 +597,9 @@ export default function LandingAds() {
           <AprovacaoMock />
           <div className="mt-10 text-center">
             <button onClick={goRegister}
-              className="w-full max-w-sm mx-auto flex items-center justify-center gap-2 bg-emerald-500 text-white font-bold py-4 rounded-2xl hover:bg-emerald-400 transition-colors text-base shadow-xl shadow-emerald-900">
-              Quero isso na minha oficina <ArrowRight className="w-5 h-5" />
+              aria-label="Começar teste grátis por 7 dias, sem cartão de crédito"
+              className="w-full max-w-sm mx-auto flex items-center justify-center gap-2 bg-emerald-500 text-white font-bold py-4 rounded-2xl hover:bg-emerald-600 transition-colors text-base shadow-xl shadow-emerald-900">
+              Quero isso na minha oficina <ArrowRight className="w-5 h-5" aria-hidden="true" />
             </button>
             <p className="text-indigo-400 text-xs mt-2">7 dias grátis · Sem cartão</p>
           </div>
@@ -479,7 +609,7 @@ export default function LandingAds() {
       {/* RASTREIO DE STATUS */}
       <section className="bg-indigo-50 px-4 py-14">
         <div className="max-w-2xl mx-auto text-center">
-          <span className="inline-block bg-indigo-600 text-white text-xs font-extrabold px-3 py-1 rounded-full mb-3 tracking-wide">NOVO — RASTREIO DE STATUS</span>
+          <span className="inline-block bg-indigo-600 text-white text-xs font-extrabold px-4 py-1.5 rounded-full mb-3 tracking-[0.1em] uppercase">Novo — Rastreio de Status</span>
           <h2 className="text-2xl font-extrabold text-slate-900 mb-3">O mesmo link mostra onde está o carro</h2>
           <p className="text-slate-500 text-sm mb-8 max-w-lg mx-auto">
             Depois de aprovar, o cliente abre o link a qualquer hora e vê o status em tempo real.
@@ -490,8 +620,9 @@ export default function LandingAds() {
             <p>📱 O cliente abre o link no celular — sem instalar nada, sem criar conta — e vê o status em tempo real.</p>
           </div>
           <button onClick={goRegister}
-            className="mt-6 inline-flex items-center gap-2 bg-indigo-600 text-white font-bold px-6 py-3 rounded-2xl hover:bg-indigo-700 transition-colors text-sm">
-            Testar agora — grátis por 7 dias <ArrowRight className="w-4 h-4" />
+            aria-label="Começar teste grátis por 7 dias, sem cartão de crédito"
+            className="mt-6 inline-flex items-center gap-2 bg-emerald-500 text-white font-bold px-6 py-3 rounded-2xl hover:bg-emerald-600 transition-colors text-sm">
+            Testar agora — grátis por 7 dias <ArrowRight className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       </section>
@@ -534,7 +665,7 @@ export default function LandingAds() {
       {/* OFERTA */}
       <section className="bg-slate-900 px-4 py-14">
         <div className="max-w-xl mx-auto text-center">
-          <span className="inline-block bg-emerald-500 text-white text-xs font-extrabold px-3 py-1 rounded-full mb-4 tracking-wide">OFERTA DE LANÇAMENTO</span>
+          <span className="inline-block bg-emerald-500 text-white text-xs font-extrabold px-4 py-1.5 rounded-full mb-4 tracking-[0.1em] uppercase">Oferta de Lançamento</span>
           <h2 className="text-2xl font-extrabold text-white mb-1">Comece hoje por R$ 0</h2>
           <p className="text-slate-400 text-sm mb-6">7 dias grátis, sem cartão. Depois só <strong className="text-white">R$ 79,90/mês</strong> no plano anual.</p>
           <div className="text-left space-y-3 mb-8 bg-white/5 rounded-2xl p-5">
@@ -549,13 +680,17 @@ export default function LandingAds() {
               'Sem fidelidade — cancele quando quiser',
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-3">
-                <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" aria-hidden="true" />
                 <span className="text-slate-200 text-sm">{item}</span>
               </div>
             ))}
           </div>
-          <button onClick={goRegister} className="w-full bg-emerald-500 text-white font-extrabold py-4 rounded-2xl hover:bg-emerald-400 transition-colors shadow-xl text-base mb-3">
-            Começar meu teste grátis ⭐
+          <button
+            onClick={goRegister}
+            aria-label="Começar teste grátis por 7 dias, sem cartão de crédito"
+            className="w-full bg-emerald-500 text-white font-extrabold py-4 rounded-2xl hover:bg-emerald-600 transition-colors shadow-xl text-base mb-3"
+          >
+            Começar meu teste grátis <span aria-hidden="true">⭐</span>
           </button>
           <p className="text-slate-500 text-xs">Sem cartão · 7 dias · Cancele quando quiser</p>
         </div>
@@ -566,28 +701,30 @@ export default function LandingAds() {
         <div className="max-w-xl mx-auto text-center">
           <h2 className="text-2xl font-extrabold text-slate-900 mb-2">Preço simples e transparente</h2>
           <p className="text-slate-500 text-sm mb-8">Por menos que o valor de uma troca de óleo por mês, sua oficina tem controle completo.</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 pt-4">
             {/* Mensal */}
-            <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 text-center">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Plano Mensal</p>
+            <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 text-center opacity-90">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-[0.1em] mb-3">Plano Mensal</p>
               <div className="flex items-end justify-center gap-1 mb-1">
-                <span className="text-4xl font-extrabold text-slate-800">R${cfg_pm % 1 === 0 ? cfg_pm.toFixed(0) : cfg_pm.toFixed(2).replace('.',',')}</span>
+                <span className="text-4xl font-bold text-slate-700">R${cfg_pm % 1 === 0 ? cfg_pm.toFixed(0) : cfg_pm.toFixed(2).replace('.',',')}</span>
                 <span className="text-slate-400 mb-1">/mês</span>
               </div>
               <p className="text-xs text-slate-400 mb-4">Cancele quando quiser</p>
               <p className="text-xs text-slate-500">Para quem quer testar com liberdade total.</p>
             </div>
-            {/* Anual */}
-            <div className="bg-indigo-600 border-2 border-indigo-600 rounded-2xl p-6 text-center relative overflow-hidden">
-              <div className="absolute top-3 right-3 bg-amber-400 text-slate-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full">MAIS VANTAJOSO</div>
-              <p className="text-xs font-bold text-indigo-200 uppercase tracking-wider mb-3">Plano Anual</p>
-              <div className="flex items-end justify-center gap-1 mb-1">
-                <span className="text-4xl font-extrabold text-white">R${cfg_pam % 1 === 0 ? cfg_pam.toFixed(0) : cfg_pam.toFixed(2).replace('.',',')}</span>
-                <span className="text-indigo-300 mb-1">/mês</span>
+            {/* Anual — DESTAQUE */}
+            <div className="relative bg-emerald-50 border-2 border-emerald-500 rounded-2xl p-6 pt-7 text-center shadow-lg shadow-emerald-100">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[11px] font-extrabold px-4 py-1.5 rounded-full shadow-md whitespace-nowrap tracking-[0.1em] uppercase">
+                Mais vantajoso
               </div>
-              <p className="text-xs text-indigo-300 mb-1">Cobrado uma vez ao ano: R${cfg_pa % 1 === 0 ? cfg_pa.toFixed(0) : cfg_pa.toFixed(2).replace('.',',')}</p>
-              <p className="text-xs font-bold text-amber-300 mb-4">Economia de R${parseFloat((cfg_pm * 12 - cfg_pa).toFixed(2)).toFixed(2).replace('.',',')} comparado ao plano mensal</p>
-              <p className="text-xs text-indigo-200">Para quem quer o melhor custo-benefício.</p>
+              <p className="text-xs font-semibold text-emerald-700 uppercase tracking-[0.1em] mb-3">Plano Anual</p>
+              <div className="flex items-end justify-center gap-1 mb-1">
+                <span className="text-5xl font-extrabold text-slate-900">R${cfg_pam % 1 === 0 ? cfg_pam.toFixed(0) : cfg_pam.toFixed(2).replace('.',',')}</span>
+                <span className="text-slate-500 mb-1">/mês</span>
+              </div>
+              <p className="text-xs text-slate-500 mb-1">Cobrado uma vez ao ano: R${cfg_pa % 1 === 0 ? cfg_pa.toFixed(0) : cfg_pa.toFixed(2).replace('.',',')}</p>
+              <p className="text-xs font-bold text-emerald-700 mb-4">Economia de R${parseFloat((cfg_pm * 12 - cfg_pa).toFixed(2)).toFixed(2).replace('.',',')} comparado ao plano mensal</p>
+              <p className="text-xs text-slate-600">Para quem quer o melhor custo-benefício.</p>
             </div>
           </div>
           <p className="text-slate-500 text-sm italic">
@@ -634,7 +771,7 @@ export default function LandingAds() {
       <section className="bg-gray-50 px-4 py-12 text-center">
         <div className="max-w-xl mx-auto">
           <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <ShieldCheck className="w-8 h-8 text-emerald-600" />
+            <ShieldCheck className="w-8 h-8 text-emerald-600" aria-hidden="true" />
           </div>
           <h3 className="text-xl font-extrabold text-slate-900 mb-2">Risco zero. Sem pegar no bolso.</h3>
           <p className="text-slate-500 text-sm leading-relaxed max-w-md mx-auto">
@@ -644,7 +781,7 @@ export default function LandingAds() {
       </section>
 
       {/* CTA FINAL */}
-      <section className="bg-gradient-to-b from-indigo-600 to-indigo-800 px-4 py-16 text-center">
+      <section className="bg-indigo-600 px-4 py-16 text-center">
         <div className="max-w-xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-3">
             Todo dia sem BoxCerto é dinheiro deixado na mesa.
@@ -653,30 +790,63 @@ export default function LandingAds() {
             São 2 minutos para configurar. Já no primeiro orçamento você entende por que +347 oficinas não voltam para o jeito antigo.
           </p>
           <button onClick={goRegister}
-            className="w-full max-w-sm mx-auto flex items-center justify-center gap-2 bg-emerald-500 text-white font-extrabold py-4 rounded-2xl hover:bg-emerald-400 transition-colors shadow-2xl shadow-emerald-900 text-base mb-3">
-            Criar minha conta — é grátis <ArrowRight className="w-5 h-5" />
+            aria-label="Criar conta grátis, sem cartão de crédito"
+            className="w-full max-w-sm mx-auto flex items-center justify-center gap-2 bg-emerald-500 text-white font-extrabold py-4 rounded-2xl hover:bg-emerald-600 transition-colors shadow-2xl shadow-emerald-900 text-base mb-3">
+            Criar minha conta — é grátis <ArrowRight className="w-5 h-5" aria-hidden="true" />
           </button>
           <p className="text-indigo-300 text-xs">Sem cartão · 7 dias grátis · Cancele quando quiser</p>
         </div>
       </section>
 
       {/* RODAPÉ */}
-      <footer className="bg-slate-900 border-t border-slate-800 px-4 py-6 text-center text-xs text-slate-500 space-y-1">
-        <p>© {new Date().getFullYear()} BoxCerto Tecnologia Ltda. · CNPJ 52.354.481/0001-37</p>
-        <p>
-          <a href="/termos" target="_blank" rel="noreferrer" className="hover:text-slate-300 transition-colors">Termos de Uso</a>
-          {' · '}
-          <a href="/privacidade" target="_blank" rel="noreferrer" className="hover:text-slate-300 transition-colors">Privacidade</a>
-          {' · '}
-          <a href="https://wa.me/5553997065725" target="_blank" rel="noreferrer" className="hover:text-slate-300 transition-colors">Suporte WhatsApp</a>
-        </p>
+      <footer className="bg-slate-900 border-t border-slate-800 px-4 py-8 text-xs text-slate-400">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b border-slate-800">
+            <Logo size="sm" priority />
+            <div className="flex items-center gap-3">
+              <a
+                href="https://wa.me/5553997065725"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Falar com o suporte pelo WhatsApp"
+                className="inline-flex items-center gap-2 bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 font-semibold px-3 py-2 rounded-xl transition-colors"
+              >
+                <MessageCircle className="w-4 h-4" aria-hidden="true" />
+                Suporte WhatsApp
+              </a>
+              <a
+                href="https://instagram.com/boxcertoapp"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Instagram BoxCerto (@boxcertoapp)"
+                className="w-9 h-9 inline-flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+              >
+                <Instagram className="w-4 h-4" aria-hidden="true" />
+              </a>
+            </div>
+          </div>
+          <div className="pt-5 text-center space-y-1.5">
+            <p>© {new Date().getFullYear()} BoxCerto Tecnologia Ltda. · CNPJ 52.354.481/0001-37</p>
+            <p className="space-x-2">
+              <a href="/termos" target="_blank" rel="noreferrer" className="hover:text-slate-200 transition-colors">Termos de Uso</a>
+              <span aria-hidden="true">·</span>
+              <a href="/privacidade" target="_blank" rel="noreferrer" className="hover:text-slate-200 transition-colors">Privacidade</a>
+              <span aria-hidden="true">·</span>
+              <a href="https://wa.me/5553997065725" target="_blank" rel="noreferrer" className="hover:text-slate-200 transition-colors">Suporte WhatsApp</a>
+            </p>
+          </div>
+        </div>
       </footer>
 
       {/* STICKY MOBILE CTA */}
       {scrolled && (
         <div className="fixed bottom-0 left-0 right-0 z-50 p-3 bg-slate-900 border-t border-slate-700 shadow-2xl md:hidden">
-          <button onClick={goRegister} className="w-full flex items-center justify-center gap-2 bg-emerald-500 text-white font-bold py-3.5 rounded-2xl text-base">
-            Começar grátis — 7 dias sem cartão <ArrowRight className="w-5 h-5" />
+          <button
+            onClick={goRegister}
+            aria-label="Começar teste grátis por 7 dias, sem cartão de crédito"
+            className="w-full flex items-center justify-center gap-2 bg-emerald-500 text-white font-bold py-3.5 rounded-2xl text-base"
+          >
+            Começar grátis — 7 dias sem cartão <ArrowRight className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
       )}
