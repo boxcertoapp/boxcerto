@@ -187,38 +187,8 @@ const ROUTES = [
       <p>Plano mensal: R$ 97/mês. Plano anual: R$ 79,90/mês (economia de R$ 205,20/ano). 7 dias grátis.</p>
     `,
   },
-  {
-    slug: 'lpdiagnostico',
-    title: 'Diagnóstico Gratuito da sua Oficina | BoxCerto',
-    description:
-      'Responda 5 perguntas e descubra onde sua oficina está perdendo dinheiro. Diagnóstico grátis e personalizado para mecânicos.',
-    canonical: 'https://boxcerto.com/lpdiagnostico',
-    ogTitle: 'Diagnóstico Gratuito da sua Oficina — BoxCerto',
-    ogDescription:
-      'Descubra onde sua oficina perde dinheiro. 5 perguntas, resultado na hora. Grátis.',
-    twitterTitle: 'Diagnóstico Gratuito da sua Oficina — BoxCerto',
-    twitterDescription: 'Descubra onde sua oficina perde dinheiro. 5 perguntas, grátis.',
-    jsonLd: {
-      '@context': 'https://schema.org',
-      '@type': 'WebPage',
-      name: 'Diagnóstico Gratuito da sua Oficina — BoxCerto',
-      description:
-        'Ferramenta gratuita de diagnóstico para oficinas mecânicas. Responda 5 perguntas e veja onde melhorar.',
-      url: 'https://boxcerto.com/lpdiagnostico',
-    },
-    noscript: `
-      <h1>Diagnóstico Gratuito da sua Oficina — BoxCerto</h1>
-      <p>Responda 5 perguntas e descubra onde sua oficina está perdendo dinheiro.</p>
-      <ul>
-        <li>Você sabe quantas OS foram abertas esse mês?</li>
-        <li>Quanto do seu estoque está parado?</li>
-        <li>Você consegue ver o lucro real da oficina?</li>
-        <li>Seus clientes aprovam orçamento pelo WhatsApp?</li>
-        <li>Você perde OS por falta de organização?</li>
-      </ul>
-      <p>Faça o diagnóstico gratuito e veja o que o BoxCerto pode fazer pela sua oficina.</p>
-    `,
-  },
+  // lpdiagnostico é agora um arquivo HTML estático (public/lpdiagnostico.html)
+  // com captura de Nome + WhatsApp — não usar o inject-meta aqui para não sobrescrever
 ]
 
 // ─── Helpers de substituição ───────────────────────────────────────────────
