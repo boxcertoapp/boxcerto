@@ -550,36 +550,33 @@ export default function OnboardingWizard() {
               ))}
             </div>
 
-            <div className="mt-auto flex flex-col gap-3 pt-4">
+            <div className="mt-auto space-y-3 pt-4">
               {canInstall && !installSkipped && (
-                <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600">
-                      <Smartphone className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-indigo-900">
-                        {isIOS ? 'Adicione à tela inicial' : 'Instale o app'}
-                      </p>
-                      <p className="text-xs text-indigo-600">
-                        {isIOS ? 'Abra com 1 toque pelo iPhone' : 'Acesso rápido — funciona offline'}
-                      </p>
-                    </div>
+                <div className="flex items-center gap-3 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-600">
+                    <Smartphone className="h-4 w-4 text-white" />
                   </div>
-                  <div className="mt-3 flex gap-2">
-                    <button
-                      onClick={handleInstall}
-                      className="flex-1 rounded-xl bg-indigo-600 py-2.5 text-sm font-bold text-white transition-colors hover:bg-indigo-700"
-                    >
-                      {isIOS ? 'Como adicionar?' : 'Instalar agora'}
-                    </button>
-                    <button
-                      onClick={() => setInstallSkipped(true)}
-                      className="rounded-xl px-3 py-2.5 text-xs font-medium text-slate-400 hover:text-slate-600"
-                    >
-                      Depois
-                    </button>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-indigo-900">
+                      {isIOS ? 'Adicione à tela inicial' : 'Instale o app'}
+                    </p>
+                    <p className="text-xs leading-tight text-indigo-400">
+                      {isIOS ? '1 toque direto da tela inicial' : 'Acesso rápido, funciona offline'}
+                    </p>
                   </div>
+                  <button
+                    onClick={handleInstall}
+                    className="shrink-0 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-indigo-700"
+                  >
+                    {isIOS ? 'Como?' : 'Instalar'}
+                  </button>
+                  <button
+                    onClick={() => setInstallSkipped(true)}
+                    aria-label="Fechar sugestão de instalação"
+                    className="shrink-0 text-indigo-300 transition-colors hover:text-indigo-500"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
               )}
               <div>
