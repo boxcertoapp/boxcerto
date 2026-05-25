@@ -13,6 +13,8 @@ import {
   officeDataStorage, formatCurrency,
 } from '../lib/storage'
 import { titleCaseName } from '../lib/text'
+import { usePWAInstall } from '../hooks/usePWAInstall'
+import PWAInstallSheet from './PWAInstallSheet'
 
 const STORAGE_KEY_PREFIX = 'boxcerto:onboarding:'
 
@@ -111,6 +113,10 @@ export default function OnboardingWizard() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [logoBusy, setLogoBusy] = useState(false)
+
+  const { canInstall, isIOS, promptInstall } = usePWAInstall()
+  const [showInstallSheet, setShowInstallSheet] = useState(false)
+  const [installSkipped, setInstallSkipped] = useState(false)
 
   const logoInputRef = useRef(null)
   const resumedRef = useRef(null)
@@ -301,6 +307,11 @@ export default function OnboardingWizard() {
     setHidden(true)
     setTimeout(() => setHidden(false), 60_000)
   }, [])
+
+  const handleInstall = useCallback(async () => {
+    const result = await promptInstall()
+    if (result === 'ios') setShowInstallSheet(true)
+  }, [promptInstall])
 
   const goOsBack = useCallback(() => {
     setError('')
@@ -539,22 +550,56 @@ export default function OnboardingWizard() {
               ))}
             </div>
 
-            <div className="mt-auto pt-5">
-              <button
-                onClick={finishAndShowCoachmark}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 py-4 text-[15px] font-extrabold text-white shadow-lg shadow-indigo-200 transition-colors hover:bg-indigo-700"
-              >
-                Ir para meu painel <ChevronRight className="h-4 w-4" />
-              </button>
-              <button
-                onClick={finishToDashboard}
-                className="mt-2 w-full py-3 text-center text-sm font-medium text-slate-400 hover:text-slate-600"
-              >
-                Criar outro orçamento
-              </button>
+            <div className="mt-auto flex flex-col gap-3 pt-4">
+              {canInstall && !installSkipped && (
+                <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600">
+                      <Smartphone className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-indigo-900">
+                        {isIOS ? 'Adicione à tela inicial' : 'Instale o app'}
+                      </p>
+                      <p className="text-xs text-indigo-600">
+                        {isIOS ? 'Abra com 1 toque pelo iPhone' : 'Acesso rápido — funciona offline'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      onClick={handleInstall}
+                      className="flex-1 rounded-xl bg-indigo-600 py-2.5 text-sm font-bold text-white transition-colors hover:bg-indigo-700"
+                    >
+                      {isIOS ? 'Como adicionar?' : 'Instalar agora'}
+                    </button>
+                    <button
+                      onClick={() => setInstallSkipped(true)}
+                      className="rounded-xl px-3 py-2.5 text-xs font-medium text-slate-400 hover:text-slate-600"
+                    >
+                      Depois
+                    </button>
+                  </div>
+                </div>
+              )}
+              <div>
+                <button
+                  onClick={finishAndShowCoachmark}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 py-4 text-[15px] font-extrabold text-white shadow-lg shadow-indigo-200 transition-colors hover:bg-indigo-700"
+                >
+                  Ir para meu painel <ChevronRight className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={finishToDashboard}
+                  className="mt-2 w-full py-3 text-center text-sm font-medium text-slate-400 hover:text-slate-600"
+                >
+                  Criar outro orçamento
+                </button>
+              </div>
             </div>
           </div>
         </div>
+        {showInstallSheet && <PWAInstallSheet onClose={() => setShowInstallSheet(false)} />}
       </FullscreenShell>
     )
   }

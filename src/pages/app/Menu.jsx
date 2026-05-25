@@ -5,7 +5,8 @@ import {
   Phone, Mail, MapPin, FileText, Camera, Check, Save,
   Users, Cake, Wrench, Calendar, ChevronDown, ChevronUp,
   UserX, MessageCircle, UserPlus, Trash2, HardHat, Tag,
-  Link2, Copy, CheckCheck, ToggleLeft, ToggleRight, Loader2
+  Link2, Copy, CheckCheck, ToggleLeft, ToggleRight, Loader2,
+  Smartphone
 } from 'lucide-react'
 
 // ── Máscaras ──────────────────────────────────────────────
@@ -30,6 +31,8 @@ import {
   officeDataStorage, clientStorage, vehicleStorage, osStorage,
   formatCurrency, formatDate
 } from '../../lib/storage'
+import { usePWAInstall } from '../../hooks/usePWAInstall'
+import PWAInstallSheet from '../../components/PWAInstallSheet'
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
@@ -632,6 +635,13 @@ export default function Menu() {
   const [saved, setSaved] = useState(false)
   const [activeTab, setActiveTab] = useState('relatorios')
 
+  const { canInstall, isIOS, promptInstall } = usePWAInstall()
+  const [showInstallSheet, setShowInstallSheet] = useState(false)
+  const handleMenuInstall = async () => {
+    const result = await promptInstall()
+    if (result === 'ios') setShowInstallSheet(true)
+  }
+
   // Onboarding: se vier com state.tab, abre essa aba automaticamente
   useEffect(() => {
     if (location.state?.tab) {
@@ -734,6 +744,28 @@ export default function Menu() {
 
   return (
     <div className="p-4 pb-36 space-y-4">
+      {/* Install banner */}
+      {canInstall && (
+        <div className="flex items-center gap-3 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-600">
+            <Smartphone className="h-4 w-4 text-white" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold text-indigo-900">
+              {isIOS ? 'Adicione à tela inicial' : 'Instale o app BoxCerto'}
+            </p>
+            <p className="truncate text-xs text-indigo-500">Acesso rápido com 1 toque</p>
+          </div>
+          <button
+            onClick={handleMenuInstall}
+            className="shrink-0 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-indigo-700"
+          >
+            {isIOS ? 'Como?' : 'Instalar'}
+          </button>
+        </div>
+      )}
+      {showInstallSheet && <PWAInstallSheet onClose={() => setShowInstallSheet(false)} />}
+
       {/* Tabs */}
       <div className="flex bg-gray-100 rounded-2xl p-1 gap-1">
         {TABS.map(t => (
