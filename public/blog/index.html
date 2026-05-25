@@ -106,6 +106,26 @@
   }
 }
 </script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Início",
+      "item": "https://boxcerto.com"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Blog",
+      "item": "https://boxcerto.com/blog"
+    }
+  ]
+}
+</script>
 <link rel="stylesheet" href="../blog/blog.css">
 </head>
 <body class="blog-home">
@@ -120,11 +140,11 @@
 <header class="hero">
   <div class="hero-copy">
     <div class="eyebrow">Blog para oficina mecânica</div>
-    <h1>Gestão simples para oficina aparecer mais, vender melhor e perder menos dinheiro.</h1>
-    <p>Conteúdos práticos sobre ordem de serviço, orçamento pelo WhatsApp, estoque, financeiro e atendimento para oficinas independentes.</p>
+    <h1>Aprenda a organizar sua oficina e parar de perder dinheiro no improviso</h1>
+    <p>Guias práticos sobre ordem de serviço, orçamento pelo WhatsApp, estoque, financeiro e atendimento para oficinas pequenas venderem melhor e trabalharem com mais controle.</p>
     <div class="hero-actions">
-      <a href="#artigos" class="hero-primary">Ver artigos</a>
-      <a href="https://boxcerto.com/cadastro?origem=blog-home&utm_source=blog&utm_campaign=blog-home" class="hero-secondary">Testar o BoxCerto</a>
+      <a href="https://boxcerto.com/cadastro?origem=blog-hero&utm_source=blog&utm_campaign=blog-home" class="hero-primary" data-blog-event="blog_hero_trial_click" data-blog-label="hero_trial">Testar o BoxCerto grátis</a>
+      <a href="https://boxcerto.com/blog/planilha-ordem-de-servico-mecanica-gratis" class="hero-secondary" data-blog-event="blog_hero_lead_magnet_click" data-blog-label="hero_planilha_os">Baixar modelo de OS grátis</a>
     </div>
     <div class="hero-proof" aria-label="Temas do blog"><span>OS digital</span><span>WhatsApp</span><span>Estoque</span><span>Financeiro</span></div>
   </div>
@@ -135,11 +155,44 @@
 </header>
 
 <main class="container home-container" id="artigos">
-  <section class="topic-strip" aria-label="Categorias do blog">
-    <a href="https://boxcerto.com/blog/planilha-ordem-de-servico-mecanica-gratis" class="topic-card"><span>Ordem de serviço</span><strong>Modelos, OS digital e aprovação do cliente</strong></a>
-    <a href="https://boxcerto.com/blog/orcamento-oficina-whatsapp" class="topic-card"><span>WhatsApp</span><strong>Orçamentos por link e follow-up sem bagunça</strong></a>
-    <a href="https://boxcerto.com/blog/fluxo-de-caixa-oficina-mecanica" class="topic-card"><span>Financeiro</span><strong>Fluxo de caixa, lucro real e preço de mão de obra</strong></a>
-    <a href="https://boxcerto.com/blog/como-organizar-oficina-mecanica-pequena" class="topic-card"><span>Organização</span><strong>Rotina, agenda, status e entrega sem correria</strong></a>
+  <section class="cluster-hub" aria-labelledby="temas-blog">
+    <div class="section-heading compact-heading">
+      <div class="section-kicker">Temas do blog</div>
+      <h2 id="temas-blog">Escolha a dor da sua oficina e vá direto ao guia certo.</h2>
+      <p>Os conteúdos estão organizados por áreas da rotina: da primeira OS até o controle do dinheiro que realmente sobra.</p>
+    </div>
+    <div class="cluster-grid">
+      <a href="https://boxcerto.com/blog/planilha-ordem-de-servico-mecanica-gratis" class="cluster-card" data-blog-event="blog_article_card_click" data-blog-label="cluster_os">
+        <span>Ordem de serviço</span>
+        <strong>Modelos, OS digital e aprovação do cliente</strong>
+        <small>Comece registrando serviço, peça, valor e autorização com clareza.</small>
+      </a>
+      <a href="https://boxcerto.com/blog/orcamento-oficina-whatsapp" class="cluster-card" data-blog-event="blog_article_card_click" data-blog-label="cluster_whatsapp">
+        <span>Orçamento pelo WhatsApp</span>
+        <strong>Enviar orçamento sem perder cliente no caminho</strong>
+        <small>Saia do texto solto e aumente a chance de aprovação.</small>
+      </a>
+      <a href="https://boxcerto.com/blog/controle-estoque-pecas-oficina" class="cluster-card" data-blog-event="blog_article_card_click" data-blog-label="cluster_estoque">
+        <span>Estoque e peças</span>
+        <strong>Controlar peças para proteger margem</strong>
+        <small>Evite peça esquecida, custo errado e compra sem giro.</small>
+      </a>
+      <a href="https://boxcerto.com/blog/fluxo-de-caixa-oficina-mecanica" class="cluster-card" data-blog-event="blog_article_card_click" data-blog-label="cluster_financeiro">
+        <span>Financeiro e lucro</span>
+        <strong>Entender se a oficina está dando lucro</strong>
+        <small>Organize entradas, despesas, mão de obra e caixa.</small>
+      </a>
+      <a href="https://boxcerto.com/blog/como-organizar-oficina-mecanica-pequena" class="cluster-card" data-blog-event="blog_article_card_click" data-blog-label="cluster_organizacao">
+        <span>Organização da oficina</span>
+        <strong>Agenda, status e rotina sem correria</strong>
+        <small>Veja como controlar carros em andamento e entregas.</small>
+      </a>
+      <a href="https://boxcerto.com/blog/como-aumentar-faturamento-oficina-mecanica" class="cluster-card" data-blog-event="blog_article_card_click" data-blog-label="cluster_vendas">
+        <span>Vendas e atendimento</span>
+        <strong>Faturar mais sem trabalhar no escuro</strong>
+        <small>Melhore ticket, aprovação, retorno e experiência do cliente.</small>
+      </a>
+    </div>
   </section>
 
   <section aria-labelledby="destaque">
@@ -153,10 +206,50 @@
         <div class="featured-tag">Ordem de serviço</div>
         <h2>Planilha de OS para mecânica: modelo grátis e o custo escondido da planilha</h2>
         <p>Um guia para baixar um modelo inicial, entender os limites da planilha e saber quando vale migrar para uma OS digital.</p>
-        <a href="https://boxcerto.com/blog/planilha-ordem-de-servico-mecanica-gratis" class="btn-read">Ler artigo</a>
+        <a href="https://boxcerto.com/blog/planilha-ordem-de-servico-mecanica-gratis" class="btn-read" data-blog-event="blog_lead_magnet_click" data-blog-label="featured_planilha_os">Baixar modelo grátis</a>
       </div>
       <div class="featured-media"><img src="../screenshots/lp-os-detalhe.png" width="960" height="660" loading="lazy" alt="Tela de ordem de serviço detalhada no BoxCerto"></div>
     </article>
+  </section>
+
+  <section class="before-after-panel" aria-labelledby="antes-depois">
+    <div class="section-heading compact-heading">
+      <div class="section-kicker">Antes e depois</div>
+      <h2 id="antes-depois">O que muda quando a oficina sai do improviso.</h2>
+      <p>Oficina cheia não significa oficina lucrativa. O dinheiro costuma escapar em serviço esquecido, peça não cobrada e cliente sem retorno.</p>
+    </div>
+    <div class="before-after-grid">
+      <div class="before-after-card before">
+        <span>Antes</span>
+        <ul>
+          <li>OS no papel ou planilha perdida</li>
+          <li>Orçamento solto no WhatsApp</li>
+          <li>Cliente sem retorno depois do diagnóstico</li>
+          <li>Peça usada sem baixa no estoque</li>
+          <li>Financeiro conferido no chute</li>
+        </ul>
+      </div>
+      <div class="before-after-card after">
+        <span>Depois com BoxCerto</span>
+        <ul>
+          <li>OS digital com histórico do veículo</li>
+          <li>Orçamento por link e aprovação registrada</li>
+          <li>Status por carro em andamento</li>
+          <li>Estoque integrado com peças da OS</li>
+          <li>Receitas e despesas no painel</li>
+        </ul>
+      </div>
+      <div class="product-proof-card" aria-label="Resumo visual do BoxCerto">
+        <div class="proof-window">
+          <div class="proof-bar"><span></span><span></span><span></span></div>
+          <div class="proof-row strong"><span>OS #1842</span><b>Aguardando aprovação</b></div>
+          <div class="proof-row"><span>Orçamento por link</span><b>Enviado</b></div>
+          <div class="proof-row"><span>Peças no estoque</span><b>Baixa automática</b></div>
+          <div class="proof-row"><span>Total previsto</span><b>R$ 1.247,00</b></div>
+        </div>
+        <a href="https://boxcerto.com/cadastro?origem=blog-antes-depois&utm_source=blog&utm_campaign=blog-home" class="btn-read" data-blog-event="blog_trial_cta_click" data-blog-label="before_after_cta">Ver como o BoxCerto funciona</a>
+      </div>
+    </div>
   </section>
 
   <section aria-labelledby="todos-artigos">
@@ -166,83 +259,104 @@
       <p>Aprenda a organizar ordens de serviço, enviar orçamentos, controlar peças, acompanhar o financeiro e vender com mais profissionalismo.</p>
     </div>
     <div class="grid">
-      <a href="https://boxcerto.com/blog/orcamento-oficina-whatsapp" class="card">
+      <a href="https://boxcerto.com/blog/orcamento-oficina-whatsapp" class="card" data-blog-event="blog_article_card_click" data-blog-label="orcamento_whatsapp">
         <div class="card-tag">Atendimento</div>
         <h3>Como enviar orçamento pelo WhatsApp e não perder mais cliente</h3>
-        <p>Um método simples para trocar texto solto por orçamento detalhado, link de aprovação e registro do aceite.</p>
-        <div class="card-meta"><span>WhatsApp e aprovação</span><span class="card-link">Ler</span></div>
+        <p>Aprenda um método simples para sair do texto solto, enviar orçamento com clareza e aumentar as chances de aprovação.</p>
+        <div class="card-meta"><span>6 min de leitura</span><span class="card-link">Ler guia →</span></div>
       </a>
-      <a href="https://boxcerto.com/blog/sistema-para-oficina-mecanica" class="card">
+      <a href="https://boxcerto.com/blog/sistema-para-oficina-mecanica" class="card" data-blog-event="blog_article_card_click" data-blog-label="sistema_oficina">
         <div class="card-tag">Guia completo</div>
         <h3>Como escolher o melhor sistema para oficina mecânica em 2026</h3>
-        <p>Funcionalidades obrigatórias, pontos de atenção e como testar uma ferramenta sem cair em contrato ruim.</p>
-        <div class="card-meta"><span>Sistema para oficina</span><span class="card-link">Ler</span></div>
+        <p>Veja quais funções realmente importam para OS, orçamento, estoque e financeiro sem cair em contrato grande demais.</p>
+        <div class="card-meta"><span>7 min de leitura</span><span class="card-link">Ler guia →</span></div>
       </a>
-      <a href="https://boxcerto.com/blog/controle-estoque-pecas-oficina" class="card">
+      <a href="https://boxcerto.com/blog/controle-estoque-pecas-oficina" class="card" data-blog-event="blog_article_card_click" data-blog-label="estoque_pecas">
         <div class="card-tag">Gestão</div>
         <h3>Como controlar o estoque de peças da oficina sem perder dinheiro</h3>
-        <p>Como organizar entradas, saídas, preço de venda e estoque mínimo sem depender só da memória.</p>
-        <div class="card-meta"><span>Peças e margem</span><span class="card-link">Ler</span></div>
+        <p>Organize entradas, saídas, custo e preço de venda para evitar peça esquecida e margem que desaparece.</p>
+        <div class="card-meta"><span>6 min de leitura</span><span class="card-link">Ler guia →</span></div>
       </a>
-      <a href="https://boxcerto.com/blog/software-ordem-de-servico-mecanica" class="card">
+      <a href="https://boxcerto.com/blog/software-ordem-de-servico-mecanica" class="card" data-blog-event="blog_article_card_click" data-blog-label="software_os">
         <div class="card-tag">Comparativo</div>
         <h3>Software de OS para mecânica: como escolher em 2026</h3>
-        <p>O que comparar antes de assinar, quais funções importam e como evitar ferramenta grande demais para uma oficina pequena.</p>
-        <div class="card-meta"><span>OS e software</span><span class="card-link">Ler</span></div>
+        <p>Compare funções, riscos e sinais de que a oficina já precisa abandonar papel, caderno e planilha solta.</p>
+        <div class="card-meta"><span>7 min de leitura</span><span class="card-link">Ler guia →</span></div>
       </a>
-      <a href="https://boxcerto.com/blog/como-calcular-mao-de-obra-oficina-mecanica" class="card">
+      <a href="https://boxcerto.com/blog/como-calcular-mao-de-obra-oficina-mecanica" class="card" data-blog-event="blog_article_card_click" data-blog-label="mao_de_obra">
         <div class="card-tag">Precificação</div>
         <h3>Como calcular mão de obra na oficina mecânica</h3>
-        <p>Hora técnica, custos fixos, margem e exemplos para parar de cobrar no chute.</p>
-        <div class="card-meta"><span>Preço e margem</span><span class="card-link">Ler</span></div>
+        <p>Calcule hora técnica, custos fixos e margem para parar de cobrar barato demais por serviços complexos.</p>
+        <div class="card-meta"><span>8 min de leitura</span><span class="card-link">Ler guia →</span></div>
       </a>
-      <a href="https://boxcerto.com/blog/fluxo-de-caixa-oficina-mecanica" class="card">
+      <a href="https://boxcerto.com/blog/fluxo-de-caixa-oficina-mecanica" class="card" data-blog-event="blog_article_card_click" data-blog-label="fluxo_caixa">
         <div class="card-tag">Financeiro</div>
         <h3>Fluxo de caixa para oficina mecânica</h3>
-        <p>Como controlar entradas, saídas, contas a pagar e lucro real sem planilha confusa.</p>
-        <div class="card-meta"><span>Caixa e lucro</span><span class="card-link">Ler</span></div>
+        <p>Separe faturamento de lucro e acompanhe entradas, saídas, contas a pagar e dinheiro que realmente sobra.</p>
+        <div class="card-meta"><span>7 min de leitura</span><span class="card-link">Ler guia →</span></div>
       </a>
-      <a href="https://boxcerto.com/blog/como-organizar-oficina-mecanica-pequena" class="card">
+      <a href="https://boxcerto.com/blog/como-organizar-oficina-mecanica-pequena" class="card" data-blog-event="blog_article_card_click" data-blog-label="organizar_oficina">
         <div class="card-tag">Organização</div>
         <h3>Como organizar uma oficina mecânica pequena</h3>
-        <p>Rotina de OS, status, agenda, estoque e comunicação para oficina enxuta.</p>
-        <div class="card-meta"><span>Gestão prática</span><span class="card-link">Ler</span></div>
+        <p>Monte uma rotina simples para controlar entrada de veículos, status, agenda, estoque e comunicação.</p>
+        <div class="card-meta"><span>7 min de leitura</span><span class="card-link">Ler guia →</span></div>
       </a>
-      <a href="https://boxcerto.com/blog/checklist-revisao-veicular-oficina" class="card">
+      <a href="https://boxcerto.com/blog/checklist-revisao-veicular-oficina" class="card" data-blog-event="blog_article_card_click" data-blog-label="checklist_revisao">
         <div class="card-tag">Checklist</div>
         <h3>Checklist de revisão veicular para oficina</h3>
-        <p>Itens de entrada, segurança, motor, freios, suspensão e entrega do veículo.</p>
-        <div class="card-meta"><span>Revisão e OS</span><span class="card-link">Ler</span></div>
+        <p>Use uma lista de conferência para identificar serviços necessários e entregar o carro com mais segurança.</p>
+        <div class="card-meta"><span>6 min de leitura</span><span class="card-link">Ler guia →</span></div>
       </a>
-      <a href="https://boxcerto.com/blog/como-evitar-calote-oficina-mecanica" class="card">
+      <a href="https://boxcerto.com/blog/como-evitar-calote-oficina-mecanica" class="card" data-blog-event="blog_article_card_click" data-blog-label="evitar_calote">
         <div class="card-tag">Atendimento</div>
         <h3>Como evitar calote em oficina mecânica</h3>
-        <p>Boas práticas para registrar orçamento, combinar pagamento e reduzir prejuízo.</p>
-        <div class="card-meta"><span>Cobrança e processo</span><span class="card-link">Ler</span></div>
+        <p>Registre aprovação, combine pagamento e reduza prejuízo sem criar atrito com o cliente bom.</p>
+        <div class="card-meta"><span>7 min de leitura</span><span class="card-link">Ler guia →</span></div>
       </a>
-      <a href="https://boxcerto.com/blog/como-ser-mecanico-automotivo" class="card">
+      <a href="https://boxcerto.com/blog/como-ser-mecanico-automotivo" class="card" data-blog-event="blog_article_card_click" data-blog-label="como_ser_mecanico">
         <div class="card-tag">Carreira</div>
         <h3>Como ser mecânico automotivo</h3>
-        <p>O caminho para começar na profissão, evoluir na técnica e entender por que gestão também faz parte do crescimento.</p>
-        <div class="card-meta"><span>Profissão e gestão</span><span class="card-link">Ler</span></div>
+        <p>Entenda o caminho para começar na profissão, evoluir na técnica e aprender gestão desde cedo.</p>
+        <div class="card-meta"><span>8 min de leitura</span><span class="card-link">Ler guia →</span></div>
       </a>
-      <a href="https://boxcerto.com/blog/como-aumentar-faturamento-oficina-mecanica" class="card">
+      <a href="https://boxcerto.com/blog/como-aumentar-faturamento-oficina-mecanica" class="card" data-blog-event="blog_article_card_click" data-blog-label="aumentar_faturamento">
         <div class="card-tag">Crescimento</div>
         <h3>Como aumentar o faturamento de uma oficina mecânica</h3>
-        <p>14 ações para vender mais serviços, aprovar mais orçamentos, aumentar ticket médio e proteger a margem.</p>
-        <div class="card-meta"><span>Vendas e lucro</span><span class="card-link">Ler</span></div>
+        <p>Veja ações para vender mais serviços, aprovar mais orçamentos, aumentar ticket médio e proteger margem.</p>
+        <div class="card-meta"><span>10 min de leitura</span><span class="card-link">Ler guia →</span></div>
       </a>
     </div>
   </section>
 
-  <section class="growth-panel" aria-labelledby="clusters">
-    <div><div class="section-kicker">Explore por tema</div><h2 id="clusters">Conteúdo para oficina vender mais e trabalhar com menos bagunça.</h2><p>Escolha um assunto e encontre orientações simples para melhorar atendimento, orçamento, estoque, financeiro e rotina operacional.</p></div>
-    <div class="cluster-list" aria-label="Clusters publicados"><span>Ordem de serviço e garantia</span><span>Precificação de mão de obra</span><span>Fluxo de caixa de oficina</span><span>WhatsApp e aprovação</span><span>Checklist de revisão</span><span>Organização de oficina pequena</span><span>Carreira automotiva</span><span>Aumento de faturamento</span></div>
+  <section class="commercial-links" aria-labelledby="paginas-comerciais">
+    <div>
+      <div class="section-kicker">Soluções BoxCerto</div>
+      <h2 id="paginas-comerciais">Do guia para a prática dentro da oficina.</h2>
+      <p>Depois de entender o problema, veja como aplicar a rotina no sistema.</p>
+    </div>
+    <div class="commercial-grid">
+      <a href="https://boxcerto.com/sistema-para-oficina-pequena" data-blog-event="blog_trial_cta_click" data-blog-label="money_sistema">Sistema para oficina pequena</a>
+      <a href="https://boxcerto.com/orcamento-online-oficina" data-blog-event="blog_trial_cta_click" data-blog-label="money_orcamento">Orçamento online para oficina</a>
+      <a href="https://boxcerto.com/boxcerto-vs-planilha" data-blog-event="blog_trial_cta_click" data-blog-label="money_vs_planilha">BoxCerto vs planilha</a>
+      <a href="https://boxcerto.com/diagnostico" data-blog-event="blog_trial_cta_click" data-blog-label="money_diagnostico">Diagnóstico gratuito da oficina</a>
+    </div>
   </section>
 
-  <section class="cta-banner"><h2>Transforme organização em orçamento aprovado.</h2><p>OS digital, orçamento por link, estoque e financeiro em uma rotina simples para oficina independente.</p><a href="https://boxcerto.com/cadastro?origem=blog-index&utm_source=blog&utm_campaign=blog-index" class="btn-cta-white">Começar teste grátis</a></section>
+  <section class="cta-banner"><h2>Transforme organização em orçamento aprovado.</h2><p>Crie OS, envie orçamento por link, acompanhe aprovações, estoque e financeiro em uma rotina simples para oficina independente.</p><div class="cta-actions"><a href="https://boxcerto.com/cadastro?origem=blog-final&utm_source=blog&utm_campaign=blog-index" class="btn-cta-white" data-blog-event="blog_final_cta_click" data-blog-label="final_trial">Começar teste grátis</a><a href="https://boxcerto.com/lp" class="btn-cta-outline" data-blog-event="blog_final_cta_click" data-blog-label="final_como_funciona">Ver como funciona</a></div><small>Teste grátis por 7 dias. Sem complicação para começar.</small></section>
 </main>
 
 <footer><p>© 2026 BoxCerto · Sistema de gestão para oficinas mecânicas</p><div class="footer-links"><a href="https://boxcerto.com">Início</a><a href="https://boxcerto.com/blog">Blog</a><a href="https://boxcerto.com/cadastro">Testar grátis</a><a href="https://boxcerto.com/termos">Termos</a><a href="https://boxcerto.com/privacidade">Privacidade</a></div></footer>
+<script>
+(function () {
+  document.addEventListener('click', function (event) {
+    var target = event.target.closest('[data-blog-event]');
+    if (!target || typeof gtag !== 'function') return;
+    gtag('event', target.getAttribute('data-blog-event'), {
+      event_label: target.getAttribute('data-blog-label') || target.textContent.trim(),
+      page_path: window.location.pathname
+    });
+  });
+})();
+</script>
 </body>
 </html>
