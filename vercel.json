@@ -14,6 +14,13 @@
     { "source": "/blog/orcamento-oficina-whatsapp",                "destination": "/blog/orcamento-oficina-whatsapp.html" },
     { "source": "/blog/controle-estoque-pecas-oficina",            "destination": "/blog/controle-estoque-pecas-oficina.html" },
     { "source": "/blog/software-ordem-de-servico-mecanica",        "destination": "/blog/software-ordem-de-servico-mecanica.html" },
+    { "source": "/blog/como-calcular-mao-de-obra-oficina-mecanica", "destination": "/blog/como-calcular-mao-de-obra-oficina-mecanica.html" },
+    { "source": "/blog/fluxo-de-caixa-oficina-mecanica",            "destination": "/blog/fluxo-de-caixa-oficina-mecanica.html" },
+    { "source": "/blog/como-organizar-oficina-mecanica-pequena",    "destination": "/blog/como-organizar-oficina-mecanica-pequena.html" },
+    { "source": "/blog/checklist-revisao-veicular-oficina",         "destination": "/blog/checklist-revisao-veicular-oficina.html" },
+    { "source": "/blog/como-evitar-calote-oficina-mecanica",        "destination": "/blog/como-evitar-calote-oficina-mecanica.html" },
+    { "source": "/blog/como-ser-mecanico-automotivo",               "destination": "/blog/como-ser-mecanico-automotivo.html" },
+    { "source": "/blog/como-aumentar-faturamento-oficina-mecanica",  "destination": "/blog/como-aumentar-faturamento-oficina-mecanica.html" },
     { "source": "/((?!api/).*)",                   "destination": "/index.html" }
   ],
   "crons": [
