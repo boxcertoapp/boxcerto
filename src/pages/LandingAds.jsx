@@ -140,19 +140,21 @@ function MiniCalc({ onCTA }) {
       <div className="space-y-5 mb-6">
         <div>
           <div className="flex justify-between mb-1.5">
-            <label className="text-sm font-medium text-slate-700">Atendimentos por mês</label>
-            <span className="text-sm font-bold text-indigo-600">{carros} carros</span>
+            <label htmlFor="calc-carros" className="text-sm font-medium text-slate-700">Atendimentos por mês</label>
+            <span className="text-sm font-bold text-indigo-600" aria-live="polite" aria-atomic="true">{carros} carros</span>
           </div>
-          <input type="range" min={5} max={80} value={carros}
-            onChange={e => setCarros(+e.target.value)} className="w-full accent-indigo-600" />
+          <input id="calc-carros" type="range" min={5} max={80} value={carros}
+            onChange={e => setCarros(+e.target.value)} className="w-full accent-indigo-600"
+            aria-valuemin={5} aria-valuemax={80} aria-valuenow={carros} />
         </div>
         <div>
           <div className="flex justify-between mb-1.5">
-            <label className="text-sm font-medium text-slate-700">Ticket médio por serviço</label>
-            <span className="text-sm font-bold text-indigo-600">R$ {ticket}</span>
+            <label htmlFor="calc-ticket" className="text-sm font-medium text-slate-700">Ticket médio por serviço</label>
+            <span className="text-sm font-bold text-indigo-600" aria-live="polite" aria-atomic="true">R$ {ticket}</span>
           </div>
-          <input type="range" min={150} max={2000} step={50} value={ticket}
-            onChange={e => setTicket(+e.target.value)} className="w-full accent-indigo-600" />
+          <input id="calc-ticket" type="range" min={150} max={2000} step={50} value={ticket}
+            onChange={e => setTicket(+e.target.value)} className="w-full accent-indigo-600"
+            aria-valuemin={150} aria-valuemax={2000} aria-valuenow={ticket} />
         </div>
       </div>
       <div className="bg-red-50 border border-red-100 rounded-2xl p-4 mb-5 text-center">
@@ -291,12 +293,12 @@ function AprovacaoMock() {
             </div>
             <button onClick={() => setAprovado(true)}
               aria-label={aprovado ? 'Orçamento aprovado' : 'Aprovar orçamento (demonstração)'}
-              className={`w-full font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 transition-all ${aprovado ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-md active:scale-95'}`}>
+              className={`w-full font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 transition-colors ${aprovado ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-md active:scale-95'}`}>
               <CheckCircle className="w-4 h-4" aria-hidden="true" />
               {aprovado ? 'Aprovado ✓' : 'Aprovar orçamento'}
             </button>
           </div>
-          <div className={`px-4 py-2 flex items-center gap-2 transition-all ${aprovado ? 'bg-emerald-500' : 'bg-emerald-50 border-t border-emerald-100'}`}>
+          <div className={`px-4 py-2 flex items-center gap-2 transition-colors ${aprovado ? 'bg-emerald-500' : 'bg-emerald-50 border-t border-emerald-100'}`}>
             <CheckCircle className={`w-3.5 h-3.5 shrink-0 ${aprovado ? 'text-white' : 'text-emerald-600'}`} aria-hidden="true" />
             <p className={`text-[11px] font-semibold ${aprovado ? 'text-white' : 'text-emerald-700'}`}>
               {aprovado ? '✅ Aprovado agora — registrado automaticamente!' : 'Aprovado · 25/04 às 14:35 — registrado'}
@@ -386,6 +388,8 @@ function ScreenshotCarousel() {
                     className="w-full h-full object-contain"
                     loading="lazy"
                     decoding="async"
+                    width="800"
+                    height="450"
                     onError={e => { e.currentTarget.style.display = 'none' }}
                   />
                   <span className="absolute bottom-2 left-2 bg-indigo-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-md">
@@ -400,8 +404,8 @@ function ScreenshotCarousel() {
             ))}
           </div>
         </div>
-        {/* Dots — pill ativo, círculo inativo */}
-        <div className="flex justify-center gap-1.5 mt-3" role="tablist" aria-label="Screenshots do sistema">
+        {/* Dots — área de toque 44×44 px mínima (WCAG 2.5.5) */}
+        <div className="flex justify-center gap-0 mt-3" role="tablist" aria-label="Screenshots do sistema">
           {SCREENSHOT_CARDS.map((_, i) => (
             <button
               key={i}
@@ -409,12 +413,14 @@ function ScreenshotCarousel() {
               aria-selected={i === active}
               aria-label={`Ver tela ${i + 1} de ${n}`}
               onClick={() => goTo(i)}
-              className={`h-2 rounded-full transition-all duration-300 ${
+              className="h-11 w-11 flex items-center justify-center rounded-full focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
+            >
+              <span className={`block h-2 rounded-full transition-colors duration-300 ${
                 i === active
                   ? 'w-6 bg-indigo-600'
                   : 'w-2 bg-slate-300 hover:bg-slate-400'
-              }`}
-            />
+              }`} />
+            </button>
           ))}
         </div>
       </div>
@@ -430,6 +436,8 @@ function ScreenshotCarousel() {
                 className="w-full h-full object-contain"
                 loading="lazy"
                 decoding="async"
+                width="800"
+                height="450"
                 onError={e => { e.currentTarget.style.display = 'none' }}
               />
               <span className="absolute bottom-2 left-2 bg-indigo-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-md">
@@ -508,7 +516,7 @@ function FAQ({ p, r }) {
   const [open, setOpen] = useState(false)
   return (
     <button onClick={() => setOpen(o => !o)}
-      className="w-full text-left bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:border-indigo-200 transition-all">
+      className="w-full text-left bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:border-indigo-200 transition-colors">
       <div className="flex items-center justify-between gap-3">
         <p className="font-bold text-slate-900 text-sm">{p}</p>
         <span className={`text-indigo-500 font-bold text-xl transition-transform ${open ? 'rotate-45' : ''}`}>+</span>
@@ -537,8 +545,9 @@ export default function LandingAds() {
   return (
     <div className="min-h-screen bg-white">
       <SocialNotification />
+      {/* landmark principal exigido pelo WCAG / Lighthouse */}
 
-      {/* NAV */}
+      {/* ── NAV ── */}
       <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-gray-100 shadow-sm px-4 py-3 flex items-center justify-between">
         <Logo size="md" priority />
         <button
@@ -549,6 +558,9 @@ export default function LandingAds() {
           Começar grátis
         </button>
       </nav>
+
+      {/* ── CONTEÚDO PRINCIPAL ── */}
+      <main id="main-content">
 
       {/* HERO */}
       <section className="px-4 pt-12 pb-16 text-center bg-gradient-to-b from-slate-900 to-indigo-950">
@@ -566,7 +578,7 @@ export default function LandingAds() {
             <strong className="text-white"> O BoxCerto resolve isso hoje.</strong>
           </p>
           <div className="flex items-center justify-center gap-2 mb-8">
-            <div className="flex -space-x-2" aria-label="Avatares de clientes BoxCerto">
+            <div className="flex -space-x-2" role="img" aria-label="Avatares de clientes BoxCerto">
               {['J','R','A','L','C','T'].map((l,i) => (
                 <div key={i} aria-hidden="true" className="w-7 h-7 rounded-full border-2 border-indigo-950 flex items-center justify-center text-white text-xs font-bold"
                   style={{ background: AVATAR_COLORS[i][0] }}>{l}</div>
@@ -608,11 +620,10 @@ export default function LandingAds() {
 
           {/* Mockup geral */}
           <div className="relative max-w-2xl mx-auto mb-10">
-            <div className="absolute -inset-3 bg-indigo-50 rounded-3xl blur-2xl opacity-60 pointer-events-none" aria-hidden="true" />
             <img
               src="/mockup01.webp"
               alt="BoxCerto — gestão de oficina no celular e no computador"
-              className="relative w-full h-auto"
+              className="w-full h-auto rounded-2xl"
               loading="lazy"
               decoding="async"
               width="1448"
@@ -875,6 +886,8 @@ export default function LandingAds() {
           <p className="text-indigo-300 text-xs">Sem cartão · 7 dias grátis · Cancele quando quiser</p>
         </div>
       </section>
+
+      </main>{/* fim #main-content */}
 
       {/* RODAPÉ */}
       <footer className="bg-slate-900 border-t border-slate-800 px-4 py-8 text-xs text-slate-400">

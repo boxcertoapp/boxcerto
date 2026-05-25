@@ -2,12 +2,14 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 
-// ── Eager: páginas críticas do caminho feliz ───────────────────────────────
+// ── Eager: apenas Landing (home page /) ───────────────────────────────────
+// Login e Register são lazy para que vendor-supabase NÃO apareça no
+// modulepreload de landing pages públicas (/lp, /lp2…).
 import Landing    from './pages/Landing'
-import Login      from './pages/Login'
-import Register   from './pages/Register'
 
 // ── Lazy: tudo que o visitante NÃO vê na primeira visita ──────────────────
+const Login           = lazy(() => import('./pages/Login'))
+const Register        = lazy(() => import('./pages/Register'))
 const Assinar         = lazy(() => import('./pages/Assinar'))
 const Sucesso         = lazy(() => import('./pages/Sucesso'))
 const Renovar         = lazy(() => import('./pages/Renovar'))

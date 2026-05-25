@@ -1,4 +1,36 @@
 {
+  "headers": [
+    {
+      "source": "/assets/:path*",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/screenshots/:file*",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=604800, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/mockup01.webp",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=604800, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/logo.svg",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=2592000, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/(lp|lp2|lpsistema-para-oficina-pequena|lpboxcerto-vs-planilha|lporcamento-online-oficina|lpdiagnostico|lpquizdiagnostico|quizdiagnostico).html",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    }
+  ],
   "rewrites": [
     { "source": "/lp",                             "destination": "/lp.html" },
     { "source": "/lp2",                            "destination": "/lp2.html" },

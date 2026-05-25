@@ -1,13 +1,13 @@
 // ============================================================
 // useConfig.js — Configurações globais do BoxCerto
-// Lê de app_config no Supabase com cache de módulo.
-// Qualquer componente que chamar useConfig() recebe os preços
-// e configurações atuais sem fazer requests duplicados.
+//
+// Retorna CONFIG_DEFAULTS imediatamente (sem delay) e atualiza
+// assim que o Supabase carregar — dynamic import para não bloquear
+// o bundle inicial de landing pages.
 // ============================================================
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
 
-// Valores padrão caso o Supabase não esteja disponível
+// Valores padrão — usados enquanto o fetch não completa (ou se falhar)
 export const CONFIG_DEFAULTS = {
   price_monthly:        '97.00',
   price_annual:         '958.80',
@@ -23,24 +23,23 @@ let _promise = null
 async function fetchConfig() {
   if (_cache) return _cache
   if (!_promise) {
-    _promise = supabase
-      .from('app_config')
-      .select('key, value')
-      .then(({ data, error }) => {
-        if (error || !data?.length) {
-          _cache = { ...CONFIG_DEFAULTS }
-        } else {
-          _cache = {
-            ...CONFIG_DEFAULTS,
-            ...Object.fromEntries(data.map(r => [r.key, r.value])),
-          }
-        }
-        return _cache
-      })
-      .catch(() => {
-        _cache = { ...CONFIG_DEFAULTS }
-        return _cache
-      })
+    _promise = import('../lib/supabase')
+      .then(({ supabase }) =>
+        supabase.from('app_config').select('key, value')
+          .then(({ data, error }) => {
+            if (error || !data?.length) {
+              _cache = { ...CONFIG_DEFAULTS }
+            } else {
+              _cache = {
+                ...CONFIG_DEFAULTS,
+                ...Object.fromEntries(data.map(r => [r.key, r.value])),
+              }
+            }
+            return _cache
+          })
+          .catch(() => { _cache = { ...CONFIG_DEFAULTS }; return _cache })
+      )
+      .catch(() => { _cache = { ...CONFIG_DEFAULTS }; return _cache })
   }
   return _promise
 }
@@ -51,7 +50,7 @@ export function invalidateConfig() {
   _promise = null
 }
 
-/** Hook principal — retorna objeto de config com fallback para defaults */
+/** Hook principal — retorna defaults imediatamente, atualiza após fetch */
 export function useConfig() {
   const [config, setConfig] = useState(_cache || CONFIG_DEFAULTS)
 
