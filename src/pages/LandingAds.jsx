@@ -318,28 +318,28 @@ function AprovacaoMock() {
 // ─── screenshot carousel ─────────────────────────────────────────────────────
 const SCREENSHOT_CARDS = [
   {
-    src: '/screenshots/lp-os-list.png',
+    src: '/screenshots/lp-os-list.webp',
     alt: 'Listagem de Ordens de Serviço com status coloridos',
     badge: 'Status em tempo real',
     title: 'OS em andamento',
     desc: 'Todas as ordens com status colorido — prontos, manutenção, orçamentos, agendados.',
   },
   {
-    src: '/screenshots/lp-os-detalhe.png',
+    src: '/screenshots/lp-os-detalhe.webp',
     alt: 'Detalhe da OS com botão Enviar para cliente pelo WhatsApp',
     badge: 'Enviar no WhatsApp',
     title: 'Orçamento aprovado pelo cliente',
     desc: 'Um toque envia o link de aprovação pro WhatsApp. Tudo registrado com data e hora.',
   },
   {
-    src: '/screenshots/lp-financeiro.png',
+    src: '/screenshots/lp-financeiro.webp',
     alt: 'Tela do financeiro com lucro líquido, receitas e despesas do mês',
     badge: 'Lucro em tempo real',
     title: 'Financeiro do mês',
     desc: 'Receitas, custos, despesas e lucro líquido consolidados — sem planilha.',
   },
   {
-    src: '/screenshots/lp-estoque.png',
+    src: '/screenshots/lp-estoque.webp',
     alt: 'Tela de estoque com produtos, custos e botão de venda',
     badge: 'Sem ruptura de peças',
     title: 'Estoque e vendas',
