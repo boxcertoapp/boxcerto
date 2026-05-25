@@ -4,12 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-55HMQMJQ');</script>
+    <!-- Google Tag Manager
+         dataLayer inicializado imediatamente (mantém atribuição correta).
+         O script do GTM é inserido no window.load para não bloquear LCP/TBT.
+         GA4 e Google Ads são configurados PELO GTM — não há script direto aqui
+         para evitar carregamento duplicado que causaria double-counting no GA4. -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({'gtm.start': new Date().getTime(), event: 'gtm.js'});
+      window.addEventListener('load', function() {
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtm.js?id=GTM-55HMQMJQ';
+        document.head.appendChild(s);
+      });
+    </script>
     <!-- End Google Tag Manager -->
 
     <!-- Favicon & PWA -->
@@ -24,16 +33,6 @@
 
     <!-- Preload crítico -->
     <link rel="preload" href="/logo.svg" as="image" type="image/svg+xml" />
-
-    <!-- Google Analytics + Google Ads -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-HQNZQ5PHFB"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-HQNZQ5PHFB');
-      gtag('config', 'AW-18149493518');
-    </script>
 
     <!-- Performance: preconnect serviços externos -->
     <link rel="preconnect" href="https://js.stripe.com" crossorigin />
