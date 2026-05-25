@@ -36,7 +36,6 @@ body{
   padding:7px 16px;border-radius:10px;
 }
 
-
 /* ── Screens ── */
 .screen{display:none;}
 .screen.active{display:block;animation:fadeUp .3s ease both;}
@@ -68,7 +67,7 @@ body{
 .intro-sub{font-size:15px;line-height:1.75;color:#475569;margin-bottom:24px;}
 
 /* ── Impact numbers ── */
-.impact-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+.impact-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
 .impact-item{
   display:flex;align-items:center;gap:16px;
   padding:14px 16px;background:#faf9ff;
@@ -98,6 +97,18 @@ body{
 .progress-track{height:5px;background:#e8e4ff;border-radius:5px;overflow:hidden;}
 .progress-fill{height:100%;background:#4f46e5;border-radius:5px;transition:width .4s cubic-bezier(.4,0,.2,1);}
 
+/* ── Progress dots ── */
+.progress-dots-row{
+  display:flex;justify-content:space-between;
+  padding:0 2px;margin-top:6px;
+}
+.pdot{
+  width:8px;height:8px;border-radius:50%;background:#e8e4ff;
+  transition:background .3s,transform .2s,box-shadow .2s;
+}
+.pdot.pdot-done{background:#4f46e5;}
+.pdot.pdot-active{background:#4f46e5;transform:scale(1.35);box-shadow:0 0 0 3px rgba(79,70,229,.18);}
+
 /* ── Question ── */
 .q-title{font-size:19px;font-weight:700;line-height:1.3;color:#0f172a;margin-bottom:12px;letter-spacing:-.3px;}
 .q-insight{font-size:13px;color:#64748b;font-style:italic;line-height:1.65;margin-bottom:20px;padding-left:14px;border-left:3px solid #c7d2fe;}
@@ -120,6 +131,17 @@ body{
   border-top:1px solid #f1eeff;font-size:12px;color:#94a3b8;font-style:italic;line-height:1.6;
 }
 .option.selected .option-reveal{color:#64748b;}
+
+/* ── Sticky "Próxima pergunta" on mobile ── */
+@media(max-width:768px){
+  #btn-next{
+    position:fixed;bottom:0;left:0;right:0;
+    border-radius:0;border-top:2px solid #ede9fe;
+    margin:0;z-index:100;padding:18px 24px;
+    box-shadow:0 -4px 12px rgba(0,0,0,.1);
+  }
+  #screen-quiz{padding-bottom:76px;}
+}
 
 /* ── Loading ── */
 .loading-wrap{text-align:center;padding:64px 20px;}
@@ -148,7 +170,7 @@ body{
 .social-proof{
   display:flex;align-items:center;gap:12px;
   background:#faf9ff;border:1px solid #ede9fe;
-  border-radius:14px;padding:12px 16px;margin-bottom:16px;
+  border-radius:14px;padding:12px 16px;
 }
 .sp-avatars{display:flex;}
 .sp-av{
@@ -181,16 +203,16 @@ body{
 .gi-yellow{color:#b45309;}
 .gi-green{color:#059669;}
 
-/* ── First CTA (acima dos pain points) ── */
+/* ── First CTA — green ── */
 .first-cta-wrap{margin-top:4px;}
 .btn-first-cta{
   display:block;width:100%;padding:15px;
-  background:#4f46e5;color:#fff;font-size:14.5px;font-weight:700;
+  background:#22c55e;color:#fff;font-size:14.5px;font-weight:700;
   text-align:center;border:none;border-radius:12px;cursor:pointer;
   text-decoration:none;letter-spacing:-.2px;
   transition:background .15s,transform .1s;
 }
-.btn-first-cta:hover{background:#4338ca;}
+.btn-first-cta:hover{background:#16a34a;}
 .btn-first-cta:active{transform:scale(.98);}
 .first-cta-note{text-align:center;font-size:11px;color:#94a3b8;margin-top:7px;}
 
@@ -213,7 +235,13 @@ body{
 .testi-label{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
 .testi-card{background:#fff;border-radius:14px;padding:14px 16px;border:1px solid #ede9fe;margin-bottom:10px;}
 .testi-stars{color:#f59e0b;font-size:12px;margin-bottom:6px;}
-.testi-text{font-size:13px;color:#334155;line-height:1.65;font-style:italic;margin-bottom:8px;}
+.testi-text{font-size:13px;color:#334155;line-height:1.65;font-style:italic;margin-bottom:10px;}
+.testi-footer{display:flex;align-items:center;gap:10px;}
+.testi-avatar{
+  width:32px;height:32px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;color:#fff;
+}
 .testi-author{font-size:11.5px;color:#94a3b8;font-weight:600;}
 
 /* ── CTA block ── */
@@ -222,7 +250,7 @@ body{
 .cta-headline{font-size:18px;font-weight:800;color:#fff;line-height:1.3;margin-bottom:12px;letter-spacing:-.3px;}
 .cta-sub{font-size:13px;color:#c7d2fe;line-height:1.7;margin-bottom:18px;}
 
-/* ── Urgency badge ── */
+/* ── Urgency badge + countdown ── */
 .urgency{
   font-size:12px;color:#fde68a;font-weight:600;
   margin-bottom:16px;padding:9px 14px;
@@ -230,27 +258,27 @@ body{
   border:1px solid rgba(251,191,36,.2);
   display:flex;align-items:center;justify-content:center;gap:6px;
 }
+#countdown{color:#fbbf24;font-weight:800;letter-spacing:.04em;font-variant-numeric:tabular-nums;}
 
+/* ── Main CTA button — green ── */
 .btn-cta{
   display:block;width:100%;padding:18px;
-  background:#fff;color:#4f46e5;font-size:15px;font-weight:800;
+  background:#22c55e;color:#fff;font-size:15px;font-weight:800;
   border:none;border-radius:12px;cursor:pointer;text-decoration:none;margin-bottom:12px;
-  letter-spacing:-.2px;transition:opacity .15s,transform .1s;
+  letter-spacing:-.2px;transition:background .15s,transform .1s;
 }
-.btn-cta:hover{opacity:.95;transform:scale(1.01);}
+.btn-cta:hover{background:#16a34a;transform:scale(1.01);}
 .btn-cta:active{transform:scale(.98);}
 
-/* ── WhatsApp button ── */
+/* ── WhatsApp button — official green ── */
 .btn-whatsapp{
   display:flex;align-items:center;justify-content:center;gap:8px;
-  width:100%;padding:13px;background:transparent;color:#a5b4fc;
+  width:100%;padding:13px;background:#25D366;color:#fff;
   font-size:14px;font-weight:600;
-  border:1.5px solid rgba(165,180,252,.35);
-  border-radius:12px;cursor:pointer;text-decoration:none;
-  margin-bottom:16px;transition:background .15s,color .15s,border-color .15s;
+  border:none;border-radius:12px;cursor:pointer;text-decoration:none;
+  margin-bottom:16px;transition:background .15s;
 }
-.btn-whatsapp:hover{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(165,180,252,.6);}
-.wpp-icon{font-size:17px;}
+.btn-whatsapp:hover{background:#128C7E;}
 
 .cta-trust{font-size:11.5px;color:#818cf8;margin-bottom:22px;}
 .features{display:flex;flex-direction:column;gap:9px;text-align:left;}
@@ -260,9 +288,27 @@ body{
   border-radius:50%;display:flex;align-items:center;justify-content:center;
   font-size:9px;color:#fff;flex-shrink:0;font-weight:700;
 }
+
+/* ── Mid-quiz toast ── */
+.toast-mid{
+  position:fixed;top:20px;left:50%;transform:translateX(-50%);
+  z-index:200;background:#1e293b;color:#fff;
+  border-radius:12px;padding:11px 20px;
+  font-size:13.5px;font-weight:600;
+  box-shadow:0 4px 20px rgba(0,0,0,.22);
+  white-space:nowrap;pointer-events:none;
+  opacity:0;transition:opacity .3s;
+}
+.toast-mid.show{opacity:1;}
 </style>
 </head>
 <body>
+
+<!-- Mid-quiz toast (Q3 → Q4 transition) -->
+<div id="toast-mid" class="toast-mid" role="alert" aria-live="polite">
+  Você já passou da metade. A análise fica mais precisa agora.
+</div>
+
 <div class="wrap">
 
   <!-- ══ TELA 1 — INTRO ═══════════════════════════════════════ -->
@@ -298,20 +344,20 @@ body{
         </div>
       </div>
 
+      <!-- Social proof — above CTA -->
+      <div class="social-proof" style="margin-bottom:16px;">
+        <div class="sp-avatars">
+          <div class="sp-av">CR</div>
+          <div class="sp-av">RM</div>
+          <div class="sp-av">JP</div>
+        </div>
+        <div class="sp-text">
+          <strong>+4.200 donos de oficina</strong> já descobriram onde estavam perdendo dinheiro com esse diagnóstico
+        </div>
+      </div>
+
       <button class="btn-primary" onclick="startQuiz()">Fazer meu diagnóstico — é grátis →</button>
       <p class="trust-note">🔒 Sem cadastro agora &nbsp;·&nbsp; Resultado imediato &nbsp;·&nbsp; 100% grátis</p>
-    </div>
-
-    <!-- Social proof na intro -->
-    <div class="social-proof">
-      <div class="sp-avatars">
-        <div class="sp-av">CR</div>
-        <div class="sp-av">RM</div>
-        <div class="sp-av">JP</div>
-      </div>
-      <div class="sp-text">
-        <strong>+4.200 donos de oficina</strong> já descobriram onde estavam perdendo dinheiro com esse diagnóstico
-      </div>
     </div>
   </div>
 
@@ -327,6 +373,15 @@ body{
       </div>
       <div class="progress-track">
         <div class="progress-fill" id="prog-fill"></div>
+      </div>
+      <!-- 6 progress dots -->
+      <div class="progress-dots-row" aria-hidden="true">
+        <div class="pdot pdot-active" id="pdot-0"></div>
+        <div class="pdot" id="pdot-1"></div>
+        <div class="pdot" id="pdot-2"></div>
+        <div class="pdot" id="pdot-3"></div>
+        <div class="pdot" id="pdot-4"></div>
+        <div class="pdot" id="pdot-5"></div>
       </div>
     </div>
 
@@ -365,6 +420,8 @@ body{
 </div>
 
 <script>
+window.dataLayer = window.dataLayer || []
+
 // ── Questions ────────────────────────────────────────────────
 const Q = [
   {
@@ -483,30 +540,34 @@ const LOADING_MSGS = [
   "Preparando seu relatório...",
 ]
 
+// ── Benefits checklist (benefícios, não features) ────────────
 const FEATURES = [
-  "Orçamento aprovado pelo WhatsApp",
-  "Controle de OS sem papel",
-  "Estoque e peças integrados",
-  "Financeiro sem planilha",
-  "Histórico completo do cliente",
-  "PDV de venda de peças",
+  "Nunca perder cliente por demora no orçamento",
+  "Saber quantos carros estão na oficina agora",
+  "Parar de cobrar errado por esquecer peça",
+  "Ver o lucro real do mês em 10 segundos",
+  "Lembrar de cada carro sem perguntar pro cliente",
+  "Vender peça no balcão sem sair do sistema",
 ]
 
+// ── Testimonials com avatares coloridos ──────────────────────
 const TESTIMONIALS = [
   {
     stars:"★★★★★",
+    initials:"EF",avatarBg:"#10b981",
     text:'"Tinha orçamento que mandava no WhatsApp e o cliente sumia. Achava que era o preço. Depois que comecei a mandar o link, percebi que o problema era outro — ele nem abria a mensagem direito. Agora aprova na hora."',
     author:"Evandro · Valencia Auto Center",
   },
   {
     stars:"★★★★★",
+    initials:"AS",avatarBg:"#6366f1",
     text:'"Eu controlava tudo na cabeça e numa caderneta. Funcionava até o dia que não funcionou mais. Perdi uma peça, cobrei errado, cliente reclamou. Assustou. Hoje tá tudo no sistema e consigo ver a oficina inteira pelo celular."',
     author:"André · Mecânica Avenida",
   },
 ]
 
 // ── State ────────────────────────────────────────────────────
-let curQ=0, answers=[], selOpt=null, _advTimer=null, _prevSel=null
+let curQ=0, answers=[], selOpt=null, _advTimer=null, _countdownInterval=null
 
 // ── Helpers ──────────────────────────────────────────────────
 function show(id){
@@ -515,11 +576,28 @@ function show(id){
   window.scrollTo({top:0,behavior:'smooth'})
 }
 
+// ── GTM helpers ───────────────────────────────────────────────
+function pushCta(origem){
+  window.dataLayer.push({event:'cta_cadastro_clicado',origem:origem,quiz_nome:'diagnostico_oficina'})
+}
+function pushWa(){
+  window.dataLayer.push({event:'whatsapp_clicado',origem:'resultado_quiz',quiz_nome:'diagnostico_oficina'})
+}
+
 // ── Intro → Quiz ─────────────────────────────────────────────
 function startQuiz(){
+  window.dataLayer.push({event:'quiz_iniciado',quiz_nome:'diagnostico_oficina'})
   curQ=0;answers=[];selOpt=null
   renderQ()
   show('quiz')
+}
+
+// ── Mid-quiz toast ────────────────────────────────────────────
+function showMidToast(){
+  const t=document.getElementById('toast-mid')
+  if(!t)return
+  t.classList.add('show')
+  setTimeout(()=>t.classList.remove('show'),3200)
 }
 
 // ── Render question ───────────────────────────────────────────
@@ -531,6 +609,12 @@ function renderQ(){
   document.getElementById('prog-label').textContent=`Pergunta ${curQ+1} de ${total}`
   document.getElementById('prog-count').textContent=`${curQ+1}/${total}`
   document.getElementById('prog-fill').style.width=pct+'%'
+  // Update progress dots
+  for(let i=0;i<total;i++){
+    const d=document.getElementById('pdot-'+i)
+    if(!d)continue
+    d.className='pdot'+(i<curQ?' pdot-done':i===curQ?' pdot-active':'')
+  }
   const bb=document.getElementById('btn-back');if(bb)bb.classList.toggle('show',curQ>0)
   const isLast=curQ===total-1
   const btn=document.getElementById('btn-next')
@@ -559,9 +643,20 @@ function pick(i){
 
 function nextQuestion(){
   if(selOpt===null)return
+  const isLast=curQ===Q.length-1
   answers.push({qi:curQ,oi:selOpt,score:Q[curQ].opts[selOpt].s})
-  if(curQ<Q.length-1){
+
+  if(!isLast){
+    // GTM: pergunta_respondida (Q1–Q5 apenas)
+    window.dataLayer.push({
+      event:'pergunta_respondida',
+      pergunta_numero:curQ+1,
+      resposta_indice:selOpt,
+      quiz_nome:'diagnostico_oficina',
+    })
     curQ++
+    // Mid-toast na transição Q3 → Q4 (curQ acabou de virar 3)
+    if(curQ===3)showMidToast()
     const card=document.getElementById('q-card')
     card.style.cssText='opacity:0;transform:translateY(8px);transition:.18s'
     setTimeout(()=>{
@@ -570,6 +665,17 @@ function nextQuestion(){
       setTimeout(()=>card.style.cssText='',300)
     },180)
   } else {
+    // GTM: quiz_concluido (última pergunta)
+    const total=answers.reduce((s,a)=>s+a.score,0)
+    const max=Q.length*3
+    const pct=Math.round((total/max)*100)
+    const level=pct>=60?'red':pct>=30?'yellow':'green'
+    window.dataLayer.push({
+      event:'quiz_concluido',
+      quiz_nome:'diagnostico_oficina',
+      score_total:total,
+      nivel_risco:level,
+    })
     startLoading()
   }
 }
@@ -578,11 +684,10 @@ function nextQuestion(){
 function goBack(){
   if(curQ===0)return
   if(_advTimer){clearTimeout(_advTimer);_advTimer=null}
-  const prev=answers.pop()          // answer we gave to the question we're going back to
+  const prev=answers.pop()
   curQ--
   renderQ()
   if(prev!=null){
-    // restore previous selection without triggering auto-advance
     setTimeout(()=>{
       const el=document.getElementById('opt-'+prev.oi)
       if(el){el.classList.add('selected')}
@@ -616,6 +721,31 @@ function startLoading(){
   setTimeout(tick,400)
 }
 
+// ── Countdown (sessionStorage, 24 h) ─────────────────────────
+function startCountdown(){
+  const KEY='bx_quiz_deadline'
+  let deadline=parseInt(sessionStorage.getItem(KEY)||'0',10)
+  if(!deadline||deadline<Date.now()){
+    deadline=Date.now()+24*60*60*1000
+    sessionStorage.setItem(KEY,String(deadline))
+  }
+  if(_countdownInterval)clearInterval(_countdownInterval)
+  function tick(){
+    const diff=Math.max(0,deadline-Date.now())
+    const h=Math.floor(diff/3600000)
+    const m=Math.floor((diff%3600000)/60000)
+    const s=Math.floor((diff%60000)/1000)
+    const el=document.getElementById('countdown')
+    if(el)el.textContent=
+      String(h).padStart(2,'0')+':'+
+      String(m).padStart(2,'0')+':'+
+      String(s).padStart(2,'0')
+    if(diff===0)clearInterval(_countdownInterval)
+  }
+  tick()
+  _countdownInterval=setInterval(tick,1000)
+}
+
 // ── Build result ──────────────────────────────────────────────
 function buildResult(){
   const total=answers.reduce((s,a)=>s+a.score,0)
@@ -626,6 +756,9 @@ function buildResult(){
   const url=`https://boxcerto.com/cadastro?origem=quiz&utm_source=meta&utm_campaign=lpquizdiagnostico&score=${pct}&nivel=${level}`
   const waMsgRaw=`Olá! Fiz o diagnóstico do BoxCerto e quero saber mais. Meu índice de risco foi ${pct}%.`
   const waUrl=`https://wa.me/5553997065725?text=${encodeURIComponent(waMsgRaw)}`
+
+  // WhatsApp SVG (official icon)
+  const wppSvg=`<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`
 
   // ── Result card + first CTA ───────────────────────────────
   document.getElementById('result-card').innerHTML=`
@@ -638,7 +771,7 @@ function buildResult(){
       <div class="gauge-info ${r.giClass}">Nível de risco: ${pct}% — ${r.gaugeNote}</div>
     </div>
     <div class="first-cta-wrap">
-      <a href="${url}" class="btn-first-cta">${r.firstBtn}</a>
+      <a href="${url}" class="btn-first-cta" data-origem="resultado_primeiro_cta" onclick="pushCta('resultado_primeiro_cta')">${r.firstBtn}</a>
       <p class="first-cta-note">Sem cartão · Começa em 10 min · Cancela quando quiser</p>
     </div>
   `
@@ -662,19 +795,22 @@ function buildResult(){
       <div class="testi-card">
         <div class="testi-stars">${t.stars}</div>
         <p class="testi-text">${t.text}</p>
-        <span class="testi-author">— ${t.author}</span>
+        <div class="testi-footer">
+          <div class="testi-avatar" style="background:${t.avatarBg}">${t.initials}</div>
+          <span class="testi-author">— ${t.author}</span>
+        </div>
       </div>`).join('')}
   `
 
   // ── CTA block ─────────────────────────────────────────────
   document.getElementById('cta-wrap').innerHTML=`
-    <p class="cta-eyebrow">✦ O próximo passo certo para você</p>
+    <p class="cta-eyebrow">✦ O que fazer nas próximas 24 horas</p>
     <h3 class="cta-headline">${r.ctaHead}</h3>
     <p class="cta-sub">${r.ctaSub}</p>
-    <div class="urgency">⚡ Diagnóstico concluído — 7 dias grátis + 3 dias bônus para quem terminar hoje</div>
-    <a href="${url}" class="btn-cta">${r.ctaBtn}</a>
-    <a href="${waUrl}" class="btn-whatsapp" target="_blank">
-      <span class="wpp-icon">💬</span> Prefere falar primeiro? WhatsApp →
+    <div class="urgency">⚡ 3 dias bônus expiram em <span id="countdown">23:59:59</span></div>
+    <a href="${url}" class="btn-cta" data-origem="resultado_cta_final" onclick="pushCta('resultado_cta_final')">${r.ctaBtn}</a>
+    <a href="${waUrl}" class="btn-whatsapp" target="_blank" rel="noopener" onclick="pushWa()">
+      ${wppSvg} Prefere falar primeiro? WhatsApp
     </a>
     <p class="cta-trust">Sem cartão de crédito &nbsp;·&nbsp; Cancela quando quiser &nbsp;·&nbsp; Pronto em 10 minutos</p>
     <div class="features">
@@ -684,6 +820,8 @@ function buildResult(){
         </div>`).join('')}
     </div>
   `
+
+  startCountdown()
 }
 
 // ── Pain selection ────────────────────────────────────────────
