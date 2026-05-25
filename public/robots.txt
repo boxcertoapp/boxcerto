@@ -14,4 +14,4 @@ Disallow: /renovar
 Disallow: /sucesso
 Disallow: /o/
 
-Sitemap: https://boxcerto.com/sitemap.xml
+Sitemap: https://www.boxcerto.com/sitemap.xml

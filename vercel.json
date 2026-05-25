@@ -8,6 +8,7 @@
     { "source": "/lpdiagnostico",                  "destination": "/lpdiagnostico.html" },
     { "source": "/quizdiagnostico",                "destination": "/quizdiagnostico.html" },
     { "source": "/lpquizdiagnostico",              "destination": "/lpquizdiagnostico.html" },
+    { "source": "/planilha-os-oficina-mecanica-gratis", "destination": "/planilha-os-oficina-mecanica-gratis.html" },
     { "source": "/blog",                           "destination": "/blog/index.html" },
     { "source": "/blog/planilha-ordem-de-servico-mecanica-gratis", "destination": "/blog/planilha-ordem-de-servico-mecanica-gratis.html" },
     { "source": "/blog/sistema-para-oficina-mecanica",             "destination": "/blog/sistema-para-oficina-mecanica.html" },
