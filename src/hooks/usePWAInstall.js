@@ -33,6 +33,13 @@ export function usePWAInstall() {
       !/Chrome|CriOS|FxiOS|EdgiOS|OPT/i.test(ua)
     setIsIOS(safariOnly && !checkStandalone())
 
+    // Se o evento disparou antes do React montar (race condition),
+    // main.jsx já o capturou em window.__pwaPrompt — usa imediatamente.
+    if (window.__pwaPrompt) {
+      setDeferredPrompt(window.__pwaPrompt)
+      window.__pwaPrompt = null
+    }
+
     // Android / Desktop: captura o evento antes que o browser mostre o banner padrão
     const onPrompt    = (e) => { e.preventDefault(); setDeferredPrompt(e) }
     const onInstalled = ()  => { setIsInstalled(true); setDeferredPrompt(null) }
