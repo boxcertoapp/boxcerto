@@ -313,6 +313,140 @@ function AprovacaoMock() {
   )
 }
 
+// ─── screenshot carousel ─────────────────────────────────────────────────────
+const SCREENSHOT_CARDS = [
+  {
+    src: '/screenshots/lp-os-list.png',
+    alt: 'Listagem de Ordens de Serviço com status coloridos',
+    badge: 'Status em tempo real',
+    title: 'OS em andamento',
+    desc: 'Todas as ordens com status colorido — prontos, manutenção, orçamentos, agendados.',
+  },
+  {
+    src: '/screenshots/lp-os-detalhe.png',
+    alt: 'Detalhe da OS com botão Enviar para cliente pelo WhatsApp',
+    badge: 'Enviar no WhatsApp',
+    title: 'Orçamento aprovado pelo cliente',
+    desc: 'Um toque envia o link de aprovação pro WhatsApp. Tudo registrado com data e hora.',
+  },
+  {
+    src: '/screenshots/lp-financeiro.png',
+    alt: 'Tela do financeiro com lucro líquido, receitas e despesas do mês',
+    badge: 'Lucro em tempo real',
+    title: 'Financeiro do mês',
+    desc: 'Receitas, custos, despesas e lucro líquido consolidados — sem planilha.',
+  },
+  {
+    src: '/screenshots/lp-estoque.png',
+    alt: 'Tela de estoque com produtos, custos e botão de venda',
+    badge: 'Sem ruptura de peças',
+    title: 'Estoque e vendas',
+    desc: 'Entradas, saídas e alerta de estoque mínimo. Venda direto da tela.',
+  },
+]
+
+function ScreenshotCarousel() {
+  const [active, setActive] = useState(0)
+  const [paused, setPaused] = useState(false)
+  const n = SCREENSHOT_CARDS.length
+
+  useEffect(() => {
+    if (paused) return
+    const id = setInterval(() => setActive(a => (a + 1) % n), 3500)
+    return () => clearInterval(id)
+  }, [paused, n])
+
+  const goTo = (i) => {
+    setActive(i)
+    setPaused(true)
+    setTimeout(() => setPaused(false), 5000)
+  }
+
+  return (
+    <>
+      {/* ── Mobile: carousel auto-play ── */}
+      <div
+        className="sm:hidden"
+        onTouchStart={() => setPaused(true)}
+        onTouchEnd={() => setTimeout(() => setPaused(false), 4000)}
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+      >
+        <div className="overflow-hidden rounded-2xl border border-gray-100 shadow-sm">
+          <div
+            className="flex transition-transform duration-500 ease-in-out"
+            style={{ transform: `translateX(-${active * 100}%)` }}
+          >
+            {SCREENSHOT_CARDS.map((card, i) => (
+              <div key={i} className="w-full flex-shrink-0">
+                <div className="relative bg-slate-50 aspect-video overflow-hidden">
+                  <img
+                    src={card.src}
+                    alt={card.alt}
+                    className="w-full h-full object-contain"
+                    loading="lazy"
+                    decoding="async"
+                    onError={e => { e.currentTarget.style.display = 'none' }}
+                  />
+                  <span className="absolute bottom-2 left-2 bg-indigo-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-md">
+                    {card.badge}
+                  </span>
+                </div>
+                <div className="bg-white px-4 py-3 border-t border-gray-100">
+                  <h3 className="font-bold text-slate-900 text-sm">{card.title}</h3>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">{card.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Dots — pill ativo, círculo inativo */}
+        <div className="flex justify-center gap-1.5 mt-3" role="tablist" aria-label="Screenshots do sistema">
+          {SCREENSHOT_CARDS.map((_, i) => (
+            <button
+              key={i}
+              role="tab"
+              aria-selected={i === active}
+              aria-label={`Ver tela ${i + 1} de ${n}`}
+              onClick={() => goTo(i)}
+              className={`h-2 rounded-full transition-all duration-300 ${
+                i === active
+                  ? 'w-6 bg-indigo-600'
+                  : 'w-2 bg-slate-300 hover:bg-slate-400'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* ── Desktop: grid 4 colunas com aspect-video ── */}
+      <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {SCREENSHOT_CARDS.map((card, i) => (
+          <div key={i} className="rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+            <div className="relative bg-slate-50 aspect-video flex items-center justify-center overflow-hidden">
+              <img
+                src={card.src}
+                alt={card.alt}
+                className="w-full h-full object-contain"
+                loading="lazy"
+                decoding="async"
+                onError={e => { e.currentTarget.style.display = 'none' }}
+              />
+              <span className="absolute bottom-2 left-2 bg-indigo-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-md">
+                {card.badge}
+              </span>
+            </div>
+            <div className="p-4">
+              <h3 className="font-bold text-slate-900 text-sm">{card.title}</h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">{card.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
 // ─── stepper de status ────────────────────────────────────────────────────────
 const STEPS = [
   { label: 'Orçamento', desc: 'enviado',       bg: 'bg-slate-700',  text: 'text-white',     sub: 'text-white/70',     ring: false },
@@ -486,64 +620,8 @@ export default function LandingAds() {
             />
           </div>
 
-          {/* Cards de zoom — 4 funcionalidades específicas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              {
-                src: '/screenshots/lp-os-list.png',
-                alt: 'Listagem de Ordens de Serviço com status coloridos',
-                badge: 'Status em tempo real',
-                title: 'OS em andamento',
-                desc: 'Todas as ordens com status colorido — prontos, manutenção, orçamentos, agendados.',
-              },
-              {
-                src: '/screenshots/lp-os-detalhe.png',
-                alt: 'Detalhe da OS com botão Enviar para cliente pelo WhatsApp',
-                badge: 'Enviar no WhatsApp',
-                title: 'Orçamento aprovado pelo cliente',
-                desc: 'Um toque envia o link de aprovação pro WhatsApp. Tudo registrado com data e hora.',
-              },
-              {
-                src: '/screenshots/lp-financeiro.png',
-                alt: 'Tela do financeiro com lucro líquido, receitas e despesas do mês',
-                badge: 'Lucro em tempo real',
-                title: 'Financeiro do mês',
-                desc: 'Receitas, custos, despesas e lucro líquido consolidados — sem planilha.',
-              },
-              {
-                src: '/screenshots/lp-estoque.png',
-                alt: 'Tela de estoque com produtos, custos e botão de venda',
-                badge: 'Sem ruptura de peças',
-                title: 'Estoque e vendas',
-                desc: 'Entradas, saídas e alerta de estoque mínimo. Venda direto da tela.',
-              },
-            ].map((card, i) => (
-              <div key={i} className="rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                <div className="relative bg-slate-50 aspect-[3/4] flex items-center justify-center overflow-hidden">
-                  <img
-                    src={card.src}
-                    alt={card.alt}
-                    className="absolute inset-0 w-full h-full object-cover object-top"
-                    loading="lazy"
-                    decoding="async"
-                    onError={(e) => { e.currentTarget.style.display = 'none' }}
-                  />
-                  {/* Placeholder enquanto a imagem real não está disponível */}
-                  <div className="text-center px-4 text-slate-300">
-                    <div className="text-4xl mb-2" aria-hidden="true">📱</div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider">Screenshot</p>
-                  </div>
-                  <span className="absolute bottom-3 left-3 bg-indigo-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-md">
-                    {card.badge}
-                  </span>
-                </div>
-                <div className="p-4">
-                  <h3 className="font-bold text-slate-900 text-sm">{card.title}</h3>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">{card.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          {/* Screenshots — carousel no mobile, grid no desktop */}
+          <ScreenshotCarousel />
         </div>
       </section>
 
