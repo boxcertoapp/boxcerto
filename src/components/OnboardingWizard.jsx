@@ -87,6 +87,21 @@ function clearStored(userId) {
   } catch {}
 }
 
+const PWA_SKIP_KEY  = 'boxcerto:pwa-install-skip'
+const PWA_SKIP_DAYS = 7
+
+function isPwaSkipped() {
+  try {
+    const ts = parseInt(localStorage.getItem(PWA_SKIP_KEY) || '', 10)
+    if (isNaN(ts)) return false
+    return Date.now() - ts < PWA_SKIP_DAYS * 86_400_000
+  } catch { return false }
+}
+
+function savePwaSkip() {
+  try { localStorage.setItem(PWA_SKIP_KEY, String(Date.now())) } catch {}
+}
+
 function isMobileViewport() {
   return typeof window !== 'undefined' && window.innerWidth < 768
 }
@@ -116,7 +131,7 @@ export default function OnboardingWizard() {
 
   const { canInstall, isIOS, promptInstall } = usePWAInstall()
   const [showInstallSheet, setShowInstallSheet] = useState(false)
-  const [installSkipped, setInstallSkipped] = useState(false)
+  const [installSkipped, setInstallSkipped] = useState(() => isPwaSkipped())
 
   const logoInputRef = useRef(null)
   const resumedRef = useRef(null)
@@ -509,7 +524,7 @@ export default function OnboardingWizard() {
       <FullscreenShell>
         <CelebrationConfetti />
         <div className="flex w-full flex-1 flex-col overflow-y-auto bg-white">
-          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-600 to-indigo-700 px-6 pt-10 pb-9 text-center text-white">
+          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-600 to-indigo-700 px-6 pt-10 pb-12 text-center text-white">
             <SparkleField />
 
             <div className="relative mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white/15 ring-2 ring-white/30 backdrop-blur-sm">
@@ -552,31 +567,34 @@ export default function OnboardingWizard() {
 
             <div className="mt-auto space-y-3 pt-4">
               {canInstall && !installSkipped && (
-                <div className="flex items-center gap-3 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-600">
-                    <Smartphone className="h-4 w-4 text-white" />
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50">
+                      <Smartphone className="h-4 w-4 text-indigo-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-slate-900">
+                        Acesso rápido no celular
+                      </p>
+                      <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
+                        Instale o BoxCerto na tela inicial e abra sua oficina em um toque.
+                      </p>
+                      <div className="mt-2.5 flex items-center gap-3">
+                        <button
+                          onClick={handleInstall}
+                          className="rounded-full bg-indigo-600 px-4 py-1.5 text-xs font-bold text-white transition-colors hover:bg-indigo-700"
+                        >
+                          {isIOS ? 'Como instalar?' : 'Instalar'}
+                        </button>
+                        <button
+                          onClick={() => { savePwaSkip(); setInstallSkipped(true) }}
+                          className="text-xs font-medium text-slate-400 transition-colors hover:text-slate-600"
+                        >
+                          Depois
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-indigo-900">
-                      {isIOS ? 'Adicione à tela inicial' : 'Instale o app'}
-                    </p>
-                    <p className="text-xs leading-tight text-indigo-400">
-                      {isIOS ? '1 toque direto da tela inicial' : 'Acesso rápido, funciona offline'}
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleInstall}
-                    className="shrink-0 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-indigo-700"
-                  >
-                    {isIOS ? 'Como?' : 'Instalar'}
-                  </button>
-                  <button
-                    onClick={() => setInstallSkipped(true)}
-                    aria-label="Fechar sugestão de instalação"
-                    className="shrink-0 text-indigo-300 transition-colors hover:text-indigo-500"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
                 </div>
               )}
               <div>
