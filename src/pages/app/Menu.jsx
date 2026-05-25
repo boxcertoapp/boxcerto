@@ -754,7 +754,7 @@ export default function Menu() {
             <p className="truncate text-sm font-bold text-indigo-900">
               {isIOS ? 'Adicione à tela inicial' : 'Instale o app BoxCerto'}
             </p>
-            <p className="truncate text-xs text-indigo-500">Acesso rápido com 1 toque</p>
+            <p className="truncate text-xs text-indigo-500">Abre direto da tela inicial, sem o navegador</p>
           </div>
           <button
             onClick={handleMenuInstall}

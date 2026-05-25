@@ -577,7 +577,7 @@ export default function OnboardingWizard() {
                         Acesso rápido no celular
                       </p>
                       <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
-                        Instale o BoxCerto na tela inicial e abra sua oficina em um toque.
+                        Instale na tela inicial e abra sua oficina em 1 toque, sem abrir o navegador.
                       </p>
                       <div className="mt-2.5 flex items-center gap-3">
                         <button
