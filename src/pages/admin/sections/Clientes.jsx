@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Search, RefreshCw, Filter, Download, ChevronDown, ChevronUp,
   Trash2, Loader2, Eye, EyeOff, Shield, Calendar, CreditCard,
   Phone, Mail, Building2, CheckCircle, XCircle, Clock, AlertCircle,
-  FileText, MessageSquare, ChevronRight, X, Star, StickyNote, Users
+  FileText, MessageSquare, ChevronRight, X, Star, StickyNote, Users,
+  CheckSquare, Square
 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { formatDate } from '../../../lib/storage'
@@ -268,6 +269,57 @@ function exportCSV(users) {
   URL.revokeObjectURL(url)
 }
 
+// ── Barra de ações em lote ───────────────────────────────────
+function BulkBar({ count, onActivateMonthly, onActivateAnnual, onDeactivate, onDelete, onExportCSV, onClear, progress }) {
+  if (count === 0) return null
+  return (
+    <div className="sticky bottom-4 z-20 pointer-events-none">
+      <div className="pointer-events-auto bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-2 flex-wrap">
+        <span className="text-sm font-bold text-indigo-300 mr-1 flex-shrink-0">
+          {count} selecionado{count !== 1 ? 's' : ''}
+        </span>
+        {progress ? (
+          <div className="flex items-center gap-2 flex-1">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-300 flex-shrink-0" />
+            <span className="text-xs text-slate-300 font-medium whitespace-nowrap">Excluindo {progress.done}/{progress.total}…</span>
+            <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden min-w-[50px]">
+              <div className="h-full bg-indigo-400 rounded-full transition-all duration-300"
+                style={{ width: `${(progress.done / progress.total) * 100}%` }} />
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 flex-wrap flex-1">
+            <button onClick={onActivateMonthly}
+              className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors">
+              Ativar Mensal
+            </button>
+            <button onClick={onActivateAnnual}
+              className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors">
+              Ativar Anual
+            </button>
+            <button onClick={onDeactivate}
+              className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors">
+              Desativar
+            </button>
+            <button onClick={onExportCSV}
+              className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1">
+              <Download className="w-3 h-3" /> CSV
+            </button>
+            <button onClick={onDelete}
+              className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1">
+              <Trash2 className="w-3 h-3" /> Excluir
+            </button>
+          </div>
+        )}
+        <button onClick={onClear}
+          className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700 transition-colors flex-shrink-0">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Componente principal ─────────────────────────────────────
 export default function Clientes({ users, loadingUsers, reload, confirmarComSenha, impersonate, impersonateLoading }) {
   const [filter, setFilter]   = useState('all')
@@ -278,6 +330,19 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
   const [trialDate, setTrialDate] = useState('')
   const [senhaModal, setSenhaModal] = useState(null)
   const [sortBy, setSortBy] = useState('date') // date | health | name | status
+  const [selected, setSelected]         = useState(new Set())
+  const [bulkProgress, setBulkProgress] = useState(null) // null | { done, total }
+
+  // Limpa seleção ao mudar filtro ou busca
+  useEffect(() => { setSelected(new Set()) }, [filter, query])
+
+  const toggleSelect = (id) => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
 
   const updateProfile = async (id, fields) => {
     await supabase.from('profiles').update(fields).eq('id', id)
@@ -316,6 +381,58 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
     )
   }
 
+  // ── Ações em lote ───────────────────────────────────────────
+  const bulkDelete = () => {
+    const ids = [...selected]
+    confirmarComSenha(
+      `Excluir ${ids.length} cliente${ids.length > 1 ? 's' : ''}`,
+      `Excluir permanentemente ${ids.length} cliente${ids.length > 1 ? 's' : ''}? Esta ação não pode ser desfeita.`,
+      async () => {
+        const { data: { session } } = await supabase.auth.getSession()
+        setBulkProgress({ done: 0, total: ids.length })
+        for (let i = 0; i < ids.length; i++) {
+          await fetch('/api/admin-delete-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: ids[i], adminToken: session.access_token }),
+          })
+          setBulkProgress({ done: i + 1, total: ids.length })
+        }
+        setBulkProgress(null)
+        setSelected(new Set())
+        reload()
+      }
+    )
+  }
+
+  const bulkActivate = (plan) => {
+    const ids = [...selected]
+    confirmarComSenha(
+      `Ativar ${ids.length} cliente${ids.length > 1 ? 's' : ''}`,
+      `Ativar ${ids.length} cliente${ids.length > 1 ? 's' : ''} como ${plan === 'annual' ? 'Anual' : 'Mensal'}?`,
+      async () => {
+        await supabase.from('profiles')
+          .update({ status: 'active', plan, activated_at: new Date().toISOString() })
+          .in('id', ids)
+        setSelected(new Set())
+        reload()
+      }
+    )
+  }
+
+  const bulkDeactivate = () => {
+    const ids = [...selected]
+    confirmarComSenha(
+      `Desativar ${ids.length} cliente${ids.length > 1 ? 's' : ''}`,
+      `Desativar ${ids.length} cliente${ids.length > 1 ? 's' : ''}?`,
+      async () => {
+        await supabase.from('profiles').update({ status: 'inactive' }).in('id', ids)
+        setSelected(new Set())
+        reload()
+      }
+    )
+  }
+
   // Filtros e ordenação
   const filtered = users
     .filter(u => {
@@ -343,6 +460,10 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
       if (sortBy === 'trial_end')   return new Date(a.trialEnd || 0) - new Date(b.trialEnd || 0)
       return new Date(b.createdAt) - new Date(a.createdAt) // date
     })
+
+  const allSelected      = filtered.length > 0 && filtered.every(u => selected.has(u.id))
+  const someSelected     = !allSelected && filtered.some(u => selected.has(u.id))
+  const toggleSelectAll  = () => allSelected ? setSelected(new Set()) : setSelected(new Set(filtered.map(u => u.id)))
 
   const counts = {
     all:         users.length,
@@ -435,7 +556,29 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
           <p className="text-slate-400">Nenhum cliente encontrado.</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <>
+          {/* Select-all header */}
+          <div className="flex items-center justify-between px-2">
+            <button onClick={toggleSelectAll}
+              className="flex items-center gap-2 text-xs text-slate-500 hover:text-indigo-600 font-medium transition-colors py-1">
+              {allSelected
+                ? <CheckSquare className="w-3.5 h-3.5 text-indigo-600" />
+                : someSelected
+                ? <CheckSquare className="w-3.5 h-3.5 text-indigo-300" />
+                : <Square className="w-3.5 h-3.5" />}
+              {allSelected
+                ? 'Desmarcar todos'
+                : `Selecionar todos (${filtered.length})`}
+            </button>
+            {selected.size > 0 && (
+              <button onClick={() => setSelected(new Set())}
+                className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
+                Limpar seleção
+              </button>
+            )}
+          </div>
+
+          <div className="space-y-2">
           {filtered.map(u => {
             const sc = STATUS_CONFIG[u.status] || STATUS_CONFIG.trial
             const StatusIcon = sc.icon
@@ -446,10 +589,24 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
 
             return (
               <div key={u.id} className={`bg-white rounded-2xl border overflow-hidden transition-all ${
-                health < 30 ? 'border-red-100' : isExpanded ? 'border-indigo-200' : 'border-gray-100'
+                selected.has(u.id) ? 'border-indigo-300 ring-1 ring-indigo-200'
+                : health < 30 ? 'border-red-100' : isExpanded ? 'border-indigo-200' : 'border-gray-100'
               }`}>
                 {/* Row principal */}
                 <div className="px-4 py-3 flex items-center gap-3">
+                  {/* Checkbox */}
+                  <button
+                    onClick={e => { e.stopPropagation(); toggleSelect(u.id) }}
+                    className={`flex-shrink-0 p-0.5 rounded transition-colors ${
+                      selected.has(u.id) ? 'text-indigo-600' : 'text-slate-200 hover:text-slate-400'
+                    }`}
+                    aria-label={selected.has(u.id) ? 'Desmarcar cliente' : 'Selecionar cliente'}
+                  >
+                    {selected.has(u.id)
+                      ? <CheckSquare className="w-4 h-4" />
+                      : <Square className="w-4 h-4" />}
+                  </button>
+
                   {/* Avatar */}
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0 ${sc.color}`}>
                     {(u.oficina || u.email).charAt(0).toUpperCase()}
@@ -610,10 +767,22 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
               </div>
             )
           })}
-        </div>
+          </div>
+        </>
       )}
 
       <p className="text-xs text-slate-400 text-center">{filtered.length} de {users.length} clientes</p>
+
+      <BulkBar
+        count={selected.size}
+        progress={bulkProgress}
+        onActivateMonthly={() => bulkActivate('monthly')}
+        onActivateAnnual={() => bulkActivate('annual')}
+        onDeactivate={bulkDeactivate}
+        onDelete={bulkDelete}
+        onExportCSV={() => exportCSV(users.filter(u => selected.has(u.id)))}
+        onClear={() => setSelected(new Set())}
+      />
     </div>
   )
 }
