@@ -524,7 +524,7 @@ export default function OnboardingWizard() {
       <FullscreenShell>
         <CelebrationConfetti />
         <div className="flex w-full flex-1 flex-col overflow-y-auto bg-white">
-          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-600 to-indigo-700 px-6 pt-10 pb-12 text-center text-white">
+          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-600 to-indigo-700 px-6 pt-10 pb-10 text-center text-white">
             <SparkleField />
 
             <div className="relative mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white/15 ring-2 ring-white/30 backdrop-blur-sm">
@@ -542,11 +542,6 @@ export default function OnboardingWizard() {
               Parabéns, {firstName}!<br />
               Você concluiu os passos iniciais.
             </h2>
-            <p className="relative mt-3 text-[13px] leading-relaxed text-indigo-100">
-              Sua oficina agora está em outro nível<br />
-              de organização. Tudo pronto para começar<br />
-              a usar o BoxCerto de verdade.
-            </p>
           </div>
 
           <div className="flex flex-1 flex-col px-5 pb-5 pt-4">
@@ -567,34 +562,26 @@ export default function OnboardingWizard() {
 
             <div className="mt-auto space-y-3 pt-4">
               {canInstall && !installSkipped && (
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50">
-                      <Smartphone className="h-4 w-4 text-indigo-600" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-slate-900">
-                        Acesso rápido no celular
-                      </p>
-                      <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
-                        Instale na tela inicial e abra sua oficina em 1 toque, sem abrir o navegador.
-                      </p>
-                      <div className="mt-2.5 flex items-center gap-3">
-                        <button
-                          onClick={handleInstall}
-                          className="rounded-full bg-indigo-600 px-4 py-1.5 text-xs font-bold text-white transition-colors hover:bg-indigo-700"
-                        >
-                          {isIOS ? 'Como instalar?' : 'Instalar'}
-                        </button>
-                        <button
-                          onClick={() => { savePwaSkip(); setInstallSkipped(true) }}
-                          className="text-xs font-medium text-slate-400 transition-colors hover:text-slate-600"
-                        >
-                          Depois
-                        </button>
-                      </div>
-                    </div>
+                <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-50">
+                    <Smartphone className="h-4 w-4 text-indigo-600" />
                   </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-slate-900">Acesso rápido no celular</p>
+                    <p className="text-xs text-slate-400">Abre em 1 toque, sem o navegador</p>
+                  </div>
+                  <button
+                    onClick={handleInstall}
+                    className="shrink-0 rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-indigo-700"
+                  >
+                    {isIOS ? 'Como?' : 'Instalar'}
+                  </button>
+                  <button
+                    onClick={() => { savePwaSkip(); setInstallSkipped(true) }}
+                    className="shrink-0 text-xs font-medium text-slate-400 transition-colors hover:text-slate-600"
+                  >
+                    Depois
+                  </button>
                 </div>
               )}
               <div>
