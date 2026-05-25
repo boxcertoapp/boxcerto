@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import {
   TrendingUp, TrendingDown, Users, DollarSign, Clock,
   AlertCircle, CheckCircle, Zap, RefreshCw, ArrowRight,
-  BellRing, MessageSquare, Bell, Settings
+  BellRing, MessageSquare, Bell, Settings, Brain
 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { formatDate } from '../../../lib/storage'
@@ -145,11 +145,40 @@ export default function Dashboard({ users, loadingUsers, reload, onNavigate }) {
     canceled: { dot: 'bg-red-400',    text: (l) => <><strong>{l}</strong> cancelou</> },
   }
 
+  // ── Semáforo resumido (para o banner do Dashboard) ────────────
+  const startM = new Date(now.getFullYear(), now.getMonth(), 1)
+  const ago60  = new Date(now.getTime() - 60 * 86400000)
+  const canceladosMes = users.filter(u =>
+    ['cancelado', 'inactive'].includes(u.status) &&
+    u.canceledAt && new Date(u.canceledAt) >= startM
+  )
+  const baseRisco     = ativos.length + canceladosMes.length
+  const churnRate     = baseRisco > 0 ? canceladosMes.length / baseRisco : 0
+  const trialsEnc     = users.filter(u => u.trialEnd && new Date(u.trialEnd) <= now && new Date(u.trialEnd) >= ago60)
+  const trialsConv    = trialsEnc.filter(u => u.status === 'active' && u.activatedAt)
+  const convRate      = trialsEnc.length >= 3 ? trialsConv.length / trialsEnc.length : null
+  const newPagantesM  = ativos.filter(u => u.activatedAt && new Date(u.activatedAt) >= startM)
+  const pMensal2      = parseFloat(cfg.price_monthly) || 97
+  const pAnual2       = parseFloat(cfg.price_annual)  || 958.80
+  const newMrr        = newPagantesM.reduce((s, u) => s + (u.plan === 'annual' ? pAnual2 / 12 : pMensal2), 0)
+  const churnMrr      = canceladosMes.length * (mrr / Math.max(ativos.length, 1))
+  const netMrr        = newMrr - churnMrr
+
+  const churnOk  = ativos.length >= 5 ? churnRate < 0.05 : null
+  const convOk   = convRate !== null  ? convRate  > 0.25 : null
+  const growthOk = ativos.length >= 5 ? netMrr    >= 0   : null
+  const score    = [churnOk, convOk, growthOk].filter(v => v === true).length
+  const hasNull  = [churnOk, convOk, growthOk].some(v => v === null)
+  const semaforo =
+    score === 3 ? { emoji: '🟢', label: 'Escale o tráfego', color: 'bg-green-50 border-green-200 text-green-900' }
+    : score >= 2 ? { emoji: '🟡', label: 'Quase lá — corrija 1 ponto', color: 'bg-amber-50 border-amber-200 text-amber-900' }
+    :              { emoji: '🔴', label: 'Foque na retenção primeiro', color: 'bg-red-50 border-red-200 text-red-900' }
+
   // Quick actions
   const quickActions = [
+    { label: 'Conselho estratégico', icon: Brain, color: 'text-indigo-600', bg: 'bg-indigo-50', action: 'conselho' },
     { label: 'Ver clientes em risco', icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50', action: 'clientes' },
     { label: 'Enviar comunicação', icon: MessageSquare, color: 'text-indigo-600', bg: 'bg-indigo-50', action: 'comunicacoes' },
-    { label: 'Criar anúncio', icon: Bell, color: 'text-amber-600', bg: 'bg-amber-50', action: 'anuncios' },
     { label: 'Ver Analytics', icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50', action: 'analytics' },
   ]
 
@@ -175,6 +204,22 @@ export default function Dashboard({ users, loadingUsers, reload, onNavigate }) {
           ))}
         </div>
       )}
+
+      {/* Mini semáforo Conselho */}
+      <button onClick={() => onNavigate('conselho')}
+        className={`w-full flex items-center gap-4 border rounded-2xl px-5 py-3.5 text-left transition-opacity hover:opacity-90 ${semaforo.color}`}>
+        <span className="text-2xl flex-shrink-0">{semaforo.emoji}</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-0.5">Decisão estratégica</p>
+          <p className="text-sm font-extrabold leading-tight">{semaforo.label}</p>
+          {hasNull && <p className="text-[11px] opacity-50 mt-0.5">⚠ Alguns critérios precisam de mais dados</p>}
+        </div>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <Brain className="w-4 h-4 opacity-60" />
+          <span className="text-xs font-semibold opacity-70">Ver Conselho</span>
+          <ArrowRight className="w-3.5 h-3.5 opacity-60" />
+        </div>
+      </button>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">

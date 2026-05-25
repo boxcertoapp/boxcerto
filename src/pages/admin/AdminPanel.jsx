@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Wrench, Users, LogOut, Shield, Eye, EyeOff, Loader2,
   LayoutDashboard, DollarSign, BarChart2, MessageSquare, Bell, Settings,
-  ChevronRight, X, LifeBuoy, Mail, Download
+  ChevronRight, X, LifeBuoy, Mail, Download, Brain
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -17,6 +17,7 @@ import Comunicacoes from './tabs/Comunicacoes'
 import Anuncios     from './tabs/Anuncios'
 import Configuracoes from './sections/Configuracoes'
 import SuporteAdmin  from './sections/Suporte'
+import Conselho      from './sections/Conselho'
 
 // ── Carrega todos os usuários (shared entre seções) ──────────
 export const loadUsers = async () => {
@@ -290,6 +291,7 @@ function LeadsSection() {
 
 const NAV = [
   { key: 'dashboard',    label: 'Dashboard',      icon: LayoutDashboard, group: 'principal' },
+  { key: 'conselho',     label: 'Conselho',        icon: Brain,           group: 'principal' },
   { key: 'clientes',     label: 'Clientes',        icon: Users,           group: 'principal' },
   { key: 'receita',      label: 'Receita',         icon: DollarSign,      group: 'principal' },
   { key: 'leads',        label: 'Leads',           icon: Mail,            group: 'dados' },
@@ -361,6 +363,7 @@ export default function AdminPanel() {
   const renderSection = () => {
     switch (section) {
       case 'dashboard':    return <Dashboard    {...sharedProps} onNavigate={setSection} />
+      case 'conselho':     return <Conselho     {...sharedProps} onNavigate={setSection} />
       case 'clientes':     return <Clientes     {...sharedProps} />
       case 'receita':      return <Receita      {...sharedProps} />
       case 'leads':        return <LeadsSection />
