@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   X, Check, ChevronRight, ChevronLeft, Loader2, AlertCircle,
-  Camera, MapPin, Send, MessageCircle, Sparkles,
+  Camera, MapPin, Send,
   Rocket, Zap, Smartphone, CheckCircle2, Plus,
   Trophy, Sliders, ClipboardCheck, BarChart3,
 } from 'lucide-react'
@@ -57,10 +57,6 @@ function formatWpp(val) {
   return `(${n.slice(0, 2)}) ${n.slice(2, 7)}-${n.slice(7, 11)}`
 }
 
-function buildWhatsappMessage(cliente, modelo, total, link) {
-  const nome = (cliente || 'cliente').split(' ')[0]
-  return `Olá ${nome}! 👋 O orçamento do seu *${modelo}* está pronto.\n\nTotal: *${formatCurrency(total)}*\n\n📋 Veja e aprove online:\n${link}`
-}
 
 function readStored(userId) {
   if (!userId) return null
@@ -110,11 +106,10 @@ export default function OnboardingWizard() {
   const { user, refreshUser } = useAuth()
   const navigate = useNavigate()
 
-  // 'intro' | 'phase1' | 'phase2' | 'phase3' | 'celebration' | 'coachmark' | 'done'
+  // 'intro' | 'phase1' | 'phase2-real' | 'phase3' | 'celebration' | 'done'
   const [view, setView] = useState('intro')
   const [osStep, setOsStep] = useState('plate')
   const [createdOs, setCreatedOs] = useState(null)
-  const [approvalLink, setApprovalLink] = useState('')
   const [hidden, setHidden] = useState(false)
   const [legacyChecked, setLegacyChecked] = useState(false)
 
@@ -145,7 +140,7 @@ export default function OnboardingWizard() {
 
   const phaseIndex = useMemo(() => {
     if (view === 'phase1' || view === 'intro' || view === 'fab-coachmark') return 0
-    if (view === 'phase2') return 1
+    if (view === 'phase2-real') return 1
     return 2
   }, [view])
 
@@ -175,7 +170,7 @@ export default function OnboardingWizard() {
   // Travar scroll do body enquanto o wizard estiver visível (exceto views que precisam interagir com a página)
   useEffect(() => {
     if (!shouldShow) return
-    if (view === 'coachmark' || view === 'done' || view === 'fab-coachmark') return
+    if (view === 'phase2-real' || view === 'done' || view === 'fab-coachmark') return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = prev }
@@ -188,6 +183,21 @@ export default function OnboardingWizard() {
       navigate('/app/oficina', { replace: true })
     }
   }, [navigate, shouldShow, view])
+
+  // Navegar para a OS criada e abri-la quando entrar na fase 2 real
+  useEffect(() => {
+    if (!shouldShow || view !== 'phase2-real') return
+    if (window.location.pathname !== '/app/oficina') {
+      navigate('/app/oficina', { replace: true })
+    }
+    if (!createdOs?.id) return
+    const timer = window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('boxcerto:onboarding-abrir-os', {
+        detail: { osId: createdOs.id },
+      }))
+    }, 80)
+    return () => window.clearTimeout(timer)
+  }, [navigate, shouldShow, view, createdOs])
 
   // Interceptar o clique no FAB quando estiver no coachmark dele
   useEffect(() => {
@@ -227,7 +237,6 @@ export default function OnboardingWizard() {
     if (user.onboardingOficinaD) {
       setView('celebration')
       if (stored?.createdOs) setCreatedOs(stored.createdOs)
-      if (stored?.approvalLink) setApprovalLink(stored.approvalLink)
       return
     }
 
@@ -238,27 +247,25 @@ export default function OnboardingWizard() {
       return
     }
     if (user.onboardingOsDone) {
-      setView('phase2')
+      setView('phase2-real')
       if (stored?.createdOs) setCreatedOs(stored.createdOs)
-      if (stored?.approvalLink) setApprovalLink(stored.approvalLink)
       return
     }
 
-    if (stored?.view && ['intro', 'fab-coachmark', 'phase1', 'phase2', 'phase3', 'celebration'].includes(stored.view)) {
+    if (stored?.view && ['intro', 'fab-coachmark', 'phase1', 'phase2-real', 'phase3', 'celebration'].includes(stored.view)) {
       setView(stored.view)
       if (stored.osStep) setOsStep(stored.osStep)
       if (stored.form) setForm(prev => ({ ...prev, ...stored.form }))
       if (stored.officeForm) setOfficeForm(prev => ({ ...prev, ...stored.officeForm }))
       if (stored.createdOs) setCreatedOs(stored.createdOs)
-      if (stored.approvalLink) setApprovalLink(stored.approvalLink)
     }
   }, [user])
 
   // Persiste estado do wizard
   useEffect(() => {
     if (!user?.id || !shouldShow) return
-    writeStored(user.id, { view, osStep, form, officeForm, createdOs, approvalLink })
-  }, [user?.id, shouldShow, view, osStep, form, officeForm, createdOs, approvalLink])
+    writeStored(user.id, { view, osStep, form, officeForm, createdOs })
+  }, [user?.id, shouldShow, view, osStep, form, officeForm, createdOs])
 
   // Detecção de oficina legada: se já tem OS, marca tudo como concluído
   useEffect(() => {
@@ -391,7 +398,7 @@ export default function OnboardingWizard() {
         detail: { osId: os.id, onboarding: true },
       }))
       await patchProfile({ onboarding_os_done: true })
-      setView('phase2')
+      setView('phase2-real')
     } catch (e) {
       setError(e?.message || 'Erro ao criar OS.')
     } finally {
@@ -399,26 +406,13 @@ export default function OnboardingWizard() {
     }
   }, [form, patchProfile, user?.oficina])
 
-  const sendWhatsApp = useCallback(async () => {
-    if (!createdOs) return
-    setError('')
-    setLoading(true)
+  const completePhase2 = useCallback(async () => {
     try {
-      const token = await osStorage.generateApprovalToken(createdOs.id)
-      const link = `${window.location.origin}/o/${token}`
-      setApprovalLink(link)
-      const phone = createdOs.clientWhatsapp.replace(/\D/g, '')
-      const msg = buildWhatsappMessage(createdOs.clientNome, createdOs.modelo, createdOs.total, link)
-      window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`, '_blank')
       window.dispatchEvent(new CustomEvent('boxcerto:orcamento-enviado'))
       await patchProfile({ onboarding_orcamento_done: true })
-      setView('phase3')
-    } catch (e) {
-      setError(e?.message || 'Erro ao gerar link de aprovação.')
-    } finally {
-      setLoading(false)
-    }
-  }, [createdOs, patchProfile])
+    } catch {}
+    setView('phase3')
+  }, [patchProfile])
 
   const handleLogoFile = useCallback((file) => {
     if (!file || !user?.oficina) return
@@ -478,22 +472,12 @@ export default function OnboardingWizard() {
   }, [officeForm, patchProfile, user?.oficina])
 
   const finishAndShowCoachmark = useCallback(() => {
-    if (createdOs?.id) {
-      navigate('/app/oficina', { replace: true })
-      window.setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('boxcerto:onboarding-abrir-os', {
-          detail: { osId: createdOs.id },
-        }))
-      }, 80)
-      setView('coachmark')
-    } else {
-      navigate('/app/oficina', { replace: true })
-      setView('done')
-      setHidden(true)
-      clearStored(user?.id)
-      patchProfile({ onboarding_dismissed: true }, true)
-    }
-  }, [createdOs, navigate, patchProfile, user?.id])
+    navigate('/app/oficina', { replace: true })
+    setView('done')
+    setHidden(true)
+    clearStored(user?.id)
+    patchProfile({ onboarding_dismissed: true }, true)
+  }, [navigate, patchProfile, user?.id])
 
   const finishToDashboard = useCallback(() => {
     setView('done')
@@ -505,19 +489,6 @@ export default function OnboardingWizard() {
 
   if (!shouldShow) return null
   if (view === 'done') return null
-
-  if (view === 'coachmark') {
-    return (
-      <FinalCoachmark
-        onDismiss={() => {
-          setView('done')
-          setHidden(true)
-          clearStored(user?.id)
-          patchProfile({ onboarding_dismissed: true }, true)
-        }}
-      />
-    )
-  }
 
   if (view === 'celebration') {
     return (
@@ -800,54 +771,12 @@ export default function OnboardingWizard() {
     )
   }
 
-  if (view === 'phase2') {
+  if (view === 'phase2-real') {
     return (
-      <FullscreenShell>
-        <Header phaseIndex={phaseIndex} onSkip={skipAll} onClose={closeForLater} />
-
-        <div className="flex w-full max-w-md flex-1 flex-col overflow-y-auto px-5 pb-5 pt-2">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-indigo-600">Fase 2 de 3</p>
-          <h3 className="mt-2 text-2xl font-extrabold leading-tight text-slate-950">Envie pelo WhatsApp</h3>
-          <p className="mt-2 text-sm leading-relaxed text-slate-500">
-            Vou abrir o WhatsApp Web com a mensagem pronta. O cliente recebe um link único e aprova com 1 toque.
-          </p>
-
-          {error && (
-            <div className="mt-4 flex items-center gap-2 rounded-xl bg-red-50 p-3 text-sm font-medium text-red-600">
-              <AlertCircle className="h-4 w-4 shrink-0" /> {error}
-            </div>
-          )}
-
-          <div className="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
-            <div className="flex items-center gap-2">
-              <MessageCircle className="h-4 w-4 text-emerald-600" />
-              <span className="text-xs font-bold uppercase tracking-wide text-emerald-700">Pré-visualização</span>
-            </div>
-            <div className="mt-3 space-y-2 rounded-xl bg-white p-3 text-[13px] leading-relaxed text-slate-700 shadow-sm">
-              <p>Olá {createdOs?.clientNome?.split(' ')[0] || 'cliente'}! 👋 O orçamento do seu <strong>{createdOs?.modelo}</strong> está pronto.</p>
-              <p>Total: <strong>{formatCurrency(createdOs?.total || 470)}</strong></p>
-              <p>📋 Veja e aprove online: <span className="text-indigo-600 underline">link de aprovação</span></p>
-            </div>
-            <p className="mt-3 text-[11px] text-emerald-700">
-              Enviado para {createdOs?.clientWhatsapp || 'cliente'}
-            </p>
-          </div>
-        </div>
-
-        <div className="w-full max-w-md shrink-0 border-t border-slate-100 bg-white px-5 pb-5 pt-3">
-          <button
-            onClick={sendWhatsApp}
-            disabled={loading || !createdOs}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-4 text-sm font-extrabold text-white shadow-lg shadow-emerald-100 transition-colors hover:bg-emerald-700 disabled:opacity-60"
-          >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            {loading ? 'Gerando link...' : 'Enviar pelo WhatsApp'}
-          </button>
-          <p className="mt-2 text-center text-[11px] text-slate-400">
-            Vou abrir o WhatsApp em uma nova aba.
-          </p>
-        </div>
-      </FullscreenShell>
+      <Phase2SendCoachmark
+        onDone={completePhase2}
+        onSkip={completePhase2}
+      />
     )
   }
 
@@ -1094,47 +1023,29 @@ function FabCoachmark({ firstName, onSkip, onManualProceed }) {
   )
 }
 
-function FinalCoachmark({ onDismiss }) {
+function Phase2SendCoachmark({ onDone, onSkip }) {
   const [rect, setRect] = useState(null)
-  const dismissedRef = useRef(false)
+  const doneRef = useRef(false)
 
   useEffect(() => {
     let cancelled = false
     let intervalId = null
-    let dismissTimer = null
 
     const sync = () => {
-      if (cancelled || dismissedRef.current) return
+      if (cancelled || doneRef.current) return
       const el = document.querySelector('[data-tour="btn-enviar-cliente"]')
-      if (!el) {
-        setRect(null)
-        return
-      }
+      if (!el) { setRect(null); return }
       const r = el.getBoundingClientRect()
-      if (r.width <= 0 || r.height <= 0) {
-        setRect(null)
-        return
-      }
+      if (r.width <= 0 || r.height <= 0) { setRect(null); return }
       setRect({ top: r.top, left: r.left, width: r.width, height: r.height })
-      if (!dismissTimer) {
-        dismissTimer = window.setTimeout(() => {
-          dismissedRef.current = true
-          onDismiss()
-        }, 5200)
-      }
     }
 
-    // Tenta encontrar o alvo por até 6s — a OS pode demorar a abrir
+    // Tenta encontrar o botão por até 8s — a OS pode demorar a abrir
     const startedAt = Date.now()
     const findTarget = () => {
-      if (cancelled || dismissedRef.current) return
+      if (cancelled || doneRef.current) return
       sync()
-      if (rect) return
-      if (Date.now() - startedAt > 6000) {
-        dismissedRef.current = true
-        onDismiss()
-        return
-      }
+      if (Date.now() - startedAt > 8000) return
       window.setTimeout(findTarget, 200)
     }
     findTarget()
@@ -1144,59 +1055,91 @@ function FinalCoachmark({ onDismiss }) {
     window.addEventListener('scroll', sync, true)
     window.visualViewport?.addEventListener('resize', sync)
 
+    // Observa o clique no botão real SEM interceptar — o WhatsApp abre normalmente
+    const handleClick = (e) => {
+      if (doneRef.current) return
+      const btn = e.target?.closest?.('[data-tour="btn-enviar-cliente"]')
+      if (!btn) return
+      doneRef.current = true
+      onDone()
+    }
+    document.addEventListener('click', handleClick, true)
+
     return () => {
       cancelled = true
       if (intervalId) window.clearInterval(intervalId)
-      if (dismissTimer) window.clearTimeout(dismissTimer)
       window.removeEventListener('resize', sync)
       window.removeEventListener('scroll', sync, true)
       window.visualViewport?.removeEventListener('resize', sync)
+      document.removeEventListener('click', handleClick, true)
     }
-  }, [onDismiss, rect])
-
-  if (!rect) return null
+  }, [onDone])
 
   const pad = 6
-  const ringTop = Math.max(0, rect.top - pad)
-  const ringLeft = Math.max(0, rect.left - pad)
-  const ringWidth = rect.width + pad * 2
-  const ringHeight = rect.height + pad * 2
+  const ringTop = rect ? Math.max(0, rect.top - pad) : 0
+  const ringLeft = rect ? Math.max(0, rect.left - pad) : 0
+  const ringWidth = rect ? rect.width + pad * 2 : 0
+  const ringHeight = rect ? rect.height + pad * 2 : 0
 
   const viewportTop = window.visualViewport?.offsetTop || 0
   const viewportHeight = window.visualViewport?.height || window.innerHeight
   const viewportBottom = viewportTop + viewportHeight
   const cardWidth = Math.min(320, window.innerWidth - 24)
-  const estimatedCardHeight = 130
-  const roomBelow = viewportBottom - (ringTop + ringHeight) - 12
-  const placeBelow = roomBelow >= estimatedCardHeight
-  const cardTop = placeBelow
-    ? ringTop + ringHeight + 12
-    : Math.max(viewportTop + 12, ringTop - estimatedCardHeight - 12)
-  const cardLeft = Math.max(12, Math.min(window.innerWidth - cardWidth - 12, ringLeft + ringWidth / 2 - cardWidth / 2))
+  const estimatedCardHeight = 140
+
+  let cardTop, cardLeft
+  if (rect) {
+    const roomBelow = viewportBottom - (ringTop + ringHeight) - 12
+    const placeBelow = roomBelow >= estimatedCardHeight
+    cardTop = placeBelow
+      ? ringTop + ringHeight + 12
+      : Math.max(viewportTop + 12, ringTop - estimatedCardHeight - 12)
+    cardLeft = Math.max(12, Math.min(window.innerWidth - cardWidth - 12, ringLeft + ringWidth / 2 - cardWidth / 2))
+  } else {
+    // Botão ainda não apareceu — posiciona o card no topo centralizado
+    cardTop = viewportTop + 12
+    cardLeft = Math.max(12, (window.innerWidth - cardWidth) / 2)
+  }
 
   return (
     <>
       <WizardStyles />
-      <div
-        className="pointer-events-none fixed z-[391] rounded-2xl"
-        style={{
-          top: ringTop,
-          left: ringLeft,
-          width: ringWidth,
-          height: ringHeight,
-          boxShadow: '0 0 0 3px #10b981, 0 0 0 8px rgba(16,185,129,.24)',
-          animation: 'wizardPulse 1.4s ease-in-out infinite',
-        }}
-      />
+      {rect && (
+        <div
+          className="pointer-events-none fixed z-[391] rounded-2xl"
+          style={{
+            top: ringTop,
+            left: ringLeft,
+            width: ringWidth,
+            height: ringHeight,
+            boxShadow: '0 0 0 3px #10b981, 0 0 0 8px rgba(16,185,129,.24)',
+            animation: 'wizardPulse 1.4s ease-in-out infinite',
+          }}
+        />
+      )}
       <div
         className="fixed z-[395]"
         style={{ top: cardTop, left: cardLeft, width: cardWidth }}
       >
-        <div className="rounded-2xl bg-white p-4 shadow-2xl ring-1 ring-slate-900/5">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-600">Dica final</p>
-          <h4 className="mt-1 text-sm font-extrabold text-slate-950">É aqui que você envia o orçamento</h4>
+        <div className="relative rounded-2xl bg-white p-4 shadow-2xl ring-1 ring-slate-900/5">
+          <button
+            type="button"
+            onClick={onSkip}
+            className="absolute right-2.5 top-2.5 rounded-full px-2 py-1 text-[11px] font-semibold text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+          >
+            Pular
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600">
+              <Send className="h-3.5 w-3.5 text-white" />
+            </span>
+            <span className="text-[11px] font-bold uppercase tracking-wide text-emerald-600">Passo 2 de 3</span>
+          </div>
+          <h4 className="mt-2 pr-8 text-[15px] font-extrabold leading-snug text-slate-950">
+            Envie o orçamento para o cliente
+          </h4>
           <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
-            Sempre que abrir uma OS, esse botão fica disponível. Esse aviso some sozinho.
+            Toque em <strong>"Enviar para cliente"</strong> para enviar via WhatsApp. O cliente aprova com 1 toque.
           </p>
         </div>
       </div>
