@@ -41,7 +41,12 @@
     { "source": "/quizdiagnostico",                "destination": "/quizdiagnostico.html" },
     { "source": "/lpquizdiagnostico",              "destination": "/lpquizdiagnostico.html" },
     { "source": "/planilha-os-oficina-mecanica-gratis", "destination": "/planilha-os-oficina-mecanica-gratis.html" },
+    { "source": "/modelo-orcamento-oficina-mecanica-gratis", "destination": "/modelo-orcamento-oficina-mecanica-gratis.html" },
+    { "source": "/calculadora-mao-de-obra-oficina-mecanica", "destination": "/calculadora-mao-de-obra-oficina-mecanica.html" },
+    { "source": "/planilha-fluxo-caixa-oficina-mecanica-gratis", "destination": "/planilha-fluxo-caixa-oficina-mecanica-gratis.html" },
+    { "source": "/planilha-estoque-pecas-oficina-gratis", "destination": "/planilha-estoque-pecas-oficina-gratis.html" },
     { "source": "/blog",                           "destination": "/blog/index.html" },
+    { "source": "/blog/guias-oficina-mecanica",     "destination": "/blog/guias-oficina-mecanica.html" },
     { "source": "/blog/planilha-ordem-de-servico-mecanica-gratis", "destination": "/blog/planilha-ordem-de-servico-mecanica-gratis.html" },
     { "source": "/blog/sistema-para-oficina-mecanica",             "destination": "/blog/sistema-para-oficina-mecanica.html" },
     { "source": "/blog/orcamento-oficina-whatsapp",                "destination": "/blog/orcamento-oficina-whatsapp.html" },
@@ -54,6 +59,7 @@
     { "source": "/blog/como-evitar-calote-oficina-mecanica",        "destination": "/blog/como-evitar-calote-oficina-mecanica.html" },
     { "source": "/blog/como-ser-mecanico-automotivo",               "destination": "/blog/como-ser-mecanico-automotivo.html" },
     { "source": "/blog/como-aumentar-faturamento-oficina-mecanica",  "destination": "/blog/como-aumentar-faturamento-oficina-mecanica.html" },
+    { "source": "/blog/:slug",                       "destination": "/blog/:slug.html" },
     { "source": "/((?!api/).*)",                   "destination": "/index.html" }
   ],
   "crons": [

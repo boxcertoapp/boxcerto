@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "generate:seo": "node scripts/generate-seo-machine.mjs",
     "build": "vite build && node scripts/inject-meta.js",
     "preview": "vite preview",
     "test:e2e": "playwright test"
