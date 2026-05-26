@@ -1,6 +1,10 @@
 /**
  * usePWAInstall — detecta capacidade de instalação PWA por plataforma.
  *
+ * Singleton de módulo: o deferredPrompt é compartilhado entre todas as
+ * instâncias do hook (OnboardingWizard, Menu, etc.) na mesma sessão.
+ * Isso evita que uma instância consuma o prompt e as demais percam o estado.
+ *
  * Android / Desktop Chrome / Edge:
  *   - Captura `beforeinstallprompt`, expõe `promptInstall()` que dispara o prompt nativo.
  *
@@ -13,15 +17,40 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 
+// ── Singleton de módulo ────────────────────────────────────────────────────
+// Persiste o prompt entre mount/unmount de componentes na mesma sessão.
+let _savedPrompt = null
+const _subscribers = new Set()
+
+function _setPrompt(p) {
+  _savedPrompt = p
+  _subscribers.forEach(fn => fn())
+}
+
+// Resgata prompt capturado antes do módulo carregar (race condition em main.jsx)
+if (typeof window !== 'undefined') {
+  if (window.__pwaPrompt) {
+    _savedPrompt = window.__pwaPrompt
+    window.__pwaPrompt = null
+  }
+  // Captura eventos futuros (inclusive se o módulo carregou antes do evento)
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault()
+    _setPrompt(e)
+  })
+}
+// ──────────────────────────────────────────────────────────────────────────
+
 export function usePWAInstall() {
-  const [deferredPrompt, setDeferredPrompt] = useState(null)
-  const [isInstalled, setIsInstalled]       = useState(false)
-  const [isIOS, setIsIOS]                   = useState(false)
+  // Estado local inicializado a partir do singleton — nunca perde o prompt
+  const [prompt, setLocalPrompt] = useState(_savedPrompt)
+  const [isInstalled, setIsInstalled]  = useState(false)
+  const [isIOS, setIsIOS]              = useState(false)
 
   useEffect(() => {
     const checkStandalone = () =>
       window.matchMedia('(display-mode: standalone)').matches ||
-      !!window.navigator.standalone   // iOS Safari standalone flag
+      !!window.navigator.standalone
 
     setIsInstalled(checkStandalone())
 
@@ -33,53 +62,47 @@ export function usePWAInstall() {
       !/Chrome|CriOS|FxiOS|EdgiOS|OPT/i.test(ua)
     setIsIOS(safariOnly && !checkStandalone())
 
-    // Se o evento disparou antes do React montar (race condition),
-    // main.jsx já o capturou em window.__pwaPrompt — usa imediatamente.
-    if (window.__pwaPrompt) {
-      setDeferredPrompt(window.__pwaPrompt)
-      window.__pwaPrompt = null
-    }
+    // Subscriber: sincroniza estado local quando o singleton muda
+    const onPromptChange = () => setLocalPrompt(_savedPrompt)
+    _subscribers.add(onPromptChange)
 
-    // Android / Desktop: captura o evento antes que o browser mostre o banner padrão
-    const onPrompt    = (e) => { e.preventDefault(); setDeferredPrompt(e) }
-    const onInstalled = ()  => { setIsInstalled(true); setDeferredPrompt(null) }
+    const onInstalled = () => { setIsInstalled(true); _setPrompt(null) }
 
-    // Atualiza caso o usuário instale enquanto a página está aberta
     const mq = window.matchMedia('(display-mode: standalone)')
     const onMqChange = (e) => { if (e.matches) setIsInstalled(true) }
 
-    window.addEventListener('beforeinstallprompt', onPrompt)
     window.addEventListener('appinstalled', onInstalled)
     mq.addEventListener('change', onMqChange)
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', onPrompt)
+      _subscribers.delete(onPromptChange)
       window.removeEventListener('appinstalled', onInstalled)
       mq.removeEventListener('change', onMqChange)
     }
   }, [])
 
   /** true quando é possível instalar (e ainda não está instalado) */
-  const canInstall = !isInstalled && (deferredPrompt !== null || isIOS)
+  const canInstall = !isInstalled && (prompt !== null || isIOS)
 
   /**
    * Dispara o prompt nativo (Android/Desktop) ou retorna `'ios'`
    * para que o chamador exiba a bottom sheet de instruções.
+   * Consome o prompt — notifica todas as instâncias do hook via singleton.
    */
   const promptInstall = useCallback(async () => {
-    if (!deferredPrompt) return 'ios'
-    deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
-    setDeferredPrompt(null)
+    if (!prompt) return 'ios'
+    prompt.prompt()
+    const { outcome } = await prompt.userChoice
+    _setPrompt(null)   // consome e notifica todas as instâncias
     if (outcome === 'accepted') setIsInstalled(true)
-    return outcome        // 'accepted' | 'dismissed'
-  }, [deferredPrompt])
+    return outcome
+  }, [prompt])
 
   return {
     canInstall,
     isIOS,
     isInstalled,
-    hasDeferredPrompt: !!deferredPrompt,
+    hasDeferredPrompt: !!prompt,
     promptInstall,
   }
 }
