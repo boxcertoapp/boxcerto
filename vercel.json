@@ -47,6 +47,7 @@
     { "source": "/planilha-estoque-pecas-oficina-gratis", "destination": "/planilha-estoque-pecas-oficina-gratis.html" },
     { "source": "/blog",                           "destination": "/blog/index.html" },
     { "source": "/blog/guias-oficina-mecanica",     "destination": "/blog/guias-oficina-mecanica.html" },
+    { "source": "/blog/categoria/:cat",             "destination": "/blog/categoria/:cat.html" },
     { "source": "/blog/planilha-ordem-de-servico-mecanica-gratis", "destination": "/blog/planilha-ordem-de-servico-mecanica-gratis.html" },
     { "source": "/blog/sistema-para-oficina-mecanica",             "destination": "/blog/sistema-para-oficina-mecanica.html" },
     { "source": "/blog/orcamento-oficina-whatsapp",                "destination": "/blog/orcamento-oficina-whatsapp.html" },
