@@ -22,20 +22,20 @@ const categories = [
 const authors = {
   'rafael-mota': {
     name: 'Rafael Mota',
-    role: 'Especialista em gestão de oficinas',
-    bio: 'Trabalhou 12 anos como gerente em concessionária antes de fundar a primeira oficina-escola digital do interior de SP. Escreve sobre gestão, OS e atendimento.',
+    role: 'Conteúdo BoxCerto',
+    bio: 'Apaixonado por gestão de oficinas, escreve sobre OS digital, atendimento e organização com foco na rotina prática de oficinas independentes.',
     initials: 'RM',
   },
   'carla-bertolini': {
     name: 'Carla Bertolini',
-    role: 'Head de Conteúdo, BoxCerto',
-    bio: 'Jornalista, ex-redação de Quatro Rodas. Cobre o setor automotivo há 9 anos e traduz a rotina da oficina em conteúdo prático.',
+    role: 'Conteúdo BoxCerto',
+    bio: 'Apaixonada pelo mundo automotivo, escreve sobre atendimento, vendas e relacionamento com clientes para oficinas que querem trabalhar com mais organização.',
     initials: 'CB',
   },
   'tiago-azevedo': {
     name: 'Tiago Azevedo',
-    role: 'Consultor financeiro',
-    bio: 'Contador especializado em micro e pequenas oficinas mecânicas. Atende mais de 80 oficinas no Sul e Sudeste.',
+    role: 'Conteúdo BoxCerto',
+    bio: 'Escreve sobre financeiro, precificação e fluxo de caixa para oficinas pequenas, sempre com linguagem prática aplicada ao dia a dia.',
     initials: 'TA',
   },
 }
