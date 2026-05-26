@@ -494,6 +494,24 @@ export default function Oficina() {
     }
   }, [])
 
+  // Deep link: /app/oficina?os=UUID — abre a OS direto (vindo de push notification)
+  useEffect(() => {
+    if (!user?.oficina) return
+    const params = new URLSearchParams(window.location.search)
+    const osId = params.get('os')
+    if (!osId) return
+    // Limpa o param da URL sem navegar
+    window.history.replaceState({}, '', window.location.pathname)
+    osStorage.getAll(user.oficina)
+      .then(async all => {
+        const target = all.find(o => o.id === osId)
+        if (!target) return
+        const items = await itemStorage.getByOS(osId)
+        setSelectedOS({ ...target, items, totals: itemStorage.totals(items) })
+      })
+      .catch(() => {})
+  }, [user?.oficina])
+
   // Onboarding: abre OS específica quando o wizard termina (para mostrar coachmark no botão WhatsApp)
   useEffect(() => {
     if (!user?.oficina) return

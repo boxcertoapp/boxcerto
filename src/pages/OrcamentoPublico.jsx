@@ -343,6 +343,12 @@ export default function OrcamentoPublico() {
       const ok = await osStorage.approveByToken(token)
       if (ok) {
         setOs(prev => ({ ...prev, aprovacao_status: 'aprovado' }))
+        // Notifica o mecânico via push — fire-and-forget, não bloqueia o UI
+        fetch('/api/notify-aprovacao', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        }).catch(() => {})
       } else {
         alert('Não foi possível aprovar. O orçamento pode ter sido alterado.')
       }

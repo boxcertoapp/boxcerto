@@ -14,6 +14,7 @@ import {
 } from '../lib/storage'
 import { titleCaseName } from '../lib/text'
 import { usePWAInstall } from '../hooks/usePWAInstall'
+import { usePushNotifications } from '../hooks/usePushNotifications'
 import PWAInstallSheet from './PWAInstallSheet'
 
 const STORAGE_KEY_PREFIX = 'boxcerto:onboarding:'
@@ -106,7 +107,7 @@ export default function OnboardingWizard() {
   const { user, refreshUser } = useAuth()
   const navigate = useNavigate()
 
-  // 'intro' | 'phase1' | 'phase2-real' | 'phase3' | 'celebration' | 'done'
+  // 'intro' | 'phase1' | 'phase2-real' | 'phase2-notify' | 'phase3' | 'celebration' | 'done'
   const [view, setView] = useState('intro')
   const [osStep, setOsStep] = useState('plate')
   const [createdOs, setCreatedOs] = useState(null)
@@ -125,6 +126,7 @@ export default function OnboardingWizard() {
   const [logoBusy, setLogoBusy] = useState(false)
 
   const { canInstall, isIOS, promptInstall } = usePWAInstall()
+  const { isSupported: pushSupported, permission: pushPermission, isLoading: pushLoading, subscribe: subscribePush } = usePushNotifications()
   const [showInstallSheet, setShowInstallSheet] = useState(false)
   const [installSkipped, setInstallSkipped] = useState(() => isPwaSkipped())
 
@@ -140,7 +142,7 @@ export default function OnboardingWizard() {
 
   const phaseIndex = useMemo(() => {
     if (view === 'phase1' || view === 'intro' || view === 'fab-coachmark') return 0
-    if (view === 'phase2-real') return 1
+    if (view === 'phase2-real' || view === 'phase2-notify') return 1
     return 2
   }, [view])
 
@@ -252,7 +254,7 @@ export default function OnboardingWizard() {
       return
     }
 
-    if (stored?.view && ['intro', 'fab-coachmark', 'phase1', 'phase2-real', 'phase3', 'celebration'].includes(stored.view)) {
+    if (stored?.view && ['intro', 'fab-coachmark', 'phase1', 'phase2-real', 'phase2-notify', 'phase3', 'celebration'].includes(stored.view)) {
       setView(stored.view)
       if (stored.osStep) setOsStep(stored.osStep)
       if (stored.form) setForm(prev => ({ ...prev, ...stored.form }))
@@ -411,8 +413,13 @@ export default function OnboardingWizard() {
       window.dispatchEvent(new CustomEvent('boxcerto:orcamento-enviado'))
       await patchProfile({ onboarding_orcamento_done: true })
     } catch {}
-    setView('phase3')
-  }, [patchProfile])
+    // Só mostra o step de notificação se push é suportado e permissão ainda não foi decidida
+    if (pushSupported && pushPermission === 'default') {
+      setView('phase2-notify')
+    } else {
+      setView('phase3')
+    }
+  }, [patchProfile, pushSupported, pushPermission])
 
   const handleLogoFile = useCallback((file) => {
     if (!file || !user?.oficina) return
@@ -777,6 +784,52 @@ export default function OnboardingWizard() {
         onDone={completePhase2}
         onSkip={completePhase2}
       />
+    )
+  }
+
+  if (view === 'phase2-notify') {
+    return (
+      <FullscreenShell>
+        <Header phaseIndex={phaseIndex} onSkip={() => setView('phase3')} onClose={() => setView('phase3')} />
+        <div className="flex w-full max-w-md flex-1 flex-col items-center justify-center px-6 pb-8 pt-4">
+          {/* Ícone */}
+          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 ring-2 ring-emerald-100">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </div>
+
+          <h2 className="mb-2 text-center text-[22px] font-extrabold leading-tight text-slate-900">
+            Saiba na hora quando<br />o cliente aprovar
+          </h2>
+          <p className="mb-8 text-center text-sm leading-relaxed text-slate-500">
+            Quando {createdOs?.clientNome?.split(' ')[0] || 'seu cliente'} clicar em "Aprovar", você recebe uma notificação direto no celular — mesmo com o BoxCerto fechado.
+          </p>
+
+          <div className="w-full space-y-3">
+            <button
+              onClick={async () => {
+                await subscribePush()
+                setView('phase3')
+              }}
+              disabled={pushLoading}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 py-4 text-[15px] font-extrabold text-white shadow-lg shadow-emerald-100 transition-colors hover:bg-emerald-600 disabled:opacity-60"
+            >
+              {pushLoading
+                ? <><Loader2 className="h-4 w-4 animate-spin" /> Ativando...</>
+                : <><Check className="h-4 w-4" strokeWidth={3} /> Ativar notificações</>
+              }
+            </button>
+            <button
+              onClick={() => setView('phase3')}
+              className="w-full py-3 text-center text-sm font-medium text-slate-400 hover:text-slate-600"
+            >
+              Agora não
+            </button>
+          </div>
+        </div>
+      </FullscreenShell>
     )
   }
 

@@ -40,6 +40,45 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
+// ── Push: recebe notificação do servidor ─────────────────
+self.addEventListener('push', (event) => {
+  if (!event.data) return
+  let payload = {}
+  try { payload = event.data.json() } catch { return }
+
+  const title = payload.title || 'BoxCerto'
+  const options = {
+    body: payload.body || '',
+    icon: '/pwa-192.png',
+    badge: '/pwa-192.png',
+    data: { url: payload.url || '/app/oficina' },
+    // tag agrupa notificações da mesma OS (substitui em vez de empilhar)
+    tag: 'os-' + (payload.osId || 'geral'),
+    requireInteraction: false,
+  }
+  event.waitUntil(self.registration.showNotification(title, options))
+})
+
+// ── NotificationClick: abre a OS ao clicar ───────────────
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = event.notification.data?.url || '/app/oficina'
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clients) => {
+        // Foca aba já aberta se existir
+        const existing = clients.find(c => c.url.startsWith(self.location.origin))
+        if (existing) {
+          existing.navigate(url)
+          return existing.focus()
+        }
+        // Abre nova aba
+        if (self.clients.openWindow) return self.clients.openWindow(url)
+      })
+  )
+})
+
 // ── Fetch: Network First, fallback para cache ────────────
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url)
