@@ -99,7 +99,10 @@ export function usePWAInstall() {
     prompt.prompt()
     const { outcome } = await prompt.userChoice
     _setPrompt(null)   // consome e notifica todas as instâncias
-    if (outcome === 'accepted') setIsInstalled(true)
+    if (outcome === 'accepted') {
+      setIsInstalled(true)
+      window.dataLayer?.push({ event: 'pwa_installed' })
+    }
     return outcome
   }, [prompt])
 

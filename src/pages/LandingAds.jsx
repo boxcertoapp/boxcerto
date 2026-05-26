@@ -180,7 +180,8 @@ function WppPrint({ nome, tipo, cidade, msg, hora, resultado, avatarIdx = 0 }) {
   return (
     <div className="max-w-xs mx-auto w-full">
       <div className="bg-slate-800 rounded-[28px] p-2 shadow-2xl border-4 border-slate-700">
-        <div className="bg-slate-900 rounded-t-2xl px-4 py-1.5 flex justify-between items-center">
+        <div className="overflow-hidden rounded-[20px]">
+        <div className="bg-slate-900 px-4 py-1.5 flex justify-between items-center">
           <span className="text-white text-[10px] font-bold">9:41</span>
           <div className="flex items-center gap-1.5">
             <div className="flex gap-[2px] items-end h-3">
@@ -225,6 +226,7 @@ function WppPrint({ nome, tipo, cidade, msg, hora, resultado, avatarIdx = 0 }) {
             </div>
           )}
         </div>
+        </div>{/* /overflow-hidden rounded-[20px] */}
       </div>
     </div>
   )
@@ -897,7 +899,7 @@ export default function LandingAds() {
       <footer className="bg-slate-900 border-t border-slate-800 px-4 py-8 text-xs text-slate-400">
         <div className="max-w-3xl mx-auto">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b border-slate-800">
-            <Logo size="sm" priority />
+            <Logo size="sm" priority onDark />
             <div className="flex items-center gap-3">
               <a
                 href="https://wa.me/5553997065725"

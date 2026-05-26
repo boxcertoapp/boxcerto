@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, Users, DollarSign, RefreshCw, Clock, AlertCircle, CheckCircle, Brain, Globe, MousePointerClick, ExternalLink, Funnel } from 'lucide-react'
+import { TrendingUp, TrendingDown, Users, DollarSign, RefreshCw, Clock, AlertCircle, CheckCircle, Brain, Globe, MousePointerClick, ExternalLink } from 'lucide-react'
 import { useConfig } from '../../../hooks/useConfig'
 import { supabase } from '../../../lib/supabase'
 
