@@ -1,10 +1,11 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { NavLink, Outlet, Navigate, useNavigate, useLocation } from 'react-router-dom'
-import { Wrench, Clock, TrendingUp, Menu, Package, Zap } from 'lucide-react'
+import { Wrench, Clock, TrendingUp, Menu, Package, Bell, X } from 'lucide-react'
 import { useAuth, hasAccess, trialDaysLeft } from '../../contexts/AuthContext'
 import AnnouncementBanner from '../../components/AnnouncementBanner'
 import Logo from '../../components/Logo'
 import OnboardingWizard from '../../components/OnboardingWizard'
+import { usePushNotifications } from '../../hooks/usePushNotifications'
 
 const tabs = [
   { to: '/app/oficina',    icon: Wrench,     label: 'Oficina' },
@@ -28,6 +29,26 @@ export default function AppLayout() {
     mainMobileRef.current?.scrollTo({ top: 0, behavior: 'instant' })
     mainDesktopRef.current?.scrollTo({ top: 0, behavior: 'instant' })
   }, [location.pathname])
+
+  // Sino de notificações push
+  const { isSupported: pushSupported, permission: pushPermission, isSubscribed, isLoading: pushLoading, subscribe: subscribePush } = usePushNotifications()
+  const [showNotifyPopup, setShowNotifyPopup] = useState(false)
+  const bellRef = useRef(null)
+  // Mostra o sino apenas quando o usuário ainda não decidiu sobre notificações
+  const showBell = pushSupported && pushPermission === 'default' && !isSubscribed
+
+  // Fecha popup ao clicar fora
+  useEffect(() => {
+    if (!showNotifyPopup) return
+    const onOutside = (e) => { if (bellRef.current && !bellRef.current.contains(e.target)) setShowNotifyPopup(false) }
+    document.addEventListener('mousedown', onOutside)
+    return () => document.removeEventListener('mousedown', onOutside)
+  }, [showNotifyPopup])
+
+  const handleBellActivate = async () => {
+    await subscribePush()
+    setShowNotifyPopup(false)
+  }
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -134,7 +155,48 @@ export default function AppLayout() {
 
         {/* Header */}
         <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between sticky top-0 z-40 shrink-0">
-          <Logo size="sm" priority />
+          <div className="flex items-center gap-2">
+            <Logo size="sm" priority />
+            {/* Sino de notificações push — aparece só quando permissão ainda não foi decidida */}
+            {showBell && (
+              <div ref={bellRef} className="relative">
+                <button
+                  onClick={() => setShowNotifyPopup(v => !v)}
+                  aria-label="Ativar notificações"
+                  className="relative flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                >
+                  <Bell className="w-4 h-4" />
+                  {/* Dot indicador */}
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-amber-400 rounded-full ring-2 ring-white" />
+                </button>
+
+                {/* Popup */}
+                {showNotifyPopup && (
+                  <div className="absolute left-0 top-10 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50">
+                    <button onClick={() => setShowNotifyPopup(false)} className="absolute top-3 right-3 text-slate-300 hover:text-slate-500">
+                      <X className="w-4 h-4" />
+                    </button>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center shrink-0">
+                        <Bell className="w-5 h-5 text-amber-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">Notificações de aprovação</p>
+                        <p className="text-xs text-slate-400 leading-snug">Saiba na hora quando o cliente aprovar</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleBellActivate}
+                      disabled={pushLoading}
+                      className="w-full bg-indigo-600 text-white text-sm font-bold py-2.5 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-60"
+                    >
+                      {pushLoading ? 'Ativando...' : 'Ativar notificações'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           <span className="text-xs text-slate-400 truncate max-w-[150px]">{user.oficina}</span>
         </header>
 

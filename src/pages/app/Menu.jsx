@@ -6,8 +6,9 @@ import {
   Users, Cake, Wrench, Calendar, ChevronDown, ChevronUp,
   UserX, MessageCircle, UserPlus, Trash2, HardHat, Tag,
   Link2, Copy, CheckCheck, ToggleLeft, ToggleRight, Loader2,
-  Smartphone
+  Smartphone, Bell, BellOff, BellRing
 } from 'lucide-react'
+import { usePushNotifications } from '../../hooks/usePushNotifications'
 
 // ── Máscaras ──────────────────────────────────────────────
 const formatCNPJ = (val) => {
@@ -642,6 +643,8 @@ export default function Menu() {
     if (result === 'ios') setShowInstallSheet(true)
   }
 
+  const { isSupported: pushSupported, permission: pushPermission, isSubscribed: pushSubscribed, isLoading: pushLoading, subscribe: subscribePush } = usePushNotifications()
+
   // Onboarding: se vier com state.tab, abre essa aba automaticamente
   useEffect(() => {
     if (location.state?.tab) {
@@ -1195,6 +1198,59 @@ export default function Menu() {
               ))}
             </div>
           </div>
+
+          {/* Notificações push */}
+          {pushSupported && (
+            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              <div className="p-4 border-b border-gray-50">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Notificações</p>
+              </div>
+              <div className="p-4">
+                {pushPermission === 'granted' || pushSubscribed ? (
+                  /* Ativas */
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center shrink-0">
+                      <BellRing className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">Notificações ativas</p>
+                      <p className="text-xs text-slate-400">Você recebe alertas quando um cliente aprovar</p>
+                    </div>
+                    <div className="ml-auto w-2 h-2 bg-emerald-500 rounded-full shrink-0" />
+                  </div>
+                ) : pushPermission === 'denied' ? (
+                  /* Bloqueadas */
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center shrink-0">
+                      <BellOff className="w-5 h-5 text-slate-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-700">Notificações bloqueadas</p>
+                      <p className="text-xs text-slate-400 leading-relaxed mt-0.5">Para ativar, abra as configurações do navegador, localize este site e permita as notificações.</p>
+                    </div>
+                  </div>
+                ) : (
+                  /* Não decidido — botão de ativar */
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center shrink-0">
+                      <Bell className="w-5 h-5 text-amber-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-900">Ativar notificações</p>
+                      <p className="text-xs text-slate-400">Saiba na hora quando o cliente aprovar</p>
+                    </div>
+                    <button
+                      onClick={subscribePush}
+                      disabled={pushLoading}
+                      className="shrink-0 bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-60"
+                    >
+                      {pushLoading ? '...' : 'Ativar'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
             <div className="p-4 border-b border-gray-50">
