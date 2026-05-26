@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+import Logo from '../components/Logo'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatWpp(val) {
@@ -125,6 +126,32 @@ export default function BemVindo() {
   const [done,     setDone]     = useState(false)
 
   const nomeDisplay = params.get('nome') || user?.responsavel?.split(' ')[0] || user?.nome?.split(' ')[0] || 'parceiro'
+
+  // Auto-advance: após selecionar uma opção, avança automaticamente após 900ms
+  const [pendingAdvance, setPendingAdvance] = useState(false)
+  const autoTimer = useRef(null)
+
+  const nextRef = useRef(null)
+  useEffect(() => { nextRef.current = next })
+
+  const selectWithAutoAdvance = (setter, value) => {
+    setter(value)
+    if (autoTimer.current) clearTimeout(autoTimer.current)
+    setPendingAdvance(true)
+    autoTimer.current = setTimeout(() => {
+      setPendingAdvance(false)
+      autoTimer.current = null
+      nextRef.current?.()
+    }, 900)
+  }
+
+  // Limpa timer ao trocar de passo ou desmontar
+  useEffect(() => {
+    return () => {
+      if (autoTimer.current) clearTimeout(autoTimer.current)
+      setPendingAdvance(false)
+    }
+  }, [stepIdx])
 
   // ── Calcula os passos que faltam após auth carregar ───────────────────────
   useEffect(() => {
@@ -278,16 +305,11 @@ export default function BemVindo() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex flex-col items-center justify-center px-4 py-10">
+      <style>{`@keyframes fillBar { from { transform: scaleX(0) } to { transform: scaleX(1) } }`}</style>
 
       {/* Logo */}
-      <div className="flex items-center gap-2 mb-8">
-        <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-900">
-          <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        </div>
-        <span className="text-white font-bold text-lg tracking-tight">BoxCerto</span>
+      <div className="mb-8">
+        <Logo onDark size="md" priority />
       </div>
 
       {/* Card principal */}
@@ -339,11 +361,17 @@ export default function BemVindo() {
               {TIPOS.map(opt => (
                 <OptionCard key={opt.value} {...opt}
                   selected={tipo === opt.value}
-                  onClick={() => setTipo(opt.value)} />
+                  onClick={() => selectWithAutoAdvance(setTipo, opt.value)} />
               ))}
             </div>
-            <button onClick={next} disabled={!canAdvance.tipo}
-              className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl text-base hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-40 shadow-lg shadow-indigo-200">
+            <button
+              onClick={() => { if (autoTimer.current) { clearTimeout(autoTimer.current); autoTimer.current = null } setPendingAdvance(false); next() }}
+              disabled={!canAdvance.tipo}
+              className="relative w-full overflow-hidden bg-indigo-600 text-white font-bold py-4 rounded-2xl text-base hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-40 shadow-lg shadow-indigo-200"
+            >
+              {pendingAdvance && canAdvance.tipo && (
+                <span className="absolute inset-0 bg-white/20 origin-left animate-[fillBar_0.9s_linear_forwards]" />
+              )}
               Continuar →
             </button>
           </div>
@@ -365,12 +393,18 @@ export default function BemVindo() {
               {CARGOS.map(opt => (
                 <OptionCard key={opt.value} {...opt}
                   selected={cargo === opt.value}
-                  onClick={() => setCargo(opt.value)}
+                  onClick={() => selectWithAutoAdvance(setCargo, opt.value)}
                   extra={opt.value === 'pesquisando' ? '✓ Acesso liberado, sem cobrança' : null} />
               ))}
             </div>
-            <button onClick={next} disabled={!canAdvance.cargo}
-              className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl text-base hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-40 shadow-lg shadow-indigo-200">
+            <button
+              onClick={() => { if (autoTimer.current) { clearTimeout(autoTimer.current); autoTimer.current = null } setPendingAdvance(false); next() }}
+              disabled={!canAdvance.cargo}
+              className="relative w-full overflow-hidden bg-indigo-600 text-white font-bold py-4 rounded-2xl text-base hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-40 shadow-lg shadow-indigo-200"
+            >
+              {pendingAdvance && canAdvance.cargo && (
+                <span className="absolute inset-0 bg-white/20 origin-left animate-[fillBar_0.9s_linear_forwards]" />
+              )}
               {isLast ? 'Criar meu primeiro orçamento →' : 'Continuar →'}
             </button>
             {isLast && (
