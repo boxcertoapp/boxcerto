@@ -1206,8 +1206,8 @@ export default function Menu() {
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Notificações</p>
               </div>
               <div className="p-4">
-                {pushPermission === 'granted' || pushSubscribed ? (
-                  /* Ativas */
+                {pushSubscribed ? (
+                  /* Subscription ativa no PushManager + salva no Supabase */
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center shrink-0">
                       <BellRing className="w-5 h-5 text-emerald-600" />
@@ -1219,7 +1219,7 @@ export default function Menu() {
                     <div className="ml-auto w-2 h-2 bg-emerald-500 rounded-full shrink-0" />
                   </div>
                 ) : pushPermission === 'denied' ? (
-                  /* Bloqueadas */
+                  /* Browser bloqueou — não podemos fazer nada via código */
                   <div className="flex items-start gap-3">
                     <div className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center shrink-0">
                       <BellOff className="w-5 h-5 text-slate-400" />
@@ -1230,13 +1230,15 @@ export default function Menu() {
                     </div>
                   </div>
                 ) : (
-                  /* Não decidido — botão de ativar */
+                  /* 'default' ou 'granted' sem subscription — botão ativa/reconecta */
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center shrink-0">
                       <Bell className="w-5 h-5 text-amber-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-900">Ativar notificações</p>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {pushPermission === 'granted' ? 'Reconectar notificações' : 'Ativar notificações'}
+                      </p>
                       <p className="text-xs text-slate-400">Saiba na hora quando o cliente aprovar</p>
                     </div>
                     <button
@@ -1244,7 +1246,7 @@ export default function Menu() {
                       disabled={pushLoading}
                       className="shrink-0 bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-60"
                     >
-                      {pushLoading ? '...' : 'Ativar'}
+                      {pushLoading ? '...' : pushPermission === 'granted' ? 'Reconectar' : 'Ativar'}
                     </button>
                   </div>
                 )}

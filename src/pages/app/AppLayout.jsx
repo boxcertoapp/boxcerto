@@ -34,8 +34,9 @@ export default function AppLayout() {
   const { isSupported: pushSupported, permission: pushPermission, isSubscribed, isLoading: pushLoading, subscribe: subscribePush } = usePushNotifications()
   const [showNotifyPopup, setShowNotifyPopup] = useState(false)
   const bellRef = useRef(null)
-  // Mostra o sino apenas quando o usuário ainda não decidiu sobre notificações
-  const showBell = pushSupported && pushPermission === 'default' && !isSubscribed
+  // Mostra o sino quando não tem subscription ativa e não está bloqueado
+  // (cobre 'default' e 'granted' sem subscription — ex: VAPID falhou na primeira tentativa)
+  const showBell = pushSupported && !isSubscribed && pushPermission !== 'denied'
 
   // Fecha popup ao clicar fora
   useEffect(() => {
