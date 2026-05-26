@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BoxCerto — Sistema para Oficina Mecânica | Orçamento por WhatsApp em 2 min</title>
+<meta name="description" content="Sistema de gestão para oficinas mecânicas pequenas. Orçamento por link no WhatsApp, cliente aprova em 1 clique e acompanha o serviço em tempo real. 7 dias grátis, sem cartão.">
+<meta property="og:title" content="BoxCerto — O fim do orçamento perdido no WhatsApp">
+<meta property="og:description" content="Em 2 minutos você manda o orçamento por link. Seu cliente aprova com 1 clique e acompanha o serviço como pedido de delivery. 7 dias grátis.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://boxcerto.com/lpoficina">
+<meta property="og:image" content="https://boxcerto.com/og-image.png">
+<link rel="canonical" href="https://boxcerto.com/lpoficina">
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-55HMQMJQ');</script>
+<!-- End Google Tag Manager -->
+<style>
+/* ===== Design tokens ===== */
+:root {
+  --indigo-50:#eef2ff;--indigo-100:#e0e7ff;--indigo-200:#c7d2fe;--indigo-500:#6366f1;
+  --indigo-600:#4f46e5;--indigo-700:#4338ca;--indigo-900:#312e81;
+  --green-50:#ecfdf5;--green-100:#d1fae5;--green-500:#10b981;--green-600:#059669;
+  --whats:#25D366;--whats-dk:#128C7E;
+  --amber-50:#fffbeb;--amber-100:#fef3c7;--amber-500:#f59e0b;--amber-600:#d97706;
+  --rose-50:#fff1f2;--rose-500:#f43f5e;--rose-600:#e11d48;
+  --slate-50:#f8fafc;--slate-100:#f1f5f9;--slate-200:#e2e8f0;--slate-300:#cbd5e1;
+  --slate-400:#94a3b8;--slate-500:#64748b;--slate-600:#475569;--slate-700:#334155;
+  --slate-800:#1e293b;--slate-900:#0f172a;
+  --bg:#fafaf7;--surface:#ffffff;--ink:#0b1020;--ink-soft:#1f2937;--muted:#5b6472;
+  --font-display:"Bricolage Grotesque","Plus Jakarta Sans",system-ui,sans-serif;
+  --font-body:"Plus Jakarta Sans",system-ui,-apple-system,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  --r-sm:8px;--r-md:12px;--r-lg:18px;--r-xl:28px;--r-full:999px;
+  --sh-1:0 1px 2px rgba(15,23,42,.05),0 1px 1px rgba(15,23,42,.03);
+  --sh-2:0 4px 14px rgba(15,23,42,.06),0 2px 4px rgba(15,23,42,.04);
+  --sh-3:0 18px 40px -12px rgba(15,23,42,.18),0 8px 16px -8px rgba(15,23,42,.08);
+}
+/* ===== Reset ===== */
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;overflow-x:clip}
+body{font-family:var(--font-body);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;line-height:1.5}
+img{max-width:100%;display:block}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+a{color:inherit;text-decoration:none}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:700;letter-spacing:-0.02em;line-height:1.05;margin:0;text-wrap:balance}
+p{margin:0;text-wrap:pretty}
+
+/* ===== Nav ===== */
+.lp-nav{position:sticky;top:16px;z-index:50;margin:0 auto;max-width:1200px;padding:0 32px}
+.lp-nav__inner{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.88);backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);border:1px solid var(--slate-200);border-radius:var(--r-full);padding:10px 12px 10px 18px;box-shadow:var(--sh-2)}
+.lp-nav__brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:800;font-size:17px;letter-spacing:-0.03em}
+.lp-nav__brand b{color:var(--indigo-600)}
+.lp-nav__links{display:flex;gap:24px;font-size:14px;color:var(--slate-600);font-weight:500}
+.lp-nav__links a:hover{color:var(--ink)}
+@media(max-width:720px){.lp-nav{padding:0 16px}.lp-nav__links{display:none}}
+.lp-nav__cta{display:flex;gap:8px;align-items:center}
+.lp-nav__login{font-size:14px;font-weight:600;color:var(--slate-700);padding:0 10px}
+
+/* ===== Buttons ===== */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:13px 22px;border-radius:var(--r-full);font-weight:700;font-size:15px;transition:transform .12s ease,box-shadow .18s ease,background .18s ease;white-space:nowrap}
+.btn--primary{background:var(--ink);color:#fff}
+.btn--primary:hover{transform:translateY(-1px);box-shadow:var(--sh-3)}
+.btn--indigo{background:var(--indigo-600);color:#fff;box-shadow:0 4px 14px -2px rgba(79,70,229,.45)}
+.btn--indigo:hover{background:var(--indigo-700);transform:translateY(-1px)}
+.btn--whats{background:var(--whats);color:#fff;box-shadow:0 4px 14px -2px rgba(37,211,102,.4)}
+.btn--whats:hover{background:var(--whats-dk)}
+.btn--ghost{color:var(--ink);padding:13px 16px}
+.btn--ghost:hover{background:var(--slate-100)}
+.btn--lg{padding:16px 28px;font-size:16px}
+.btn--xl{padding:20px 34px;font-size:18px;border-radius:16px}
+
+/* ===== Hero ===== */
+.hero{max-width:1280px;margin:0 auto;padding:56px 32px 80px;position:relative}
+.hero__grid{display:grid;grid-template-columns:1.05fr 1fr;gap:56px;align-items:center}
+@media(max-width:980px){.hero__grid{grid-template-columns:1fr;gap:40px}}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--slate-200);padding:7px 14px 7px 8px;border-radius:var(--r-full);font-size:13px;font-weight:600;color:var(--slate-700);box-shadow:var(--sh-1)}
+.eyebrow__pill{background:var(--green-100);color:var(--green-600);font-size:11px;padding:3px 9px;border-radius:var(--r-full);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em}
+.hero h1{font-size:clamp(44px,6.4vw,84px);margin:22px 0;letter-spacing:-0.035em}
+.hero h1 .accent{color:var(--indigo-600);position:relative;display:inline-block}
+.hero h1 .accent::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:8px;background:var(--indigo-100);z-index:-1;border-radius:4px}
+.hero__sub{font-size:19px;color:var(--slate-600);max-width:50ch;line-height:1.55}
+.hero__ctas{display:flex;gap:12px;margin:32px 0 22px;flex-wrap:wrap}
+.hero__trust{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--slate-500)}
+.hero__trust strong{color:var(--ink);font-weight:600}
+.avatars{display:inline-flex}
+.avatars span{width:28px;height:28px;border-radius:50%;border:2px solid var(--bg);margin-left:-10px;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff}
+.avatars span:first-child{margin-left:0}
+.avatars span:nth-child(1){background:#f97316}
+.avatars span:nth-child(2){background:#06b6d4}
+.avatars span:nth-child(3){background:#8b5cf6}
+.avatars span:nth-child(4){background:#ec4899}
+.avatars span:nth-child(5){background:var(--slate-700)}
+.hero__stage{position:relative;aspect-ratio:5/5.4;display:flex;align-items:center;justify-content:center}
+.hero__stage::before{content:"";position:absolute;inset:4% -8%;background:radial-gradient(ellipse at 60% 40%,rgba(79,70,229,.16),transparent 60%);border-radius:50%;z-index:0;filter:blur(20px)}
+
+/* ===== License plate ===== */
+.plate{display:inline-grid;grid-template-rows:8px 1fr;background:var(--slate-800);color:#fff;border-radius:4px;padding:0 8px 4px;width:max-content;font-family:var(--font-mono);font-weight:700;letter-spacing:.05em;border:1px solid var(--slate-900);line-height:1}
+.plate__top{font-size:5px;text-align:center;letter-spacing:.18em;color:rgba(255,255,255,.45);margin-top:1px}
+.plate__num{font-size:14px;padding-top:2px}
+
+/* ===== Phone mockup ===== */
+.phone{width:320px;background:#fff;border-radius:38px;padding:14px;box-shadow:0 30px 60px -20px rgba(15,23,42,.25),0 0 0 1.5px var(--slate-300),0 0 0 9px var(--slate-800),0 0 0 10.5px var(--slate-900);position:relative;z-index:2}
+.phone__notch{position:absolute;top:16px;left:50%;transform:translateX(-50%);width:100px;height:22px;background:var(--slate-900);border-radius:14px;z-index:3}
+.phone__screen{background:#fafaf7;border-radius:26px;height:580px;overflow:hidden;position:relative}
+.phone__statusbar{display:flex;justify-content:space-between;align-items:center;padding:12px 22px 8px;font-size:12px;font-weight:600}
+.phone__statusbar svg{width:14px;height:14px}
+.phone__content{padding:8px 16px 18px;font-size:12px;display:flex;flex-direction:column;gap:12px}
+.customer-header{display:flex;align-items:center;gap:10px;padding:6px 4px}
+.customer-logo{width:38px;height:38px;background:#1a1a1a;color:#ef4444;display:grid;place-items:center;border-radius:6px;font-size:7px;font-weight:800;letter-spacing:.04em;text-align:center;line-height:1}
+.customer-name{font-weight:700;font-size:13px;line-height:1.2}
+.customer-phone{color:var(--slate-400);font-size:11px}
+.veiculo-card{background:#fff;border-radius:14px;padding:12px;box-shadow:var(--sh-1);border:1px solid var(--slate-100)}
+.veiculo-card__label{font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;color:var(--slate-400);display:flex;gap:4px;align-items:center;margin-bottom:8px}
+.veiculo-card__row{display:flex;align-items:center;gap:10px}
+.veiculo-card__info{flex:1}
+.veiculo-card__name{font-weight:700;font-size:12px}
+.veiculo-card__client{color:var(--slate-500);font-size:11px}
+.stepper{display:flex;align-items:center;background:#fff;border:1px solid var(--slate-100);padding:16px 6px;border-radius:14px;box-shadow:var(--sh-1);position:relative}
+.stepper__node{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:2}
+.stepper__circle{width:24px;height:24px;border-radius:50%;background:var(--indigo-600);color:#fff;display:grid;place-items:center;font-size:10px;font-weight:700;box-shadow:0 0 0 3px #fff}
+.stepper__circle--pending{background:#fff;color:var(--slate-300);border:1.5px solid var(--slate-200);box-shadow:0 0 0 3px #fff}
+.stepper__label{font-size:9px;color:var(--slate-700);font-weight:600}
+.stepper::before{content:"";position:absolute;top:28px;left:12%;right:12%;height:2px;background:linear-gradient(to right,var(--indigo-600) 75%,var(--slate-200) 75%);z-index:1}
+.ready-card{background:var(--green-50);border:1.5px solid #a7f3d0;border-radius:14px;padding:18px 14px;text-align:center}
+.ready-icon{width:44px;height:44px;margin:0 auto 10px;border-radius:50%;background:var(--green-100);display:grid;place-items:center;color:var(--green-600)}
+.ready-icon svg{width:22px;height:22px}
+.ready-card h4{font-family:var(--font-display);font-size:17px;margin:0 0 4px}
+.ready-card p{font-size:11px;color:var(--slate-500)}
+.phone-cta{background:var(--whats);color:#fff;padding:12px;border-radius:12px;text-align:center;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px}
+.orcamento-row{background:#fff;border:1px solid var(--slate-100);border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;font-size:12px}
+.orcamento-row b{color:var(--indigo-600);font-size:14px}
+
+/* ===== WhatsApp bubbles (hero) ===== */
+.whats-bubble{position:absolute;background:#fff;border-radius:16px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;box-shadow:var(--sh-3);max-width:260px;z-index:4;border:1px solid var(--slate-100)}
+.whats-bubble__icon{width:32px;height:32px;border-radius:50%;background:var(--whats);display:grid;place-items:center;color:#fff;flex-shrink:0}
+.whats-bubble__icon svg{width:18px;height:18px}
+.whats-bubble__body{font-size:12px;line-height:1.35}
+.whats-bubble__head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.whats-bubble__title{font-weight:700;font-size:13px}
+.whats-bubble__time{font-size:10px;color:var(--slate-400);font-family:var(--font-mono)}
+.whats-bubble__msg{color:var(--slate-600);margin-top:2px}
+.whats-bubble--tl{top:4%;left:-10%;transform:rotate(-3deg)}
+.whats-bubble--br{bottom:6%;right:-12%;transform:rotate(2deg)}
+@media(max-width:980px){.whats-bubble--tl,.whats-bubble--br{display:none}}
+
+/* ===== Stat strip ===== */
+.statstrip-wrap{max-width:1200px;margin:-40px auto 80px;padding:0 32px}
+.statstrip-inner{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border:1px solid var(--slate-200);border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--sh-2)}
+@media(max-width:800px){.statstrip-inner{grid-template-columns:repeat(2,1fr)}}
+.stat{padding:28px;border-right:1px solid var(--slate-200)}
+.stat:last-child{border-right:none}
+@media(max-width:800px){.stat:nth-child(2n){border-right:none}.stat:nth-child(-n+2){border-bottom:1px solid var(--slate-200)}}
+.stat__num{font-family:var(--font-display);font-size:36px;font-weight:700;color:var(--indigo-600);letter-spacing:-0.02em;line-height:1}
+.stat__label{font-size:13px;color:var(--slate-600);margin-top:6px;line-height:1.3}
+
+/* ===== Section frame ===== */
+.section{max-width:1240px;margin:0 auto;padding:100px 32px}
+@media(max-width:720px){.section{padding:60px 20px}}
+.section--dark{background:var(--ink);color:#fff;max-width:none;padding:100px 32px}
+@media(max-width:720px){.section--dark{padding:60px 20px}}
+.section--dark .section__inner{max-width:1240px;margin:0 auto}
+.section__head{text-align:center;margin-bottom:56px;max-width:700px;margin-left:auto;margin-right:auto}
+.section__head--left{text-align:left;margin-left:0}
+.kicker{font-family:var(--font-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--indigo-600);margin-bottom:14px;display:inline-block}
+.section--dark .kicker{color:var(--indigo-200)}
+.section h2{font-size:clamp(34px,4.5vw,52px);margin-bottom:16px;letter-spacing:-0.025em}
+.section__lede{font-size:18px;color:var(--slate-600);line-height:1.55}
+.section--dark .section__lede{color:rgba(255,255,255,.7)}
+
+/* ===== Journey ===== */
+.journey{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:stretch}
+@media(max-width:900px){.journey{grid-template-columns:1fr}}
+.journey-step{background:var(--surface);border:1px solid var(--slate-200);border-radius:var(--r-xl);padding:32px 28px;position:relative;box-shadow:var(--sh-1);display:flex;flex-direction:column}
+.journey-step__num{font-family:var(--font-mono);font-size:12px;color:var(--slate-400);letter-spacing:.1em;margin-bottom:8px}
+.journey-step h3{font-size:26px;margin-bottom:10px;letter-spacing:-0.02em}
+.journey-step p{font-size:15px;color:var(--slate-600);margin-bottom:22px;line-height:1.5}
+.journey-step__visual{margin-top:auto;background:var(--slate-50);border-radius:var(--r-lg);padding:18px;border:1px solid var(--slate-200);min-height:240px;display:flex;align-items:center;justify-content:center}
+.journey-step__time{position:absolute;top:18px;right:22px;font-family:var(--font-mono);font-size:11px;background:var(--green-100);color:var(--green-600);padding:4px 9px;border-radius:var(--r-full);letter-spacing:.05em}
+
+/* ===== Mini WhatsApp ===== */
+.wmini{width:100%;background:#e5ddd5;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;background-image:radial-gradient(circle at 12px 12px,rgba(0,0,0,.04) 1px,transparent 1px),radial-gradient(circle at 24px 24px,rgba(0,0,0,.04) 1px,transparent 1px);background-size:36px 36px}
+.wmsg{background:#fff;padding:7px 10px;border-radius:10px 10px 10px 2px;font-size:11px;max-width:80%;box-shadow:0 1px 1px rgba(0,0,0,.05);align-self:flex-start;line-height:1.3}
+.wmsg--me{background:#d9fdd3;align-self:flex-end;border-radius:10px 10px 2px 10px}
+.wmsg b{color:var(--indigo-700);display:block;font-size:11px}
+.wmsg__time{display:block;font-size:9px;color:var(--slate-400);text-align:right;margin-top:2px}
+.wmsg--link{border:1px solid var(--slate-200);padding:0;overflow:hidden}
+.wmsg--link__preview{background:var(--indigo-50);padding:8px 10px;border-bottom:2px solid var(--indigo-600)}
+.wmsg--link__preview b{font-size:11px}
+.wmsg--link__preview span{font-size:9px;color:var(--slate-500);display:block}
+.wmsg--link__body{padding:6px 10px;font-size:10px;color:var(--slate-500)}
+
+/* ===== Kanban mini ===== */
+.kanban{width:100%;display:flex;flex-direction:column;gap:6px;font-size:11px}
+.kanban__row{background:#fff;border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;border:1px solid var(--slate-100);box-shadow:0 1px 0 rgba(0,0,0,.02)}
+.kanban__row .info{flex:1;min-width:0;overflow:hidden}
+.kanban__row .info b{display:block;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kanban__row .info span{color:var(--slate-400);font-size:10px}
+.kanban__row .price{font-weight:700;color:var(--ink);font-size:11px;white-space:nowrap}
+.kanban__head{font-family:var(--font-mono);font-size:9px;color:var(--slate-400);letter-spacing:.1em;text-transform:uppercase;padding:0 4px;margin-bottom:-2px;display:flex;align-items:center;gap:5px}
+.kanban__dot{width:7px;height:7px;border-radius:50%}
+.kanban__dot--green{background:var(--green-500)}
+.kanban__dot--amber{background:var(--amber-500)}
+
+/* ===== Track mini ===== */
+.track-mini{background:#fff;border-radius:12px;padding:12px;width:100%;box-shadow:var(--sh-1);border:1px solid var(--slate-100);display:flex;flex-direction:column;gap:10px}
+.track-mini__head{display:flex;gap:8px;align-items:center;padding-bottom:8px;border-bottom:1px dashed var(--slate-200)}
+.track-mini__head .customer-logo{width:28px;height:28px;font-size:5px}
+.track-mini__head .name{font-size:11px;font-weight:700;line-height:1.1}
+.track-mini__head .ph{font-size:9px;color:var(--slate-400)}
+.track-mini__stepper{padding:4px 0}
+.track-mini__ready{background:var(--green-50);border:1px solid #a7f3d0;border-radius:8px;padding:10px;font-size:11px;text-align:center;font-weight:700;color:var(--green-600)}
+
+/* ===== Reasons ===== */
+.reasons{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+@media(max-width:900px){.reasons{grid-template-columns:1fr}}
+.reason{background:var(--surface);border:1px solid var(--slate-200);border-radius:var(--r-xl);padding:36px;position:relative;overflow:hidden}
+.reason__icon{width:52px;height:52px;border-radius:var(--r-md);background:var(--indigo-50);color:var(--indigo-600);display:grid;place-items:center;margin-bottom:22px}
+.reason__icon svg{width:26px;height:26px}
+.reason h3{font-size:22px;margin-bottom:10px}
+.reason p{font-size:15px;color:var(--slate-600);line-height:1.55}
+.reason__big{position:absolute;top:-10px;right:10px;font-family:var(--font-display);font-size:130px;font-weight:800;color:var(--slate-100);z-index:0;line-height:1;letter-spacing:-0.04em}
+.reason>*{position:relative;z-index:1}
+
+/* ===== Antes/Depois ===== */
+.bsab{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--slate-200);border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--slate-200)}
+@media(max-width:800px){.bsab{grid-template-columns:1fr}}
+.bsab__col{background:var(--surface);padding:40px}
+@media(max-width:600px){.bsab__col{padding:28px 24px}}
+.bsab__col--bad{background:#fefcfb}
+.bsab__col--good{background:#f6f8ff}
+.bsab__title{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:22px;font-weight:700;margin-bottom:26px;letter-spacing:-0.02em}
+.bsab__title .x,.bsab__title .check{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;flex-shrink:0}
+.bsab__title .x{background:var(--rose-500)}
+.bsab__title .check{background:var(--green-500)}
+.bsab ul{list-style:none;padding:0;margin:0;display:grid;gap:14px}
+.bsab li{display:flex;gap:12px;align-items:flex-start;font-size:15px;color:var(--slate-700);line-height:1.45}
+.bsab li svg{flex-shrink:0;margin-top:2px}
+.bsab__col--bad li svg{color:var(--rose-500)}
+.bsab__col--good li svg{color:var(--green-500)}
+
+/* ===== Module tour ===== */
+.modules{display:grid;grid-template-columns:1.2fr 1fr;gap:32px}
+@media(max-width:900px){.modules{grid-template-columns:1fr}}
+.module-tabs{display:flex;flex-direction:column;gap:8px}
+.module-tab{text-align:left;background:var(--surface);border:1px solid var(--slate-200);border-radius:var(--r-lg);padding:20px 22px;transition:all .2s ease;display:flex;gap:16px;align-items:flex-start;color:inherit}
+.module-tab:hover{border-color:var(--slate-300)}
+.module-tab[aria-selected="true"]{background:var(--ink);color:#fff;border-color:var(--ink);box-shadow:var(--sh-3)}
+.module-tab__icon{width:38px;height:38px;border-radius:var(--r-sm);background:var(--indigo-50);color:var(--indigo-600);display:grid;place-items:center;flex-shrink:0}
+.module-tab[aria-selected="true"] .module-tab__icon{background:var(--indigo-600);color:#fff}
+.module-tab__icon svg{width:20px;height:20px}
+.module-tab__body h4{font-family:var(--font-display);font-size:18px;margin:0 0 4px}
+.module-tab__body p{font-size:13px;color:var(--slate-500)}
+.module-tab[aria-selected="true"] .module-tab__body p{color:rgba(255,255,255,.65)}
+.module-preview{background:var(--surface);border:1px solid var(--slate-200);border-radius:var(--r-xl);padding:20px;box-shadow:var(--sh-2);min-height:440px;position:relative;overflow:hidden}
+.module-panel{display:none}
+.module-panel[data-active="true"]{display:block}
+.dash-head{display:flex;flex-direction:column;gap:4px;padding:8px 4px 14px}
+.dash-head__hi{font-size:12px;color:var(--slate-500)}
+.dash-head__title{font-family:var(--font-display);font-size:22px;font-weight:700}
+.dash-pills{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.dash-pill{border-radius:10px;padding:12px 8px;text-align:center;border:1px solid}
+.dash-pill__n{font-family:var(--font-display);font-size:22px;font-weight:700}
+.dash-pill__l{font-size:10px}
+.dash-pill--green{background:var(--green-50);border-color:#a7f3d0;color:var(--green-600)}
+.dash-pill--blue{background:var(--indigo-50);border-color:#c7d2fe;color:var(--indigo-600)}
+.dash-pill--amber{background:var(--amber-50);border-color:#fde68a;color:var(--amber-600)}
+.dash-pill--mute{background:var(--slate-50);border-color:var(--slate-200);color:var(--slate-500)}
+.fin-hero{background:var(--indigo-600);color:#fff;border-radius:var(--r-lg);padding:20px;margin-bottom:12px;position:relative;overflow:hidden}
+.fin-hero::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 90% 30%,rgba(255,255,255,.15),transparent 50%)}
+.fin-hero__label{font-size:12px;opacity:.8}
+.fin-hero__num{font-family:var(--font-display);font-size:36px;font-weight:700;letter-spacing:-0.02em}
+.fin-hero__pill{display:inline-block;background:rgba(255,255,255,.18);padding:4px 10px;border-radius:var(--r-full);font-size:11px;margin-top:6px;font-family:var(--font-mono)}
+.fin-hero__split{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:14px;position:relative}
+.fin-hero__split div{font-size:11px;opacity:.7}
+.fin-hero__split b{display:block;font-size:16px;font-weight:700;opacity:1}
+.fin-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fin-card{background:var(--surface);border:1px solid var(--slate-200);border-radius:var(--r-md);padding:14px}
+.fin-card__h{display:flex;gap:6px;align-items:center;font-size:11px;color:var(--slate-500);font-weight:600}
+.fin-card__h svg{width:12px;height:12px}
+.fin-card__n{font-family:var(--font-display);font-size:20px;font-weight:700;margin-top:6px}
+.fin-card__sub{font-size:10px;color:var(--slate-400);margin-top:2px}
+.est-list{display:flex;flex-direction:column;gap:6px}
+.est-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--slate-200);border-radius:var(--r-md);padding:10px 12px;font-size:12px}
+.est-row b{font-weight:700}
+.est-row .sku{font-family:var(--font-mono);font-size:10px;color:var(--slate-400)}
+.est-qty{font-family:var(--font-mono);font-size:11px;background:var(--slate-100);padding:2px 8px;border-radius:var(--r-full)}
+.est-qty--low{background:var(--rose-50);color:var(--rose-600)}
+.est-qty--ok{background:var(--green-50);color:var(--green-600)}
+.rep-list{display:flex;flex-direction:column;gap:8px}
+.rep-row{background:var(--surface);border:1px solid var(--slate-200);border-radius:var(--r-md);padding:12px 14px;display:flex;align-items:center;gap:12px}
+.rep-row__icon{width:32px;height:32px;border-radius:8px;display:grid;place-items:center}
+.rep-row__icon--indigo{background:var(--indigo-50);color:var(--indigo-600)}
+.rep-row__icon--pink{background:#fce7f3;color:#db2777}
+.rep-row__icon--amber{background:var(--amber-50);color:var(--amber-600)}
+.rep-row__icon--green{background:var(--green-50);color:var(--green-600)}
+.rep-row b{display:block;font-size:13px}
+.rep-row span{font-size:11px;color:var(--slate-500)}
+
+/* ===== Proof grid ===== */
+.proof-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+@media(max-width:900px){.proof-grid{grid-template-columns:1fr}}
+.proof-card{background:#e5ddd5;border-radius:var(--r-lg);padding:14px;border:1px solid var(--slate-200);background-image:radial-gradient(circle at 12px 12px,rgba(0,0,0,.04) 1px,transparent 1px),radial-gradient(circle at 30px 30px,rgba(0,0,0,.04) 1px,transparent 1px);background-size:40px 40px;box-shadow:var(--sh-2)}
+.proof-card__contact{display:flex;align-items:center;gap:10px;padding:4px 6px 12px}
+.proof-card__avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px}
+.proof-card__name{font-size:13px;font-weight:700}
+.proof-card__role{font-size:11px;color:var(--slate-500)}
+.proof-card__msgs{display:flex;flex-direction:column;gap:6px}
+.proof-card__msgs .wmsg{font-size:13px;max-width:92%;padding:10px 12px}
+
+/* ===== Pricing ===== */
+.pricing{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:880px;margin:0 auto}
+@media(max-width:760px){.pricing{grid-template-columns:1fr}}
+.price-card{background:var(--surface);border:1px solid var(--slate-200);border-radius:var(--r-xl);padding:36px;position:relative;display:flex;flex-direction:column}
+.price-card--featured{background:var(--ink);color:#fff;border-color:var(--ink);transform:translateY(-8px);box-shadow:var(--sh-3)}
+@media(max-width:760px){.price-card--featured{transform:none}}
+.price-card__badge{position:absolute;top:-12px;right:24px;background:var(--indigo-600);color:#fff;font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;padding:5px 12px;border-radius:var(--r-full);text-transform:uppercase}
+.price-card h3{font-size:22px;margin-bottom:4px}
+.price-card__sub{font-size:14px;color:var(--slate-500)}
+.price-card--featured .price-card__sub{color:rgba(255,255,255,.6)}
+.price-card__amt{display:flex;align-items:baseline;gap:8px;margin:24px 0 4px}
+.price-card__amt .cur{font-size:18px;font-weight:700}
+.price-card__amt .val{font-family:var(--font-display);font-size:64px;font-weight:700;letter-spacing:-0.03em;line-height:1}
+.price-card__amt .per{font-size:14px;color:var(--slate-500)}
+.price-card--featured .price-card__amt .per{color:rgba(255,255,255,.6)}
+.price-card__economy{background:var(--green-100);color:var(--green-600);border-radius:var(--r-full);padding:6px 12px;font-size:12px;font-weight:700;margin-top:8px;display:inline-block}
+.price-card--featured .price-card__economy{background:rgba(16,185,129,.2);color:#6ee7b7}
+.price-card ul{list-style:none;padding:0;margin:28px 0;display:grid;gap:12px;flex:1}
+.price-card li{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45}
+.price-card li svg{flex-shrink:0;margin-top:2px;color:var(--green-500)}
+.price-card .btn{width:100%;justify-content:center}
+
+/* ===== FAQ ===== */
+.faq{max-width:880px;margin:0 auto}
+.faq details{background:var(--surface);border:1px solid var(--slate-200);border-radius:var(--r-lg);margin-bottom:12px;overflow:hidden;transition:box-shadow .2s ease}
+.faq details[open]{box-shadow:var(--sh-2);border-color:var(--slate-300)}
+.faq summary{list-style:none;cursor:pointer;padding:22px 26px;font-family:var(--font-display);font-size:18px;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";width:28px;height:28px;border-radius:50%;background:var(--slate-100);display:grid;place-items:center;font-size:20px;font-weight:400;color:var(--slate-600);transition:transform .2s ease,background .2s ease;flex-shrink:0}
+.faq details[open] summary::after{content:"−";background:var(--indigo-600);color:#fff}
+.faq__body{padding:0 26px 26px;font-size:15px;color:var(--slate-600);line-height:1.6}
+@media(max-width:600px){.faq summary{font-size:15px;padding:18px 20px}.faq__body{padding:0 20px 20px}}
+
+/* ===== Final CTA ===== */
+.finalcta{background:var(--ink);color:#fff;border-radius:var(--r-xl);padding:80px 56px;text-align:center;position:relative;overflow:hidden}
+@media(max-width:720px){.finalcta{padding:56px 28px}}
+.finalcta::before{content:"";position:absolute;inset:-100px -50px auto auto;width:500px;height:500px;background:radial-gradient(circle,rgba(79,70,229,.4),transparent 60%);filter:blur(40px)}
+.finalcta::after{content:"";position:absolute;inset:auto auto -200px -100px;width:500px;height:500px;background:radial-gradient(circle,rgba(37,211,102,.18),transparent 60%);filter:blur(40px)}
+.finalcta>*{position:relative;z-index:1}
+.finalcta h2{font-size:clamp(36px,5vw,60px);margin-bottom:18px;letter-spacing:-0.025em;color:#fff}
+.finalcta p{font-size:19px;color:rgba(255,255,255,.7);max-width:56ch;margin:0 auto 32px}
+.finalcta .btn--xl{background:#fff;color:var(--ink)}
+.finalcta .btn--xl:hover{transform:translateY(-2px);box-shadow:0 24px 50px -10px rgba(0,0,0,.4)}
+.finalcta__row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.finalcta__bullets{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;margin-top:30px;font-size:14px;color:rgba(255,255,255,.55)}
+.finalcta__bullets span{display:flex;align-items:center;gap:8px}
+
+/* ===== Footer ===== */
+.footer{border-top:1px solid var(--slate-200);padding:40px 32px;text-align:center;font-size:13px;color:var(--slate-500)}
+.footer__brand{display:inline-flex;align-items:center;gap:8px;margin-bottom:8px;font-family:var(--font-display);font-weight:800;color:var(--ink);font-size:16px;letter-spacing:-0.02em}
+.footer__links{display:flex;gap:20px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.footer__links a{color:var(--slate-400);font-size:12px}
+.footer__links a:hover{color:var(--slate-600)}
+
+/* ===== WhatsApp FAB ===== */
+.whats-fab{position:fixed;bottom:22px;right:22px;width:56px;height:56px;border-radius:50%;background:var(--whats);color:#fff;display:grid;place-items:center;box-shadow:0 12px 28px -6px rgba(37,211,102,.5),0 0 0 0 rgba(37,211,102,.4);z-index:60;animation:pulse 2.4s infinite ease-out}
+.whats-fab svg{width:28px;height:28px}
+@keyframes pulse{0%{box-shadow:0 12px 28px -6px rgba(37,211,102,.5),0 0 0 0 rgba(37,211,102,.5)}70%{box-shadow:0 12px 28px -6px rgba(37,211,102,.5),0 0 0 18px rgba(37,211,102,0)}100%{box-shadow:0 12px 28px -6px rgba(37,211,102,.5),0 0 0 0 rgba(37,211,102,0)}}
+@media(prefers-reduced-motion:reduce){.whats-fab{animation:none}}
+
+/* ===== Mobile sticky CTA ===== */
+.mobile-cta-bar{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--slate-200);padding:12px 20px;padding-bottom:max(12px,env(safe-area-inset-bottom));z-index:55;box-shadow:0 -4px 20px rgba(0,0,0,.08)}
+@media(max-width:720px){.mobile-cta-bar{display:flex;justify-content:center}.mobile-cta-bar .btn{width:100%;justify-content:center;font-size:15px}}
+</style>
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-55HMQMJQ" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="lp">
+
+<!-- ============ NAV ============ -->
+<nav class="lp-nav">
+  <div class="lp-nav__inner">
+    <div class="lp-nav__brand">
+      <img src="/logo.svg" alt="BoxCerto" width="28" height="28" style="border-radius:6px;display:block;flex-shrink:0">
+      Box<b>Certo</b>
+    </div>
+    <div class="lp-nav__links">
+      <a href="#como-funciona">Como funciona</a>
+      <a href="#modulos">Módulos</a>
+      <a href="#provas">Quem usa</a>
+      <a href="#precos">Preços</a>
+    </div>
+    <div class="lp-nav__cta">
+      <a class="lp-nav__login" href="/login">Entrar</a>
+      <a class="btn btn--indigo" href="/cadastro?utm_source=lpoficina&utm_medium=nav&utm_content=cta_nav" onclick="trackCta('nav')">Teste 7 dias grátis</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="hero__grid">
+    <div>
+      <span class="eyebrow">
+        <span class="eyebrow__pill">Novo</span>
+        Cliente acompanha pelo WhatsApp em tempo real
+      </span>
+      <h1>O fim do orçamento <span class="accent">perdido no WhatsApp</span>.</h1>
+      <p class="hero__sub">Em 2 minutos você manda o orçamento por link. Seu cliente aprova com 1 clique e acompanha o serviço como pedido de delivery. Sem planilha, sem caderno, sem aprender sistema complicado.</p>
+      <div class="hero__ctas">
+        <a class="btn btn--indigo btn--lg" href="/cadastro?utm_source=lpoficina&utm_medium=hero&utm_content=cta_hero" onclick="trackCta('hero')">
+          Começar grátis · 7 dias
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </a>
+        <a class="btn btn--ghost btn--lg" href="#como-funciona">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Ver como funciona
+        </a>
+      </div>
+      <div class="hero__trust">
+        <div class="avatars">
+          <span>JR</span><span>MC</span><span>RS</span><span>AF</span><span>+</span>
+        </div>
+        <div>
+          <strong>Mecânicos de verdade usam.</strong><br/>
+          Sem cartão de crédito · Cancela quando quiser
+        </div>
+      </div>
+    </div>
+
+    <div class="hero__stage">
+      <div class="whats-bubble whats-bubble--tl">
+        <div class="whats-bubble__icon">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.2-1.7-.8-2-.9-.3-.1-.4-.2-.6.2-.2.3-.7.9-.8 1.1-.2.2-.3.2-.6 0-.3-.2-1.2-.4-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.4.4-.5.1-.2.2-.3.3-.5 0-.2 0-.3 0-.5 0-.2-.6-1.6-.9-2.2-.2-.5-.4-.5-.6-.5-.2 0-.3 0-.5 0-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.2 0 1.3.9 2.5 1 2.7.1.2 1.8 2.8 4.4 3.9.6.3 1.1.4 1.5.5.6.2 1.2.2 1.7.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.2-.2-.5-.4z"/><path d="M12 2C6.5 2 2 6.5 2 12c0 1.7.5 3.4 1.3 4.9L2 22l5.3-1.4c1.4.8 3 1.2 4.7 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18.3c-1.5 0-3-.4-4.3-1.2l-.3-.2-3.1.8.8-3-.2-.3C4 15 3.5 13.5 3.5 12c0-4.7 3.8-8.5 8.5-8.5s8.5 3.8 8.5 8.5-3.8 8.3-8.5 8.3z"/></svg>
+        </div>
+        <div class="whats-bubble__body">
+          <div class="whats-bubble__head">
+            <span class="whats-bubble__title">BoxCerto</span>
+            <span class="whats-bubble__time">agora</span>
+          </div>
+          <div class="whats-bubble__msg">Olá Lucas! Seu orçamento de R$ 1.025,00 chegou. Toque pra aprovar 👇</div>
+        </div>
+      </div>
+
+      <div class="phone">
+        <div class="phone__notch"></div>
+        <div class="phone__screen">
+          <div class="phone__statusbar">
+            <span>09:42</span>
+            <span style="display:flex;gap:6px;align-items:center">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="6" width="18" height="12" rx="2" ry="2"/><rect x="20" y="10" width="2" height="4"/></svg>
+            </span>
+          </div>
+          <div class="phone__content">
+            <div class="customer-header">
+              <div class="customer-logo">AUTO<br>CERTO</div>
+              <div>
+                <div class="customer-name">Natusch Auto Certo</div>
+                <div class="customer-phone">(53) 3199-8786</div>
+              </div>
+            </div>
+            <div class="veiculo-card">
+              <div class="veiculo-card__label">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+                VEÍCULO
+              </div>
+              <div class="veiculo-card__row">
+                <div class="plate"><div class="plate__top">BRASIL</div><div class="plate__num">APH-3B95</div></div>
+                <div class="veiculo-card__info">
+                  <div class="veiculo-card__name">Focus hatch 1.6 2008</div>
+                  <div class="veiculo-card__client">Lucas Leal</div>
+                </div>
+              </div>
+            </div>
+            <div class="stepper">
+              <div class="stepper__node"><div class="stepper__circle">✓</div><div class="stepper__label">Orçamento</div></div>
+              <div class="stepper__node"><div class="stepper__circle">✓</div><div class="stepper__label">Aprovado</div></div>
+              <div class="stepper__node"><div class="stepper__circle">✓</div><div class="stepper__label">Em serviço</div></div>
+              <div class="stepper__node"><div class="stepper__circle stepper__circle--pending">4</div><div class="stepper__label">Pronto</div></div>
+            </div>
+            <div class="ready-card">
+              <div class="ready-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              </div>
+              <h4>Pronto para retirada!</h4>
+              <p>Seu veículo está pronto. Fale com a oficina pra combinar a retirada.</p>
+            </div>
+            <div class="phone-cta">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12c0 1.7.5 3.4 1.3 4.9L2 22l5.3-1.4c1.4.8 3 1.2 4.7 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>
+              Falar com a oficina no WhatsApp
+            </div>
+            <div class="orcamento-row">
+              <span>Ver orçamento aprovado</span>
+              <b>R$ 1.025,00</b>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="whats-bubble whats-bubble--br">
+        <div class="whats-bubble__icon" style="background:var(--indigo-600)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m22 4-10 10-3-3"/></svg>
+        </div>
+        <div class="whats-bubble__body">
+          <div class="whats-bubble__head">
+            <span class="whats-bubble__title">Cliente aprovou</span>
+            <span class="whats-bubble__time">2 min</span>
+          </div>
+          <div class="whats-bubble__msg">Lucas Leal aprovou R$ 1.025,00 · Focus 2008</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STAT STRIP ============ -->
+<div class="statstrip-wrap">
+  <div class="statstrip-inner">
+    <div class="stat"><div class="stat__num">2 min</div><div class="stat__label">Pra montar o primeiro orçamento</div></div>
+    <div class="stat"><div class="stat__num">1 clique</div><div class="stat__label">Pro cliente aprovar pelo WhatsApp</div></div>
+    <div class="stat"><div class="stat__num">7 dias</div><div class="stat__label">Grátis, sem cartão de crédito</div></div>
+    <div class="stat"><div class="stat__num">R$ 79,90</div><div class="stat__label">Por mês no plano anual</div></div>
+  </div>
+</div>
+
+<!-- ============ JORNADA ============ -->
+<section class="section" id="como-funciona">
+  <div class="section__head">
+    <span class="kicker">Como funciona</span>
+    <h2>Do orçamento na sua mão até o carro saindo da oficina.</h2>
+    <p class="section__lede">Três passos. Cinco minutos pra entender. Zero treinamento pra usar.</p>
+  </div>
+  <div class="journey">
+    <article class="journey-step">
+      <div class="journey-step__time">~ 2 min</div>
+      <div class="journey-step__num">PASSO 01</div>
+      <h3>Você cria a OS.</h3>
+      <p>Placa, modelo, cliente, peças e mão de obra. Estoque atualiza sozinho. A OS já entra no kanban.</p>
+      <div class="journey-step__visual">
+        <div class="kanban">
+          <div class="kanban__head"><span class="kanban__dot kanban__dot--amber"></span>ORÇAMENTOS ABERTOS</div>
+          <div class="kanban__row">
+            <div class="plate"><div class="plate__top">BRASIL</div><div class="plate__num">IYU-6136</div></div>
+            <div class="info"><b>Onix LT 1.0 2022</b><span>Gabriel Pereira</span></div>
+            <div class="price">R$ 880</div>
+          </div>
+          <div class="kanban__row" style="background:var(--indigo-50);border-color:var(--indigo-200)">
+            <div class="plate"><div class="plate__top">BRASIL</div><div class="plate__num">APH-3B95</div></div>
+            <div class="info"><b>Focus 1.6 2008</b><span>Lucas Leal · agora</span></div>
+            <div class="price" style="color:var(--indigo-600)">R$ 1.025</div>
+          </div>
+          <div class="kanban__row">
+            <div class="plate"><div class="plate__top">BRASIL</div><div class="plate__num">IOL-8279</div></div>
+            <div class="info"><b>Gol 2004</b><span>R. Filho · 18/05</span></div>
+            <div class="price">R$ 420</div>
+          </div>
+        </div>
+      </div>
+    </article>
+    <article class="journey-step">
+      <div class="journey-step__time">~ 5 seg</div>
+      <div class="journey-step__num">PASSO 02</div>
+      <h3>Cliente recebe link no WhatsApp.</h3>
+      <p>Você toca em "enviar". O cliente recebe uma mensagem bonita com o orçamento detalhado, no celular dele.</p>
+      <div class="journey-step__visual">
+        <div class="wmini">
+          <div class="wmsg wmsg--me" style="background:#fff"><b>Auto Certo</b>Lucas, boa tarde! Segue orçamento do Focus 👇<span class="wmsg__time">14:32</span></div>
+          <div class="wmsg wmsg--me wmsg--link">
+            <div class="wmsg--link__preview"><b>Orçamento · Focus 2008</b><span>boxcerto.com/o/APH-3B95</span></div>
+            <div class="wmsg--link__body">Mão de obra + 3 peças · R$ 1.025,00</div>
+            <div style="padding:4px 10px 8px 10px;text-align:right"><span class="wmsg__time">14:32 ✓✓</span></div>
+          </div>
+          <div class="wmsg">Pode aprovar 🙏<span class="wmsg__time">14:34</span></div>
+        </div>
+      </div>
+    </article>
+    <article class="journey-step">
+      <div class="journey-step__time">~ 1 clique</div>
+      <div class="journey-step__num">PASSO 03</div>
+      <h3>Aprova e acompanha em tempo real.</h3>
+      <p>Cliente clica, aprova, e ganha uma tela pra acompanhar o status. Cara de empresa grande sem custar caro.</p>
+      <div class="journey-step__visual" style="background:#fafaf7">
+        <div class="track-mini">
+          <div class="track-mini__head">
+            <div class="customer-logo">AUTO<br>CERTO</div>
+            <div><div class="name">Natusch Auto Certo</div><div class="ph">(53) 3199-8786</div></div>
+          </div>
+          <div class="track-mini__stepper">
+            <div class="stepper" style="padding:10px 4px">
+              <div class="stepper__node"><div class="stepper__circle" style="width:18px;height:18px;font-size:8px">✓</div><div class="stepper__label" style="font-size:8px">Orçamento</div></div>
+              <div class="stepper__node"><div class="stepper__circle" style="width:18px;height:18px;font-size:8px">✓</div><div class="stepper__label" style="font-size:8px">Aprovado</div></div>
+              <div class="stepper__node"><div class="stepper__circle" style="width:18px;height:18px;font-size:8px">✓</div><div class="stepper__label" style="font-size:8px">Em serviço</div></div>
+              <div class="stepper__node"><div class="stepper__circle stepper__circle--pending" style="width:18px;height:18px;font-size:8px">4</div><div class="stepper__label" style="font-size:8px">Pronto</div></div>
+            </div>
+          </div>
+          <div class="track-mini__ready">✓ Aprovado · R$ 1.025,00</div>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ============ POR QUE BOXCERTO ============ -->
+<section class="section" style="padding-top:0">
+  <div class="section__head">
+    <span class="kicker">Por que BoxCerto</span>
+    <h2>Feito pra mecânico de verdade.<br>Não pra rede grande.</h2>
+    <p class="section__lede">Concorrentes existem. Quase todos tentam vender pra rede de 50 oficinas com setor de TI. Você é dono e mecânico ao mesmo tempo — a gente pensou em você.</p>
+  </div>
+  <div class="reasons">
+    <article class="reason">
+      <span class="reason__big">01</span>
+      <div class="reason__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <h3>Setup em minutos.<br>Não em dias.</h3>
+      <p>Cria conta, cadastra a oficina e já manda o primeiro orçamento. Sem implantação, sem migração de dados, sem reunião com consultor. Você abre e usa.</p>
+    </article>
+    <article class="reason">
+      <span class="reason__big">02</span>
+      <div class="reason__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 2 2 6.5 2 12c0 1.7.5 3.4 1.3 4.9L2 22l5.3-1.4c1.4.8 3 1.2 4.7 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg></div>
+      <h3>Orçamento por WhatsApp em 1 clique.</h3>
+      <p>Link bonito, com sua marca, no celular do cliente. Ele aprova sem ter que digitar nada, sem baixar app, sem criar conta. Aprovou? Já vira OS no seu painel.</p>
+    </article>
+    <article class="reason">
+      <span class="reason__big">03</span>
+      <div class="reason__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+      <h3>Simples que mecânico de verdade usa.</h3>
+      <p>Sua mãe consegue abrir e entender. Seu funcionário não precisa de treinamento. Você não precisa parar pra "aprender o sistema". Tudo onde tem que estar.</p>
+    </article>
+  </div>
+</section>
+
+<!-- ============ ANTES / DEPOIS ============ -->
+<section class="section">
+  <div class="section__head">
+    <span class="kicker">Antes vs Depois</span>
+    <h2>A rotina muda do dia pra noite.</h2>
+  </div>
+  <div class="bsab">
+    <div class="bsab__col bsab__col--bad">
+      <div class="bsab__title">
+        <span class="x"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
+        Antes do BoxCerto
+      </div>
+      <ul>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Orçamento escrito no caderno que ninguém acha depois</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cliente "vou pensar e te respondo" e some pra sempre</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Ligando 4 vezes pra avisar que o carro tá pronto</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Fim do mês: "ganhei alguma coisa?" sem saber a resposta</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Peça acabou no meio do serviço e ninguém avisou</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cliente bom esquecido — ninguém liga pra trazer de volta</li>
+      </ul>
+    </div>
+    <div class="bsab__col bsab__col--good">
+      <div class="bsab__title">
+        <span class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+        Depois do BoxCerto
+      </div>
+      <ul>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Orçamento sai por link no WhatsApp em 2 minutos</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Cliente aprova com 1 clique. Você fica sabendo na hora.</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Cliente acompanha pelo celular. Você nem precisa ligar.</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Lucro do mês na tela. Sabe quanto entrou e quanto saiu.</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Estoque atualiza sozinho. Você vê quando tá acabando.</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Relatório de cliente inativo: chama de volta no clique.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MODULE TOUR ============ -->
+<section class="section" id="modulos" style="padding-top:0">
+  <div class="section__head section__head--left">
+    <span class="kicker">Tudo num só lugar</span>
+    <h2>Quatro telas. Toda a oficina.</h2>
+    <p class="section__lede" style="max-width:60ch">Clique em cada uma pra ver como funciona por dentro.</p>
+  </div>
+  <div class="modules">
+    <div class="module-tabs">
+      <button class="module-tab" data-module="oficina" aria-selected="true">
+        <div class="module-tab__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+        <div class="module-tab__body"><h4>Oficina</h4><p>Kanban de OS — Prontos, Manutenção, Orçamentos, Agendados</p></div>
+      </button>
+      <button class="module-tab" data-module="financeiro" aria-selected="false">
+        <div class="module-tab__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+        <div class="module-tab__body"><h4>Financeiro</h4><p>Lucro líquido do mês, receitas, custos e despesas em tempo real</p></div>
+      </button>
+      <button class="module-tab" data-module="estoque" aria-selected="false">
+        <div class="module-tab__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+        <div class="module-tab__body"><h4>Estoque</h4><p>Peças, custos, vendas e alerta de mínimo automático</p></div>
+      </button>
+      <button class="module-tab" data-module="relatorios" aria-selected="false">
+        <div class="module-tab__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="module-tab__body"><h4>Relatórios</h4><p>Clientes inativos, aniversariantes, técnicos, serviços do mês</p></div>
+      </button>
+    </div>
+    <div class="module-preview">
+      <div class="module-panel" data-module="oficina" data-active="true">
+        <div class="dash-head"><div class="dash-head__hi">Boa noite 👋</div><div class="dash-head__title">9 OS em andamento</div></div>
+        <div class="dash-pills">
+          <div class="dash-pill dash-pill--green"><div class="dash-pill__n">4</div><div class="dash-pill__l">Prontos</div></div>
+          <div class="dash-pill dash-pill--blue"><div class="dash-pill__n">1</div><div class="dash-pill__l">Manutenção</div></div>
+          <div class="dash-pill dash-pill--amber"><div class="dash-pill__n">4</div><div class="dash-pill__l">Orçamentos</div></div>
+          <div class="dash-pill dash-pill--mute"><div class="dash-pill__n">0</div><div class="dash-pill__l">Agendados</div></div>
+        </div>
+        <div class="kanban">
+          <div class="kanban__head"><span class="kanban__dot kanban__dot--green"></span>PRONTOS PARA RETIRAR</div>
+          <div class="kanban__row"><div class="plate"><div class="plate__top">BRASIL</div><div class="plate__num">QPL-4I82</div></div><div class="info"><b>Fiat Argo 1.0 Flex 2019</b><span>Rafael Ferreira</span></div><div class="price">R$ 320</div></div>
+          <div class="kanban__row"><div class="plate"><div class="plate__top">BRASIL</div><div class="plate__num">EEE-1133</div></div><div class="info"><b>Volvo XC40 T-5 2018</b><span>Rogério Filho</span></div><div class="price">R$ 3.870</div></div>
+          <div class="kanban__row"><div class="plate"><div class="plate__top">BRASIL</div><div class="plate__num">III-2R22</div></div><div class="info"><b>BMW 540i M Sport 2020</b><span>Rogério Filho</span></div><div class="price">R$ 409,50</div></div>
+          <div class="kanban__head" style="margin-top:8px"><span class="kanban__dot kanban__dot--amber"></span>ORÇAMENTOS</div>
+          <div class="kanban__row"><div class="plate"><div class="plate__top">BRASIL</div><div class="plate__num">IYU-6136</div></div><div class="info"><b>Onix LT 1.0 2022</b><span>Gabriel Pereira · aprovado</span></div><div class="price">R$ 880</div></div>
+        </div>
+      </div>
+      <div class="module-panel" data-module="financeiro" data-active="false">
+        <div class="dash-head" style="text-align:center;padding-bottom:18px"><div class="dash-head__title" style="font-size:18px">Maio 2026</div></div>
+        <div class="fin-hero">
+          <div class="fin-hero__label">Lucro Líquido do Mês</div>
+          <div class="fin-hero__num">R$ 16.361,12</div>
+          <div class="fin-hero__pill">↗ +37% vs mês anterior</div>
+          <div class="fin-hero__split">
+            <div>Receitas<b>R$ 28.954</b></div>
+            <div>Custos peças<b>R$ 9.267</b></div>
+            <div>Despesas<b>R$ 2.500</b></div>
+          </div>
+        </div>
+        <div class="fin-cards">
+          <div class="fin-card"><div class="fin-card__h" style="color:var(--green-600)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>Lucro Bruto</div><div class="fin-card__n">R$ 18.861,12</div><div class="fin-card__sub">7 OS · 6 vendas</div></div>
+          <div class="fin-card"><div class="fin-card__h" style="color:var(--rose-600)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/></svg>Total Despesas</div><div class="fin-card__n">R$ 2.500,00</div><div class="fin-card__sub">1 lançamento</div></div>
+        </div>
+      </div>
+      <div class="module-panel" data-module="estoque" data-active="false">
+        <div class="dash-head"><div class="dash-head__hi">Estoque · 142 peças</div><div class="dash-head__title">Atualizado em tempo real</div></div>
+        <div class="est-list">
+          <div class="est-row"><div><b>Filtro de óleo Bosch</b> <span class="sku">SKU 8341</span></div><div class="est-qty est-qty--ok">24 un</div><div class="price">R$ 32</div></div>
+          <div class="est-row"><div><b>Pastilha freio dianteiro</b> <span class="sku">SKU 1187</span></div><div class="est-qty est-qty--ok">12 un</div><div class="price">R$ 145</div></div>
+          <div class="est-row"><div><b>Vela NGK Iridium</b> <span class="sku">SKU 4421</span></div><div class="est-qty est-qty--low">2 un · baixo</div><div class="price">R$ 88</div></div>
+          <div class="est-row"><div><b>Correia dentada Gates</b> <span class="sku">SKU 9921</span></div><div class="est-qty est-qty--ok">8 un</div><div class="price">R$ 210</div></div>
+          <div class="est-row"><div><b>Óleo Motor 5W30 1L</b> <span class="sku">SKU 5544</span></div><div class="est-qty est-qty--ok">31 un</div><div class="price">R$ 47</div></div>
+          <div class="est-row" style="background:var(--rose-50);border-color:#fecdd3"><div><b>Disco freio Fremax</b> <span class="sku">SKU 2210</span></div><div class="est-qty est-qty--low">0 un · zerou</div><div class="price">R$ 320</div></div>
+        </div>
+      </div>
+      <div class="module-panel" data-module="relatorios" data-active="false">
+        <div class="dash-head"><div class="dash-head__hi">Relatórios</div><div class="dash-head__title">Você vê o que outros não enxergam</div></div>
+        <div class="rep-list">
+          <div class="rep-row"><div class="rep-row__icon rep-row__icon--indigo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div><b>Relatório de Clientes</b><span>Todos os 312 clientes cadastrados</span></div></div>
+          <div class="rep-row"><div class="rep-row__icon rep-row__icon--pink"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M4 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div><b>Aniversariantes</b><span>4 clientes fazendo aniversário em junho</span></div></div>
+          <div class="rep-row"><div class="rep-row__icon rep-row__icon--amber"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div><b>Clientes Inativos</b><span>23 clientes sem visita há +90 dias · ligar de volta</span></div></div>
+          <div class="rep-row"><div class="rep-row__icon rep-row__icon--green"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div><div><b>Serviços do Mês</b><span>7 carros entregues · R$ 27.637,50 faturado</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROVA SOCIAL ============ -->
+<section class="section--dark" id="provas">
+  <div class="section__inner">
+    <div class="section__head">
+      <span class="kicker">Quem usa fala</span>
+      <h2>Mecânico fala com mecânico.<br>A gente só passa o WhatsApp.</h2>
+      <p class="section__lede">Conversas reais com donos de oficina que usam o BoxCerto. Sem ator, sem estúdio.</p>
+    </div>
+    <div class="proof-grid">
+      <article class="proof-card">
+        <div class="proof-card__contact">
+          <div class="proof-card__avatar" style="background:#f97316">JR</div>
+          <div><div class="proof-card__name" style="color:#111">Júlio Ramos</div><div class="proof-card__role">Auto Center JR · Pelotas/RS</div></div>
+        </div>
+        <div class="proof-card__msgs">
+          <div class="wmsg">Mano, esse trem do orçamento por link mudou minha vida</div>
+          <div class="wmsg">Antes eu mandava o orçamento e o cara sumia. Agora o cara recebe bonitinho e aprova ali na hora</div>
+          <div class="wmsg">Fechei 3 OS hoje só de gente que tava enrolando</div>
+          <div class="wmsg" style="background:#d9fdd3;align-self:flex-end">😅 cabou meu domingo<span class="wmsg__time" style="color:#0a8055">19:42 ✓✓</span></div>
+        </div>
+      </article>
+      <article class="proof-card">
+        <div class="proof-card__contact">
+          <div class="proof-card__avatar" style="background:#06b6d4">MC</div>
+          <div><div class="proof-card__name" style="color:#111">Marcus Calcagno</div><div class="proof-card__role">Oficina Calcagno · Porto Alegre/RS</div></div>
+        </div>
+        <div class="proof-card__msgs">
+          <div class="wmsg">Vou ser sincero: comprei achando que era mais um sistema chato</div>
+          <div class="wmsg">Em 1 hora já tava usando. Meu menino de 17 anos aprendeu sozinho.</div>
+          <div class="wmsg">O bagulho do financeiro é o que mais gostei. Saber quanto sobrou no fim do mês é outra coisa.</div>
+          <div class="wmsg">Recomendo demais 👍<span class="wmsg__time">14:18</span></div>
+        </div>
+      </article>
+      <article class="proof-card">
+        <div class="proof-card__contact">
+          <div class="proof-card__avatar" style="background:#8b5cf6">RS</div>
+          <div><div class="proof-card__name" style="color:#111">Rafael Souza</div><div class="proof-card__role">RS Mecânica · Canoas/RS</div></div>
+        </div>
+        <div class="proof-card__msgs">
+          <div class="wmsg">Cara, a página que o cliente recebe pra acompanhar o serviço é foda</div>
+          <div class="wmsg">Esses dias um cliente me disse "tu tá parecendo concessionária"</div>
+          <div class="wmsg">😂😂😂</div>
+          <div class="wmsg" style="background:#d9fdd3;align-self:flex-end">aposto que cobrou mais kkkk<span class="wmsg__time" style="color:#0a8055">10:03 ✓✓</span></div>
+          <div class="wmsg">Cobrei sim ué<span class="wmsg__time">10:04</span></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PREÇOS ============ -->
+<section class="section" id="precos">
+  <div class="section__head">
+    <span class="kicker">Preço de oficina, não de software de empresa grande</span>
+    <h2>Menos que o custo de uma troca de óleo por mês.</h2>
+    <p class="section__lede">7 dias grátis pra testar. Sem cartão. Cancela quando quiser, sem multa.</p>
+  </div>
+  <div class="pricing">
+    <article class="price-card">
+      <h3>Mensal</h3>
+      <p class="price-card__sub">Flexibilidade total. Pague mês a mês.</p>
+      <div class="price-card__amt"><span class="cur">R$</span><span class="val">97</span><span class="per">/mês</span></div>
+      <ul>
+        <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>OS, Orçamento, Estoque e Financeiro</li>
+        <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Orçamento por link no WhatsApp</li>
+        <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Página de acompanhamento pro cliente</li>
+        <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Relatórios e clientes ilimitados</li>
+        <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Suporte humano em português</li>
+      </ul>
+      <a class="btn btn--primary btn--lg" href="/cadastro?utm_source=lpoficina&utm_medium=pricing&utm_content=cta_mensal" onclick="trackCta('pricing_mensal')">Começar grátis</a>
+    </article>
+    <article class="price-card price-card--featured">
+      <span class="price-card__badge">Mais escolhido</span>
+      <h3>Anual</h3>
+      <p class="price-card__sub">2 meses grátis. Pagamento à vista ou parcelado.</p>
+      <div class="price-card__amt"><span class="cur">R$</span><span class="val">79<span style="font-size:32px">,90</span></span><span class="per">/mês</span></div>
+      <div class="price-card__economy">Economia de R$ 205,20/ano</div>
+      <ul>
+        <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><b>Tudo do plano mensal</b></li>
+        <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Migração da sua planilha sem custo</li>
+        <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Treinamento de equipe (1h por chamada)</li>
+        <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Suporte prioritário no WhatsApp</li>
+        <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Garantia: não gostou em 30 dias, devolvemos</li>
+      </ul>
+      <a class="btn btn--indigo btn--lg" href="/cadastro?utm_source=lpoficina&utm_medium=pricing&utm_content=cta_anual" onclick="trackCta('pricing_anual');trackCheckout('anual')">Começar grátis</a>
+    </article>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-size:14px;color:var(--slate-500)">Sem fidelidade · Sem multa de cancelamento · Cancela direto no painel</p>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="section" style="padding-top:0">
+  <div class="section__head">
+    <span class="kicker">Dúvidas que todo mundo tem</span>
+    <h2>"Eu queria perguntar uma coisa antes…"</h2>
+  </div>
+  <div class="faq">
+    <details><summary>"R$ 97 por mês é caro pra oficina pequena?"</summary><div class="faq__body">Olha, custa menos que uma troca de óleo. E se o sistema te ajuda a fechar 1 orçamento a mais por mês — daquele cliente que normalmente "iria pensar" — já pagou 3x. A maioria dos donos diz que recuperou o valor na primeira semana só pela página de acompanhamento, que deixa cliente mais propenso a fechar.</div></details>
+    <details><summary>"Eu não sou bom de mexer em computador. Vai dar conta?"</summary><div class="faq__body">A gente fez pensando exatamente em você. Nada de menu escondido, nada de "configurações avançadas". Cria conta, cadastra a oficina, e em 5 minutos você já manda o primeiro orçamento. Se travar, fala com a gente no WhatsApp — atendente humano, não robô.</div></details>
+    <details><summary>"Já tenho meu jeito (caderno, planilha). Pra que mudar?"</summary><div class="faq__body">Continua usando o caderno se quiser! O BoxCerto entra em cima — você só passa pra ele os orçamentos novos. Em 1 mês você vê os números que o caderno nunca te mostrou (cliente que sumiu, peça que tá zerando, lucro real do mês) e decide se vale a pena migrar tudo. Sem pressão.</div></details>
+    <details><summary>"Meu funcionário não vai querer usar."</summary><div class="faq__body">A gente já ouviu isso umas mil vezes. O segredo: você mostra o link do orçamento pelo WhatsApp pra ele. Quando ele vê que economiza 20 minutos por orçamento, o jogo vira. A maioria dos funcionários adota em 1 dia. Se precisar, fazemos um treinamento de 1h por chamada (de graça no plano anual).</div></details>
+    <details><summary>"Já tentei outro sistema e não funcionou."</summary><div class="faq__body">Quase todo dono que assina o BoxCerto já tentou outro sistema antes. Os concorrentes foram feitos pra rede grande — cheios de menu, relatório que ninguém usa, exigem treinamento. A gente foi pelo caminho contrário: o mínimo de tela pra fazer o máximo de oficina. Testa 7 dias e compara.</div></details>
+    <details><summary>"Posso cancelar se não gostar?"</summary><div class="faq__body">Pode, claro. 7 dias grátis sem cartão pra testar. Se assinar e em 30 dias não gostar, devolvemos o dinheiro (plano anual). Mensal é só não pagar — não tem fidelidade, não tem multa. Cancelamento é um botão dentro do painel.</div></details>
+    <details><summary>"Meus dados ficam seguros?"</summary><div class="faq__body">Tudo em servidores no Brasil, com backup automático todo dia. Você baixa a base completa em CSV/Excel quando quiser. Se cancelar, dados ficam guardados por 90 dias caso você volte — depois disso, apagamos. Conforme LGPD.</div></details>
+  </div>
+</section>
+
+<!-- ============ FINAL CTA ============ -->
+<section class="section" id="cta">
+  <div class="finalcta">
+    <span class="kicker" style="color:var(--indigo-200)">Pronto pra parar de perder orçamento?</span>
+    <h2>Seu próximo orçamento sai<br>pelo WhatsApp em 2 minutos.</h2>
+    <p>Cria sua conta, cadastra a oficina e manda o primeiro orçamento ainda hoje. 7 dias grátis. Sem cartão. Sem enrolação.</p>
+    <div class="finalcta__row">
+      <a class="btn btn--xl" href="/cadastro?utm_source=lpoficina&utm_medium=finalcta&utm_content=cta_final" onclick="trackCta('final')">
+        Começar grátis · 7 dias
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+      <a class="btn btn--whats btn--xl" href="https://wa.me/5553997065725?text=Ol%C3%A1!%20Quero%20saber%20mais%20sobre%20o%20BoxCerto" target="_blank" rel="noopener" onclick="window.dataLayer=window.dataLayer||[];window.dataLayer.push({event:'whatsapp_fab_click',source:'finalcta'})">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12c0 1.7.5 3.4 1.3 4.9L2 22l5.3-1.4c1.4.8 3 1.2 4.7 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>
+        Falar com vendas
+      </a>
+    </div>
+    <div class="finalcta__bullets">
+      <span>✓ Sem cartão de crédito</span>
+      <span>✓ Cancela quando quiser</span>
+      <span>✓ Suporte em português</span>
+      <span>✓ Setup em 5 minutos</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer">
+  <div class="footer__brand">
+    <img src="/logo.svg" alt="BoxCerto" width="20" height="20" style="border-radius:4px;display:block">
+    BoxCerto
+  </div>
+  <div>Gestão de oficina mecânica feita pra mecânico de verdade.</div>
+  <div class="footer__links">
+    <a href="/privacidade">Política de privacidade</a>
+    <a href="/termos">Termos de uso</a>
+    <a href="https://wa.me/5553997065725?text=Ol%C3%A1!%20Quero%20saber%20mais%20sobre%20o%20BoxCerto" target="_blank" rel="noopener">Contato</a>
+  </div>
+  <div style="margin-top:12px;font-size:12px">© 2026 BoxCerto · boxcerto.com · Feito com graxa em Pelotas/RS</div>
+</footer>
+
+<!-- WhatsApp FAB -->
+<a class="whats-fab" href="https://wa.me/5553997065725?text=Ol%C3%A1!%20Quero%20saber%20mais%20sobre%20o%20BoxCerto" target="_blank" rel="noopener" aria-label="Falar no WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.2-1.7-.8-2-.9-.3-.1-.4-.2-.6.2-.2.3-.7.9-.8 1.1-.2.2-.3.2-.6 0-.3-.2-1.2-.4-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.4.4-.5.1-.2.2-.3.3-.5 0-.2 0-.3 0-.5 0-.2-.6-1.6-.9-2.2-.2-.5-.4-.5-.6-.5-.2 0-.3 0-.5 0-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.2 0 1.3.9 2.5 1 2.7.1.2 1.8 2.8 4.4 3.9.6.3 1.1.4 1.5.5.6.2 1.2.2 1.7.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.2-.2-.5-.4z"/><path d="M12 2C6.5 2 2 6.5 2 12c0 1.7.5 3.4 1.3 4.9L2 22l5.3-1.4c1.4.8 3 1.2 4.7 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18.3c-1.5 0-3-.4-4.3-1.2l-.3-.2-3.1.8.8-3-.2-.3C4 15 3.5 13.5 3.5 12c0-4.7 3.8-8.5 8.5-8.5s8.5 3.8 8.5 8.5-3.8 8.3-8.5 8.3z"/></svg>
+</a>
+
+</div><!-- /.lp -->
+
+<!-- Mobile sticky CTA bar -->
+<div id="mobile-cta-bar" class="mobile-cta-bar" style="display:none">
+  <a class="btn btn--indigo btn--lg" href="/cadastro?utm_source=lpoficina&utm_medium=sticky&utm_content=cta_sticky" onclick="trackCta('sticky')">
+    Começar grátis · 7 dias →
+  </a>
+</div>
+
+<script>
+// ===== Module tabs =====
+document.addEventListener('click', function(e) {
+  var tab = e.target.closest('.module-tab');
+  if (!tab) return;
+  var group = tab.closest('.modules');
+  if (!group) return;
+  group.querySelectorAll('.module-tab').forEach(function(t) { t.setAttribute('aria-selected', 'false'); });
+  tab.setAttribute('aria-selected', 'true');
+  var id = tab.dataset.module;
+  group.querySelectorAll('.module-panel').forEach(function(p) {
+    p.dataset.active = (p.dataset.module === id) ? 'true' : 'false';
+  });
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({ event: 'module_tab_click', module: id });
+});
+
+// ===== CTA tracking =====
+function trackCta(pos) { window.dataLayer = window.dataLayer || []; window.dataLayer.push({ event: 'Lead', cta_position: pos }); }
+function trackCheckout(plan) { window.dataLayer = window.dataLayer || []; window.dataLayer.push({ event: 'InitiateCheckout', plan: plan }); }
+
+// ===== Scroll depth =====
+(function() {
+  var reached = {};
+  window.addEventListener('scroll', function() {
+    var h = document.body.scrollHeight - window.innerHeight;
+    if (h <= 0) return;
+    var pct = Math.round((window.scrollY / h) * 100);
+    [25, 50, 75, 100].forEach(function(m) {
+      if (pct >= m && !reached[m]) { reached[m] = 1; window.dataLayer = window.dataLayer || []; window.dataLayer.push({ event: 'scroll_' + m }); }
+    });
+  }, { passive: true });
+})();
+
+// ===== ViewContent on #precos =====
+(function() {
+  var el = document.getElementById('precos');
+  if (!el || !window.IntersectionObserver) return;
+  var fired = false;
+  new IntersectionObserver(function(entries) {
+    if (!fired && entries[0].isIntersecting) { fired = true; window.dataLayer = window.dataLayer || []; window.dataLayer.push({ event: 'ViewContent', content_name: 'pricing' }); }
+  }, { threshold: 0.3 }).observe(el);
+})();
+
+// ===== FAQ tracking =====
+document.querySelectorAll('.faq details').forEach(function(d) {
+  d.addEventListener('toggle', function() {
+    if (d.open) { var q = (d.querySelector('summary') || {}).textContent || ''; window.dataLayer = window.dataLayer || []; window.dataLayer.push({ event: 'faq_open', question: q.trim().slice(0, 60) }); }
+  });
+});
+
+// ===== WhatsApp FAB tracking =====
+var fab = document.querySelector('.whats-fab');
+if (fab) fab.addEventListener('click', function() { window.dataLayer = window.dataLayer || []; window.dataLayer.push({ event: 'whatsapp_fab_click', source: 'fab' }); });
+
+// ===== Mobile sticky CTA =====
+(function() {
+  var bar = document.getElementById('mobile-cta-bar');
+  if (!bar || !window.IntersectionObserver) return;
+  var heroEl = document.querySelector('.hero');
+  var ctaEl = document.getElementById('cta');
+  var heroVis = true, ctaVis = false;
+  function upd() { bar.style.display = (heroVis || ctaVis) ? 'none' : ''; }
+  if (heroEl) new IntersectionObserver(function(e) { heroVis = e[0].isIntersecting; upd(); }, { threshold: 0.1 }).observe(heroEl);
+  if (ctaEl) new IntersectionObserver(function(e) { ctaVis = e[0].isIntersecting; upd(); }, { threshold: 0.1 }).observe(ctaEl);
+})();
+</script>
+</body>
+</html>
