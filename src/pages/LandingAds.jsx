@@ -620,15 +620,19 @@ export default function LandingAds() {
 
           {/* Mockup geral */}
           <div className="relative max-w-2xl mx-auto mb-10">
-            <img
-              src="/mockup01.webp"
-              alt="BoxCerto — gestão de oficina no celular e no computador"
-              className="w-full h-auto rounded-2xl"
-              fetchpriority="high"
-              decoding="sync"
-              width="1448"
-              height="1086"
-            />
+            {/* picture: mobile carrega 9.7 KB (400px), desktop carrega 61 KB (1448px) */}
+            <picture>
+              <source media="(max-width: 639px)" srcSet="/mockup01-mobile.webp" width="400" height="300" />
+              <img
+                src="/mockup01.webp"
+                alt="BoxCerto — gestão de oficina no celular e no computador"
+                className="w-full h-auto rounded-2xl"
+                fetchpriority="high"
+                decoding="async"
+                width="1448"
+                height="1086"
+              />
+            </picture>
           </div>
 
           {/* Screenshots — carousel no mobile, grid no desktop */}
