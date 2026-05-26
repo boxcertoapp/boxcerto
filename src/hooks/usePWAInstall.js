@@ -66,6 +66,11 @@ export function usePWAInstall() {
     const onPromptChange = () => setLocalPrompt(_savedPrompt)
     _subscribers.add(onPromptChange)
 
+    // Sync imediato: cobre o gap entre o render (useState) e este effect.
+    // Se o evento disparou nesse intervalo, _savedPrompt já está preenchido
+    // mas nenhum subscriber foi chamado ainda — corrige aqui.
+    setLocalPrompt(_savedPrompt)
+
     const onInstalled = () => { setIsInstalled(true); _setPrompt(null) }
 
     const mq = window.matchMedia('(display-mode: standalone)')
