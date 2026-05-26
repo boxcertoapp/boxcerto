@@ -243,6 +243,12 @@ export default function OnboardingWizard() {
     }
 
     if (user.onboardingOrcamentoDone) {
+      // Se o usuário saiu da página enquanto estava no step de notificação, volta para ele
+      if (stored?.view === 'phase2-notify') {
+        setView('phase2-notify')
+        if (stored?.createdOs) setCreatedOs(stored.createdOs)
+        return
+      }
       setView('phase3')
       if (stored?.officeForm) setOfficeForm(prev => ({ ...prev, ...stored.officeForm }))
       if (stored?.createdOs) setCreatedOs(stored.createdOs)
@@ -413,13 +419,13 @@ export default function OnboardingWizard() {
       window.dispatchEvent(new CustomEvent('boxcerto:orcamento-enviado'))
       await patchProfile({ onboarding_orcamento_done: true })
     } catch {}
-    // Só mostra o step de notificação se push é suportado e permissão ainda não foi decidida
-    if (pushSupported && pushPermission === 'default') {
-      setView('phase2-notify')
-    } else {
-      setView('phase3')
-    }
-  }, [patchProfile, pushSupported, pushPermission])
+    // Lê a permissão diretamente do browser no momento da chamada (evita leitura stale do hook)
+    const notifyAvailable =
+      typeof Notification !== 'undefined' &&
+      'PushManager' in window &&
+      Notification.permission === 'default'
+    setView(notifyAvailable ? 'phase2-notify' : 'phase3')
+  }, [patchProfile])
 
   const handleLogoFile = useCallback((file) => {
     if (!file || !user?.oficina) return
