@@ -624,8 +624,8 @@ export default function LandingAds() {
               src="/mockup01.webp"
               alt="BoxCerto — gestão de oficina no celular e no computador"
               className="w-full h-auto rounded-2xl"
-              loading="lazy"
-              decoding="async"
+              fetchpriority="high"
+              decoding="sync"
               width="1448"
               height="1086"
             />
