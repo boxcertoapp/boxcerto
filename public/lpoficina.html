@@ -183,7 +183,7 @@ p{margin:0;text-wrap:pretty}
 
 /* ===== Mini WhatsApp ===== */
 .wmini{width:100%;background:#e5ddd5;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;background-image:radial-gradient(circle at 12px 12px,rgba(0,0,0,.04) 1px,transparent 1px),radial-gradient(circle at 24px 24px,rgba(0,0,0,.04) 1px,transparent 1px);background-size:36px 36px}
-.wmsg{background:#fff;padding:7px 10px;border-radius:10px 10px 10px 2px;font-size:11px;max-width:80%;box-shadow:0 1px 1px rgba(0,0,0,.05);align-self:flex-start;line-height:1.3}
+.wmsg{background:#fff;color:var(--ink);padding:7px 10px;border-radius:10px 10px 10px 2px;font-size:11px;max-width:80%;box-shadow:0 1px 1px rgba(0,0,0,.05);align-self:flex-start;line-height:1.3}
 .wmsg--me{background:#d9fdd3;align-self:flex-end;border-radius:10px 10px 2px 10px}
 .wmsg b{color:var(--indigo-700);display:block;font-size:11px}
 .wmsg__time{display:block;font-size:9px;color:var(--slate-400);text-align:right;margin-top:2px}
@@ -567,8 +567,8 @@ p{margin:0;text-wrap:pretty}
     <article class="journey-step">
       <div class="journey-step__time">~ 5 seg</div>
       <div class="journey-step__num">PASSO 02</div>
-      <h3>Cliente recebe link no WhatsApp.</h3>
-      <p>Você toca em "enviar". O cliente recebe uma mensagem bonita com o orçamento detalhado, no celular dele.</p>
+      <h3>Cliente recebe o link e abre no navegador.</h3>
+      <p>Você toca em "enviar". O cliente recebe o link no WhatsApp, abre com 1 toque no navegador e vê o orçamento completo — sem baixar app, sem criar conta.</p>
       <div class="journey-step__visual">
         <div class="wmini">
           <div class="wmsg wmsg--me" style="background:#fff"><b>Auto Certo</b>Lucas, boa tarde! Segue orçamento do Focus 👇<span class="wmsg__time">14:32</span></div>
@@ -770,39 +770,39 @@ p{margin:0;text-wrap:pretty}
     <div class="proof-grid">
       <article class="proof-card">
         <div class="proof-card__contact">
-          <div class="proof-card__avatar" style="background:#f97316">JR</div>
-          <div><div class="proof-card__name" style="color:#111">Júlio Ramos</div><div class="proof-card__role">Auto Center JR · Pelotas/RS</div></div>
+          <div class="proof-card__avatar" style="background:#f97316">AM</div>
+          <div><div class="proof-card__name" style="color:#111">Anderson Maciel</div><div class="proof-card__role">Maciel Auto Center · Caxias do Sul/RS</div></div>
         </div>
         <div class="proof-card__msgs">
-          <div class="wmsg">Mano, esse trem do orçamento por link mudou minha vida</div>
-          <div class="wmsg">Antes eu mandava o orçamento e o cara sumia. Agora o cara recebe bonitinho e aprova ali na hora</div>
-          <div class="wmsg">Fechei 3 OS hoje só de gente que tava enrolando</div>
-          <div class="wmsg" style="background:#d9fdd3;align-self:flex-end">😅 cabou meu domingo<span class="wmsg__time" style="color:#0a8055">19:42 ✓✓</span></div>
+          <div class="wmsg">mandei o link do orçamento pro cliente hoje de manhã</div>
+          <div class="wmsg">5 minutos depois ele aprovou. sem ligar, sem whatsapp, nada</div>
+          <div class="wmsg">esse cara tava enrolando faz 3 semanas</div>
+          <div class="wmsg" style="background:#d9fdd3;align-self:flex-end;color:var(--ink)">agora tá na fila de serviço 😂<span class="wmsg__time" style="color:#0a8055">09:17 ✓✓</span></div>
         </div>
       </article>
       <article class="proof-card">
         <div class="proof-card__contact">
-          <div class="proof-card__avatar" style="background:#06b6d4">MC</div>
-          <div><div class="proof-card__name" style="color:#111">Marcus Calcagno</div><div class="proof-card__role">Oficina Calcagno · Porto Alegre/RS</div></div>
+          <div class="proof-card__avatar" style="background:#0ea5e9">FG</div>
+          <div><div class="proof-card__name" style="color:#111">Fábio Gomes</div><div class="proof-card__role">Gomes Multimarcas · Londrina/PR</div></div>
         </div>
         <div class="proof-card__msgs">
-          <div class="wmsg">Vou ser sincero: comprei achando que era mais um sistema chato</div>
-          <div class="wmsg">Em 1 hora já tava usando. Meu menino de 17 anos aprendeu sozinho.</div>
-          <div class="wmsg">O bagulho do financeiro é o que mais gostei. Saber quanto sobrou no fim do mês é outra coisa.</div>
-          <div class="wmsg">Recomendo demais 👍<span class="wmsg__time">14:18</span></div>
+          <div class="wmsg">nunca quis saber de sistema nenhum, sempre fui de caderno</div>
+          <div class="wmsg">minha filha de 16 anos configurou tudo em menos de meia hora</div>
+          <div class="wmsg">o que me pegou foi o financeiro. primeira vez na vida que sei exato o que sobrou no mês</div>
+          <div class="wmsg">tô recomendando pra todo mundo 👊<span class="wmsg__time">16:42</span></div>
         </div>
       </article>
       <article class="proof-card">
         <div class="proof-card__contact">
-          <div class="proof-card__avatar" style="background:#8b5cf6">RS</div>
-          <div><div class="proof-card__name" style="color:#111">Rafael Souza</div><div class="proof-card__role">RS Mecânica · Canoas/RS</div></div>
+          <div class="proof-card__avatar" style="background:#8b5cf6">RA</div>
+          <div><div class="proof-card__name" style="color:#111">Rogério Alves</div><div class="proof-card__role">Alves Multimarcas · Goiânia/GO</div></div>
         </div>
         <div class="proof-card__msgs">
-          <div class="wmsg">Cara, a página que o cliente recebe pra acompanhar o serviço é foda</div>
-          <div class="wmsg">Esses dias um cliente me disse "tu tá parecendo concessionária"</div>
-          <div class="wmsg">😂😂😂</div>
-          <div class="wmsg" style="background:#d9fdd3;align-self:flex-end">aposto que cobrou mais kkkk<span class="wmsg__time" style="color:#0a8055">10:03 ✓✓</span></div>
-          <div class="wmsg">Cobrei sim ué<span class="wmsg__time">10:04</span></div>
+          <div class="wmsg">o melhor é a página que o cliente recebe pra acompanhar</div>
+          <div class="wmsg">um cliente meu disse "nunca vi isso nem na concessionária"</div>
+          <div class="wmsg">😂😂</div>
+          <div class="wmsg" style="background:#d9fdd3;align-self:flex-end;color:var(--ink)">cobrou mais por causa disso né kkk<span class="wmsg__time" style="color:#0a8055">11:28 ✓✓</span></div>
+          <div class="wmsg">é claro. serviço que parece profissional tem preço<span class="wmsg__time">11:29</span></div>
         </div>
       </article>
     </div>
