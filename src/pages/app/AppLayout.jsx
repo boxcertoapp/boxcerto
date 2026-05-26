@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import { NavLink, Outlet, Navigate, useNavigate, useLocation } from 'react-router-dom'
-import { Wrench, Clock, TrendingUp, Menu, Package, Bell, X } from 'lucide-react'
+import { Wrench, Clock, TrendingUp, Menu, Package, Zap, Bell, X } from 'lucide-react'
 import { useAuth, hasAccess, trialDaysLeft } from '../../contexts/AuthContext'
 import AnnouncementBanner from '../../components/AnnouncementBanner'
 import Logo from '../../components/Logo'
