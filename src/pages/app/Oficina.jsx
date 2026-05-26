@@ -478,6 +478,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
 export default function Oficina() {
   const { user, refreshUser } = useAuth()
   const [selectedOS, setSelectedOS] = useState(null)
+  const [onboardingOsOpen, setOnboardingOsOpen] = useState(false)
   const [showNewOS, setShowNewOS] = useState(false)
   const [prefillPlate, setPrefillPlate] = useState('')
   const [refresh, setRefresh] = useState(0)
@@ -505,6 +506,7 @@ export default function Oficina() {
         if (target) {
           const items = await itemStorage.getByOS(osId)
           setSelectedOS({ ...target, items, totals: itemStorage.totals(items) })
+          setOnboardingOsOpen(true)
         }
       } catch {}
     }
@@ -540,8 +542,9 @@ export default function Oficina() {
     return (
       <OSDetailModal
         os={selectedOS}
-        onClose={() => { setSelectedOS(null); reload() }}
+        onClose={() => { setSelectedOS(null); setOnboardingOsOpen(false); reload() }}
         officeName={user.oficina}
+        onboardingOsOpen={onboardingOsOpen}
       />
     )
   }
@@ -1143,7 +1146,7 @@ function StockPickerRow({ item, onAdd }) {
 }
 
 // ── OS DETAIL MODAL ───────────────────────────────────────
-function OSDetailModal({ os, onClose, officeName }) {
+function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false }) {
   const [items, setItems] = useState([])
   const [status, setStatus] = useState(os.status)
   const [showAddItem, setShowAddItem] = useState(false)
@@ -1548,7 +1551,7 @@ function OSDetailModal({ os, onClose, officeName }) {
             )
           })()}
 
-          {os.status !== 'entregue' && (
+          {onboardingOsOpen && os.status !== 'entregue' && (
             <button
               data-tour="btn-enviar-cliente"
               onClick={handleEnviarCliente}
