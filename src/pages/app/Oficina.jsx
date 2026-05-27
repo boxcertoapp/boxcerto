@@ -615,21 +615,33 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
 
   useEffect(() => {
     const root = document.documentElement
-    const updateVisualViewportHeight = () => {
-      const height = window.visualViewport?.height || window.innerHeight
-      root.style.setProperty('--boxcerto-visual-vh', `${height}px`)
+    // iOS: window.innerHeight stays fixed when keyboard opens; visualViewport.height shrinks.
+    //   → kbH = innerHeight - vh  (positive = keyboard height)
+    // Android: window.innerHeight already shrinks with keyboard; vh ≈ innerHeight.
+    //   → kbH ≈ 0 (layout viewport already excludes keyboard, fixed inset-0 is fine)
+    // Using current window.innerHeight (not a snapshot) handles both platforms correctly.
+    const updateVV = () => {
+      const vv = window.visualViewport
+      const vh = vv?.height ?? window.innerHeight
+      // offsetTop: how much the visual viewport is scrolled from the layout viewport top
+      // (e.g. URL bar hides → offsetTop becomes the URL-bar height on iOS)
+      const offsetTop = vv?.offsetTop ?? 0
+      const kbH = Math.max(0, window.innerHeight - vh - offsetTop)
+      root.style.setProperty('--boxcerto-visual-vh', `${vh}px`)
+      root.style.setProperty('--boxcerto-keyboard-h', `${kbH}px`)
     }
 
-    updateVisualViewportHeight()
-    window.addEventListener('resize', updateVisualViewportHeight)
-    window.visualViewport?.addEventListener('resize', updateVisualViewportHeight)
-    window.visualViewport?.addEventListener('scroll', updateVisualViewportHeight)
+    updateVV()
+    window.addEventListener('resize', updateVV)
+    window.visualViewport?.addEventListener('resize', updateVV)
+    window.visualViewport?.addEventListener('scroll', updateVV)
 
     return () => {
-      window.removeEventListener('resize', updateVisualViewportHeight)
-      window.visualViewport?.removeEventListener('resize', updateVisualViewportHeight)
-      window.visualViewport?.removeEventListener('scroll', updateVisualViewportHeight)
+      window.removeEventListener('resize', updateVV)
+      window.visualViewport?.removeEventListener('resize', updateVV)
+      window.visualViewport?.removeEventListener('scroll', updateVV)
       root.style.removeProperty('--boxcerto-visual-vh')
+      root.style.removeProperty('--boxcerto-keyboard-h')
     }
   }, [])
 
@@ -782,8 +794,8 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
   const inp = 'w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 text-sm'
 
   return (
-    <div className="fixed inset-x-0 top-0 z-[60] h-screen flex items-end justify-center bg-black/40"
-      style={{ height: 'var(--boxcerto-visual-vh, 100dvh)' }}>
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40"
+      style={{ paddingBottom: 'var(--boxcerto-keyboard-h, 0px)' }}>
       <div className="bg-white rounded-t-3xl w-full max-w-lg flex flex-col overflow-x-hidden"
         style={{ maxHeight: 'calc(var(--boxcerto-visual-vh, 100dvh) - 8px)' }}>
         <div className="flex items-center justify-between p-5 pb-3 shrink-0">
