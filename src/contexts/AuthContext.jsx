@@ -7,6 +7,7 @@
  * de auth terminar, então não há regressão de UX.
  */
 import { createContext, useContext, useState, useEffect } from 'react'
+import { sendCapi } from '../lib/metaCapi'
 
 export const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || ''
 
@@ -161,8 +162,17 @@ export function AuthProvider({ children }) {
                     gtag('event', 'sign_up',    { method: 'google' })
                     gtag('event', 'conversion', { send_to: 'G-HQNZQ5PHFB' })
                   }
+
+                  // ── CAPI server-side para cadastro via Google OAuth
+                  const fullName = session.user.user_metadata?.full_name || ''
+                  const capiEventId = await sendCapi('StartTrial', {
+                    email:     session.user.email,
+                    firstName: fullName.split(' ')[0],
+                    // WhatsApp ainda não disponível no cadastro Google — coletado em /bem-vindo
+                  })
+
                   window.dataLayer = window.dataLayer || []
-                  window.dataLayer.push({ event: 'iniciou_teste_gratis', ...base })
+                  window.dataLayer.push({ event: 'iniciou_teste_gratis', event_id: capiEventId, ...base })
 
                   await supabase.from('cadastro_events').insert({
                     event_name:   'cadastro_signup_success',

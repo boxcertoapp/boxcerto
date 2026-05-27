@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import Logo from '../components/Logo'
+import { sendCapi } from '../lib/metaCapi'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatWpp(val) {
@@ -238,9 +239,28 @@ export default function BemVindo() {
             qualified: isQualified,
           })
         }
+
+        // ── CAPI server-side: envia StartTrialQualified com dados hasheados
+        let qualifiedEventId = null
+        if (isQualified) {
+          qualifiedEventId = await sendCapi('StartTrialQualified', {
+            email:     user.email,
+            whatsapp:  finalWhatsapp,
+            firstName: (user.responsavel || user.nome || '').split(' ')[0],
+          }, {
+            tipo_oficina: finalTipo,
+            cargo:        finalCargo,
+          })
+        }
+
         window.dataLayer = window.dataLayer || []
         if (isQualified) {
-          window.dataLayer.push({ event: 'StartTrialQualified', tipo_oficina: finalTipo, cargo: finalCargo })
+          window.dataLayer.push({
+            event:        'StartTrialQualified',
+            event_id:     qualifiedEventId,
+            tipo_oficina: finalTipo,
+            cargo:        finalCargo,
+          })
         }
         window.dataLayer.push({ event: 'lead_qualificado', tipo_oficina: finalTipo, cargo: finalCargo })
       } catch {}

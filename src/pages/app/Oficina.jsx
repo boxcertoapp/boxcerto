@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
+import { sendCapi } from '../../lib/metaCapi'
 import FipeSeletor from '../../components/FipeSeletor'
 import {
   osStorage, itemStorage, clientStorage, vehicleStorage,
@@ -580,7 +581,21 @@ export default function Oficina() {
           officeName={user.oficina}
           prefillPlate={prefillPlate}
           onClose={() => { setShowNewOS(false); setPrefillPlate(''); reload() }}
-          onCreated={(createdOS) => {
+          onCreated={async (createdOS) => {
+            // CreatedFirstBudget: dispara CAPI + dataLayer só na primeira OS
+            // user.onboardingOsDone = false significa que ainda não havia OS criada
+            if (!user.onboardingOsDone) {
+              const capiEventId = await sendCapi('CreatedFirstBudget', {
+                email:     user.email,
+                whatsapp:  user.whatsapp,
+                firstName: (user.responsavel || user.nome || '').split(' ')[0],
+              })
+              window.dataLayer = window.dataLayer || []
+              window.dataLayer.push({
+                event:    'CreatedFirstBudget',
+                event_id: capiEventId,
+              })
+            }
             setShowNewOS(false)
             setPrefillPlate('')
             setSelectedOS(createdOS)

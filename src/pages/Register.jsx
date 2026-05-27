@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { usePageView } from '../hooks/usePageView'
 import { supabase } from '../lib/supabase'
 import { titleCaseName } from '../lib/text'
+import { sendCapi } from '../lib/metaCapi'
 
 const WPP_SUPORTE = 'https://wa.me/5553997065725?text=' + encodeURIComponent('Olá! Tenho dúvidas sobre o BoxCerto e quero ajuda para me cadastrar.')
 
@@ -241,9 +242,19 @@ export default function Register() {
       gtag('event', 'sign_up', { method: 'email' })
       gtag('event', 'conversion', { send_to: 'G-HQNZQ5PHFB' })
     }
+
+    // ── CAPI server-side: envia evento com dados hasheados e retorna event_id
+    // para deduplicação com o pixel browser via GTM
+    const capiEventId = await sendCapi('StartTrial', {
+      email:     form.email.trim(),
+      whatsapp:  wppClean,
+      firstName: responsavelNormalized.split(' ')[0],
+    })
+
     window.dataLayer = window.dataLayer || []
     window.dataLayer.push({
       event:          'iniciou_teste_gratis',
+      event_id:       capiEventId,
       user_name:      responsavelNormalized,
       user_whatsapp:  '55' + wppClean,
       user_email:     form.email.trim(),
