@@ -255,6 +255,15 @@ p{margin:0;text-wrap:pretty}
 .module-tab__body h4{font-family:var(--font-display);font-size:18px;margin:0 0 4px}
 .module-tab__body p{font-size:13px;color:var(--slate-500)}
 .module-tab[aria-selected="true"] .module-tab__body p{color:rgba(255,255,255,.65)}
+/* Mobile: tabs viram pills horizontais compactas */
+@media(max-width:900px){
+  .module-tabs{flex-direction:row;overflow-x:auto;gap:10px;padding-bottom:6px;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;scrollbar-width:none}
+  .module-tabs::-webkit-scrollbar{display:none}
+  .module-tab{flex-direction:column;align-items:center;text-align:center;padding:14px 16px;min-width:110px;flex-shrink:0;gap:10px;scroll-snap-align:start;border-radius:var(--r-lg)}
+  .module-tab__icon{width:34px;height:34px;margin:0}
+  .module-tab__body h4{font-size:13px;margin:0}
+  .module-tab__body p{display:none}
+}
 .module-preview{background:var(--surface);border:1px solid var(--slate-200);border-radius:var(--r-xl);padding:20px;box-shadow:var(--sh-2);min-height:440px;position:relative;overflow:hidden}
 .module-panel{display:none}
 .module-panel[data-active="true"]{display:block}
@@ -933,6 +942,11 @@ document.addEventListener('click', function(e) {
   group.querySelectorAll('.module-panel').forEach(function(p) {
     p.dataset.active = (p.dataset.module === id) ? 'true' : 'false';
   });
+  // Mobile: scroll preview into view so user sees content immediately
+  if (window.innerWidth <= 900) {
+    var preview = group.querySelector('.module-preview');
+    if (preview) setTimeout(function(){ preview.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 60);
+  }
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ event: 'module_tab_click', module: id });
 });
