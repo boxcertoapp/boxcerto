@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Wrench, Users, LogOut, Shield, Eye, EyeOff, Loader2,
   LayoutDashboard, DollarSign, BarChart2, MessageSquare, Bell, Settings,
-  ChevronRight, X, LifeBuoy, Mail, Download, Brain
+  ChevronRight, X, LifeBuoy, Mail, Phone, Download, Brain
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -155,29 +155,56 @@ function LeadsSection() {
       .then(({ data }) => { setLeads(data || []); setLoading(false) })
   }, [])
 
-  const filtrados = leads.filter(l =>
-    (l.email || '').toLowerCase().includes(busca.toLowerCase()) ||
-    (l.nome  || '').toLowerCase().includes(busca.toLowerCase())
-  )
+  const contatoLead = (lead) => {
+    const r = lead.respostas || {}
+    const isDiagnostico = lead.origem === 'diagnostico'
+    return {
+      email: r.email || (!isDiagnostico ? lead.email : ''),
+      whatsapp: r.whatsapp || r.telefone || (isDiagnostico ? lead.email : ''),
+    }
+  }
+
+  const materialLead = (lead) => {
+    const r = lead.respostas || {}
+    if (r.material) return r.material
+    if (r.pagina) return String(r.pagina).replace(' | BoxCerto', '')
+    if (lead.origem === 'diagnostico') return 'Diagnóstico gratuito'
+    if (lead.origem === 'lpdiagnostico') return 'Diagnóstico por e-mail'
+    return lead.origem || 'Lead orgânico'
+  }
+
+  const filtrados = leads.filter(l => {
+    const contato = contatoLead(l)
+    const termo = busca.toLowerCase()
+    return (
+      (l.email || '').toLowerCase().includes(termo) ||
+      (l.nome  || '').toLowerCase().includes(termo) ||
+      (contato.whatsapp || '').toLowerCase().includes(termo) ||
+      (materialLead(l) || '').toLowerCase().includes(termo) ||
+      (l.origem || '').toLowerCase().includes(termo)
+    )
+  })
 
   function exportarXLS() {
     // CSV simples com BOM UTF-8 (Excel abre corretamente)
     const bom = '﻿'
-    const header = 'Data de captura\tNome\tWhatsApp / E-mail\tTipo de contato\tVolume OS\tForma de orçamento\tPrincipal dor\tEquipe\tOrigem'
+    const header = 'Data de captura\tNome\tE-mail\tWhatsApp\tMaterial / Página\tVolume OS\tForma de orçamento\tPrincipal dor\tEquipe\tOrigem\tURL'
     const rows = filtrados.map(l => {
       const r = l.respostas || {}
       const dt = l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : ''
-      const tipoContato = l.origem === 'diagnostico' ? 'WhatsApp' : 'E-mail'
+      const contato = contatoLead(l)
       return [
         dt,
         l.nome  || '',
-        l.email || '',
-        tipoContato,
+        contato.email || '',
+        contato.whatsapp || '',
+        materialLead(l),
         r.volume   || '',
         r.orcamento|| '',
         r.dor      || '',
         r.equipe   || '',
         l.origem   || '',
+        r.url || r.path || '',
       ].join('\t')
     })
     const tsv = bom + [header, ...rows].join('\n')
@@ -185,7 +212,7 @@ function LeadsSection() {
     const url  = URL.createObjectURL(blob)
     const a    = document.createElement('a')
     a.href     = url
-    a.download = `leads-diagnostico-${new Date().toISOString().slice(0,10)}.xls`
+    a.download = `leads-boxcerto-${new Date().toISOString().slice(0,10)}.xls`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -203,13 +230,13 @@ function LeadsSection() {
       {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
         <div className="flex-1">
-          <h2 className="text-xl font-bold text-slate-900">Leads do Diagnóstico</h2>
-          <p className="text-sm text-slate-500">{leads.length} leads capturados · /diagnostico (WhatsApp) e /lpdiagnostico (e-mail)</p>
+          <h2 className="text-xl font-bold text-slate-900">Leads capturados</h2>
+          <p className="text-sm text-slate-500">{leads.length} leads capturados · diagnóstico, materiais grátis e páginas orgânicas</p>
         </div>
         <div className="flex gap-2 flex-shrink-0">
           <input
             value={busca} onChange={e => setBusca(e.target.value)}
-            placeholder="Buscar por contato ou nome…"
+            placeholder="Buscar por contato, material ou nome…"
             className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 w-48"
           />
           <button
@@ -238,7 +265,7 @@ function LeadsSection() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  {['Data','Nome','WhatsApp / E-mail','Volume','Dor principal','Origem'].map(h => (
+                  {['Data','Nome','Contato','Material / página','Dor principal','Origem'].map(h => (
                     <th key={h} className="text-left text-xs font-semibold text-slate-500 px-4 py-3 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -247,25 +274,30 @@ function LeadsSection() {
                 {filtrados.map(l => {
                   const r  = l.respostas || {}
                   const dt = l.created_at ? new Date(l.created_at).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—'
+                  const contato = contatoLead(l)
                   return (
                     <tr key={l.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap">{dt}</td>
                       <td className="px-4 py-3 font-medium text-slate-800">{l.nome || <span className="text-slate-300">—</span>}</td>
-                      <td className="px-4 py-3 font-mono text-xs">
-                        {l.origem === 'diagnostico'
-                          ? <span className="flex items-center gap-1 text-green-700">
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="flex-shrink-0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                              {l.email}
-                            </span>
-                          : <span className="text-indigo-600">{l.email}</span>
-                        }
+                      <td className="px-4 py-3 text-xs">
+                        <div className="space-y-1">
+                          {contato.whatsapp && (
+                            <a href={`https://wa.me/55${contato.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 font-mono text-green-700 hover:underline">
+                              <Phone className="w-3 h-3" /> {contato.whatsapp}
+                            </a>
+                          )}
+                          {contato.email && (
+                            <a href={`mailto:${contato.email}`} className="flex items-center gap-1 font-mono text-indigo-600 hover:underline">
+                              <Mail className="w-3 h-3" /> {contato.email}
+                            </a>
+                          )}
+                          {!contato.whatsapp && !contato.email && <span className="text-slate-300">—</span>}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
-                        {r.volume ? (
-                          <span className="bg-slate-100 text-slate-600 text-xs font-semibold px-2 py-0.5 rounded-full">
-                            {VOL_LABEL[r.volume] || r.volume}
-                          </span>
-                        ) : <span className="text-slate-300">—</span>}
+                        <span className="bg-slate-100 text-slate-600 text-xs font-semibold px-2 py-0.5 rounded-full">
+                          {materialLead(l)}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         {r.dor ? (

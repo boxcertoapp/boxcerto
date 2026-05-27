@@ -975,16 +975,53 @@ function blogJs() {
   }
 
   document.querySelectorAll('[data-newsletter-form]').forEach(function (form) {
-    form.addEventListener('submit', function (event) {
+    form.addEventListener('submit', async function (event) {
       event.preventDefault();
       var input = form.querySelector('input[type="email"]');
       if (!input || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value.trim())) {
         input && input.focus();
         return;
       }
-      localStorage.setItem('boxcerto_blog_newsletter', input.value.trim());
+      var email = input.value.trim();
       var button = form.querySelector('button');
-      if (button) button.textContent = '✓ Inscrito';
+      var oldText = button && button.textContent;
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Enviando...';
+      }
+      try {
+        var response = await fetch('https://vmejwxfvgufwcztcjjmy.supabase.co/rest/v1/diagnostico_leads', {
+          method: 'POST',
+          headers: {
+            apikey: 'sb_publishable_4mL_ZQ2Lhoo8EqJONThvSw_SrUXHJkJ',
+            Authorization: 'Bearer sb_publishable_4mL_ZQ2Lhoo8EqJONThvSw_SrUXHJkJ',
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal'
+          },
+          body: JSON.stringify({
+            nome: 'Newsletter Blog',
+            email: email,
+            origem: 'blog_newsletter',
+            respostas: {
+              tipo: 'newsletter',
+              email: email,
+              material: 'Newsletter do blog',
+              pagina: document.title,
+              path: window.location.pathname,
+              url: window.location.href
+            }
+          })
+        });
+        if (!response.ok) {
+          throw new Error('newsletter_lead_failed');
+        }
+        localStorage.setItem('boxcerto_blog_newsletter', email);
+        if (button) button.textContent = '✓ Inscrito';
+      } catch (error) {
+        if (button) button.textContent = oldText || 'Inscrever';
+      } finally {
+        if (button) button.disabled = false;
+      }
     });
   });
 })();`

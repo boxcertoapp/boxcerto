@@ -25,7 +25,7 @@
       ]
     },
     {
-      "source": "/(lp|lp2|lpsistema-para-oficina-pequena|lpboxcerto-vs-planilha|lporcamento-online-oficina|lpdiagnostico|lpquizdiagnostico|quizdiagnostico|lpoficina).html",
+      "source": "/(lp|lp2|lpsistema-para-oficina-pequena|lpboxcerto-vs-planilha|lporcamento-online-oficina|lpdiagnostico|lpquizdiagnostico|quizdiagnostico|lpoficina|sistema-para-oficina-mecanica|programa-para-oficina-mecanica|ordem-de-servico-oficina-mecanica|orcamento-whatsapp-oficina|controle-estoque-oficina|modelo-orcamento-oficina-mecanica-gratis|planilha-estoque-pecas-oficina-gratis|calculadora-mao-de-obra-oficina-mecanica|checklist-revisao-veicular-oficina-gratis|mensagem-cobrar-retorno-orcamento-whatsapp).html",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
       ]
@@ -42,10 +42,17 @@
     { "source": "/lpquizdiagnostico",              "destination": "/lpquizdiagnostico.html" },
     { "source": "/lpoficina",                      "destination": "/lpoficina.html" },
     { "source": "/planilha-os-oficina-mecanica-gratis", "destination": "/planilha-os-oficina-mecanica-gratis.html" },
+    { "source": "/sistema-para-oficina-mecanica", "destination": "/sistema-para-oficina-mecanica.html" },
+    { "source": "/programa-para-oficina-mecanica", "destination": "/programa-para-oficina-mecanica.html" },
+    { "source": "/ordem-de-servico-oficina-mecanica", "destination": "/ordem-de-servico-oficina-mecanica.html" },
+    { "source": "/orcamento-whatsapp-oficina", "destination": "/orcamento-whatsapp-oficina.html" },
+    { "source": "/controle-estoque-oficina", "destination": "/controle-estoque-oficina.html" },
     { "source": "/modelo-orcamento-oficina-mecanica-gratis", "destination": "/modelo-orcamento-oficina-mecanica-gratis.html" },
     { "source": "/calculadora-mao-de-obra-oficina-mecanica", "destination": "/calculadora-mao-de-obra-oficina-mecanica.html" },
     { "source": "/planilha-fluxo-caixa-oficina-mecanica-gratis", "destination": "/planilha-fluxo-caixa-oficina-mecanica-gratis.html" },
     { "source": "/planilha-estoque-pecas-oficina-gratis", "destination": "/planilha-estoque-pecas-oficina-gratis.html" },
+    { "source": "/checklist-revisao-veicular-oficina-gratis", "destination": "/checklist-revisao-veicular-oficina-gratis.html" },
+    { "source": "/mensagem-cobrar-retorno-orcamento-whatsapp", "destination": "/mensagem-cobrar-retorno-orcamento-whatsapp.html" },
     { "source": "/blog",                           "destination": "/blog/index.html" },
     { "source": "/blog/guias-oficina-mecanica",     "destination": "/blog/guias-oficina-mecanica.html" },
     { "source": "/blog/categoria/:cat",             "destination": "/blog/categoria/:cat.html" },
