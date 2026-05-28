@@ -484,6 +484,7 @@ export default function Oficina() {
   const [prefillPlate, setPrefillPlate] = useState('')
   const [refresh, setRefresh] = useState(0)
   const reload = () => setRefresh(r => r + 1)
+  const firedFirstBudget = useRef(false) // guarda contra duplo disparo de CreatedFirstBudget
 
   // Check sessionStorage for pre-fill plate (from Historico > Nova OS)
   useEffect(() => {
@@ -544,11 +545,7 @@ export default function Oficina() {
           activated: true,
         }).eq('id', user.id)
         await refreshUser()
-        try {
-          if (typeof gtag === 'function') gtag('event', 'CreatedFirstBudget')
-          window.dataLayer = window.dataLayer || []
-          window.dataLayer.push({ event: 'CreatedFirstBudget' })
-        } catch {}
+        // tracking via CAPI + event_id é feito exclusivamente no onCreated do NewOSModal
       } catch {}
     }
     window.addEventListener('boxcerto:os-criada', handleOsCriada)
@@ -583,8 +580,9 @@ export default function Oficina() {
           onClose={() => { setShowNewOS(false); setPrefillPlate(''); reload() }}
           onCreated={async (createdOS) => {
             // CreatedFirstBudget: dispara CAPI + dataLayer só na primeira OS
-            // user.onboardingOsDone = false significa que ainda não havia OS criada
-            if (!user.onboardingOsDone) {
+            // dupla guarda: DB (onboardingOsDone) + ref em memória (firedFirstBudget)
+            if (!user.onboardingOsDone && !firedFirstBudget.current) {
+              firedFirstBudget.current = true
               const capiEventId = await sendCapi('CreatedFirstBudget', {
                 email:     user.email,
                 whatsapp:  user.whatsapp,
