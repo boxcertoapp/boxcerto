@@ -109,7 +109,60 @@ module.exports = async (req, res) => {
         })
         console.log('✅ Pagamento confirmado:', email, plan)
 
-        // Busca nome e oficina para o email
+        // ── Comissão de afiliado (entrada R$ 50) ───────────────
+        if (email) {
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('id, responsavel, oficina, affiliate_ref, affiliate_coupon, affiliate_partner_id')
+              .eq('email', email).maybeSingle()
+
+            // Atribuição: cupom > ref (já salvo no perfil via user_metadata)
+            const affRef    = profile?.affiliate_coupon || profile?.affiliate_ref
+            const affField  = profile?.affiliate_coupon ? 'coupon_code' : 'slug'
+
+            if (affRef && !profile?.affiliate_partner_id) {
+              const { data: partner } = await supabase
+                .from('affiliate_partners')
+                .select('id, status')
+                .eq(affField, affRef).maybeSingle()
+
+              if (partner?.status === 'active') {
+                // Valor do plano para cálculo de comissão mensal
+                const planValue = session.amount_total ? session.amount_total / 100 : null
+
+                // Comissão de entrada R$ 50 (pendente por 30 dias)
+                await supabase.from('affiliate_commissions').insert({
+                  partner_id:       partner.id,
+                  customer_user_id: profile.id,
+                  customer_email:   email,
+                  type:             'entry',
+                  amount:           50.00,
+                  plan_value:       planValue,
+                  status:           'pending',
+                })
+
+                // Vincula parceiro ao perfil para comissões mensais futuras
+                await supabase.from('profiles')
+                  .update({ affiliate_partner_id: partner.id })
+                  .eq('id', profile.id)
+
+                // Evento de conversão
+                await supabase.from('affiliate_events').insert({
+                  partner_id: partner.id,
+                  event_type: 'converted',
+                  user_email: email,
+                  user_id:    profile.id,
+                  metadata:   { plan, session_id: session.id, plan_value: planValue },
+                })
+
+                console.log('💰 Comissão de entrada criada — parceiro:', affRef)
+              }
+            }
+          } catch (e) { console.error('Erro ao criar comissão de afiliado:', e.message) }
+        }
+
+        // Busca nome e oficina para o email de boas-vindas
         if (email) {
           try {
             const { data: profile } = await supabase

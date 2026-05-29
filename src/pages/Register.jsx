@@ -7,6 +7,7 @@ import { usePageView } from '../hooks/usePageView'
 import { supabase } from '../lib/supabase'
 import { titleCaseName } from '../lib/text'
 import { sendCapi } from '../lib/metaCapi'
+import { getAffiliateRef, getAffiliateCoupon, saveAffiliateCoupon, clearAffiliateData } from '../lib/affiliateTracking'
 
 const WPP_SUPORTE = 'https://wa.me/5553997065725?text=' + encodeURIComponent('Olá! Tenho dúvidas sobre o BoxCerto e quero ajuda para me cadastrar.')
 
@@ -151,6 +152,7 @@ export default function Register() {
   const [form, setForm] = useState({
     oficina: '', responsavel: '', whatsapp: '', email: '', password: '', plan: 'annual',
   })
+  const [couponInput, setCouponInput] = useState(getAffiliateCoupon() || '')
   const [show, setShow]               = useState(false)
   const [error, setError]             = useState('')
   const [loading, setLoading]         = useState(false)
@@ -221,12 +223,19 @@ export default function Register() {
     const oficinaNormalized = titleCaseName(form.oficina)
     const responsavelNormalized = titleCaseName(form.responsavel)
 
+    // Captura atribuição de afiliado antes do signup
+    const affiliateRef    = getAffiliateRef()
+    const affiliateCoupon = couponInput.trim().toUpperCase() || getAffiliateCoupon()
+    if (couponInput.trim()) saveAffiliateCoupon(couponInput.trim())
+
     const result = await register({
-      oficina:     oficinaNormalized,
-      responsavel: responsavelNormalized,
-      whatsapp:    form.whatsapp,
-      email:       form.email.trim(),
-      password:    form.password,
+      oficina:          oficinaNormalized,
+      responsavel:      responsavelNormalized,
+      whatsapp:         form.whatsapp,
+      email:            form.email.trim(),
+      password:         form.password,
+      affiliateRef,
+      affiliateCoupon,
     })
 
     setLoading(false)
@@ -281,6 +290,7 @@ export default function Register() {
       }),
     }).catch(() => {})
 
+    clearAffiliateData() // atribuição salva no perfil — limpa localStorage
     navigate(`/bem-vindo?nome=${encodeURIComponent(responsavelNormalized)}`)
   }
 
@@ -409,6 +419,18 @@ export default function Register() {
             {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
+      </div>
+
+      {/* Cupom de parceiro (opcional) */}
+      <div>
+        <label className={labelCls}>Cupom de parceiro <span className="text-slate-300 font-normal">(opcional)</span></label>
+        <input
+          type="text"
+          value={couponInput}
+          onChange={e => setCouponInput(e.target.value.toUpperCase())}
+          placeholder="Ex: JOAO10"
+          className={`${inputCls} uppercase tracking-widest`}
+        />
       </div>
 
       <button

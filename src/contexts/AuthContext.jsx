@@ -215,11 +215,15 @@ export function AuthProvider({ children }) {
     return { ok: true, user: buildUser(data.user, profile) }
   }
 
-  const register = async ({ oficina, responsavel, whatsapp, email, password }) => {
+  const register = async ({ oficina, responsavel, whatsapp, email, password, affiliateRef, affiliateCoupon }) => {
     const supabase = await getSupa()
     const { error } = await supabase.auth.signUp({
       email, password,
-      options: { data: { oficina, responsavel, whatsapp } },
+      options: { data: {
+        oficina, responsavel, whatsapp,
+        affiliate_ref:    affiliateRef    || null,
+        affiliate_coupon: affiliateCoupon || null,
+      }},
     })
     if (error) {
       if (error.message.includes('already registered'))

@@ -1,4 +1,5 @@
 import Stripe from 'stripe'
+import { createClient } from '@supabase/supabase-js'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
@@ -7,10 +8,30 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { priceId, email, officeName, plan } = req.body
+  const { priceId, email, officeName, plan, affiliateCoupon } = req.body
 
   if (!priceId || !email) {
     return res.status(400).json({ error: 'priceId e email são obrigatórios' })
+  }
+
+  // Busca o stripe_promo_code_id do parceiro se cupom fornecido
+  let stripePromoCodeId = null
+  if (affiliateCoupon) {
+    try {
+      const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
+      const SUPABASE_SRV = process.env.SUPABASE_SERVICE_ROLE_KEY
+      if (SUPABASE_URL && SUPABASE_SRV) {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SRV)
+        const { data: partner } = await supabase
+          .from('affiliate_partners')
+          .select('stripe_promo_code_id, status')
+          .eq('coupon_code', affiliateCoupon.trim().toUpperCase())
+          .maybeSingle()
+        if (partner?.status === 'active' && partner?.stripe_promo_code_id) {
+          stripePromoCodeId = partner.stripe_promo_code_id
+        }
+      }
+    } catch (e) { console.warn('[Checkout] Erro ao buscar cupom de afiliado:', e.message) }
   }
 
   try {
@@ -24,6 +45,8 @@ export default async function handler(req, res) {
           quantity: 1,
         },
       ],
+      // Aplica desconto do parceiro se cupom válido encontrado
+      ...(stripePromoCodeId ? { discounts: [{ promotion_code: stripePromoCodeId }] } : {}),
       subscription_data: plan === 'monthly' ? {
         trial_period_days: 7,
         metadata: { officeName, plan },
@@ -31,7 +54,7 @@ export default async function handler(req, res) {
       payment_intent_data: plan === 'annual' ? {
         metadata: { officeName, plan },
       } : undefined,
-      metadata: { officeName, plan, email },
+      metadata: { officeName, plan, email, affiliate_coupon: affiliateCoupon || '' },
       success_url: `${req.headers.origin}/app/oficina?payment=success`,
       cancel_url: `${req.headers.origin}/cadastro?payment=cancelled`,
     })

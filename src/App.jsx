@@ -1,6 +1,7 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { captureAffiliateRef } from './lib/affiliateTracking'
 
 // ── Eager: apenas Landing (home page /) ───────────────────────────────────
 // Login e Register são lazy para que vendor-supabase NÃO apareça no
@@ -26,6 +27,8 @@ const LandingOrcamento= lazy(() => import('./pages/LandingOrcamento'))
 const LandingVsPlanilha = lazy(() => import('./pages/LandingVsPlanilha'))
 const BemVindo          = lazy(() => import('./pages/BemVindo'))
 const LandingDemo       = lazy(() => import('./pages/LandingDemo'))
+const Parceiro          = lazy(() => import('./pages/Parceiro'))
+const ParceiroPerfil    = lazy(() => import('./pages/ParceiroPerfil'))
 const DemoLayout        = lazy(() => import('./pages/demo/DemoLayout'))
 const DemoOficina       = lazy(() => import('./pages/demo/DemoOficina'))
 const DemoHistorico     = lazy(() => import('./pages/demo/DemoHistorico'))
@@ -57,6 +60,9 @@ function PageLoader() {
 }
 
 export default function App() {
+  // Captura ?ref= de afiliado em qualquer página de entrada
+  useEffect(() => { captureAffiliateRef() }, [])
+
   return (
     <AuthProvider>
       <BrowserRouter>
@@ -86,6 +92,8 @@ export default function App() {
             <Route path="/orcamento-online-oficina"         element={<Navigate to="/lporcamento-online-oficina" replace />} />
             <Route path="/boxcerto-vs-planilha"             element={<Navigate to="/lpboxcerto-vs-planilha" replace />} />
             <Route path="/bem-vindo"                        element={<BemVindo />} />
+            <Route path="/parceiro"          element={<Parceiro />} />
+            <Route path="/parceiro/:slug"    element={<ParceiroPerfil />} />
 
             {/* Demo interativo */}
             <Route path="/demo"       element={<LandingDemo />} />
