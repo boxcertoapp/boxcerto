@@ -1,0 +1,236 @@
+// ============================================================
+// api/affiliate-auth.js  — Autenticação de parceiros
+// POST { action, ...params }
+//
+// action = 'login'      → envia magic link por e-mail
+// action = 'session'    → verifica magic_token ou access_token
+// action = 'update-pix' → atualiza chave PIX (requer access_token)
+// ============================================================
+const crypto           = require('crypto')
+const { createClient } = require('@supabase/supabase-js')
+
+const PIX_TYPES = ['cpf', 'cnpj', 'email', 'telefone', 'aleatoria']
+
+module.exports = async function handler(req, res) {
+  res.setHeader('Content-Type', 'application/json')
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+
+  const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
+  const SUPABASE_SRV = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const RESEND_KEY   = process.env.RESEND_API_KEY
+
+  if (!SUPABASE_URL || !SUPABASE_SRV) {
+    return res.status(500).json({ error: 'Configuração incompleta.' })
+  }
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SRV)
+  const body     = req.body || {}
+  const { action } = body
+
+  try {
+    if (action === 'login')      return await handleLogin(req, res, supabase, body, RESEND_KEY)
+    if (action === 'session')    return await handleSession(req, res, supabase, body)
+    if (action === 'update-pix') return await handleUpdatePix(req, res, supabase, body)
+    return res.status(400).json({ error: 'action inválida. Use: login | session | update-pix' })
+  } catch (err) {
+    console.error('[AffiliateAuth] Erro inesperado:', err.message)
+    if (!res.headersSent) res.status(500).json({ error: 'Erro interno.' })
+  }
+}
+
+// ── LOGIN: gera magic token e envia link ─────────────────────
+async function handleLogin(req, res, supabase, body, resendKey) {
+  const { email } = body
+  if (!email?.trim()) return res.status(400).json({ error: 'Email é obrigatório.' })
+
+  const { data: partner } = await supabase
+    .from('affiliate_partners')
+    .select('id, nome, email, status')
+    .eq('email', email.trim().toLowerCase())
+    .maybeSingle()
+
+  // Retorna OK mesmo se não existir (segurança: não revelar emails)
+  if (!partner) return res.status(200).json({ ok: true })
+  if (partner.status === 'paused') {
+    return res.status(403).json({ error: 'Conta pausada. Entre em contato com o suporte.' })
+  }
+
+  const token    = crypto.randomBytes(32).toString('hex')
+  const tokenExp = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+
+  await supabase.from('affiliate_partners').update({
+    magic_token:     token,
+    magic_token_exp: tokenExp,
+  }).eq('id', partner.id)
+
+  const APP_URL   = 'https://boxcerto.com'
+  const magicLink = `${APP_URL}/parceiro/dashboard?t=${token}&pid=${partner.id}`
+
+  // Envia email direto via Resend (sem self-call HTTP)
+  if (resendKey) {
+    fetch('https://api.resend.com/emails', {
+      method:  'POST',
+      headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from:    'BoxCerto <noreply@boxcerto.com>',
+        to:      [partner.email],
+        subject: 'Seu link de acesso ao painel de parceiro BoxCerto',
+        html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#f8fafc">
+  <div style="background:#4f46e5;border-radius:14px;padding:28px;text-align:center;margin-bottom:24px">
+    <h1 style="color:white;margin:0;font-size:24px">BoxCerto</h1>
+    <p style="color:#c7d2fe;margin:6px 0 0;font-size:13px">Programa de Parceiros</p>
+  </div>
+  <div style="background:white;border-radius:14px;padding:28px;border:1px solid #e2e8f0;margin-bottom:16px">
+    <h2 style="color:#1e293b;margin:0 0 12px">Olá, ${partner.nome}! Aqui está seu link 🔑</h2>
+    <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px">
+      Clique no botão abaixo para acessar seu painel. O link expira em <strong>24 horas</strong>.
+    </p>
+    <div style="text-align:center;margin:24px 0">
+      <a href="${magicLink}" style="background:#4f46e5;color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:bold;font-size:15px;display:inline-block">
+        Acessar meu painel →
+      </a>
+    </div>
+    <p style="color:#94a3b8;font-size:12px;text-align:center">
+      Ou cole no navegador: <span style="word-break:break-all">${magicLink}</span>
+    </p>
+  </div>
+  <p style="color:#94a3b8;font-size:12px;text-align:center">Se não solicitou, ignore este email.</p>
+</div>`,
+      }),
+    }).catch(e => console.warn('[AffiliateAuth/login] Email:', e.message))
+  }
+
+  console.log('[AffiliateAuth] Magic link gerado para:', partner.email)
+  return res.status(200).json({ ok: true })
+}
+
+// ── SESSION: verifica token e retorna dados ──────────────────
+async function handleSession(req, res, supabase, body) {
+  const { magic_token, access_token, partner_id } = body
+  if (!partner_id) return res.status(400).json({ error: 'partner_id obrigatório.' })
+
+  const { data: partner, error } = await supabase
+    .from('affiliate_partners')
+    .select('*')
+    .eq('id', partner_id)
+    .maybeSingle()
+
+  if (error || !partner) return res.status(404).json({ error: 'Parceiro não encontrado.' })
+  if (partner.status === 'paused') return res.status(403).json({ error: 'Conta pausada.' })
+
+  const now = new Date()
+
+  // Fluxo 1: magic_token (primeiro acesso via link)
+  if (magic_token) {
+    if (!partner.magic_token || partner.magic_token !== magic_token) {
+      return res.status(401).json({ error: 'Link inválido.' })
+    }
+    if (!partner.magic_token_exp || new Date(partner.magic_token_exp) < now) {
+      return res.status(401).json({ error: 'Link expirado. Solicite um novo acesso.' })
+    }
+
+    const sessionToken = crypto.randomBytes(32).toString('hex')
+    const sessionExp   = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+
+    await supabase.from('affiliate_partners').update({
+      magic_token:      null,
+      magic_token_exp:  null,
+      access_token:     sessionToken,
+      access_token_exp: sessionExp,
+    }).eq('id', partner_id)
+
+    return res.status(200).json({
+      ok:           true,
+      access_token: sessionToken,
+      session_exp:  sessionExp,
+      partner:      sanitize(partner),
+      ...(await loadData(supabase, partner_id)),
+    })
+  }
+
+  // Fluxo 2: access_token (sessão existente)
+  if (access_token) {
+    if (!partner.access_token || partner.access_token !== access_token) {
+      return res.status(401).json({ error: 'Sessão inválida.' })
+    }
+    if (!partner.access_token_exp || new Date(partner.access_token_exp) < now) {
+      return res.status(401).json({ error: 'Sessão expirada. Solicite um novo link.' })
+    }
+
+    return res.status(200).json({
+      ok:      true,
+      partner: sanitize(partner),
+      ...(await loadData(supabase, partner_id)),
+    })
+  }
+
+  return res.status(400).json({ error: 'magic_token ou access_token obrigatório.' })
+}
+
+// ── UPDATE-PIX: atualiza chave PIX do parceiro ───────────────
+async function handleUpdatePix(req, res, supabase, body) {
+  const { partner_id, access_token, pix_key, pix_type } = body
+
+  if (!partner_id || !access_token) {
+    return res.status(400).json({ error: 'partner_id e access_token obrigatórios.' })
+  }
+  if (!pix_key?.trim())             return res.status(400).json({ error: 'Chave PIX obrigatória.' })
+  if (!PIX_TYPES.includes(pix_type)) return res.status(400).json({ error: 'Tipo de PIX inválido.' })
+
+  const { data: partner } = await supabase
+    .from('affiliate_partners')
+    .select('access_token, access_token_exp')
+    .eq('id', partner_id)
+    .maybeSingle()
+
+  if (!partner)                            return res.status(404).json({ error: 'Parceiro não encontrado.' })
+  if (partner.access_token !== access_token) return res.status(401).json({ error: 'Sessão inválida.' })
+  if (new Date(partner.access_token_exp) < new Date()) return res.status(401).json({ error: 'Sessão expirada.' })
+
+  const { error } = await supabase
+    .from('affiliate_partners')
+    .update({ pix_key: pix_key.trim(), pix_type, updated_at: new Date().toISOString() })
+    .eq('id', partner_id)
+
+  if (error) return res.status(500).json({ error: error.message })
+
+  console.log('[AffiliateAuth] PIX atualizado:', partner_id)
+  return res.status(200).json({ ok: true })
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+function sanitize(p) {
+  // Remove campos sensíveis antes de enviar ao frontend
+  const { magic_token, magic_token_exp, access_token, access_token_exp, stripe_promo_code_id, ...rest } = p
+  return rest
+}
+
+async function loadData(supabase, partnerId) {
+  const [{ data: commissions }, { count: activeRefs }] = await Promise.all([
+    supabase
+      .from('affiliate_commissions')
+      .select('id, type, reference_month, amount, tier_applied, plan_value, status, customer_email, approved_at, paid_at, created_at')
+      .eq('partner_id', partnerId)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('affiliate_partner_id', partnerId)
+      .eq('status', 'active'),
+  ])
+
+  const comms = commissions || []
+  const refs  = activeRefs  || 0
+  const tier  = refs >= 21 ? 30 : refs >= 11 ? 25 : 20
+
+  return {
+    commissions: comms,
+    activeRefs:  refs,
+    tier,
+    totals: {
+      paid:     comms.filter(c => c.status === 'paid').reduce((s, c) => s + Number(c.amount), 0),
+      approved: comms.filter(c => c.status === 'approved').reduce((s, c) => s + Number(c.amount), 0),
+      pending:  comms.filter(c => c.status === 'pending').reduce((s, c) => s + Number(c.amount), 0),
+    },
+  }
+}

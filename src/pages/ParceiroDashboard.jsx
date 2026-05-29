@@ -121,10 +121,11 @@ function PixModal({ current, onSave, onClose }) {
     if (!PIX_TYPES.includes(pixType)) { setErro('Selecione o tipo de PIX.'); return }
     setLoading(true); setErro('')
     try {
-      const res  = await fetch('/api/affiliate-update-pix', {
+      const res  = await fetch('/api/affiliate-auth', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
+          action:       'update-pix',
           partner_id:   current.id,
           access_token: current.accessToken,
           pix_key:      pixKey.trim(),
@@ -192,10 +193,10 @@ function LoginScreen({ onEmailSent }) {
     if (!email.trim()) { setErro('Digite seu e-mail.'); return }
     setLoading(true); setErro('')
     try {
-      const res  = await fetch('/api/affiliate-login', {
+      const res  = await fetch('/api/affiliate-auth', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ email: email.trim() }),
+        body:    JSON.stringify({ action: 'login', email: email.trim() }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Erro ao enviar.')
@@ -562,10 +563,10 @@ export default function ParceiroDashboard() {
     // 1. Magic link na URL → verifica
     if (magicToken && partnerId) {
       setState('verifying')
-      fetch('/api/affiliate-session', {
+      fetch('/api/affiliate-auth', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ magic_token: magicToken, partner_id: partnerId }),
+        body:    JSON.stringify({ action: 'session', magic_token: magicToken, partner_id: partnerId }),
       })
         .then(r => r.json())
         .then(data => {
@@ -583,10 +584,10 @@ export default function ParceiroDashboard() {
     const saved = getSession()
     if (saved?.partner?.id && saved?.accessToken) {
       setState('verifying')
-      fetch('/api/affiliate-session', {
+      fetch('/api/affiliate-auth', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ access_token: saved.accessToken, partner_id: saved.partner.id }),
+        body:    JSON.stringify({ action: 'session', access_token: saved.accessToken, partner_id: saved.partner.id }),
       })
         .then(r => r.json())
         .then(data => {
