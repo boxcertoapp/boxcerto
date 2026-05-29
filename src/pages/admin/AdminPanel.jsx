@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Wrench, Users, LogOut, Shield, Eye, EyeOff, Loader2,
   LayoutDashboard, DollarSign, BarChart2, MessageSquare, Bell, Settings,
-  ChevronRight, X, LifeBuoy, Mail, Phone, Download, Brain
+  ChevronRight, X, LifeBuoy, Mail, Phone, Download, Brain, Handshake
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -18,6 +18,7 @@ import Anuncios     from './tabs/Anuncios'
 import Configuracoes from './sections/Configuracoes'
 import SuporteAdmin  from './sections/Suporte'
 import Conselho      from './sections/Conselho'
+import Afiliados     from './sections/Afiliados'
 
 // ── Carrega todos os usuários (shared entre seções) ──────────
 export const loadUsers = async () => {
@@ -327,6 +328,7 @@ const NAV = [
   { key: 'clientes',     label: 'Clientes',        icon: Users,           group: 'principal' },
   { key: 'receita',      label: 'Receita',         icon: DollarSign,      group: 'principal' },
   { key: 'leads',        label: 'Leads',           icon: Mail,            group: 'dados' },
+  { key: 'afiliados',   label: 'Afiliados',       icon: Handshake,       group: 'dados' },
   { key: 'analytics',   label: 'Analytics',       icon: BarChart2,       group: 'dados' },
   { key: 'comunicacoes', label: 'Comunicações',    icon: MessageSquare,   group: 'dados' },
   { key: 'anuncios',    label: 'Anúncios',        icon: Bell,            group: 'dados' },
@@ -399,6 +401,7 @@ export default function AdminPanel() {
       case 'clientes':     return <Clientes     {...sharedProps} />
       case 'receita':      return <Receita      {...sharedProps} />
       case 'leads':        return <LeadsSection />
+      case 'afiliados':   return <Afiliados />
       case 'analytics':   return <Analytics    users={users} />
       case 'comunicacoes': return <Comunicacoes users={users} />
       case 'anuncios':    return <Anuncios     />
