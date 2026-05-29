@@ -57,7 +57,7 @@ async function _apply(req, res) {
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SRV_KEY)
-  const { nome, email, whatsapp, empresa, tipo } = req.body || {}
+  const { nome, email, whatsapp, empresa, tipo, pix_key } = req.body || {}
 
   // ── Validações ───────────────────────────────────────────
   if (!nome?.trim() || !email?.trim() || !whatsapp?.trim()) {
@@ -131,6 +131,7 @@ async function _apply(req, res) {
       coupon_code:          coupon,
       stripe_coupon_id:     stripeCouponId,
       stripe_promo_code_id: stripePromoCodeId,
+      pix_key:              pix_key?.trim() || null,
       status:               'active',
     })
     .select()

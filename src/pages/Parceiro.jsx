@@ -1,302 +1,851 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import {
-  DollarSign, Users, TrendingUp, CheckCircle2, ArrowRight,
-  Copy, ChevronDown, ChevronUp, AlertCircle, Loader2
-} from 'lucide-react'
-import Logo from '../components/Logo'
+// ============================================================
+// Parceiro — Programa de Parceiros BoxCerto
+// Rota: /parceiro
+// Design: hi-fi handoff (dark/light alternating, Space Grotesk)
+// ============================================================
+import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 
-const inp = 'w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 bg-white'
+// ── CSS (tokens + animações não mapeáveis no Tailwind) ───────
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
 
-function FAQ({ q, a }) {
-  const [open, setOpen] = useState(false)
+:root{
+  --ink:#0a0b14;--ink-2:#0f1020;--ink-3:#15172a;
+  --indigo:#4f46e5;--indigo-br:#6d63ff;--indigo-soft:#a5b4fc;--indigo-glow:rgba(99,90,255,.35);
+  --green:#16b35a;--green-br:#22d36b;--green-soft:#7df0ab;
+  --paper:#f7f6f3;--card:#ffffff;
+  --text-d:#0c0d16;--text-mut:#5d5e6b;
+  --on-dark:#edecf7;--on-dark-mut:#a3a3bd;--on-dark-faint:#6f7090;
+  --line:rgba(12,13,22,.10);
+}
+.pg-parc{font-family:'Plus Jakarta Sans',sans-serif;}
+.pg-parc h1,.pg-parc h2,.pg-parc h3{font-family:'Space Grotesk',sans-serif;}
+.pg-mono{font-family:'JetBrains Mono',monospace;}
+
+/* dark gradient bg */
+.pg-dark-grad{
+  background:
+    radial-gradient(ellipse 80% 60% at 70% -10%,rgba(99,90,255,.18) 0%,transparent 70%),
+    radial-gradient(ellipse 60% 40% at 0% 10%,rgba(22,179,90,.10) 0%,transparent 60%),
+    linear-gradient(180deg,var(--ink-2) 0%,var(--ink) 100%);
+}
+/* grid overlay */
+.pg-grid-bg{
+  position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0;
+  background-image:
+    linear-gradient(rgba(140,150,220,.07) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(140,150,220,.07) 1px,transparent 1px);
+  background-size:54px 54px;
+  mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,black 30%,transparent 80%);
+  -webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,black 30%,transparent 80%);
+}
+/* reveal */
+.pg-reveal{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.2,.7,.3,1),transform .7s cubic-bezier(.2,.7,.3,1);}
+.pg-reveal.in{opacity:1;transform:translateY(0);}
+/* live dot */
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.pg-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green-br);animation:blink 1.8s infinite;flex-shrink:0;}
+/* pill */
+.pg-pill{display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border-radius:100px;border:1px solid rgba(140,150,220,.2);background:rgba(79,70,229,.12);font-size:11px;font-family:'JetBrains Mono',monospace;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--indigo-soft);}
+/* slider */
+.pg-slider{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:4px;background:rgba(255,255,255,.15);outline:none;cursor:pointer;}
+.pg-slider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--indigo-br);border:3px solid white;cursor:pointer;box-shadow:0 2px 8px rgba(99,90,255,.5);}
+.pg-slider::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--indigo-br);border:3px solid white;cursor:pointer;}
+/* tier badge */
+.pg-tier-badge{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:100px;border:1px solid rgba(99,90,255,.3);background:rgba(79,70,229,.12);font-size:12px;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--indigo-soft);margin-top:28px;}
+/* success loader */
+@keyframes fill-bar{from{width:0}to{width:100%}}
+.pg-fill-bar{height:5px;border-radius:4px;background:linear-gradient(90deg,var(--indigo),var(--green));animation:fill-bar 2.4s cubic-bezier(.4,0,.2,1) forwards;}
+/* check pop */
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+.pg-pop{animation:pop .5s cubic-bezier(.2,.7,.3,1) forwards;}
+/* card hover */
+.pg-card-h{transition:transform .2s,box-shadow .2s;}
+.pg-card-h:hover{transform:translateY(-3px);box-shadow:0 24px 50px -28px rgba(12,13,22,.28);}
+/* btn */
+.pg-btn{transition:transform .15s,box-shadow .15s;}
+.pg-btn:hover{transform:translateY(-2px);}
+.pg-btn:active{transform:translateY(1px);}
+/* nav */
+.pg-nav{position:sticky;top:0;z-index:40;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);background:rgba(10,11,20,.87);border-bottom:1px solid rgba(140,150,220,.12);}
+.pg-nav a{text-decoration:none;}
+/* form input */
+.pg-inp{width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1px solid rgba(140,150,220,.2);border-radius:11px;padding:12px 14px;font-size:14px;color:var(--on-dark);outline:none;font-family:'Plus Jakarta Sans',sans-serif;transition:border-color .2s,box-shadow .2s;}
+.pg-inp:focus{border-color:var(--indigo);box-shadow:0 0 0 3px rgba(79,70,229,.18);}
+.pg-inp.err{border-color:#f87171;}
+.pg-inp option{color:#111;background:white;}
+/* responsive */
+@media(max-width:900px){.pg-hero-grid,.pg-form-grid{grid-template-columns:1fr!important;}.pg-form-side{order:-1;}}
+@media(max-width:820px){.pg-pillars,.pg-why-grid,.pg-aud,.pg-calc-wrap{grid-template-columns:1fr!important;}.pg-steps{grid-template-columns:1fr 1fr!important;}.pg-tiers{grid-template-columns:1fr!important;}}
+@media(max-width:640px){.pg-sticky-cta{display:flex!important;}}
+@media(min-width:641px){.pg-sticky-cta{display:none!important;}}
+@media(max-width:860px){.pg-nav-links{display:none!important;}}
+@media(max-width:460px){.pg-field-row{grid-template-columns:1fr!important;}.pg-steps{grid-template-columns:1fr!important;}.pg-form-stats{grid-template-columns:1fr!important;}}
+`
+
+// ── Constants ────────────────────────────────────────────────
+const PLAN  = 97
+const BONUS = 50
+
+const TIPOS = [
+  { value: 'influencer', label: 'Influencer / criador de conteúdo automotivo' },
+  { value: 'vendedor',   label: 'Vendedor / representante de peças' },
+  { value: 'empresa',    label: 'Empresa do ramo automotivo (com carteira de clientes)' },
+  { value: 'oficina',    label: 'Dono / mecânico de oficina' },
+  { value: 'outro',      label: 'Outro' },
+]
+
+// ── Helpers ──────────────────────────────────────────────────
+function tierFor(n) {
+  if (n >= 26) return { pct: 0.30, label: '30%', tier: 'Faixa Ouro 🥇' }
+  if (n >= 11) return { pct: 0.25, label: '25%', tier: 'Faixa Prata 🥈' }
+  return              { pct: 0.20, label: '20%', tier: 'Faixa Bronze 🥉' }
+}
+function brl(n) {
+  return Math.round(n).toLocaleString('pt-BR')
+}
+function brlFull(n) {
+  return Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+function maskPhone(v) {
+  v = v.replace(/\D/g, '').slice(0, 11)
+  if (v.length <= 2) return v.length ? '(' + v : v
+  if (v.length <= 6) return `(${v.slice(0,2)}) ${v.slice(2)}`
+  if (v.length <= 10) return `(${v.slice(0,2)}) ${v.slice(2,6)}-${v.slice(6)}`
+  return `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`
+}
+
+// ── useCountUp ───────────────────────────────────────────────
+function useCountUp(target, dur = 900) {
+  const [val, setVal] = useState(target)
+  const from = useRef(target)
+  const raf  = useRef(null)
+  useEffect(() => {
+    const start = performance.now()
+    const a = from.current, b = target
+    cancelAnimationFrame(raf.current)
+    const tick = (t) => {
+      const p = Math.min(1, (t - start) / dur)
+      const e = 1 - Math.pow(1 - p, 3)
+      setVal(a + (b - a) * e)
+      if (p < 1) raf.current = requestAnimationFrame(tick)
+      else from.current = b
+    }
+    raf.current = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf.current)
+  }, [target])
+  return val
+}
+
+// ── Reveal on scroll ─────────────────────────────────────────
+function Reveal({ children, delay = 0, className = '', style = {}, as: Tag = 'div', ...rest }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    const el = ref.current; if (!el) return
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(en => { if (en.isIntersecting) { setTimeout(() => el.classList.add('in'), delay); io.unobserve(el) } })
+    }, { threshold: 0.14 })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [delay])
+  return <Tag ref={ref} className={`pg-reveal ${className}`} style={style} {...rest}>{children}</Tag>
+}
+
+// ── Tiny SVG icons ───────────────────────────────────────────
+const IcArrow  = (p) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" {...p}><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+const IcDown   = (p) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" {...p}><path d="M12 5v14M6 13l6 6 6-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+const IcCheck  = (p) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" {...p}><path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+const IcRepeat = (p) => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" {...p}><path d="M4 9a8 8 0 0114-5l2 2M20 15a8 8 0 01-14 5l-2-2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M20 3v4h-4M4 21v-4h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+const IcBar    = (p) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" {...p}><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+const IcShield = (p) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" {...p}><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/><path d="M8.5 12l2.5 2.5L16 9.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+const IcSpin   = (p) => <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" {...p}><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,.3)" strokeWidth="3"/><path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round"/></svg>
+
+// ── Brand ────────────────────────────────────────────────────
+function Brand() {
   return (
-    <div className="border border-gray-100 rounded-2xl overflow-hidden">
-      <button onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between p-5 text-left hover:bg-gray-50 transition-colors">
-        <span className="font-semibold text-slate-800 text-sm">{q}</span>
-        {open ? <ChevronUp className="w-4 h-4 text-slate-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />}
-      </button>
-      {open && <div className="px-5 pb-5 text-sm text-slate-500 leading-relaxed">{a}</div>}
+    <div style={{ display:'inline-flex', alignItems:'center', gap:9 }}>
+      <img src="/logo.svg" alt="BoxCerto" style={{ width:32, height:32, borderRadius:8 }} />
+      <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:18, fontWeight:700, color:'var(--on-dark)' }}>
+        Box<span>Certo</span>
+      </span>
     </div>
   )
 }
 
-export default function Parceiro() {
-  const [form, setForm]       = useState({ nome: '', email: '', whatsapp: '', empresa: '', tipo: 'parceiro' })
+// ── Nav ──────────────────────────────────────────────────────
+function Nav() {
+  return (
+    <nav className="pg-nav">
+      <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 28px', height:64, display:'flex', alignItems:'center', gap:32 }}>
+        <Brand />
+        <div className="pg-nav-links" style={{ display:'flex', gap:28, marginLeft:8 }}>
+          {[['#ganhos','Como você ganha'],['#calculadora','Calculadora'],['#vende','O produto'],['#cadastro','Cadastro']].map(([href, label]) => (
+            <a key={href} href={href} style={{ fontSize:14, color:'var(--on-dark-mut)', textDecoration:'none' }}>{label}</a>
+          ))}
+        </div>
+        <div style={{ marginLeft:'auto' }}>
+          <a href="#cadastro" className="pg-btn" style={{
+            display:'inline-flex', alignItems:'center', gap:8,
+            background:'var(--indigo)', color:'white', padding:'10px 20px',
+            borderRadius:13, fontSize:13, fontWeight:700, textDecoration:'none',
+            boxShadow:'0 10px 30px -8px var(--indigo-glow),inset 0 1px 0 rgba(255,255,255,.22)',
+          }}>Quero ser parceiro</a>
+        </div>
+      </div>
+    </nav>
+  )
+}
+
+// ── Hero ─────────────────────────────────────────────────────
+function Hero() {
+  const total = useCountUp(1842.5, 1400)
+  return (
+    <header className="pg-dark-grad" style={{ position:'relative', overflow:'hidden', padding:'96px 0 80px' }}>
+      <div className="pg-grid-bg" />
+      <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 28px', position:'relative', zIndex:1 }}>
+        <div className="pg-hero-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:64, alignItems:'center' }}>
+
+          {/* copy */}
+          <div>
+            <div className="pg-pill" style={{ marginBottom:28 }}>
+              <span className="pg-dot" /> Programa de Parceiros BoxCerto
+            </div>
+            <h1 style={{ fontSize:'clamp(38px,6.2vw,72px)', fontWeight:700, lineHeight:.98, letterSpacing:'-.03em', color:'var(--on-dark)', margin:'0 0 24px' }}>
+              Você indica.<br />A oficina assina.<br />
+              <span style={{ background:'linear-gradient(135deg,var(--indigo-soft),var(--green-soft))', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
+                Você ganha todo mês.
+              </span>
+            </h1>
+            <p style={{ fontSize:'clamp(15px,1.55vw,18px)', lineHeight:1.65, color:'var(--on-dark-mut)', margin:'0 0 36px', maxWidth:480 }}>
+              <strong style={{ color:'var(--on-dark)' }}>R$ 50 na hora</strong> por cada oficina que vira cliente pagante.
+              Mais <strong style={{ color:'var(--on-dark)' }}>20% a 30% da mensalidade</strong> dela, todo mês, por 12 meses.
+            </p>
+            <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
+              <a href="#cadastro" className="pg-btn" style={{
+                display:'inline-flex', alignItems:'center', gap:8,
+                background:'var(--indigo)', color:'white', padding:'15px 28px',
+                borderRadius:13, fontSize:15, fontWeight:700, textDecoration:'none',
+                boxShadow:'0 10px 30px -8px var(--indigo-glow),inset 0 1px 0 rgba(255,255,255,.22)',
+              }}>
+                Criar minha conta de parceiro <IcArrow />
+              </a>
+              <a href="#calculadora" style={{
+                display:'inline-flex', alignItems:'center', gap:8,
+                border:'1px solid rgba(140,150,220,.25)', color:'var(--on-dark-mut)', padding:'15px 24px',
+                borderRadius:13, fontSize:14, fontWeight:600, textDecoration:'none',
+              }}>
+                Ver quanto eu ganho <IcDown />
+              </a>
+            </div>
+            <div style={{ display:'flex', gap:22, marginTop:28, flexWrap:'wrap' }}>
+              {['Pagamento via PIX','Sem custo pra entrar','Painel próprio de acompanhamento'].map(t => (
+                <span key={t} style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:13, color:'var(--on-dark-faint)' }}>
+                  <IcCheck style={{ color:'var(--green-br)', width:14, height:14 }} />{t}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* panel card */}
+          <div style={{
+            background:'rgba(28,30,54,.7)', border:'1px solid rgba(140,150,220,.16)',
+            borderRadius:24, padding:28, backdropFilter:'blur(12px)',
+            boxShadow:'0 40px 90px -30px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06)',
+          }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+              <span className="pg-mono" style={{ fontSize:11, color:'var(--on-dark-faint)' }}>Painel do Parceiro · Maio 2026</span>
+              <span className="pg-pill" style={{ padding:'5px 11px', fontSize:10 }}><span className="pg-dot" /> ao vivo</span>
+            </div>
+            <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:'clamp(32px,4vw,46px)', fontWeight:700, color:'#fff', letterSpacing:'-.02em', marginBottom:4 }}>
+              R$ {brlFull(total)}
+            </div>
+            <div style={{ fontSize:12, color:'var(--green-soft)', marginBottom:24, display:'flex', alignItems:'center', gap:6 }}>
+              <IcRepeat style={{ color:'var(--green-soft)' }} /> recorrente · 12 oficinas ativas · faixa 25%
+            </div>
+            {[
+              ['Maciel Auto Center','Caxias do Sul/RS','+R$ 24,25/mês'],
+              ['Gomes Multimarcas','Londrina/PR','+R$ 24,25/mês'],
+              ['Mecânica Brasil','Goiânia/GO','+R$ 29,10/mês'],
+              ['Natusch Auto Certo','Pelotas/RS','+R$ 24,25/mês'],
+            ].map(([name, loc, val], i) => (
+              <div key={i} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 0', borderBottom:'1px solid rgba(140,150,220,.08)' }}>
+                <IcCheck style={{ color:'var(--green-br)', width:12, height:12, flexShrink:0 }} />
+                <span style={{ flex:1, fontSize:13, color:'var(--on-dark)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                  {name} <span style={{ color:'var(--on-dark-faint)' }}>· {loc}</span>
+                </span>
+                <span className="pg-mono" style={{ fontSize:11, color:'var(--green-soft)', fontWeight:700, flexShrink:0 }}>{val}</span>
+              </div>
+            ))}
+            <div style={{ display:'flex', justifyContent:'space-between', marginTop:16, fontSize:11, color:'var(--on-dark-faint)' }} className="pg-mono">
+              <span>+ 8 oficinas ativas</span>
+              <span>Bônus no mês: <strong style={{ color:'var(--green-soft)' }}>R$ 200,00</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+  )
+}
+
+// ── Ganhos ───────────────────────────────────────────────────
+function Ganhos() {
+  return (
+    <section id="ganhos" style={{ background:'var(--ink-3)', padding:'100px 0' }}>
+      <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 28px' }}>
+        <Reveal style={{ textAlign:'center', maxWidth:680, margin:'0 auto 60px' }}>
+          <span className="pg-mono" style={{ fontSize:11, letterSpacing:'.22em', textTransform:'uppercase', color:'var(--indigo-soft)', display:'block', marginBottom:14 }}>Como o dinheiro entra</span>
+          <h2 style={{ fontSize:'clamp(28px,4vw,48px)', fontWeight:700, letterSpacing:'-.025em', color:'#fff', margin:'0 0 16px', lineHeight:1.1 }}>
+            Dois ganhos somados.<br />Um pra te animar agora, outro pra te manter.
+          </h2>
+          <p style={{ color:'var(--on-dark-mut)', fontSize:16, lineHeight:1.65, margin:0 }}>
+            Sem letra miúda escondida. O modelo cabe num guardanapo — e foi feito pra recompensar quem traz oficina boa, que fica.
+          </p>
+        </Reveal>
+
+        <div className="pg-pillars" style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:20, marginBottom:24 }}>
+          {[
+            { d:0,   em:'⚡', num:'GANHO 01 · NA HORA',  big:'R$ 50', unit:'/ pagante',  title:'Bônus de ativação',           desc:'Toda oficina que sai do teste e vira cliente pagante coloca R$ 50 direto no seu PIX. Sem teto de quantas você pode trazer.' },
+            { d:90,  em:'🔄', num:'GANHO 02 · TODO MÊS', big:'20–30', unit:'% / mês',    title:'Comissão recorrente',          desc:'Você fatura uma porcentagem da mensalidade de cada cliente ativo, todo mês, por 12 meses. Indicou uma vez, recebe o ano inteiro.' },
+            { d:180, em:'📈', num:'A FAIXA SOBE',         big:'+ vol', unit:'= + %',      title:'Quanto mais ativas, maior a fatia', desc:'Sua porcentagem cresce conforme o número de oficinas ativas na sua carteira. Recompensamos quem leva o programa a sério.' },
+          ].map((p, i) => (
+            <Reveal key={i} delay={p.d} style={{ background:'rgba(28,30,54,.6)', border:'1px solid rgba(140,150,220,.12)', borderRadius:24, padding:'32px 28px' }}>
+              <span style={{ fontSize:28, marginBottom:12, display:'block' }}>{p.em}</span>
+              <div className="pg-mono" style={{ fontSize:10, letterSpacing:'.2em', color:'var(--on-dark-faint)', textTransform:'uppercase', marginBottom:10 }}>{p.num}</div>
+              <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:'clamp(28px,3vw,40px)', fontWeight:700, color:'#fff', letterSpacing:'-.02em', marginBottom:8 }}>
+                {p.big}<span style={{ fontSize:'0.42em', color:'var(--on-dark-faint)', fontWeight:400, marginLeft:6 }}>{p.unit}</span>
+              </div>
+              <h3 style={{ fontSize:17, fontWeight:700, color:'var(--on-dark)', margin:'0 0 10px' }}>{p.title}</h3>
+              <p style={{ fontSize:14, color:'var(--on-dark-mut)', lineHeight:1.65, margin:0 }}>{p.desc}</p>
+            </Reveal>
+          ))}
+        </div>
+
+        <Reveal delay={120}>
+          <div className="pg-tiers" style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
+            {[
+              { label:'Faixa Bronze · 1 a 10 oficinas ativas', pct:'20%' },
+              { label:'Faixa Prata · 11 a 25 oficinas ativas', pct:'25%' },
+              { label:'Faixa Ouro · 26+ oficinas ativas',       pct:'30%' },
+            ].map((t, i) => (
+              <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'rgba(255,255,255,.04)', border:'1px solid rgba(140,150,220,.1)', borderRadius:16, padding:'16px 20px' }}>
+                <span className="pg-mono" style={{ fontSize:12, color:'var(--on-dark-mut)' }}>{t.label}</span>
+                <span className="pg-mono" style={{ fontSize:24, fontWeight:700, color:'var(--green-br)' }}>{t.pct}</span>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  )
+}
+
+// ── Calculator ───────────────────────────────────────────────
+function Calculator() {
+  const [n,     setN]     = useState(15)
+  const [novas, setNovas] = useState(4)
+
+  const t          = tierFor(n)
+  const recMonth   = n * PLAN * t.pct
+  const recYear    = recMonth * 12
+  const bonusMonth = novas * BONUS
+  const totalMonth = recMonth + bonusMonth
+
+  const animTotal  = useCountUp(totalMonth)
+  const animRec    = useCountUp(recMonth)
+  const animBonus  = useCountUp(bonusMonth)
+  const animYear   = useCountUp(recYear)
+
+  return (
+    <section id="calculadora" style={{ background:'var(--ink)', padding:'0 0 100px' }}>
+      <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 28px' }}>
+        <Reveal style={{ textAlign:'center', maxWidth:620, margin:'0 auto', paddingTop:80, paddingBottom:48 }}>
+          <span className="pg-mono" style={{ fontSize:11, letterSpacing:'.22em', textTransform:'uppercase', color:'var(--indigo-soft)', display:'block', marginBottom:14 }}>Faça as contas</span>
+          <h2 style={{ fontSize:'clamp(28px,4vw,48px)', fontWeight:700, letterSpacing:'-.025em', color:'#fff', margin:'0 0 14px', lineHeight:1.1 }}>
+            Arraste e veja a máquina trabalhando.
+          </h2>
+          <p style={{ color:'var(--on-dark-mut)', fontSize:16, margin:0 }}>
+            Ajuste quantas oficinas ativas você tem e quantas novas entram no mês. Os números recalculam na hora.
+          </p>
+        </Reveal>
+
+        <Reveal delay={100}>
+          <div className="pg-calc-wrap" style={{
+            display:'grid', gridTemplateColumns:'1fr 1fr',
+            background:'rgba(15,16,32,.85)', border:'1px solid rgba(140,150,220,.12)',
+            borderRadius:28, overflow:'hidden', boxShadow:'0 50px 100px -40px rgba(0,0,0,.7)',
+          }}>
+            {/* Sliders */}
+            <div style={{ padding:'40px', borderRight:'1px solid rgba(140,150,220,.09)' }}>
+              {/* Oficinas ativas */}
+              <div style={{ marginBottom:36 }}>
+                <div className="pg-mono" style={{ fontSize:11, letterSpacing:'.15em', textTransform:'uppercase', color:'var(--indigo-soft)', marginBottom:6 }}>Oficinas ativas que você trouxe</div>
+                <p style={{ fontSize:13, color:'var(--on-dark-faint)', marginBottom:16, lineHeight:1.5 }}>Clientes pagantes que continuam usando o BoxCerto.</p>
+                <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:52, fontWeight:700, color:'#fff', letterSpacing:'-.03em', lineHeight:1, marginBottom:16 }}>
+                  {n}<span style={{ fontSize:20, color:'var(--on-dark-faint)', fontWeight:400, marginLeft:6 }}>{n===1?'oficina':'oficinas'}</span>
+                </div>
+                <input type="range" min="1" max="50" value={n} onChange={e => setN(+e.target.value)} className="pg-slider" aria-label="Oficinas ativas" />
+                <div className="pg-mono" style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'var(--on-dark-faint)', marginTop:6 }}>
+                  <span>1</span><span>25</span><span>50</span>
+                </div>
+              </div>
+
+              <div style={{ height:1, background:'rgba(255,255,255,.06)', margin:'0 0 32px' }} />
+
+              {/* Novas */}
+              <div>
+                <div className="pg-mono" style={{ fontSize:11, letterSpacing:'.15em', textTransform:'uppercase', color:'var(--indigo-soft)', marginBottom:6 }}>Novas pagantes neste mês</div>
+                <p style={{ fontSize:13, color:'var(--on-dark-faint)', marginBottom:16, lineHeight:1.5 }}>Cada uma rende R$ 50 de bônus na hora.</p>
+                <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:44, fontWeight:700, color:'#fff', letterSpacing:'-.03em', lineHeight:1, marginBottom:16 }}>
+                  {novas}<span style={{ fontSize:18, color:'var(--on-dark-faint)', fontWeight:400, marginLeft:6 }}>{novas===1?'nova':'novas'}</span>
+                </div>
+                <input type="range" min="0" max="20" value={novas} onChange={e => setNovas(+e.target.value)} className="pg-slider" aria-label="Novas pagantes no mês" />
+                <div className="pg-mono" style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'var(--on-dark-faint)', marginTop:6 }}>
+                  <span>0</span><span>10</span><span>20</span>
+                </div>
+              </div>
+
+              <div className="pg-tier-badge">
+                <IcBar />{t.tier} · {t.label} de comissão recorrente
+              </div>
+            </div>
+
+            {/* Output */}
+            <div style={{ padding:'40px', display:'flex', flexDirection:'column', justifyContent:'center' }}>
+              <div className="pg-mono" style={{ fontSize:11, letterSpacing:'.2em', textTransform:'uppercase', color:'var(--indigo-soft)', marginBottom:12 }}>
+                Você recebe, estimado neste mês
+              </div>
+              <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:'clamp(46px,6vw,68px)', fontWeight:700, color:'#fff', letterSpacing:'-.03em', lineHeight:1, marginBottom:8 }}>
+                <span style={{ fontSize:'0.42em', color:'var(--on-dark-faint)' }}>R$</span>{brl(animTotal)}
+              </div>
+              <p style={{ fontSize:13, color:'var(--green-soft)', marginBottom:32, lineHeight:1.5 }}>
+                ↗ e isso se repete enquanto suas oficinas seguirem ativas
+              </p>
+
+              {[
+                { label:'Comissão recorrente / mês', val:animRec },
+                { label:'Bônus de ativação no mês',  val:animBonus },
+              ].map((row, i) => (
+                <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'14px 18px', marginBottom:10, background:'rgba(255,255,255,.04)', border:'1px solid rgba(140,150,220,.08)', borderRadius:14 }}>
+                  <span style={{ fontSize:13, color:'var(--on-dark-mut)' }}>{row.label}</span>
+                  <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:20, color:'#fff' }}>
+                    <span style={{ fontSize:12, color:'var(--on-dark-faint)' }}>R$</span>{brl(row.val)}
+                  </span>
+                </div>
+              ))}
+
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'14px 18px', marginTop:4, background:'rgba(34,211,107,.08)', border:'1px solid rgba(34,211,107,.25)', borderRadius:14 }}>
+                <span style={{ fontSize:13, color:'var(--green-soft)' }}>Recorrente projetado em 12 meses</span>
+                <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:24, color:'var(--green-br)' }}>
+                  <span style={{ fontSize:12 }}>R$</span>{brl(animYear)}
+                </span>
+              </div>
+
+              <p style={{ fontSize:11, color:'var(--on-dark-faint)', lineHeight:1.6, marginTop:20 }}>
+                Simulação com base no plano mensal de R$ 97. Comissão recorrente paga por até 12 meses por cliente ativo. O percentual sobe com seu volume.
+              </p>
+            </div>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  )
+}
+
+// ── Vende ────────────────────────────────────────────────────
+function Vende() {
+  const items = [
+    { em:'💬', title:'Orçamento por WhatsApp em 1 clique', desc:'A oficina manda o orçamento por link, o cliente aprova sem baixar app nem criar conta. É o tipo de coisa que vende sozinha numa demonstração.' },
+    { em:'🚀', title:'Setup em minutos, não em dias', desc:'Cria conta, cadastra a oficina e já manda o primeiro orçamento. Sem implantação, sem consultor. Indicar é fácil porque usar é fácil.' },
+    { em:'⏱️', title:'Cliente acompanha em tempo real', desc:'A oficina ganha cara de empresa grande sem custar caro. Esse é o argumento que faz dono de oficina abrir a carteira.' },
+    { em:'🏷️', title:'Preço que cabe na oficina', desc:'A partir de R$ 79,90/mês — menos que uma troca de óleo. Objeção de preço quase não existe, então sua conversão sobe.' },
+  ]
+  return (
+    <section id="vende" style={{ background:'var(--paper)', padding:'100px 0' }}>
+      <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 28px' }}>
+        <Reveal style={{ textAlign:'center', maxWidth:600, margin:'0 auto 56px' }}>
+          <span className="pg-mono" style={{ fontSize:11, letterSpacing:'.22em', textTransform:'uppercase', color:'var(--text-mut)', display:'block', marginBottom:14 }}>O produto vende sozinho</span>
+          <h2 style={{ fontSize:'clamp(28px,4vw,44px)', fontWeight:700, letterSpacing:'-.025em', color:'var(--text-d)', margin:'0 0 14px', lineHeight:1.1 }}>
+            Fácil de indicar porque é bom de verdade.
+          </h2>
+          <p style={{ color:'var(--text-mut)', fontSize:16, lineHeight:1.65, margin:0 }}>
+            Você não vai empurrar nada. O BoxCerto resolve uma dor real — e ainda dá 7 dias grátis sem cartão pra pessoa testar antes. Seu trabalho é só apresentar.
+          </p>
+        </Reveal>
+
+        <div className="pg-why-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:20 }}>
+          {items.map((item, i) => (
+            <Reveal key={i} delay={i*70} className="pg-card-h" style={{ background:'var(--card)', border:'1px solid var(--line)', borderRadius:24, padding:'28px', display:'flex', gap:16 }}>
+              <div style={{ width:44, height:44, background:'rgba(79,70,229,.07)', borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:20 }}>
+                {item.em}
+              </div>
+              <div>
+                <h3 style={{ fontSize:16, fontWeight:700, color:'var(--text-d)', margin:'0 0 8px' }}>{item.title}</h3>
+                <p style={{ fontSize:14, color:'var(--text-mut)', lineHeight:1.65, margin:0 }}>{item.desc}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+
+        <Reveal delay={120} style={{ display:'flex', alignItems:'flex-start', gap:14, padding:'20px 24px', background:'rgba(22,179,90,.06)', border:'1px solid rgba(22,179,90,.2)', borderRadius:18, fontSize:14, color:'var(--text-mut)', lineHeight:1.65 }}>
+          <IcShield style={{ color:'var(--green)', flexShrink:0, marginTop:2 }} />
+          7 dias grátis sem cartão de crédito — a oficina testa antes de pagar. Você indica sem peso na consciência e sem precisar convencer ninguém na marra.
+        </Reveal>
+      </div>
+    </section>
+  )
+}
+
+// ── Steps ────────────────────────────────────────────────────
+function Steps() {
+  const steps = [
+    ['Cadastre-se', 'Preencha o formulário em 1 minuto. Sua conta de parceiro e seu painel saem na hora.'],
+    ['Pegue seu link', 'Você recebe um link de indicação único e materiais prontos pra divulgar pro seu público.'],
+    ['Indique pro seu público', 'Manda no story, no grupo, pro cliente. A oficina testa 7 dias grátis e assina.'],
+    ['Receba no PIX', 'Acompanhe cada oficina ativa no painel e receba bônus + recorrente direto na sua chave.'],
+  ]
+  return (
+    <section style={{ background:'var(--paper)', padding:'0 0 100px' }}>
+      <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 28px' }}>
+        <Reveal style={{ textAlign:'center', maxWidth:420, margin:'0 auto 52px' }}>
+          <span className="pg-mono" style={{ fontSize:11, letterSpacing:'.22em', textTransform:'uppercase', color:'var(--text-mut)', display:'block', marginBottom:14 }}>Como começar</span>
+          <h2 style={{ fontSize:'clamp(26px,4vw,42px)', fontWeight:700, letterSpacing:'-.025em', color:'var(--text-d)', margin:0, lineHeight:1.1 }}>
+            Do cadastro ao primeiro PIX.
+          </h2>
+        </Reveal>
+        <div className="pg-steps" style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:16 }}>
+          {steps.map((s, i) => (
+            <Reveal key={i} delay={i*80} className="pg-card-h" style={{ background:'var(--card)', border:'1px solid var(--line)', borderRadius:24, padding:'28px 24px' }}>
+              <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:60, fontWeight:700, color:'rgba(12,13,22,.04)', letterSpacing:'-.04em', lineHeight:1, marginBottom:12 }}>
+                {String(i+1).padStart(2,'0')}
+              </div>
+              <h3 style={{ fontSize:16, fontWeight:700, color:'var(--text-d)', margin:'0 0 8px' }}>{s[0]}</h3>
+              <p style={{ fontSize:14, color:'var(--text-mut)', lineHeight:1.65, margin:0 }}>{s[1]}</p>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── Audience ─────────────────────────────────────────────────
+function Audience() {
+  const cards = [
+    { num:'01', title:'Influencer & criador', desc:'Tem audiência que confia em você no nicho automotivo? Cada indicação que vira oficina ativa pinga no seu PIX todo mês.' },
+    { num:'02', title:'Vendedor & representante', desc:'Já circula em oficina vendendo peça ou serviço? Some uma renda recorrente ao que você já faz, sem mudar a rota.' },
+    { num:'03', title:'Empresa do ramo', desc:'Distribuidora, autopeças, franquia — tem carteira de oficinas? Transforme esse relacionamento em comissão recorrente.' },
+  ]
+  return (
+    <section style={{ background:'var(--paper)', padding:'0 0 100px' }}>
+      <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 28px' }}>
+        <Reveal style={{ textAlign:'center', maxWidth:520, margin:'0 auto 48px' }}>
+          <span className="pg-mono" style={{ fontSize:11, letterSpacing:'.22em', textTransform:'uppercase', color:'var(--text-mut)', display:'block', marginBottom:14 }}>Pra quem é</span>
+          <h2 style={{ fontSize:'clamp(26px,4vw,42px)', fontWeight:700, letterSpacing:'-.025em', color:'var(--text-d)', margin:0, lineHeight:1.15 }}>
+            Se você fala com dono de oficina,<br />tem dinheiro na mesa.
+          </h2>
+        </Reveal>
+        <div className="pg-aud" style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16 }}>
+          {cards.map((c, i) => (
+            <Reveal key={i} delay={i*80} className="pg-card-h" style={{ background:'var(--card)', border:'1px solid var(--line)', borderRadius:24, padding:'32px 28px', position:'relative', overflow:'hidden' }}>
+              <span className="pg-mono" style={{ position:'absolute', bottom:-12, right:14, fontSize:80, fontWeight:700, color:'rgba(12,13,22,.04)', lineHeight:1 }}>{c.num}</span>
+              <span style={{ display:'inline-block', fontSize:11, fontWeight:600, color:'var(--indigo)', background:'rgba(79,70,229,.08)', padding:'4px 10px', borderRadius:100, marginBottom:16, textTransform:'uppercase', letterSpacing:'.08em' }}>Pra você</span>
+              <h3 style={{ fontSize:20, fontWeight:700, color:'var(--text-d)', margin:'0 0 10px' }}>{c.title}</h3>
+              <p style={{ fontSize:14, color:'var(--text-mut)', lineHeight:1.65, margin:0 }}>{c.desc}</p>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── Form helpers ─────────────────────────────────────────────
+function Field({ label, required, sub, err, children }) {
+  return (
+    <div style={{ marginBottom:16 }}>
+      <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--on-dark-mut)', marginBottom:7 }}>
+        {label}{required && <span style={{ color:'#f87171', marginLeft:2 }}>*</span>}
+        {sub && <span style={{ fontWeight:400, color:'var(--on-dark-faint)', marginLeft:4 }}>{sub}</span>}
+      </label>
+      {children}
+      {err && <p style={{ fontSize:12, color:'#f87171', marginTop:5, marginBottom:0 }}>{err}</p>}
+    </div>
+  )
+}
+
+// ── Form ─────────────────────────────────────────────────────
+function FormCard() {
+  const navigate = useNavigate()
+  const [form,    setForm]    = useState({ nome:'', whats:'', email:'', tipo:'', insta:'', pix:'' })
+  const [errs,    setErrs]    = useState({})
   const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState('')
-  const [result, setResult]   = useState(null)
-  const [copied, setCopied]   = useState(false)
+  const [result,  setResult]  = useState(null)
+  const [apiErr,  setApiErr]  = useState('')
 
-  const f = (k, v) => setForm(p => ({ ...p, [k]: v }))
+  const isInfluencer = form.tipo === 'influencer'
+  const set = (k, v) => { setForm(p => ({...p,[k]:v})); setErrs(p => ({...p,[k]:null})); setApiErr('') }
 
-  const formatWpp = (val) => {
-    const n = val.replace(/\D/g, '')
-    if (n.length <= 2) return n
-    if (n.length <= 7) return `(${n.slice(0,2)}) ${n.slice(2)}`
-    return `(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7,11)}`
+  function validate() {
+    const e = {}
+    if (form.nome.trim().length < 3)                     e.nome  = 'Conta pra gente seu nome completo.'
+    if (form.whats.replace(/\D/g,'').length < 10)         e.whats = 'WhatsApp com DDD, por favor.'
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'E-mail inválido.'
+    if (!form.tipo)                                       e.tipo  = 'Selecione como você atua.'
+    if (form.pix.trim().length < 4)                      e.pix   = 'Informe sua chave PIX pra receber.'
+    setErrs(e)
+    return Object.keys(e).length === 0
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
-    if (!form.nome.trim() || !form.email.trim() || !form.whatsapp.trim())
-      return setError('Nome, e-mail e WhatsApp são obrigatórios.')
-    if (!form.email.includes('@'))
-      return setError('E-mail inválido.')
-
-    setLoading(true)
+  async function submit(ev) {
+    ev.preventDefault()
+    if (!validate()) return
+    setLoading(true); setApiErr('')
     try {
-      const res  = await fetch('/api/affiliate-apply', {
-        method:  'POST',
+      const res = await fetch('/api/affiliate-apply', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(form),
+        body: JSON.stringify({
+          nome:     form.nome.trim(),
+          email:    form.email.trim(),
+          whatsapp: form.whats,
+          empresa:  isInfluencer ? form.insta.trim() : '',
+          tipo:     form.tipo,
+          pix_key:  form.pix.trim(),
+        }),
       })
       const data = await res.json()
-      if (!res.ok) return setError(data.error || 'Erro ao cadastrar. Tente novamente.')
+      if (!res.ok) { setApiErr(data.error || 'Erro ao cadastrar. Tente novamente.'); return }
       setResult(data)
-    } catch {
-      setError('Erro de conexão. Tente novamente.')
-    } finally {
-      setLoading(false)
-    }
+    } catch { setApiErr('Erro de conexão. Tente novamente.') }
+    finally { setLoading(false) }
   }
 
-  const copyLink = (text) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
+  const baseInp = {
+    width:'100%', boxSizing:'border-box',
+    background:'rgba(255,255,255,.07)', border:'1px solid rgba(140,150,220,.2)',
+    borderRadius:11, padding:'12px 14px', fontSize:14, color:'var(--on-dark)',
+    outline:'none', fontFamily:"'Plus Jakarta Sans',sans-serif",
+    transition:'border-color .2s,box-shadow .2s',
   }
+  const errInp = { ...baseInp, borderColor:'#f87171' }
 
-  const TIERS = [
-    { range: '1 a 10 clientes ativos', pct: '20%', color: 'bg-indigo-50 text-indigo-700' },
-    { range: '11 a 20 clientes ativos', pct: '25%', color: 'bg-violet-50 text-violet-700' },
-    { range: '21+ clientes ativos',     pct: '30%', color: 'bg-green-50 text-green-700' },
-  ]
-
-  // ── Tela de sucesso ─────────────────────────────────────────
+  // ── Sucesso ────────────────────────────────────────────────
   if (result) {
+    const primeiro = result.nome?.split(' ')[0] || 'Parceiro'
+    const inicial  = (result.nome?.[0] || 'P').toUpperCase()
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 w-full max-w-md text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">
-            <CheckCircle2 className="w-8 h-8 text-green-600" />
+      <div style={{ background:'rgba(20,22,42,.92)', border:'1px solid rgba(140,150,220,.15)', borderRadius:24, padding:'36px 32px' }}>
+        <div style={{ textAlign:'center' }}>
+          <div className="pg-pop" style={{ width:68, height:68, background:'rgba(22,179,90,.15)', border:'1px solid rgba(34,211,107,.3)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px' }}>
+            <IcCheck style={{ width:34, height:34, color:'var(--green-br)' }} />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Bem-vindo, {result.nome.split(' ')[0]}! 🎉</h2>
-          <p className="text-slate-500 text-sm mb-7">
-            Seu cadastro foi aprovado. Comece a divulgar agora mesmo!
+          <h3 style={{ fontSize:22, fontWeight:700, color:'var(--on-dark)', margin:'0 0 10px' }}>Conta de parceiro criada! 🎉</h3>
+          <p style={{ fontSize:14, color:'var(--on-dark-mut)', lineHeight:1.65, marginBottom:24 }}>
+            Tudo certo, {primeiro}. Estamos abrindo seu painel — seu link de indicação já está te esperando lá dentro.
           </p>
-
-          <div className="space-y-4 text-left">
-            <div className="bg-indigo-50 rounded-2xl p-4">
-              <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-2">Seu link exclusivo</p>
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-mono text-slate-800 flex-1 truncate">{result.link}</p>
-                <button onClick={() => copyLink(result.link)}
-                  className="p-2 bg-indigo-100 rounded-lg hover:bg-indigo-200 transition-colors shrink-0">
-                  <Copy className="w-4 h-4 text-indigo-600" />
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-green-50 rounded-2xl p-4">
-              <p className="text-xs font-semibold text-green-600 uppercase tracking-wider mb-2">Seu cupom (10% de desconto pro cliente)</p>
-              <div className="flex items-center gap-2">
-                <p className="text-2xl font-bold font-mono text-green-800 flex-1 tracking-widest">{result.coupon_code}</p>
-                <button onClick={() => copyLink(result.coupon_code)}
-                  className="p-2 bg-green-100 rounded-lg hover:bg-green-200 transition-colors shrink-0">
-                  <Copy className="w-4 h-4 text-green-600" />
-                </button>
-              </div>
-            </div>
-
-            {copied && (
-              <p className="text-center text-xs text-indigo-600 font-semibold">Copiado!</p>
-            )}
+          <div style={{ height:6, background:'rgba(255,255,255,.08)', borderRadius:4, marginBottom:24, overflow:'hidden' }}>
+            <div className="pg-fill-bar" />
           </div>
-
-          <p className="text-xs text-slate-400 mt-6">
-            Enviamos um e-mail com todos os detalhes para <strong>{result.nome}</strong>.
+          {/* mini-card */}
+          <div style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 18px', background:'rgba(255,255,255,.05)', borderRadius:16, marginBottom:22, textAlign:'left' }}>
+            <div style={{ width:40, height:40, background:'var(--indigo)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, color:'white', fontSize:16, flexShrink:0 }}>{inicial}</div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontWeight:700, fontSize:14, color:'var(--on-dark)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{result.nome}</div>
+              <div style={{ fontSize:12, color:'var(--on-dark-mut)' }}>Parceiro BoxCerto · comissão via PIX</div>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:6, color:'var(--green-br)', fontWeight:700, fontSize:12, flexShrink:0 }}>
+              <span className="pg-dot" /> ativo
+            </div>
+          </div>
+          <button onClick={() => navigate('/parceiro/dashboard')} className="pg-btn" style={{
+            width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+            background:'var(--indigo)', color:'white', padding:14, borderRadius:13,
+            fontWeight:700, fontSize:15, border:'none', cursor:'pointer',
+            boxShadow:'0 10px 30px -8px var(--indigo-glow),inset 0 1px 0 rgba(255,255,255,.22)',
+          }}>
+            Entrar no painel <IcArrow />
+          </button>
+          <p style={{ fontSize:11, color:'var(--on-dark-faint)', marginTop:14, lineHeight:1.5 }}>
+            Um e-mail com seu link e cupom foi enviado para {form.email}
           </p>
         </div>
       </div>
     )
   }
 
-  // ── Página principal ─────────────────────────────────────────
+  // ── Formulário ──────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-white">
+    <form onSubmit={submit} noValidate style={{ background:'rgba(20,22,42,.92)', border:'1px solid rgba(140,150,220,.15)', borderRadius:24, padding:'36px 32px', boxShadow:'0 50px 110px -40px rgba(0,0,0,.6)' }}>
+      <h3 style={{ fontSize:22, fontWeight:700, color:'var(--on-dark)', margin:'0 0 6px' }}>Crie sua conta de parceiro</h3>
+      <p style={{ fontSize:14, color:'var(--on-dark-mut)', marginBottom:28 }}>Leva 1 minuto. Sem custo, sem contrato. Seu link e painel saem na hora.</p>
 
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-100">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link to="/"><Logo className="h-7 w-auto" /></Link>
-          <a href="#cadastro"
-            className="bg-indigo-600 text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-indigo-700 transition-colors">
-            Quero ser parceiro
-          </a>
+      {apiErr && (
+        <div style={{ background:'rgba(239,68,68,.12)', border:'1px solid rgba(239,68,68,.3)', borderRadius:12, padding:'12px 14px', fontSize:13, color:'#fca5a5', marginBottom:20 }}>
+          {apiErr}
         </div>
-      </header>
+      )}
 
-      {/* Hero */}
-      <section className="max-w-5xl mx-auto px-4 pt-16 pb-12 text-center">
-        <span className="inline-block bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full mb-4 uppercase tracking-wider">
-          Programa de Parceiros
-        </span>
-        <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 leading-tight mb-4">
-          Indique oficinas e <br className="hidden md:block" />
-          <span className="text-indigo-600">ganhe comissão recorrente</span>
-        </h1>
-        <p className="text-lg text-slate-500 max-w-xl mx-auto mb-8">
-          Você indica o BoxCerto para oficinas mecânicas e recebe comissão todo mês
-          enquanto os clientes permanecerem ativos — até 30% por ano.
-        </p>
-        <a href="#cadastro"
-          className="inline-flex items-center gap-2 bg-indigo-600 text-white font-bold px-8 py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 text-base">
-          Começar agora <ArrowRight className="w-5 h-5" />
-        </a>
-      </section>
+      <Field label="Nome completo" required err={errs.nome}>
+        <input value={form.nome} onChange={e => set('nome', e.target.value)} placeholder="Como você se chama"
+          style={errs.nome ? errInp : baseInp} className="pg-inp" />
+      </Field>
 
-      {/* Como funciona */}
-      <section className="bg-slate-50 py-16">
-        <div className="max-w-5xl mx-auto px-4">
-          <h2 className="text-2xl font-bold text-slate-900 text-center mb-10">Como funciona</h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              { icon: <Users className="w-7 h-7 text-indigo-600" />, title: '1. Cadastre-se grátis', desc: 'Preencha o formulário abaixo e receba seu link e cupom exclusivos na hora.' },
-              { icon: <TrendingUp className="w-7 h-7 text-indigo-600" />, title: '2. Divulgue para oficinas', desc: 'Compartilhe seu link, mencione seu cupom nas redes ou indique pessoalmente.' },
-              { icon: <DollarSign className="w-7 h-7 text-indigo-600" />, title: '3. Receba todo mês', desc: 'Ganha R$ 50 quando o cliente assina + % do plano todo mês por até 12 meses.' },
-            ].map((s, i) => (
-              <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center mb-4">{s.icon}</div>
-                <h3 className="font-bold text-slate-900 mb-2">{s.title}</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">{s.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <div className="pg-field-row" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+        <Field label="WhatsApp" required err={errs.whats}>
+          <input value={form.whats} onChange={e => set('whats', maskPhone(e.target.value))} placeholder="(53) 99999-9999" inputMode="tel"
+            style={errs.whats ? errInp : baseInp} className="pg-inp" />
+        </Field>
+        <Field label="E-mail" required err={errs.email}>
+          <input value={form.email} onChange={e => set('email', e.target.value)} placeholder="voce@email.com" inputMode="email"
+            style={errs.email ? errInp : baseInp} className="pg-inp" />
+        </Field>
+      </div>
 
-      {/* Tabela de comissões */}
-      <section className="py-16">
-        <div className="max-w-3xl mx-auto px-4">
-          <h2 className="text-2xl font-bold text-slate-900 text-center mb-2">Quanto você ganha</h2>
-          <p className="text-center text-slate-500 text-sm mb-10">Quanto mais clientes ativos, maior sua comissão — calculada todo mês.</p>
-          <div className="space-y-3">
-            <div className="flex items-center gap-4 bg-amber-50 border border-amber-100 rounded-2xl p-4">
-              <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
-                <DollarSign className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="font-bold text-slate-900">R$ 50,00 de bônus</p>
-                <p className="text-sm text-slate-500">Pago quando o cliente indicado assina o plano</p>
-              </div>
-            </div>
-            {TIERS.map((t, i) => (
-              <div key={i} className={`flex items-center justify-between rounded-2xl p-4 border ${t.color.includes('indigo') ? 'border-indigo-100' : t.color.includes('violet') ? 'border-violet-100' : 'border-green-100'}`}>
-                <div className={`rounded-xl px-3 py-1 text-xs font-bold ${t.color}`}>{t.range}</div>
-                <div className="text-right">
-                  <p className="text-2xl font-extrabold text-slate-900">{t.pct}</p>
-                  <p className="text-xs text-slate-400">do plano / mês</p>
+      <Field label="Como você atua" required err={errs.tipo}>
+        <select value={form.tipo} onChange={e => set('tipo', e.target.value)}
+          style={{ ...(errs.tipo ? errInp : baseInp), color: form.tipo ? 'var(--on-dark)' : 'var(--on-dark-faint)' }} className="pg-inp">
+          <option value="" disabled style={{ color:'#333' }}>Selecione seu perfil</option>
+          {TIPOS.map(t => <option key={t.value} value={t.value} style={{ color:'#111', background:'white' }}>{t.label}</option>)}
+        </select>
+      </Field>
+
+      {isInfluencer && (
+        <Field label="Instagram / canal" sub="(pra gente conhecer seu público)">
+          <input value={form.insta} onChange={e => set('insta', e.target.value)} placeholder="@seuperfil ou link do canal"
+            style={baseInp} className="pg-inp" />
+        </Field>
+      )}
+
+      <Field label="Chave PIX pra receber" required err={errs.pix}>
+        <input value={form.pix} onChange={e => set('pix', e.target.value)} placeholder="CPF, e-mail, telefone ou chave aleatória"
+          style={errs.pix ? errInp : baseInp} className="pg-inp" />
+      </Field>
+
+      <button type="submit" disabled={loading} className="pg-btn" style={{
+        width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+        background: loading ? 'rgba(79,70,229,.6)' : 'var(--indigo)',
+        color:'white', padding:15, borderRadius:13, fontWeight:700, fontSize:15,
+        border:'none', cursor: loading ? 'not-allowed' : 'pointer', marginTop:8,
+        boxShadow:'0 10px 30px -8px var(--indigo-glow),inset 0 1px 0 rgba(255,255,255,.22)',
+      }}>
+        {loading ? <><IcSpin /> Criando conta...</> : <>Criar conta e ver meu painel <IcArrow /></>}
+      </button>
+      <p style={{ fontSize:11, color:'var(--on-dark-faint)', textAlign:'center', marginTop:14, lineHeight:1.5 }}>
+        Ao continuar você concorda com os{' '}
+        <a href="/termos" style={{ color:'var(--indigo-soft)' }}>termos do programa</a>.
+        Pagamentos de comissão sempre via PIX.
+      </p>
+    </form>
+  )
+}
+
+// ── Form section (wrapper com copy) ──────────────────────────
+function FormSection() {
+  return (
+    <section id="cadastro" className="pg-dark-grad" style={{ position:'relative', overflow:'hidden', padding:'100px 0' }}>
+      <div className="pg-grid-bg" />
+      <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 28px', position:'relative', zIndex:1 }}>
+        <div className="pg-form-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:60, alignItems:'center' }}>
+          {/* copy */}
+          <Reveal className="pg-form-side">
+            <div className="pg-pill" style={{ marginBottom:28 }}><span className="pg-dot" /> Comece agora</div>
+            <h2 style={{ fontSize:'clamp(28px,4vw,48px)', fontWeight:700, letterSpacing:'-.025em', color:'#fff', margin:'0 0 20px', lineHeight:1.1 }}>
+              Sua conta de parceiro<br />em 1 minuto.
+            </h2>
+            <p style={{ fontSize:17, color:'var(--on-dark-mut)', lineHeight:1.65, marginBottom:40 }}>
+              Sem custo pra entrar, sem contrato de fidelidade. Você cria a conta, recebe seu link e painel, e já pode indicar a primeira oficina hoje.
+            </p>
+            <div className="pg-form-stats" style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
+              {[
+                { n:'R$50',  l:'por oficina pagante' },
+                { n:'30%',   l:'de recorrente no topo' },
+                { n:'12',    l:'meses por cliente' },
+              ].map((s, i) => (
+                <div key={i} style={{ textAlign:'center', padding:'18px 8px', background:'rgba(255,255,255,.05)', borderRadius:16, border:'1px solid rgba(140,150,220,.1)' }}>
+                  <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:28, fontWeight:700, color:'#fff', letterSpacing:'-.02em' }}>{s.n}</div>
+                  <div style={{ fontSize:11, color:'var(--on-dark-faint)', marginTop:4, lineHeight:1.4 }}>{s.l}</div>
                 </div>
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-center text-slate-400 mt-4">
-            Pagamentos via PIX, todo dia 5 do mês seguinte.
-            Comissões mensais por 12 meses por cliente ativo.
-          </p>
+              ))}
+            </div>
+          </Reveal>
+          {/* form */}
+          <Reveal delay={80}><FormCard /></Reveal>
         </div>
-      </section>
+      </div>
+    </section>
+  )
+}
 
-      {/* Formulário de cadastro */}
-      <section id="cadastro" className="bg-slate-50 py-16">
-        <div className="max-w-lg mx-auto px-4">
-          <h2 className="text-2xl font-bold text-slate-900 text-center mb-2">Cadastre-se como parceiro</h2>
-          <p className="text-center text-slate-500 text-sm mb-8">Aprovação automática. Seu link e cupom ficam prontos na hora.</p>
-
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 space-y-4">
-            {error && (
-              <div className="flex items-center gap-2 bg-red-50 text-red-600 text-sm rounded-xl p-3">
-                <AlertCircle className="w-4 h-4 shrink-0" />{error}
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Nome completo *</label>
-              <input value={form.nome} onChange={e => f('nome', e.target.value)} placeholder="João da Silva" className={inp} />
+// ── Footer ───────────────────────────────────────────────────
+function ParcFooter() {
+  return (
+    <footer style={{ background:'var(--ink-2)', padding:'60px 0 40px', borderTop:'1px solid rgba(140,150,220,.08)' }}>
+      <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 28px' }}>
+        <div style={{ display:'flex', gap:60, marginBottom:44, flexWrap:'wrap' }}>
+          <div style={{ flex:1, minWidth:200 }}>
+            <div style={{ display:'inline-flex', alignItems:'center', gap:9, marginBottom:14 }}>
+              <img src="/logo.svg" alt="BoxCerto" style={{ width:30, height:30, borderRadius:8 }} />
+              <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:16, fontWeight:700, color:'var(--on-dark)' }}>BoxCerto</span>
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">E-mail *</label>
-                <input type="email" value={form.email} onChange={e => f('email', e.target.value)} placeholder="joao@email.com" className={inp} />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">WhatsApp *</label>
-                <input value={form.whatsapp} onChange={e => f('whatsapp', formatWpp(e.target.value))} placeholder="(51) 99999-9999" maxLength={15} className={inp} />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Canal / Empresa <span className="font-normal text-slate-400">(opcional)</span></label>
-              <input value={form.empresa} onChange={e => f('empresa', e.target.value)} placeholder="@seuperfil ou Nome da empresa" className={inp} />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Você é...</label>
-              <select value={form.tipo} onChange={e => f('tipo', e.target.value)} className={inp}>
-                <option value="influencer">Influencer / Criador de conteúdo</option>
-                <option value="empresa">Empresa do setor automotivo</option>
-                <option value="parceiro">Parceiro comercial</option>
-                <option value="vendedor">Vendedor externo</option>
-              </select>
-            </div>
-
-            <button onClick={handleSubmit} disabled={loading}
-              className="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl hover:bg-indigo-700 transition-all disabled:opacity-60 flex items-center justify-center gap-2 text-sm">
-              {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Cadastrando...</> : 'Quero ser parceiro →'}
-            </button>
-
-            <p className="text-[11px] text-center text-slate-400">
-              Ao cadastrar, você concorda com os{' '}
-              <Link to="/termos" className="underline hover:text-indigo-500">Termos de Uso</Link>.
-              Sem custo. Cancele quando quiser.
+            <p style={{ fontSize:13, color:'var(--on-dark-faint)', lineHeight:1.65, maxWidth:240 }}>
+              Gestão de oficina mecânica feita pra mecânico de verdade. O programa de parceiros divide o crescimento com quem leva o BoxCerto pra mais oficinas.
             </p>
           </div>
+          <div style={{ display:'flex', gap:40, flexWrap:'wrap' }}>
+            {[
+              { title:'Programa',  links:[['#ganhos','Como você ganha'],['#calculadora','Calculadora'],['#cadastro','Cadastro']] },
+              { title:'BoxCerto',  links:[['https://boxcerto.com','Site principal'],['/lp','Para oficinas'],['/login','Entrar']] },
+              { title:'Suporte',   links:[['https://wa.me/5553997065725','WhatsApp'],['/privacidade','Privacidade'],['/termos','Termos']] },
+            ].map(col => (
+              <div key={col.title}>
+                <h4 style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:13, fontWeight:700, color:'var(--on-dark)', marginBottom:14 }}>{col.title}</h4>
+                {col.links.map(([href, label]) => (
+                  <a key={label} href={href} style={{ display:'block', fontSize:13, color:'var(--on-dark-faint)', textDecoration:'none', marginBottom:9 }}>{label}</a>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
-      </section>
+        <div style={{ display:'flex', justifyContent:'space-between', paddingTop:24, borderTop:'1px solid rgba(140,150,220,.08)', fontSize:12, color:'var(--on-dark-faint)', flexWrap:'wrap', gap:8 }}>
+          <span>© {new Date().getFullYear()} BoxCerto · boxcerto.com</span>
+          <span>Feito com graxa em Pelotas/RS · Comissões pagas via PIX</span>
+        </div>
+      </div>
+    </footer>
+  )
+}
 
-      {/* FAQ */}
-      <section className="py-16 max-w-2xl mx-auto px-4">
-        <h2 className="text-2xl font-bold text-slate-900 text-center mb-8">Dúvidas frequentes</h2>
-        <div className="space-y-3">
-          <FAQ q="Quando começo a receber?"
-            a="A comissão de R$ 50 é gerada quando o cliente indicado assina um plano. Ela fica pendente por 30 dias (proteção contra cancelamento) e é paga todo dia 5 do mês seguinte via PIX." />
-          <FAQ q="Por quanto tempo recebo comissão mensal?"
-            a="Você recebe comissão todo mês enquanto o cliente estiver ativo, por até 12 meses por cliente indicado. Após 12 meses, encerra a comissão daquele cliente." />
-          <FAQ q="O que acontece se o cliente cancelar?"
-            a="Se o cliente cancelar nos primeiros 30 dias, a comissão de entrada é cancelada. Após 30 dias, as comissões já aprovadas são mantidas." />
-          <FAQ q="Existe limite de indicações?"
-            a="Não. Quanto mais clientes ativos você tiver, maior sua faixa de comissão (20%, 25% ou 30% do plano/mês)." />
-          <FAQ q="O cliente recebe algum benefício?"
-            a="Sim! Usando seu cupom, o cliente ganha 10% de desconto no primeiro pagamento. Isso aumenta muito a conversão das suas indicações." />
-          <FAQ q="Como o BoxCerto sabe que o cliente veio de mim?"
-            a="Através do seu link exclusivo (?ref=seu-slug) ou do cupom. O link rastreia por 90 dias — se o cliente acessar hoje e assinar amanhã, você ainda é comissionado." />
-        </div>
-      </section>
+// ── Main export ──────────────────────────────────────────────
+export default function Parceiro() {
+  return (
+    <div className="pg-parc">
+      <style>{CSS}</style>
+      <Nav />
+      <Hero />
+      <Ganhos />
+      <Calculator />
+      <Vende />
+      <Steps />
+      <Audience />
+      <FormSection />
+      <ParcFooter />
 
-      {/* Footer */}
-      <footer className="border-t border-gray-100 py-8 text-center text-xs text-slate-400">
-        <div className="flex justify-center mb-3"><Logo className="h-6 w-auto opacity-50" /></div>
-        <p>© {new Date().getFullYear()} BoxCerto. Todos os direitos reservados.</p>
-        <div className="flex justify-center gap-4 mt-2">
-          <Link to="/termos" className="hover:text-indigo-500">Termos</Link>
-          <Link to="/privacidade" className="hover:text-indigo-500">Privacidade</Link>
-        </div>
-      </footer>
+      {/* Sticky CTA — só mobile ≤640px */}
+      <div className="pg-sticky-cta" style={{
+        display:'none', position:'fixed', bottom:0, left:0, right:0, zIndex:50,
+        padding:'12px 20px 16px', background:'rgba(10,11,20,.95)', borderTop:'1px solid rgba(140,150,220,.12)',
+        backdropFilter:'blur(14px)',
+      }}>
+        <a href="#cadastro" className="pg-btn" style={{
+          display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+          background:'var(--indigo)', color:'white', padding:14, borderRadius:13,
+          fontWeight:700, fontSize:14, textDecoration:'none',
+          boxShadow:'0 10px 30px -8px var(--indigo-glow)',
+        }}>
+          Quero ser parceiro · grátis <IcArrow />
+        </a>
+      </div>
     </div>
   )
 }
