@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS affiliate_payment_batches (
 
 -- FK comissões → lotes
 ALTER TABLE affiliate_commissions
-  ADD CONSTRAINT IF NOT EXISTS affiliate_commissions_batch_fk
+  ADD CONSTRAINT affiliate_commissions_batch_fk
   FOREIGN KEY (payment_batch_id) REFERENCES affiliate_payment_batches(id);
 
 -- 5. CAMPOS DE AFILIADO NA TABELA PROFILES
@@ -107,20 +107,20 @@ ALTER TABLE affiliate_commissions      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE affiliate_payment_batches  ENABLE ROW LEVEL SECURITY;
 
 -- Admin (is_admin = true no perfil) tem acesso total
-CREATE POLICY IF NOT EXISTS "admin_all_partners" ON affiliate_partners FOR ALL
+CREATE POLICY "admin_all_partners" ON affiliate_partners FOR ALL
   USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true));
 
-CREATE POLICY IF NOT EXISTS "admin_all_events" ON affiliate_events FOR ALL
+CREATE POLICY "admin_all_events" ON affiliate_events FOR ALL
   USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true));
 
-CREATE POLICY IF NOT EXISTS "admin_all_commissions" ON affiliate_commissions FOR ALL
+CREATE POLICY "admin_all_commissions" ON affiliate_commissions FOR ALL
   USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true));
 
-CREATE POLICY IF NOT EXISTS "admin_all_batches" ON affiliate_payment_batches FOR ALL
+CREATE POLICY "admin_all_batches" ON affiliate_payment_batches FOR ALL
   USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true));
 
 -- Leitura pública de parceiros ativos (para páginas /parceiro/[slug])
-CREATE POLICY IF NOT EXISTS "public_read_active_partners" ON affiliate_partners FOR SELECT
+CREATE POLICY "public_read_active_partners" ON affiliate_partners FOR SELECT
   USING (status = 'active');
 
 -- ============================================================
