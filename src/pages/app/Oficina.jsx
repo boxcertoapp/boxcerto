@@ -7,7 +7,7 @@ import {
   CreditCard, Banknote, Smartphone, DollarSign,
   Clock, Wrench, Package, Tag, Percent,
   CalendarClock, Gauge, ReceiptText, TrendingUp,
-  CheckCircle2, Edit2, Send, Loader2,
+  CheckCircle2, Edit2, Send, Loader2, Mail,
   Flag, TriangleAlert, ClipboardList, Circle
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
@@ -615,7 +615,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
   const [agendadoPara, setAgendadoPara] = useState('')
   const [cepLoading, setCepLoading] = useState(false)
   const [newClient, setNewClient] = useState({
-    nome: '', whatsapp: '', cpf: '', dataNascimento: '',
+    nome: '', whatsapp: '', cpf: '', email: '', dataNascimento: '',
     cep: '', endereco: '', numero: '', bairro: '', cidade: '', uf: '',
     modelo: ''
   })
@@ -935,6 +935,11 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
                     <label className="block text-xs font-medium text-slate-600 mb-1">WhatsApp *</label>
                     <input data-tour="input-whatsapp" type="text" placeholder="(51) 99999-9999" value={newClient.whatsapp}
                       onChange={e => setNewClient(p => ({...p, whatsapp: formatWpp(e.target.value)}))} maxLength={15} className={inp} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1 flex items-center gap-1"><Mail className="w-3 h-3" />E-mail</label>
+                    <input type="email" placeholder="cliente@email.com" value={newClient.email}
+                      onChange={e => setNewClient(p => ({...p, email: e.target.value}))} className={inp} />
                   </div>
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider pt-1">Endereço</p>
                   <div className="grid grid-cols-3 gap-2">
