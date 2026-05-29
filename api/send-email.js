@@ -425,6 +425,61 @@ const templates = {
     `),
   }),
 
+  // ── Boas-vindas ao parceiro/afiliado ────────────────────
+  affiliate_welcome: ({ nome, slug, coupon_code, link }) => ({
+    subject: `Bem-vindo ao programa de parceiros BoxCerto, ${nome}! 🤝`,
+    html: base(`
+      ${card(`
+        <h2 style="color:#1e293b;margin:0 0 8px;font-size:20px">Olá, ${nome}! 🎉</h2>
+        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px">
+          Você agora faz parte do programa de parceiros BoxCerto.
+          Veja abaixo tudo que você precisa para começar a indicar e ganhar.
+        </p>
+        <div style="background:#eef2ff;border-radius:12px;padding:20px;margin-bottom:20px;border:1px solid #c7d2fe">
+          <p style="color:#3730a3;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:0 0 12px">Seus dados de parceiro</p>
+          <p style="color:#1e293b;font-size:14px;margin:6px 0">
+            🔗 <strong>Seu link:</strong><br>
+            <a href="${link}" style="color:#4f46e5;word-break:break-all">${link}</a>
+          </p>
+          <p style="color:#1e293b;font-size:14px;margin:12px 0 0">
+            🎟️ <strong>Seu cupom:</strong>
+            <span style="background:#4f46e5;color:white;padding:3px 10px;border-radius:6px;font-weight:700;font-size:16px;margin-left:8px">${coupon_code}</span>
+          </p>
+          <p style="color:#6b7280;font-size:12px;margin:8px 0 0">Cupom dá 10% de desconto na 1ª mensalidade do seu indicado.</p>
+        </div>
+        <div style="background:#f0fdf4;border-radius:12px;padding:16px;margin-bottom:20px;border:1px solid #bbf7d0">
+          <p style="color:#166534;font-size:13px;font-weight:600;margin:0 0 10px">Como funciona sua comissão:</p>
+          <p style="color:#15803d;font-size:13px;margin:4px 0">💰 R$50 fixo por cada nova assinatura</p>
+          <p style="color:#15803d;font-size:13px;margin:4px 0">📈 + 20% a 30% da mensalidade por 12 meses</p>
+          <p style="color:#15803d;font-size:13px;margin:4px 0">💳 Pagamento via PIX todo dia 5 do mês</p>
+        </div>
+        ${btn(`${APP_URL}/parceiro/dashboard`, 'Acessar meu dashboard →')}
+      `)}
+      ${notice('#92400e','#fefce8','#fde68a',
+        '💡 <strong>Dica:</strong> Cadastre sua chave PIX no dashboard para garantir o recebimento das comissões no dia 5.')}
+    `),
+  }),
+
+  // ── Magic link para acesso ao dashboard ─────────────────
+  affiliate_magic_link: ({ nome, link }) => ({
+    subject: `Seu link de acesso ao painel de parceiro BoxCerto`,
+    html: base(`
+      ${card(`
+        <h2 style="color:#1e293b;margin:0 0 12px;font-size:18px">Olá, ${nome}! Aqui está seu link de acesso 🔑</h2>
+        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px">
+          Clique no botão abaixo para acessar seu painel de parceiro. O link é válido por <strong>24 horas</strong>.
+        </p>
+        ${btn(link, 'Acessar meu painel →')}
+        <p style="color:#94a3b8;font-size:12px;text-align:center;margin:8px 0 0">
+          Ou copie e cole no navegador:<br>
+          <span style="word-break:break-all">${link}</span>
+        </p>
+      `)}
+      ${notice('#6b7280','#f9fafb','#e5e7eb',
+        'Se você não solicitou este acesso, ignore este e-mail com segurança.')}
+    `),
+  }),
+
   // ── Convite de técnico ───────────────────────────────────
   tecnico_invite: ({ nomeOficina, conviteLink }) => ({
     subject: `Você foi convidado para ${nomeOficina} no BoxCerto 🔧`,

@@ -27,8 +27,9 @@ const LandingOrcamento= lazy(() => import('./pages/LandingOrcamento'))
 const LandingVsPlanilha = lazy(() => import('./pages/LandingVsPlanilha'))
 const BemVindo          = lazy(() => import('./pages/BemVindo'))
 const LandingDemo       = lazy(() => import('./pages/LandingDemo'))
-const Parceiro          = lazy(() => import('./pages/Parceiro'))
-const ParceiroPerfil    = lazy(() => import('./pages/ParceiroPerfil'))
+const Parceiro            = lazy(() => import('./pages/Parceiro'))
+const ParceiroPerfil      = lazy(() => import('./pages/ParceiroPerfil'))
+const ParceiroDashboard   = lazy(() => import('./pages/ParceiroDashboard'))
 const DemoLayout        = lazy(() => import('./pages/demo/DemoLayout'))
 const DemoOficina       = lazy(() => import('./pages/demo/DemoOficina'))
 const DemoHistorico     = lazy(() => import('./pages/demo/DemoHistorico'))
@@ -92,8 +93,9 @@ export default function App() {
             <Route path="/orcamento-online-oficina"         element={<Navigate to="/lporcamento-online-oficina" replace />} />
             <Route path="/boxcerto-vs-planilha"             element={<Navigate to="/lpboxcerto-vs-planilha" replace />} />
             <Route path="/bem-vindo"                        element={<BemVindo />} />
-            <Route path="/parceiro"          element={<Parceiro />} />
-            <Route path="/parceiro/:slug"    element={<ParceiroPerfil />} />
+            <Route path="/parceiro"              element={<Parceiro />} />
+            <Route path="/parceiro/dashboard" element={<ParceiroDashboard />} />
+            <Route path="/parceiro/:slug"     element={<ParceiroPerfil />} />
 
             {/* Demo interativo */}
             <Route path="/demo"       element={<LandingDemo />} />
