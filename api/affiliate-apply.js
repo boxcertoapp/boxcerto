@@ -129,39 +129,69 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'Erro ao cadastrar. Tente novamente.' })
   }
 
-  // Registra evento de cadastro
-  await supabase.from('affiliate_events').insert({
+  console.log('[Affiliate] Novo parceiro cadastrado:', slug, coupon)
+
+  // ── Retorna 200 imediatamente — eventos e email são fire-and-forget ──
+  // Não usar await: self-calls HTTP em serverless bloqueiam e causam timeout/500
+  res.status(200).json({
+    ok:          true,
+    slug,
+    coupon_code: coupon,
+    link:        `https://boxcerto.com/lp?ref=${slug}`,
+    nome:        nome.trim(),
+  })
+
+  // Registra evento de cadastro (após resposta)
+  supabase.from('affiliate_events').insert({
     partner_id: partner.id,
     event_type: 'lead',
     user_email: email.trim().toLowerCase(),
     metadata:   { tipo, empresa: empresa?.trim() || null },
   }).catch(() => {})
 
-  // Email de boas-vindas ao parceiro
-  try {
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}` : 'https://boxcerto.com.br'
-    await fetch(`${baseUrl}/api/send-email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type:        'affiliate_welcome',
-        to:          email.trim().toLowerCase(),
-        nome:        nome.trim(),
-        slug,
-        coupon_code: coupon,
-        link:        `https://boxcerto.com.br/lp?ref=${slug}`,
+  // Email de boas-vindas via Resend (direto, sem self-call HTTP)
+  const RESEND_KEY = process.env.RESEND_API_KEY
+  if (RESEND_KEY) {
+    const APP_URL = 'https://boxcerto.com'
+    const html = `
+<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#f8fafc">
+  <div style="background:#4f46e5;border-radius:14px;padding:28px;text-align:center;margin-bottom:24px">
+    <h1 style="color:white;margin:0;font-size:24px">BoxCerto</h1>
+    <p style="color:#c7d2fe;margin:6px 0 0;font-size:13px">Programa de Parceiros</p>
+  </div>
+  <div style="background:white;border-radius:14px;padding:28px;border:1px solid #e2e8f0;margin-bottom:16px">
+    <h2 style="color:#1e293b;margin:0 0 8px">Olá, ${nome.trim()}! 🎉</h2>
+    <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px">
+      Você agora faz parte do programa de parceiros BoxCerto. Veja seus dados abaixo:
+    </p>
+    <div style="background:#eef2ff;border-radius:12px;padding:20px;margin-bottom:20px;border:1px solid #c7d2fe">
+      <p style="color:#3730a3;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:0 0 12px">Seus dados de parceiro</p>
+      <p style="color:#1e293b;font-size:14px;margin:6px 0">🔗 <strong>Seu link:</strong><br>
+        <a href="${APP_URL}/lp?ref=${slug}" style="color:#4f46e5">${APP_URL}/lp?ref=${slug}</a></p>
+      <p style="color:#1e293b;font-size:14px;margin:12px 0 0">🎟️ <strong>Seu cupom:</strong>
+        <span style="background:#4f46e5;color:white;padding:3px 10px;border-radius:6px;font-weight:700;font-size:16px;margin-left:8px">${coupon}</span></p>
+      <p style="color:#6b7280;font-size:12px;margin:8px 0 0">Cupom dá 10% de desconto na 1ª mensalidade do seu indicado.</p>
+    </div>
+    <div style="text-align:center;margin:24px 0">
+      <a href="${APP_URL}/parceiro/dashboard" style="background:#4f46e5;color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:bold;font-size:15px;display:inline-block">
+        Acessar meu painel →
+      </a>
+    </div>
+  </div>
+  <p style="color:#94a3b8;font-size:12px;text-align:center;margin:16px 0 0">
+    BoxCerto · <a href="${APP_URL}" style="color:#94a3b8">boxcerto.com</a>
+  </p>
+</div>`
+
+    fetch('https://api.resend.com/emails', {
+      method:  'POST',
+      headers: { 'Authorization': `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        from:    'BoxCerto <noreply@boxcerto.com>',
+        to:      [email.trim().toLowerCase()],
+        subject: `Bem-vindo ao programa de parceiros BoxCerto, ${nome.trim()}! 🤝`,
+        html,
       }),
-    })
-  } catch {}
-
-  console.log('[Affiliate] Novo parceiro cadastrado:', slug, coupon)
-
-  return res.status(200).json({
-    ok:          true,
-    slug,
-    coupon_code: coupon,
-    link:        `https://boxcerto.com.br/lp?ref=${slug}`,
-    nome:        nome.trim(),
-  })
+    }).catch(e => console.warn('[Affiliate] Email não enviado:', e.message))
+  }
 }
