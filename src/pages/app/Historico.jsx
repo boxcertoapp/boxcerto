@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Search, Car, Clock, ChevronRight, X, FileText, Users, Phone, MapPin,
-  Calendar, Plus, AlertCircle, Edit2, Check, ArrowUpDown
+  Calendar, Plus, AlertCircle, Edit2, Check, ArrowUpDown, Gauge, Mail
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import {
@@ -36,7 +36,7 @@ const formatCPF = (val) => {
 // ── CLIENT FORM (create or edit) ──────────────────────────
 function ClientForm({ initial, onSave, onCancel, saveLabel = 'Salvar' }) {
   const [form, setForm] = useState(initial || {
-    nome: '', whatsapp: '', cpf: '', dataNascimento: '',
+    nome: '', whatsapp: '', cpf: '', email: '', dataNascimento: '',
     cep: '', endereco: '', numero: '', bairro: '', cidade: '', uf: '',
   })
   const [cepLoading, setCepLoading] = useState(false)
@@ -99,6 +99,10 @@ function ClientForm({ initial, onSave, onCancel, saveLabel = 'Salvar' }) {
         </div>
       </div>
       <div>
+        <label className="block text-xs font-medium text-slate-600 mb-1 flex items-center gap-1"><Mail className="w-3 h-3" />E-mail</label>
+        <input type="email" value={form.email} onChange={e => f('email', e.target.value)} placeholder="cliente@email.com" className={inp} />
+      </div>
+      <div>
         <label className="block text-xs font-medium text-slate-600 mb-1">Data de Nascimento</label>
         <input type="date" value={form.dataNascimento} onChange={e => f('dataNascimento', e.target.value)} className={inp} />
       </div>
@@ -149,6 +153,7 @@ function ClientModal({ mode, client, officeName, onClose, onSaved }) {
     nome: client.nome || '',
     whatsapp: client.whatsapp || '',
     cpf: client.cpf || '',
+    email: client.email || '',
     dataNascimento: client.dataNascimento || '',
     cep: client.cep || '',
     endereco: client.endereco || '',
@@ -164,6 +169,7 @@ function ClientModal({ mode, client, officeName, onClose, onSaved }) {
         nome: form.nome.trim(),
         whatsapp: form.whatsapp,
         cpf: form.cpf,
+        email: form.email,
         dataNascimento: form.dataNascimento,
         cep: form.cep,
         endereco: form.endereco,
@@ -291,7 +297,14 @@ function VehicleTimeline({ vehicle, client, officeName, onBack, onVehicleUpdated
                 </div>
                 <div className="flex-1 bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-slate-400">{formatDate(os.createdAt)}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-400">{formatDate(os.createdAt)}</span>
+                      {os.km && (
+                        <span className="flex items-center gap-1 text-xs text-slate-400">
+                          <Gauge className="w-3 h-3" />{Number(os.km).toLocaleString('pt-BR')} km
+                        </span>
+                      )}
+                    </div>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[os.status]}`}>
                       {STATUS_LABELS[os.status]}
                     </span>

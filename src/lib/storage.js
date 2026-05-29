@@ -22,6 +22,7 @@ const mapClient = (c) => !c ? null : ({
   nome: c.nome,
   whatsapp: c.whatsapp || '',
   cpf: c.cpf || '',
+  email: c.email || '',
   dataNascimento: c.data_nascimento || '',
   cep: c.cep || '',
   endereco: c.endereco || '',
@@ -103,11 +104,11 @@ export const clientStorage = {
     return (data || []).map(mapClient)
   },
 
-  create: async ({ officeName: _o, nome, whatsapp, cpf = '', dataNascimento = '',
+  create: async ({ officeName: _o, nome, whatsapp, cpf = '', email = '', dataNascimento = '',
     cep = '', endereco = '', numero = '', bairro = '', cidade = '', uf = '' }) => {
     const user_id = await getCurrentUserId()
     const { data, error } = await supabase.from('clients').insert({
-      user_id, nome, whatsapp, cpf, data_nascimento: dataNascimento,
+      user_id, nome, whatsapp, cpf, email, data_nascimento: dataNascimento,
       cep, endereco, numero, bairro, cidade, uf,
     }).select().single()
     if (error) throw new Error(error.message)
@@ -119,6 +120,7 @@ export const clientStorage = {
     if (upd.nome !== undefined) mapped.nome = upd.nome
     if (upd.whatsapp !== undefined) mapped.whatsapp = upd.whatsapp
     if (upd.cpf !== undefined) mapped.cpf = upd.cpf
+    if (upd.email !== undefined) mapped.email = upd.email
     if (upd.dataNascimento !== undefined) mapped.data_nascimento = upd.dataNascimento
     if (upd.cep !== undefined) mapped.cep = upd.cep
     if (upd.endereco !== undefined) mapped.endereco = upd.endereco
