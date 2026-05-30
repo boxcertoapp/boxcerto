@@ -131,7 +131,7 @@ module.exports = async (req, res) => {
                 // Valor do plano para cálculo de comissão mensal
                 const planValue = session.amount_total ? session.amount_total / 100 : null
 
-                // Comissão de entrada R$ 50 (pendente por 30 dias)
+                // Comissão de entrada R$ 50 (aprovada automaticamente no checkout)
                 await supabase.from('affiliate_commissions').insert({
                   partner_id:       partner.id,
                   customer_user_id: profile.id,
@@ -139,7 +139,8 @@ module.exports = async (req, res) => {
                   type:             'entry',
                   amount:           50.00,
                   plan_value:       planValue,
-                  status:           'pending',
+                  status:           'approved',
+                  approved_at:      new Date().toISOString(),
                 })
 
                 // Vincula parceiro ao perfil para comissões mensais futuras

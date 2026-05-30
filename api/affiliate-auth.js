@@ -28,10 +28,11 @@ module.exports = async function handler(req, res) {
   const { action } = body
 
   try {
-    if (action === 'login')      return await handleLogin(req, res, supabase, body, RESEND_KEY)
-    if (action === 'session')    return await handleSession(req, res, supabase, body)
-    if (action === 'update-pix') return await handleUpdatePix(req, res, supabase, body)
-    return res.status(400).json({ error: 'action inválida. Use: login | session | update-pix' })
+    if (action === 'login')            return await handleLogin(req, res, supabase, body, RESEND_KEY)
+    if (action === 'session')          return await handleSession(req, res, supabase, body)
+    if (action === 'update-pix')       return await handleUpdatePix(req, res, supabase, body)
+    if (action === 'update-identity')  return await handleUpdateIdentity(req, res, supabase, body)
+    return res.status(400).json({ error: 'action inválida. Use: login | session | update-pix | update-identity' })
   } catch (err) {
     console.error('[AffiliateAuth] Erro inesperado:', err.message)
     if (!res.headersSent) res.status(500).json({ error: 'Erro interno.' })
@@ -206,6 +207,81 @@ async function handleUpdatePix(req, res, supabase, body) {
 
   console.log('[AffiliateAuth] PIX atualizado:', partner_id)
   return res.status(200).json({ ok: true })
+}
+
+// ── UPDATE-IDENTITY: personaliza slug e cupom do parceiro ────
+async function handleUpdateIdentity(req, res, supabase, body) {
+  const { partner_id, access_token, new_slug, new_coupon } = body
+
+  if (!partner_id || !access_token) {
+    return res.status(400).json({ error: 'partner_id e access_token obrigatórios.' })
+  }
+  if (!new_slug && !new_coupon) {
+    return res.status(400).json({ error: 'Informe ao menos slug ou cupom para atualizar.' })
+  }
+
+  // Validação de formato
+  if (new_slug) {
+    if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(new_slug) || new_slug.length < 3 || new_slug.length > 30) {
+      return res.status(400).json({ error: 'Slug inválido. Use letras minúsculas, números e hífens (3–30 caracteres, sem hífen no início ou fim).' })
+    }
+  }
+  if (new_coupon) {
+    if (!/^[A-Z0-9]{4,12}$/.test(new_coupon)) {
+      return res.status(400).json({ error: 'Cupom inválido. Use letras maiúsculas e números (4–12 caracteres).' })
+    }
+  }
+
+  // Verifica sessão
+  const { data: partner } = await supabase
+    .from('affiliate_partners')
+    .select('access_token, access_token_exp, slug, coupon_code')
+    .eq('id', partner_id)
+    .maybeSingle()
+
+  if (!partner) return res.status(404).json({ error: 'Parceiro não encontrado.' })
+  if (partner.access_token !== access_token) return res.status(401).json({ error: 'Sessão inválida.' })
+  if (new Date(partner.access_token_exp) < new Date()) return res.status(401).json({ error: 'Sessão expirada.' })
+
+  // Verifica unicidade do slug (excluindo o próprio parceiro)
+  if (new_slug && new_slug !== partner.slug) {
+    const { data: taken } = await supabase
+      .from('affiliate_partners')
+      .select('id')
+      .eq('slug', new_slug)
+      .neq('id', partner_id)
+      .maybeSingle()
+    if (taken) return res.status(409).json({ error: 'Este slug já está em uso. Escolha outro.' })
+  }
+
+  // Verifica unicidade do cupom (excluindo o próprio parceiro)
+  if (new_coupon && new_coupon !== partner.coupon_code) {
+    const { data: taken } = await supabase
+      .from('affiliate_partners')
+      .select('id')
+      .eq('coupon_code', new_coupon)
+      .neq('id', partner_id)
+      .maybeSingle()
+    if (taken) return res.status(409).json({ error: 'Este cupom já está em uso. Escolha outro.' })
+  }
+
+  const updates = { updated_at: new Date().toISOString() }
+  if (new_slug)   updates.slug        = new_slug
+  if (new_coupon) updates.coupon_code = new_coupon
+
+  const { error } = await supabase
+    .from('affiliate_partners')
+    .update(updates)
+    .eq('id', partner_id)
+
+  if (error) return res.status(500).json({ error: error.message })
+
+  console.log('[AffiliateAuth] Identidade atualizada:', partner_id, Object.keys(updates).join(', '))
+  return res.status(200).json({
+    ok:          true,
+    slug:        updates.slug        || partner.slug,
+    coupon_code: updates.coupon_code || partner.coupon_code,
+  })
 }
 
 // ── Helpers ──────────────────────────────────────────────────

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   Loader2, Search, Users, DollarSign, Check, Clock, X,
   Edit2, ExternalLink, Copy, UserCheck, CreditCard,
-  FileText, TrendingUp, AlertCircle, Trash2
+  FileText, TrendingUp, AlertCircle, Trash2, Archive, Layers
 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 
@@ -405,7 +405,9 @@ function PartnerDetailModal({ partner, onClose, onReload }) {
 export default function Afiliados() {
   const [partners, setPartners]       = useState([])
   const [commissions, setCommissions] = useState([])
+  const [batches, setBatches]         = useState([])
   const [loading, setLoading]         = useState(true)
+  const [mainTab, setMainTab]         = useState('parceiros') // 'parceiros' | 'pagamentos'
   const [busca, setBusca]             = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [editModal, setEditModal]     = useState(null)
@@ -415,9 +417,10 @@ export default function Afiliados() {
   const [batchMsg, setBatchMsg]       = useState(null) // { ok, text }
   const [confirmDelete, setConfirmDelete] = useState(null) // partner object
   const [deleting, setDeleting]           = useState(false)
+  const [markingPaid, setMarkingPaid]     = useState(null) // batch id
 
   const load = useCallback(async () => {
-    const [{ data: pData }, { data: cData }] = await Promise.all([
+    const [{ data: pData }, { data: cData }, { data: bData }] = await Promise.all([
       supabase
         .from('affiliate_partners')
         .select('*')
@@ -425,9 +428,14 @@ export default function Afiliados() {
       supabase
         .from('affiliate_commissions')
         .select('partner_id, amount, status, type'),
+      supabase
+        .from('affiliate_payment_batches')
+        .select('*')
+        .order('created_at', { ascending: false }),
     ])
     setPartners(pData || [])
     setCommissions(cData || [])
+    setBatches(bData || [])
     setLoading(false)
   }, [])
 
@@ -558,6 +566,19 @@ export default function Afiliados() {
     setBatchLoading(false)
   }
 
+  // ── Marcar lote como pago ─────────────────────────────────
+  const markBatchPaid = async (batch) => {
+    if (!window.confirm(`Marcar lote ${batch.reference_month} (${fmt(batch.total_amount)}) como PAGO? Esta ação confirma que os PIX foram realizados.`)) return
+    setMarkingPaid(batch.id)
+    const { error } = await supabase
+      .from('affiliate_payment_batches')
+      .update({ status: 'paid', paid_at: new Date().toISOString() })
+      .eq('id', batch.id)
+    setMarkingPaid(null)
+    if (error) { alert(`Erro: ${error.message}`); return }
+    load()
+  }
+
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
 
@@ -601,6 +622,121 @@ export default function Afiliados() {
         <StatCard icon={Clock}      label="Pend. aprovação"  value={fmt(totalPending)}                             color="amber"   />
         <StatCard icon={DollarSign} label="Aprovado p/ pagar" value={fmt(totalApproved)}                          color="slate"   />
       </div>
+
+      {/* Tabs ───────────────────────────────────────────── */}
+      <div className="flex border-b border-gray-200 mb-5">
+        {[
+          { key: 'parceiros',  label: 'Parceiros',  Icon: Users   },
+          { key: 'pagamentos', label: 'Histórico de pagamentos', Icon: Archive },
+        ].map(({ key, label, Icon }) => (
+          <button key={key} onClick={() => setMainTab(key)}
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors
+              ${mainTab === key
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+            <Icon className="w-4 h-4" />
+            {label}
+            {key === 'pagamentos' && batches.filter(b => b.status === 'open').length > 0 && (
+              <span className="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                {batches.filter(b => b.status === 'open').length}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* ── PAGAMENTOS tab ─────────────────────────────── */}
+      {mainTab === 'pagamentos' && (
+        <>
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+            </div>
+          ) : batches.length === 0 ? (
+            <div className="text-center py-16 text-slate-400">
+              <Archive className="w-10 h-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">Nenhum lote de pagamento gerado ainda.</p>
+              <p className="text-xs mt-1">Clique em "Gerar lote de pagamento" quando houver comissões aprovadas.</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      {['Lote / ID', 'Mês ref.', 'Parceiros', 'Total', 'Status', 'Criado em', 'Ações'].map(h => (
+                        <th key={h} className="text-left text-xs font-semibold text-slate-500 px-4 py-3 whitespace-nowrap">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {batches.map(b => (
+                      <tr key={b.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3">
+                          <span className="font-mono text-xs text-slate-500">{b.id.slice(0, 8)}…</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-sm font-semibold text-slate-800">{b.reference_month || '—'}</span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-700">
+                          {b.affiliates_count ?? '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-sm font-bold text-slate-900">{fmt(b.total_amount)}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {b.status === 'paid' ? (
+                            <span className="text-xs font-semibold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">
+                              ✓ Pago
+                            </span>
+                          ) : (
+                            <span className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-100 text-amber-700">
+                              Aguardando PIX
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-slate-400">
+                          {fmtDate(b.created_at)}
+                          {b.paid_at && (
+                            <span className="block text-emerald-600">pago {fmtDate(b.paid_at)}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {b.status === 'open' && (
+                            <button
+                              onClick={() => markBatchPaid(b)}
+                              disabled={markingPaid === b.id}
+                              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60">
+                              {markingPaid === b.id
+                                ? <Loader2 className="w-3 h-3 animate-spin" />
+                                : <Check className="w-3 h-3" />}
+                              Confirmar pagamento
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+                <p className="text-xs text-slate-400">
+                  {batches.length} lote{batches.length !== 1 ? 's' : ''} ·
+                  total histórico pago:{' '}
+                  <span className="font-semibold text-slate-600">
+                    {fmt(batches.filter(b => b.status === 'paid').reduce((s, b) => s + Number(b.total_amount), 0))}
+                  </span>
+                </p>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── PARCEIROS tab ──────────────────────────────── */}
+      {mainTab === 'parceiros' && (<>
 
       {/* Filters ────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row gap-2 mb-4">
@@ -799,6 +935,8 @@ export default function Afiliados() {
           </div>
         </div>
       )}
+
+      </>)} {/* end parceiros tab */}
 
       {/* Modals */}
       {editModal && (

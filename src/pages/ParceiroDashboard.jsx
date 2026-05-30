@@ -8,7 +8,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Loader2, Copy, Check, LogOut, DollarSign, Users,
   TrendingUp, Clock, Edit2, X, Save, Wrench, ChevronRight,
-  ExternalLink, AlertCircle, Mail
+  ExternalLink, AlertCircle, Mail, Sparkles
 } from 'lucide-react'
 
 // ── Constantes ───────────────────────────────────────────────
@@ -50,8 +50,8 @@ function tierLabel(tier) {
 }
 
 function nextTier(activeRefs) {
-  if (activeRefs >= 21) return null
-  if (activeRefs >= 11) return { need: 21 - activeRefs, pct: 30 }
+  if (activeRefs >= 26) return null
+  if (activeRefs >= 11) return { need: 26 - activeRefs, pct: 30 }
   return                        { need: 11 - activeRefs, pct: 25 }
 }
 
@@ -105,6 +105,142 @@ function CopyField({ label, value, mono = true }) {
           ? <Check className="w-4 h-4 text-emerald-600" />
           : <Copy className="w-4 h-4 text-slate-400" />}
       </button>
+    </div>
+  )
+}
+
+// ── Identity modal (personaliza slug e cupom) ─────────────────
+function IdentityModal({ current, onSave, onClose, isFirst = false }) {
+  const appUrl = window.location.origin
+  const [slug,    setSlug]    = useState(current.slug        || '')
+  const [coupon,  setCoupon]  = useState(current.coupon_code || '')
+  const [loading, setLoading] = useState(false)
+  const [erro,    setErro]    = useState('')
+
+  const slugOk   = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(slug)   && slug.length   >= 3 && slug.length   <= 30
+  const couponOk = /^[A-Z0-9]{4,12}$/.test(coupon)
+
+  const handleSlug = (v) => setSlug(v.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/^-+|-+$/g, ''))
+  const handleCoupon = (v) => setCoupon(v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12))
+
+  const save = async () => {
+    setErro('')
+    if (!slugOk)   { setErro('Slug inválido. Use letras minúsculas, números e hífens (3–30 caracteres).'); return }
+    if (!couponOk) { setErro('Cupom inválido. Use letras maiúsculas e números (4–12 caracteres).'); return }
+    setLoading(true)
+    try {
+      const res  = await fetch('/api/affiliate-auth', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          action:       'update-identity',
+          partner_id:   current.id,
+          access_token: current.accessToken,
+          new_slug:     slug   !== current.slug        ? slug   : undefined,
+          new_coupon:   coupon !== current.coupon_code ? coupon : undefined,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Erro ao salvar.')
+      onSave(json.slug, json.coupon_code)
+      onClose()
+    } catch (e) { setErro(e.message) }
+    setLoading(false)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-indigo-100 flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-indigo-600" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900">
+              {isFirst ? 'Personalize seu link e cupom' : 'Editar link e cupom'}
+            </h3>
+          </div>
+          {!isFirst && (
+            <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        {isFirst && (
+          <p className="text-sm text-slate-500 mb-5">
+            Escolha um link e cupom personalizados. Você pode alterar depois.
+          </p>
+        )}
+
+        <div className="space-y-4 mt-4">
+          {/* Slug */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Seu link de indicação</label>
+            <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-400">
+              <span className="bg-slate-50 px-3 py-2.5 text-xs text-slate-400 border-r border-gray-200 whitespace-nowrap select-none">
+                {appUrl}/parceiro/
+              </span>
+              <input
+                value={slug}
+                onChange={e => handleSlug(e.target.value)}
+                placeholder="meu-link"
+                className="flex-1 px-3 py-2.5 text-sm font-mono focus:outline-none"
+              />
+            </div>
+            {slug && !slugOk && (
+              <p className="text-red-500 text-xs mt-1">Mínimo 3 caracteres. Apenas letras minúsculas, números e hífens. Sem hífen no início ou fim.</p>
+            )}
+            {slug && slugOk && (
+              <p className="text-emerald-600 text-xs mt-1">✓ {appUrl}/parceiro/{slug}</p>
+            )}
+          </div>
+
+          {/* Coupon */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Cupom de desconto (10% para o indicado)</label>
+            <input
+              value={coupon}
+              onChange={e => handleCoupon(e.target.value)}
+              placeholder="MEUCUPOM"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-mono font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
+            {coupon && !couponOk && (
+              <p className="text-red-500 text-xs mt-1">Mínimo 4 caracteres. Apenas letras maiúsculas e números.</p>
+            )}
+            {coupon && couponOk && (
+              <p className="text-emerald-600 text-xs mt-1">✓ Cupom: {coupon}</p>
+            )}
+          </div>
+        </div>
+
+        {erro && (
+          <div className="flex items-center gap-2 text-red-600 text-xs bg-red-50 rounded-lg p-3 mt-4">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            {erro}
+          </div>
+        )}
+
+        <div className="flex gap-2 mt-5">
+          {isFirst ? (
+            <button onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-slate-500 font-medium hover:bg-gray-50">
+              Pular por agora
+            </button>
+          ) : (
+            <button onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-slate-600 font-medium hover:bg-gray-50">
+              Cancelar
+            </button>
+          )}
+          <button
+            onClick={save}
+            disabled={loading || !slugOk || !couponOk}
+            className="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            {isFirst ? 'Salvar e continuar' : 'Salvar'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -276,17 +412,20 @@ function LoginScreen({ onEmailSent }) {
 }
 
 // ── Dashboard view ────────────────────────────────────────────
-function Dashboard({ session, onLogout, onRefresh }) {
+function Dashboard({ session, onLogout, firstLogin = false, onIdentitySaved }) {
   const { partner, commissions = [], activeRefs = 0, tier = 20, totals = {} } = session
 
-  const [pixModal,  setPixModal]  = useState(false)
+  const [pixModal,      setPixModal]      = useState(false)
+  const [identityModal, setIdentityModal] = useState(firstLogin)
   const [pixKey,    setPixKey]    = useState(partner.pix_key  || '')
   const [pixType,   setPixType]   = useState(partner.pix_type || '')
+  const [partnerSlug,   setPartnerSlug]   = useState(partner.slug        || '')
+  const [partnerCoupon, setPartnerCoupon] = useState(partner.coupon_code || '')
   const [copied,    setCopied]    = useState(null)
 
   const appUrl = window.location.origin
-  const link   = `${appUrl}/parceiro/${partner.slug}`
-  const coupon = partner.coupon_code
+  const link   = `${appUrl}/parceiro/${partnerSlug}`
+  const coupon = partnerCoupon
 
   const copy = (text, key) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -301,10 +440,18 @@ function Dashboard({ session, onLogout, onRefresh }) {
   const handlePixSaved = (key, type) => {
     setPixKey(key)
     setPixType(type)
-    // Atualiza localStorage
     const stored = JSON.parse(localStorage.getItem(SESSION_KEY) || '{}')
     stored.partner = { ...stored.partner, pix_key: key, pix_type: type }
     localStorage.setItem(SESSION_KEY, JSON.stringify(stored))
+  }
+
+  const handleIdentitySaved = (newSlug, newCoupon) => {
+    setPartnerSlug(newSlug)
+    setPartnerCoupon(newCoupon)
+    const stored = JSON.parse(localStorage.getItem(SESSION_KEY) || '{}')
+    stored.partner = { ...stored.partner, slug: newSlug, coupon_code: newCoupon }
+    localStorage.setItem(SESSION_KEY, JSON.stringify(stored))
+    if (onIdentitySaved) onIdentitySaved(newSlug, newCoupon)
   }
 
   return (
@@ -314,6 +461,14 @@ function Dashboard({ session, onLogout, onRefresh }) {
           current={{ id: partner.id, accessToken: session.accessToken, pix_key: pixKey, pix_type: pixType }}
           onSave={handlePixSaved}
           onClose={() => setPixModal(false)}
+        />
+      )}
+      {identityModal && (
+        <IdentityModal
+          current={{ id: partner.id, accessToken: session.accessToken, slug: partnerSlug, coupon_code: partnerCoupon }}
+          onSave={handleIdentitySaved}
+          onClose={() => setIdentityModal(false)}
+          isFirst={firstLogin}
         />
       )}
 
@@ -385,7 +540,15 @@ function Dashboard({ session, onLogout, onRefresh }) {
 
         {/* Link e cupom */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
-          <h2 className="text-sm font-bold text-slate-800 mb-4">🔗 Seu link e cupom de indicação</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-bold text-slate-800">🔗 Seu link e cupom de indicação</h2>
+            <button
+              onClick={() => setIdentityModal(true)}
+              className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 px-3 py-1.5 rounded-lg hover:bg-indigo-50 transition-colors">
+              <Sparkles className="w-3.5 h-3.5" />
+              Personalizar
+            </button>
+          </div>
           <div className="space-y-3">
             <CopyField label="Link de indicação" value={link} mono />
             {coupon && <CopyField label="Cupom (10% de desconto para o indicado)" value={coupon} mono={false} />}
@@ -535,11 +698,12 @@ export default function ParceiroDashboard() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
-  const [state,   setState]   = useState('loading') // loading | login | verifying | dashboard | error
-  const [session, setSession] = useState(null)
-  const [errMsg,  setErrMsg]  = useState('')
+  const [state,      setState]      = useState('loading') // loading | login | verifying | dashboard | error
+  const [session,    setSession]    = useState(null)
+  const [errMsg,     setErrMsg]     = useState('')
+  const [firstLogin, setFirstLogin] = useState(false)
 
-  const applySessionData = useCallback((data, accessToken) => {
+  const applySessionData = useCallback((data, accessToken, isFirst = false) => {
     const full = {
       partner:     data.partner,
       commissions: data.commissions || [],
@@ -551,6 +715,7 @@ export default function ParceiroDashboard() {
     }
     saveSession(full, accessToken, new Date(full.exp))
     setSession(full)
+    setFirstLogin(isFirst)
     setState('dashboard')
     // Limpa tokens da URL
     window.history.replaceState({}, '', '/parceiro/dashboard')
@@ -571,7 +736,7 @@ export default function ParceiroDashboard() {
         .then(r => r.json())
         .then(data => {
           if (!data.ok) throw new Error(data.error || 'Link inválido.')
-          applySessionData(data, data.access_token)
+          applySessionData(data, data.access_token, true)
         })
         .catch(e => {
           setErrMsg(e.message)
@@ -640,7 +805,14 @@ export default function ParceiroDashboard() {
   if (state === 'login') return <LoginScreen />
 
   if (state === 'dashboard' && session) {
-    return <Dashboard session={session} onLogout={handleLogout} />
+    return (
+      <Dashboard
+        session={session}
+        onLogout={handleLogout}
+        firstLogin={firstLogin}
+        onIdentitySaved={() => setFirstLogin(false)}
+      />
+    )
   }
 
   return null
