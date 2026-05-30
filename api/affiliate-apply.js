@@ -144,19 +144,7 @@ async function _apply(req, res) {
 
   console.log('[Affiliate] Parceiro cadastrado:', slug, coupon)
 
-  // ── Responde 200 imediatamente ───────────────────────────
-  // IMPORTANTE: retornar ANTES do email para não depender de self-call
-  res.status(200).json({
-    ok:          true,
-    slug,
-    coupon_code: coupon,
-    link:        `https://boxcerto.com/lp?ref=${slug}`,
-    nome:        nome.trim(),
-  })
-
-  // ── Fire-and-forget: evento + email ──────────────────────
-  // (após res.json — Vercel ainda executa brevemente após resposta)
-
+  // ── Evento (fire-and-forget — baixa prioridade) ───────────
   supabase.from('affiliate_events').insert({
     partner_id: partner.id,
     event_type: 'lead',
@@ -164,19 +152,24 @@ async function _apply(req, res) {
     metadata:   { tipo, empresa: empresa?.trim() || null },
   }).catch(() => {})
 
+  // ── E-mail de boas-vindas ─────────────────────────────────
+  // DEVE ser awaited ANTES de res.json() — Vercel encerra a função
+  // assim que a resposta é enviada, não há garantia de execução após isso.
+  // O Resend responde em <500ms, não impacta a experiência do usuário.
   if (RESEND_KEY) {
     const APP_URL = 'https://boxcerto.com'
-    fetch('https://api.resend.com/emails', {
-      method:  'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_KEY}`,
-        'Content-Type':  'application/json',
-      },
-      body: JSON.stringify({
-        from:    'BoxCerto <noreply@boxcerto.com>',
-        to:      [email.trim().toLowerCase()],
-        subject: `Bem-vindo ao programa de parceiros BoxCerto, ${nome.trim()}! 🤝`,
-        html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#f8fafc">
+    await Promise.race([
+      fetch('https://api.resend.com/emails', {
+        method:  'POST',
+        headers: {
+          'Authorization': `Bearer ${RESEND_KEY}`,
+          'Content-Type':  'application/json',
+        },
+        body: JSON.stringify({
+          from:    'BoxCerto <noreply@boxcerto.com>',
+          to:      [email.trim().toLowerCase()],
+          subject: `Bem-vindo ao programa de parceiros BoxCerto, ${nome.trim()}! 🤝`,
+          html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#f8fafc">
   <div style="background:#4f46e5;border-radius:14px;padding:28px;text-align:center;margin-bottom:24px">
     <h1 style="color:white;margin:0;font-size:24px">BoxCerto</h1>
     <p style="color:#c7d2fe;margin:6px 0 0;font-size:13px">Programa de Parceiros</p>
@@ -186,7 +179,7 @@ async function _apply(req, res) {
     <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px">Você agora faz parte do programa de parceiros BoxCerto.</p>
     <div style="background:#eef2ff;border-radius:12px;padding:20px;margin-bottom:20px;border:1px solid #c7d2fe">
       <p style="color:#3730a3;font-size:12px;font-weight:700;text-transform:uppercase;margin:0 0 12px">Seus dados</p>
-      <p style="color:#1e293b;font-size:14px;margin:6px 0">🔗 <strong>Link:</strong> <a href="${APP_URL}/lp?ref=${slug}" style="color:#4f46e5">${APP_URL}/lp?ref=${slug}</a></p>
+      <p style="color:#1e293b;font-size:14px;margin:6px 0">🔗 <strong>Link:</strong> <a href="${APP_URL}/parceiro/${slug}" style="color:#4f46e5">${APP_URL}/parceiro/${slug}</a></p>
       <p style="color:#1e293b;font-size:14px;margin:12px 0 0">🎟️ <strong>Cupom:</strong> <span style="background:#4f46e5;color:white;padding:3px 10px;border-radius:6px;font-weight:700">${coupon}</span></p>
     </div>
     <div style="text-align:center;margin:24px 0">
@@ -195,7 +188,19 @@ async function _apply(req, res) {
   </div>
   <p style="color:#94a3b8;font-size:12px;text-align:center">BoxCerto · <a href="${APP_URL}" style="color:#94a3b8">boxcerto.com</a></p>
 </div>`,
-      }),
-    }).catch(e => console.warn('[Affiliate] Email:', e.message))
+        }),
+      }).catch(e => console.warn('[Affiliate] Email erro:', e.message)),
+      // Timeout de segurança: não bloqueia mais que 6s mesmo se Resend travar
+      new Promise(resolve => setTimeout(resolve, 6000)),
+    ])
   }
+
+  // ── Resposta final ────────────────────────────────────────
+  return res.status(200).json({
+    ok:          true,
+    slug,
+    coupon_code: coupon,
+    link:        `https://boxcerto.com/parceiro/${slug}`,
+    nome:        nome.trim(),
+  })
 }
