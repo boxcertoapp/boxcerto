@@ -184,7 +184,18 @@ function Nav() {
             <a key={href} href={href} style={{ fontSize:14, color:'var(--on-dark-mut)', textDecoration:'none' }}>{label}</a>
           ))}
         </div>
-        <div style={{ marginLeft:'auto' }}>
+        <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:10 }}>
+          <a href="/parceiro/dashboard" style={{
+            display:'inline-flex', alignItems:'center', gap:6,
+            color:'var(--on-dark-faint)', fontSize:13, fontWeight:600, textDecoration:'none',
+            padding:'10px 14px', borderRadius:11, border:'1px solid rgba(140,150,220,.18)',
+            transition:'color .15s,border-color .15s',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.color='var(--on-dark)'; e.currentTarget.style.borderColor='rgba(140,150,220,.4)' }}
+            onMouseLeave={e => { e.currentTarget.style.color='var(--on-dark-faint)'; e.currentTarget.style.borderColor='rgba(140,150,220,.18)' }}
+          >
+            Já sou parceiro
+          </a>
           <a href="#cadastro" className="pg-btn" style={{
             display:'inline-flex', alignItems:'center', gap:8,
             background:'var(--indigo)', color:'white', padding:'10px 20px',
@@ -735,6 +746,10 @@ function FormCard() {
         Ao continuar você concorda com os{' '}
         <a href="/termos" style={{ color:'var(--indigo-soft)' }}>termos do programa</a>.
         Pagamentos de comissão sempre via PIX.
+      </p>
+      <p style={{ fontSize:12, color:'var(--on-dark-faint)', textAlign:'center', marginTop:10 }}>
+        Já tem conta?{' '}
+        <a href="/parceiro/dashboard" style={{ color:'var(--indigo-soft)', fontWeight:600 }}>Acessar meu painel →</a>
       </p>
     </form>
   )
