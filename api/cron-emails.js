@@ -70,6 +70,101 @@ async function temOS(userId) {
   return (count || 0) > 0
 }
 
+// ── Geração de comissões mensais recorrentes ──────────────
+async function gerarComissoesMensais(agora) {
+  const PLAN_VALUE = 97
+
+  // Mês de referência = mês anterior
+  const refDate   = new Date(agora.getFullYear(), agora.getMonth() - 1, 1)
+  const refMonth  = refDate.toISOString().slice(0, 7) // 'YYYY-MM'
+  const monthLabel = refDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+
+  console.log(`[cron/afiliados] Gerando comissões mensais para ${refMonth}`)
+
+  // Parceiros ativos
+  const { data: partners } = await supabase
+    .from('affiliate_partners')
+    .select('id, nome, email, pix_key, commission_type, commission_custom_pct')
+    .eq('status', 'active')
+
+  if (!partners || partners.length === 0) {
+    console.log('[cron/afiliados] Nenhum parceiro ativo.')
+    return
+  }
+
+  // Todos os indicados ativos agrupados por parceiro
+  const { data: referrals } = await supabase
+    .from('profiles')
+    .select('id, email, affiliate_partner_id')
+    .not('affiliate_partner_id', 'is', null)
+    .eq('status', 'active')
+
+  const byPartner = {}
+  for (const r of (referrals || [])) {
+    if (!byPartner[r.affiliate_partner_id]) byPartner[r.affiliate_partner_id] = []
+    byPartner[r.affiliate_partner_id].push(r)
+  }
+
+  // Comissões mensais já criadas para este refMonth (dedup)
+  const { data: existing } = await supabase
+    .from('affiliate_commissions')
+    .select('partner_id, customer_email')
+    .eq('type', 'monthly')
+    .eq('reference_month', refMonth)
+
+  const existingSet = new Set(
+    (existing || []).map(c => `${c.partner_id}::${c.customer_email}`)
+  )
+
+  for (const partner of partners) {
+    const myRefs = byPartner[partner.id] || []
+    if (myRefs.length === 0) continue
+
+    // Tier: custom se configurado, senão escalonado
+    const tierPct = (partner.commission_type === 'custom' && partner.commission_custom_pct)
+      ? Number(partner.commission_custom_pct)
+      : myRefs.length >= 26 ? 30 : myRefs.length >= 11 ? 25 : 20
+
+    const amount = Math.round(PLAN_VALUE * tierPct / 100 * 100) / 100
+
+    // Indicados sem comissão neste mês
+    const novos = myRefs.filter(r => !existingSet.has(`${partner.id}::${r.email}`))
+    if (novos.length === 0) continue
+
+    const rows = novos.map(r => ({
+      partner_id:      partner.id,
+      type:            'monthly',
+      reference_month: refMonth,
+      amount,
+      tier_applied:    tierPct,
+      plan_value:      PLAN_VALUE,
+      customer_email:  r.email,
+      status:          'pending',
+    }))
+
+    const { error } = await supabase.from('affiliate_commissions').insert(rows)
+    if (error) {
+      console.error(`[cron/afiliados] Erro ao inserir comissões para ${partner.email}:`, error.message)
+      continue
+    }
+
+    const totalFmt = Number(amount * novos.length).toLocaleString('pt-BR', {
+      style: 'currency', currency: 'BRL',
+    })
+
+    // Notifica o parceiro
+    await enviarEmail('affiliate_commission_generated', partner.email, {
+      nome:        partner.nome,
+      month_label: monthLabel,
+      count:       novos.length,
+      total:       totalFmt,
+      tier:        tierPct,
+    })
+
+    console.log(`[cron/afiliados] ✅ ${partner.nome}: ${novos.length} comissões → ${totalFmt} (${tierPct}%)`)
+  }
+}
+
 // ── Handler principal ─────────────────────────────────────
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json')
@@ -244,6 +339,15 @@ module.exports = async (req, res) => {
   }
 
   console.log('[cron] Concluído:', resultados)
+
+  // ── Comissões mensais (só no dia 1 de cada mês) ──────────
+  if (agora.getDate() === 1) {
+    try {
+      await gerarComissoesMensais(agora)
+    } catch (e) {
+      console.error('[cron] Erro ao gerar comissões mensais:', e.message)
+    }
+  }
 
   // ── Snapshot de MRR (uma vez por dia) ────────────────────
   try {

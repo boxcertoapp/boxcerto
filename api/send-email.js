@@ -480,6 +480,57 @@ const templates = {
     `),
   }),
 
+  // ── Comissões mensais geradas ────────────────────────────
+  affiliate_commission_generated: ({ nome, month_label, count, total, tier }) => ({
+    subject: `💰 Suas comissões de ${month_label} foram geradas — BoxCerto`,
+    html: base(`
+      ${card(`
+        <h2 style="color:#1e293b;margin:0 0 12px">Novas comissões geradas, ${nome}! 💰</h2>
+        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px">
+          As comissões de <strong>${month_label}</strong> foram calculadas e já estão disponíveis no seu painel.
+        </p>
+        <div style="background:#eef2ff;border-radius:12px;padding:20px;margin-bottom:20px;border:1px solid #c7d2fe">
+          <p style="color:#3730a3;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:0 0 12px">Resumo do mês</p>
+          <p style="color:#1e293b;font-size:14px;margin:6px 0">
+            📋 <strong>${count}</strong> assinatura${count !== 1 ? 's' : ''} ativa${count !== 1 ? 's' : ''}
+          </p>
+          <p style="color:#1e293b;font-size:14px;margin:6px 0">
+            💰 Total pendente: <strong style="color:#4f46e5;font-size:20px">${total}</strong>
+          </p>
+          <p style="color:#6b7280;font-size:12px;margin:10px 0 0">
+            Taxa aplicada: ${tier}% —
+            ${tier >= 30 ? 'Ouro (26+ indicados ativos)' : tier >= 25 ? 'Prata (11–25 indicados ativos)' : 'Bronze (até 10 indicados ativos)'}
+          </p>
+        </div>
+        ${btn(`${APP_URL}/parceiro/dashboard`, 'Ver detalhes no painel →')}
+      `)}
+      ${notice('#065f46','#ecfdf5','#6ee7b7',
+        '⏳ Comissões ficam <strong>pendentes de aprovação</strong> até o dia 5. Aprovadas, o pagamento cai direto no seu PIX.')}
+    `),
+  }),
+
+  // ── Pagamento enviado ao parceiro ─────────────────────────
+  affiliate_payment_sent: ({ nome, amount, pix_key }) => ({
+    subject: `✅ Pagamento enviado para seu PIX — BoxCerto`,
+    html: base(`
+      ${card(`
+        <h2 style="color:#1e293b;margin:0 0 12px">Pagamento enviado! ✅</h2>
+        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px">
+          Olá, ${nome}! As suas comissões aprovadas foram pagas.
+        </p>
+        <div style="background:#f0fdf4;border-radius:12px;padding:20px;margin-bottom:20px;border:1px solid #bbf7d0">
+          <p style="color:#166534;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:0 0 12px">Detalhes do pagamento</p>
+          <p style="color:#1e293b;font-size:22px;font-weight:800;margin:0 0 8px;color:#16a34a">${amount}</p>
+          ${pix_key ? `<p style="color:#15803d;font-size:13px;margin:4px 0">🔑 Chave PIX: <strong>${pix_key}</strong></p>` : ''}
+          <p style="color:#6b7280;font-size:12px;margin:8px 0 0">O crédito pode levar alguns minutos para aparecer na sua conta.</p>
+        </div>
+        ${btn(`${APP_URL}/parceiro/dashboard`, 'Ver extrato no painel →')}
+      `)}
+      ${notice('#1e40af','#eff6ff','#bfdbfe',
+        '🤝 Obrigado por fazer parte do programa de parceiros BoxCerto! Continue indicando e suba de nível para ganhar mais.')}
+    `),
+  }),
+
   // ── Convite de técnico ───────────────────────────────────
   tecnico_invite: ({ nomeOficina, conviteLink }) => ({
     subject: `Você foi convidado para ${nomeOficina} no BoxCerto 🔧`,

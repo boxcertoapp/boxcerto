@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   Loader2, Search, Users, DollarSign, Check, Clock, X,
   Edit2, ExternalLink, Copy, UserCheck, CreditCard,
-  FileText, TrendingUp, AlertCircle
+  FileText, TrendingUp, AlertCircle, Trash2
 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 
@@ -413,6 +413,8 @@ export default function Afiliados() {
   const [copied, setCopied]           = useState(null)
   const [batchLoading, setBatchLoading] = useState(false)
   const [batchMsg, setBatchMsg]       = useState(null) // { ok, text }
+  const [confirmDelete, setConfirmDelete] = useState(null) // partner object
+  const [deleting, setDeleting]           = useState(false)
 
   const load = useCallback(async () => {
     const [{ data: pData }, { data: cData }] = await Promise.all([
@@ -465,6 +467,22 @@ export default function Afiliados() {
     })
   }
 
+  // ── Excluir parceiro ──────────────────────────────────────
+  const deletePartner = async (partner) => {
+    setDeleting(true)
+    const { error } = await supabase
+      .from('affiliate_partners')
+      .delete()
+      .eq('id', partner.id)
+    setDeleting(false)
+    if (error) {
+      alert(`Erro ao excluir: ${error.message}`)
+      return
+    }
+    setConfirmDelete(null)
+    load()
+  }
+
   // ── Gerar lote de pagamento ───────────────────────────────
   const gerarLote = async () => {
     setBatchLoading(true)
@@ -511,6 +529,28 @@ export default function Afiliados() {
         ok:   true,
         text: `✅ Lote gerado! ${fmt(total)} para ${partnerIds.length} parceiro(s). Lote ID: ${batch.id.slice(0, 8)}…`,
       })
+
+      // Notifica cada parceiro sobre o pagamento (fire-and-forget)
+      const amtByPartner = {}
+      for (const c of approved) {
+        amtByPartner[c.partner_id] = (amtByPartner[c.partner_id] || 0) + Number(c.amount)
+      }
+      for (const [pid, amt] of Object.entries(amtByPartner)) {
+        const p = partners.find(x => x.id === pid)
+        if (!p?.email) continue
+        fetch('/api/send-email', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type:    'affiliate_payment_sent',
+            to:      p.email,
+            nome:    p.nome,
+            amount:  amt.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+            pix_key: p.pix_key || null,
+          }),
+        }).catch(e => console.warn('[Afiliados] Email pagamento erro:', e.message))
+      }
+
       load()
     } catch (e) {
       setBatchMsg({ ok: false, text: `❌ Erro: ${e.message}` })
@@ -736,6 +776,12 @@ export default function Afiliados() {
                             className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors">
                             <ExternalLink className="w-4 h-4" />
                           </a>
+                          <button
+                            onClick={() => setConfirmDelete(p)}
+                            title="Excluir parceiro"
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -769,6 +815,55 @@ export default function Afiliados() {
           onReload={load}
         />
       )}
+
+      {/* Delete confirmation modal */}
+      {confirmDelete && (() => {
+        const hasComms = commissions.some(c => c.partner_id === confirmDelete.id)
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Excluir parceiro?</h3>
+                  <p className="text-xs text-slate-500">{confirmDelete.nome}</p>
+                </div>
+              </div>
+
+              {hasComms ? (
+                <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4">
+                  <p className="text-xs text-red-700 font-semibold mb-1">⚠️ Atenção: este parceiro tem comissões registradas.</p>
+                  <p className="text-xs text-red-600">Excluir apagará permanentemente o parceiro e todas as suas comissões e eventos. Isso não pode ser desfeito.</p>
+                </div>
+              ) : (
+                <p className="text-sm text-slate-600 mb-4">
+                  Esta ação é permanente e não pode ser desfeita. Todos os dados deste parceiro serão removidos.
+                </p>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmDelete(null)}
+                  disabled={deleting}
+                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-slate-600 text-sm font-medium hover:bg-gray-50 disabled:opacity-60">
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => deletePartner(confirmDelete)}
+                  disabled={deleting}
+                  className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-60 flex items-center justify-center gap-2">
+                  {deleting
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : <Trash2 className="w-4 h-4" />}
+                  Excluir
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
