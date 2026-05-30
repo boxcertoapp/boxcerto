@@ -68,16 +68,18 @@ async function handleLogin(req, res, supabase, body, resendKey) {
 
   // Envia magic link via Resend — awaited antes da resposta,
   // pois Vercel encerra a função assim que res.json() é chamado.
-  if (resendKey) {
-    await Promise.race([
-      fetch('https://api.resend.com/emails', {
-        method:  'POST',
-        headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from:    'BoxCerto <noreply@boxcerto.com>',
-          to:      [partner.email],
-          subject: 'Seu link de acesso ao painel de parceiro BoxCerto',
-          html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#f8fafc">
+  // try/catch garante que falha de email não vira 500 (token já foi salvo).
+  try {
+    if (resendKey) {
+      await Promise.race([
+        fetch('https://api.resend.com/emails', {
+          method:  'POST',
+          headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from:    'BoxCerto <noreply@boxcerto.com>',
+            to:      [partner.email],
+            subject: 'Seu link de acesso ao painel de parceiro BoxCerto',
+            html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#f8fafc">
   <div style="background:#4f46e5;border-radius:14px;padding:28px;text-align:center;margin-bottom:24px">
     <h1 style="color:white;margin:0;font-size:24px">BoxCerto</h1>
     <p style="color:#c7d2fe;margin:6px 0 0;font-size:13px">Programa de Parceiros</p>
@@ -98,10 +100,14 @@ async function handleLogin(req, res, supabase, body, resendKey) {
   </div>
   <p style="color:#94a3b8;font-size:12px;text-align:center">Se não solicitou, ignore este email.</p>
 </div>`,
-        }),
-      }).catch(e => console.warn('[AffiliateAuth/login] Email erro:', e.message)),
-      new Promise(resolve => setTimeout(resolve, 6000)),
-    ])
+          }),
+        }).catch(e => console.warn('[AffiliateAuth/login] Email erro:', e.message)),
+        new Promise(resolve => setTimeout(resolve, 6000)),
+      ])
+    }
+  } catch (emailErr) {
+    console.error('[AffiliateAuth/login] Erro ao enviar magic link:', emailErr.message)
+    // Não propaga — token já foi salvo, parceiro pode usar o link manualmente
   }
 
   console.log('[AffiliateAuth] Magic link gerado para:', partner.email)

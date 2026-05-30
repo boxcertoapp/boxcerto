@@ -144,32 +144,38 @@ async function _apply(req, res) {
 
   console.log('[Affiliate] Parceiro cadastrado:', slug, coupon)
 
-  // ── Evento (fire-and-forget — baixa prioridade) ───────────
-  supabase.from('affiliate_events').insert({
-    partner_id: partner.id,
-    event_type: 'lead',
-    user_email: email.trim().toLowerCase(),
-    metadata:   { tipo, empresa: empresa?.trim() || null },
-  }).catch(() => {})
+  // ── Pós-insert: evento + email ────────────────────────────
+  // REGRA CRÍTICA: parceiro já está salvo no banco — qualquer
+  // erro aqui NÃO pode retornar 500 (causaria "já cadastrado" no retry).
+  // O try/catch garante que sempre retornamos 200.
+  try {
+    // Evento (fire-and-forget, opcional)
+    if (partner?.id) {
+      supabase.from('affiliate_events').insert({
+        partner_id: partner.id,
+        event_type: 'lead',
+        user_email: email.trim().toLowerCase(),
+        metadata:   { tipo, empresa: empresa?.trim() || null },
+      }).catch(() => {})
+    }
 
-  // ── E-mail de boas-vindas ─────────────────────────────────
-  // DEVE ser awaited ANTES de res.json() — Vercel encerra a função
-  // assim que a resposta é enviada, não há garantia de execução após isso.
-  // O Resend responde em <500ms, não impacta a experiência do usuário.
-  if (RESEND_KEY) {
-    const APP_URL = 'https://boxcerto.com'
-    await Promise.race([
-      fetch('https://api.resend.com/emails', {
-        method:  'POST',
-        headers: {
-          'Authorization': `Bearer ${RESEND_KEY}`,
-          'Content-Type':  'application/json',
-        },
-        body: JSON.stringify({
-          from:    'BoxCerto <noreply@boxcerto.com>',
-          to:      [email.trim().toLowerCase()],
-          subject: `Bem-vindo ao programa de parceiros BoxCerto, ${nome.trim()}! 🤝`,
-          html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#f8fafc">
+    // E-mail de boas-vindas — awaited antes de res.json() para garantir
+    // envio no Vercel (função encerra assim que a resposta é enviada).
+    // Promise.race com 6s de timeout como segurança.
+    if (RESEND_KEY) {
+      const APP_URL = 'https://boxcerto.com'
+      await Promise.race([
+        fetch('https://api.resend.com/emails', {
+          method:  'POST',
+          headers: {
+            'Authorization': `Bearer ${RESEND_KEY}`,
+            'Content-Type':  'application/json',
+          },
+          body: JSON.stringify({
+            from:    'BoxCerto <noreply@boxcerto.com>',
+            to:      [email.trim().toLowerCase()],
+            subject: `Bem-vindo ao programa de parceiros BoxCerto, ${nome.trim()}! 🤝`,
+            html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#f8fafc">
   <div style="background:#4f46e5;border-radius:14px;padding:28px;text-align:center;margin-bottom:24px">
     <h1 style="color:white;margin:0;font-size:24px">BoxCerto</h1>
     <p style="color:#c7d2fe;margin:6px 0 0;font-size:13px">Programa de Parceiros</p>
@@ -188,11 +194,14 @@ async function _apply(req, res) {
   </div>
   <p style="color:#94a3b8;font-size:12px;text-align:center">BoxCerto · <a href="${APP_URL}" style="color:#94a3b8">boxcerto.com</a></p>
 </div>`,
-        }),
-      }).catch(e => console.warn('[Affiliate] Email erro:', e.message)),
-      // Timeout de segurança: não bloqueia mais que 6s mesmo se Resend travar
-      new Promise(resolve => setTimeout(resolve, 6000)),
-    ])
+          }),
+        }).catch(e => console.warn('[Affiliate] Email erro:', e.message)),
+        new Promise(resolve => setTimeout(resolve, 6000)),
+      ])
+    }
+  } catch (postErr) {
+    // Loga mas NÃO propaga — parceiro já salvo, deve retornar 200
+    console.error('[Affiliate] Erro pós-insert (evento/email):', postErr.message)
   }
 
   // ── Resposta final ────────────────────────────────────────
