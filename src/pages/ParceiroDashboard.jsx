@@ -8,7 +8,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Loader2, Copy, Check, LogOut, DollarSign, Users,
   TrendingUp, Clock, Edit2, X, Save, Wrench, ChevronRight,
-  ExternalLink, AlertCircle, Mail, Sparkles
+  ExternalLink, AlertCircle, Mail, Sparkles, Eye, EyeOff, Lock
 } from 'lucide-react'
 
 // ── Constantes ───────────────────────────────────────────────
@@ -105,6 +105,144 @@ function CopyField({ label, value, mono = true }) {
           ? <Check className="w-4 h-4 text-emerald-600" />
           : <Copy className="w-4 h-4 text-slate-400" />}
       </button>
+    </div>
+  )
+}
+
+// ── Set password modal (obrigatório no 1º login) ──────────────
+function SetPasswordModal({ current, onDone }) {
+  const [password,  setPassword]  = useState('')
+  const [confirm,   setConfirm]   = useState('')
+  const [showPwd,   setShowPwd]   = useState(false)
+  const [showConf,  setShowConf]  = useState(false)
+  const [loading,   setLoading]   = useState(false)
+  const [erro,      setErro]      = useState('')
+
+  const strength = password.length === 0 ? null
+    : password.length < 8  ? 'fraca'
+    : password.length < 12 ? 'boa'
+    : 'forte'
+
+  const strengthColor = { fraca: 'bg-red-400', boa: 'bg-amber-400', forte: 'bg-emerald-500' }
+  const strengthW     = { fraca: 'w-1/3',      boa: 'w-2/3',        forte: 'w-full' }
+
+  const save = async () => {
+    if (password.length < 8)  { setErro('A senha deve ter pelo menos 8 caracteres.'); return }
+    if (password !== confirm)  { setErro('As senhas não coincidem.'); return }
+    setLoading(true); setErro('')
+    try {
+      const res  = await fetch('/api/affiliate-auth', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          action:       'set-password',
+          partner_id:   current.id,
+          access_token: current.accessToken,
+          password,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Erro ao salvar.')
+      // Marca has_password no localStorage
+      const stored = JSON.parse(localStorage.getItem(SESSION_KEY) || '{}')
+      if (stored.partner) stored.partner.has_password = true
+      localStorage.setItem(SESSION_KEY, JSON.stringify(stored))
+      onDone()
+    } catch (e) { setErro(e.message) }
+    setLoading(false)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
+            <Lock className="w-5 h-5 text-indigo-600" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-slate-900">Crie sua senha de acesso</h3>
+            <p className="text-xs text-slate-500">Você poderá entrar com email + senha ou pelo link.</p>
+          </div>
+        </div>
+
+        <div className="space-y-3 mt-5">
+          {/* Senha */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Senha</label>
+            <div className="relative">
+              <input
+                type={showPwd ? 'text' : 'password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Mínimo 8 caracteres"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPwd(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {/* Barra de força */}
+            {strength && (
+              <div className="mt-1.5 flex items-center gap-2">
+                <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all ${strengthColor[strength]} ${strengthW[strength]}`} />
+                </div>
+                <span className="text-[10px] text-slate-400 capitalize">{strength}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Confirmar */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Confirmar senha</label>
+            <div className="relative">
+              <input
+                type={showConf ? 'text' : 'password'}
+                value={confirm}
+                onChange={e => setConfirm(e.target.value)}
+                placeholder="Repita a senha"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConf(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                {showConf ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {confirm && password && confirm !== password && (
+              <p className="text-red-500 text-xs mt-1">As senhas não coincidem.</p>
+            )}
+            {confirm && password && confirm === password && (
+              <p className="text-emerald-600 text-xs mt-1">✓ Senhas coincidem</p>
+            )}
+          </div>
+        </div>
+
+        {erro && (
+          <div className="flex items-center gap-2 text-red-600 text-xs bg-red-50 rounded-lg p-3 mt-4">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            {erro}
+          </div>
+        )}
+
+        <button
+          onClick={save}
+          disabled={loading || password.length < 8 || password !== confirm}
+          className="w-full mt-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+          Criar senha e continuar
+        </button>
+
+        <p className="text-center text-xs text-slate-400 mt-3">
+          Você poderá alterar a senha depois nas configurações do painel.
+        </p>
+      </div>
     </div>
   )
 }
@@ -318,26 +456,43 @@ function PixModal({ current, onSave, onClose }) {
 }
 
 // ── Login screen ──────────────────────────────────────────────
-function LoginScreen({ onEmailSent }) {
-  const [email,   setEmail]   = useState('')
-  const [loading, setLoading] = useState(false)
-  const [sent,    setSent]    = useState(false)
-  const [erro,    setErro]    = useState('')
+function LoginScreen({ onLoginSuccess }) {
+  const [email,    setEmail]    = useState('')
+  const [password, setPassword] = useState('')
+  const [showPwd,  setShowPwd]  = useState(false)
+  const [mode,     setMode]     = useState('magic') // 'magic' | 'password'
+  const [loading,  setLoading]  = useState(false)
+  const [sent,     setSent]     = useState(false)
+  const [erro,     setErro]     = useState('')
+
+  const switchMode = (m) => { setMode(m); setErro(''); setPassword('') }
 
   const submit = async (e) => {
     e.preventDefault()
     if (!email.trim()) { setErro('Digite seu e-mail.'); return }
     setLoading(true); setErro('')
+
     try {
-      const res  = await fetch('/api/affiliate-auth', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ action: 'login', email: email.trim() }),
-      })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Erro ao enviar.')
-      setSent(true)
-      if (onEmailSent) onEmailSent(email.trim())
+      if (mode === 'password') {
+        if (!password) { setErro('Digite sua senha.'); setLoading(false); return }
+        const res  = await fetch('/api/affiliate-auth', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ action: 'login', email: email.trim(), password }),
+        })
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.error || 'Erro ao entrar.')
+        if (onLoginSuccess) onLoginSuccess(json)
+      } else {
+        const res  = await fetch('/api/affiliate-auth', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ action: 'login', email: email.trim() }),
+        })
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.error || 'Erro ao enviar.')
+        setSent(true)
+      }
     } catch (e) { setErro(e.message) }
     setLoading(false)
   }
@@ -374,10 +529,24 @@ function LoginScreen({ onEmailSent }) {
             </div>
           ) : (
             <>
-              <h2 className="text-lg font-semibold text-slate-900 mb-1">Acesse seu painel</h2>
-              <p className="text-slate-500 text-sm mb-6">
-                Digite seu e-mail de parceiro e enviaremos um link de acesso.
-              </p>
+              {/* Mode tabs */}
+              <div className="flex bg-slate-100 rounded-xl p-1 mb-6">
+                <button
+                  onClick={() => switchMode('magic')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-all
+                    ${mode === 'magic' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                  <Mail className="w-3.5 h-3.5" />
+                  Link por email
+                </button>
+                <button
+                  onClick={() => switchMode('password')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-all
+                    ${mode === 'password' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                  <Lock className="w-3.5 h-3.5" />
+                  Senha
+                </button>
+              </div>
+
               <form onSubmit={submit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1.5">E-mail de parceiro</label>
@@ -387,18 +556,50 @@ function LoginScreen({ onEmailSent }) {
                     className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                   />
                 </div>
+
+                {mode === 'password' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Senha</label>
+                    <div className="relative">
+                      <input
+                        type={showPwd ? 'text' : 'password'}
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        placeholder="Sua senha"
+                        className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPwd(v => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                        {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => switchMode('magic')}
+                      className="text-xs text-indigo-500 hover:underline mt-1.5 block">
+                      Esqueceu a senha? Acesse pelo link por email.
+                    </button>
+                  </div>
+                )}
+
                 {erro && (
                   <div className="flex items-center gap-2 text-red-600 text-xs bg-red-50 rounded-lg p-3">
                     <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                     {erro}
                   </div>
                 )}
+
                 <button type="submit" disabled={loading}
                   className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 disabled:opacity-60 flex items-center justify-center gap-2 transition-colors">
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                  Enviar link de acesso
+                  {loading
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : mode === 'password' ? <Lock className="w-4 h-4" /> : <Mail className="w-4 h-4" />}
+                  {mode === 'password' ? 'Entrar' : 'Enviar link de acesso'}
                 </button>
               </form>
+
               <p className="text-center text-xs text-slate-400 mt-6">
                 Não é parceiro ainda?{' '}
                 <a href="/parceiro" className="text-indigo-600 hover:underline">Cadastre-se aqui</a>
@@ -415,8 +616,13 @@ function LoginScreen({ onEmailSent }) {
 function Dashboard({ session, onLogout, firstLogin = false, onIdentitySaved }) {
   const { partner, commissions = [], activeRefs = 0, tier = 20, totals = {} } = session
 
+  // Sequência de modais no 1º login:
+  // 1. SetPasswordModal (obrigatório se !has_password)
+  // 2. IdentityModal (opcional)
+  const mustSetPwd      = firstLogin && partner.has_password === false
+  const [pwdModal,      setPwdModal]      = useState(mustSetPwd)
   const [pixModal,      setPixModal]      = useState(false)
-  const [identityModal, setIdentityModal] = useState(firstLogin)
+  const [identityModal, setIdentityModal] = useState(firstLogin && !mustSetPwd)
   const [pixKey,    setPixKey]    = useState(partner.pix_key  || '')
   const [pixType,   setPixType]   = useState(partner.pix_type || '')
   const [partnerSlug,   setPartnerSlug]   = useState(partner.slug        || '')
@@ -454,8 +660,19 @@ function Dashboard({ session, onLogout, firstLogin = false, onIdentitySaved }) {
     if (onIdentitySaved) onIdentitySaved(newSlug, newCoupon)
   }
 
+  const handlePwdDone = () => {
+    setPwdModal(false)
+    setIdentityModal(true) // abre IdentityModal após definir senha
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {pwdModal && (
+        <SetPasswordModal
+          current={{ id: partner.id, accessToken: session.accessToken }}
+          onDone={handlePwdDone}
+        />
+      )}
       {pixModal && (
         <PixModal
           current={{ id: partner.id, accessToken: session.accessToken, pix_key: pixKey, pix_type: pixType }}
@@ -620,16 +837,25 @@ function Dashboard({ session, onLogout, firstLogin = false, onIdentitySaved }) {
           )}
         </div>
 
-        {/* PIX */}
+        {/* PIX + Senha */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-bold text-slate-800">💳 Chave PIX para recebimento</h2>
-            <button
-              onClick={() => setPixModal(true)}
-              className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 px-3 py-1.5 rounded-lg hover:bg-indigo-50 transition-colors">
-              <Edit2 className="w-3.5 h-3.5" />
-              {pixKey ? 'Alterar' : 'Cadastrar PIX'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPwdModal(true)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                title={partner.has_password ? 'Alterar senha' : 'Criar senha de acesso'}>
+                <Lock className="w-3.5 h-3.5" />
+                {partner.has_password ? 'Senha' : 'Criar senha'}
+              </button>
+              <button
+                onClick={() => setPixModal(true)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 px-3 py-1.5 rounded-lg hover:bg-indigo-50 transition-colors">
+                <Edit2 className="w-3.5 h-3.5" />
+                {pixKey ? 'Alterar PIX' : 'Cadastrar PIX'}
+              </button>
+            </div>
           </div>
           {pixKey ? (
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
@@ -802,7 +1028,11 @@ export default function ParceiroDashboard() {
     )
   }
 
-  if (state === 'login') return <LoginScreen />
+  if (state === 'login') return (
+    <LoginScreen
+      onLoginSuccess={(data) => applySessionData(data, data.access_token, false)}
+    />
+  )
 
   if (state === 'dashboard' && session) {
     return (

@@ -2,14 +2,33 @@
 // api/affiliate-auth.js  — Autenticação de parceiros
 // POST { action, ...params }
 //
-// action = 'login'      → envia magic link por e-mail
-// action = 'session'    → verifica magic_token ou access_token
-// action = 'update-pix' → atualiza chave PIX (requer access_token)
+// action = 'login'           → email+senha (sessão direta) OU só email (magic link)
+// action = 'session'         → verifica magic_token ou access_token
+// action = 'set-password'    → define/altera senha (requer access_token)
+// action = 'update-pix'      → atualiza chave PIX (requer access_token)
+// action = 'update-identity' → personaliza slug e cupom (requer access_token)
 // ============================================================
 const crypto           = require('crypto')
 const { createClient } = require('@supabase/supabase-js')
 
 const PIX_TYPES = ['cpf', 'cnpj', 'email', 'telefone', 'aleatoria']
+
+// ── Helpers de senha (PBKDF2 + timing-safe compare) ──────────
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex')
+  const hash = crypto.pbkdf2Sync(password, salt, 100_000, 64, 'sha512').toString('hex')
+  return `${salt}:${hash}`
+}
+
+function verifyPassword(password, stored) {
+  if (!stored) return false
+  const [salt, hash] = stored.split(':')
+  if (!salt || !hash) return false
+  const candidate = crypto.pbkdf2Sync(password, salt, 100_000, 64, 'sha512').toString('hex')
+  try {
+    return crypto.timingSafeEqual(Buffer.from(candidate, 'hex'), Buffer.from(hash, 'hex'))
+  } catch { return false }
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json')
@@ -30,20 +49,59 @@ module.exports = async function handler(req, res) {
   try {
     if (action === 'login')            return await handleLogin(req, res, supabase, body, RESEND_KEY)
     if (action === 'session')          return await handleSession(req, res, supabase, body)
+    if (action === 'set-password')     return await handleSetPassword(req, res, supabase, body)
     if (action === 'update-pix')       return await handleUpdatePix(req, res, supabase, body)
     if (action === 'update-identity')  return await handleUpdateIdentity(req, res, supabase, body)
-    return res.status(400).json({ error: 'action inválida. Use: login | session | update-pix | update-identity' })
+    return res.status(400).json({ error: 'action inválida. Use: login | session | set-password | update-pix | update-identity' })
   } catch (err) {
     console.error('[AffiliateAuth] Erro inesperado:', err.message)
     if (!res.headersSent) res.status(500).json({ error: 'Erro interno.' })
   }
 }
 
-// ── LOGIN: gera magic token e envia link ─────────────────────
+// ── LOGIN: email+senha (sessão direta) ou só email (magic link)
 async function handleLogin(req, res, supabase, body, resendKey) {
-  const { email } = body
+  const { email, password } = body
   if (!email?.trim()) return res.status(400).json({ error: 'Email é obrigatório.' })
 
+  // ── Fluxo A: login com senha ─────────────────────────────
+  if (password) {
+    const { data: partner } = await supabase
+      .from('affiliate_partners')
+      .select('*')
+      .eq('email', email.trim().toLowerCase())
+      .maybeSingle()
+
+    // Mensagem genérica — não revela se email existe
+    if (!partner || !partner.password_hash) {
+      return res.status(401).json({ error: 'Email ou senha incorretos.' })
+    }
+    if (partner.status === 'paused') {
+      return res.status(403).json({ error: 'Conta pausada. Entre em contato com o suporte.' })
+    }
+    if (!verifyPassword(password, partner.password_hash)) {
+      return res.status(401).json({ error: 'Email ou senha incorretos.' })
+    }
+
+    const sessionToken = crypto.randomBytes(32).toString('hex')
+    const sessionExp   = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+
+    await supabase.from('affiliate_partners').update({
+      access_token:     sessionToken,
+      access_token_exp: sessionExp,
+    }).eq('id', partner.id)
+
+    console.log('[AffiliateAuth] Login com senha:', partner.email)
+    return res.status(200).json({
+      ok:           true,
+      access_token: sessionToken,
+      session_exp:  sessionExp,
+      partner:      sanitize(partner),
+      ...(await loadData(supabase, partner.id)),
+    })
+  }
+
+  // ── Fluxo B: magic link ───────────────────────────────────
   const { data: partner } = await supabase
     .from('affiliate_partners')
     .select('id, nome, email, status')
@@ -178,6 +236,40 @@ async function handleSession(req, res, supabase, body) {
   return res.status(400).json({ error: 'magic_token ou access_token obrigatório.' })
 }
 
+// ── SET-PASSWORD: define ou altera senha do parceiro ─────────
+async function handleSetPassword(req, res, supabase, body) {
+  const { partner_id, access_token, password } = body
+
+  if (!partner_id || !access_token) {
+    return res.status(400).json({ error: 'partner_id e access_token obrigatórios.' })
+  }
+  if (!password || password.length < 8) {
+    return res.status(400).json({ error: 'A senha deve ter pelo menos 8 caracteres.' })
+  }
+
+  const { data: partner } = await supabase
+    .from('affiliate_partners')
+    .select('access_token, access_token_exp')
+    .eq('id', partner_id)
+    .maybeSingle()
+
+  if (!partner) return res.status(404).json({ error: 'Parceiro não encontrado.' })
+  if (partner.access_token !== access_token) return res.status(401).json({ error: 'Sessão inválida.' })
+  if (new Date(partner.access_token_exp) < new Date()) return res.status(401).json({ error: 'Sessão expirada.' })
+
+  const hash = hashPassword(password)
+
+  const { error } = await supabase
+    .from('affiliate_partners')
+    .update({ password_hash: hash, updated_at: new Date().toISOString() })
+    .eq('id', partner_id)
+
+  if (error) return res.status(500).json({ error: error.message })
+
+  console.log('[AffiliateAuth] Senha definida:', partner_id)
+  return res.status(200).json({ ok: true })
+}
+
 // ── UPDATE-PIX: atualiza chave PIX do parceiro ───────────────
 async function handleUpdatePix(req, res, supabase, body) {
   const { partner_id, access_token, pix_key, pix_type } = body
@@ -286,9 +378,10 @@ async function handleUpdateIdentity(req, res, supabase, body) {
 
 // ── Helpers ──────────────────────────────────────────────────
 function sanitize(p) {
-  // Remove campos sensíveis antes de enviar ao frontend
-  const { magic_token, magic_token_exp, access_token, access_token_exp, stripe_promo_code_id, ...rest } = p
-  return rest
+  // Remove campos sensíveis; expõe has_password (bool) em vez do hash
+  const { magic_token, magic_token_exp, access_token, access_token_exp,
+          stripe_promo_code_id, password_hash, ...rest } = p
+  return { ...rest, has_password: !!password_hash }
 }
 
 async function loadData(supabase, partnerId) {
@@ -307,7 +400,7 @@ async function loadData(supabase, partnerId) {
 
   const comms = commissions || []
   const refs  = activeRefs  || 0
-  const tier  = refs >= 21 ? 30 : refs >= 11 ? 25 : 20
+  const tier  = refs >= 26 ? 30 : refs >= 11 ? 25 : 20
 
   return {
     commissions: comms,
