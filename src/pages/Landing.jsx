@@ -1,39 +1,707 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth, hasAccess } from '../contexts/AuthContext'
 import { useConfig } from '../hooks/useConfig'
 import { usePageView } from '../hooks/usePageView'
 import { usePageMeta } from '../hooks/usePageMeta'
-import Logo from '../components/Logo'
 import {
-  Wrench, CheckCircle, ChevronDown, ChevronUp,
-  MessageCircle, TrendingUp, Clock, Search,
-  Star, ArrowRight, Zap, Shield, X,
-  FileText, Users, Package, Monitor, Check,
-  LogIn
+  Wrench, Send, Check, FileText, Users, Package,
+  TrendingUp, FileBarChart2, ShieldCheck, Clock, Bell,
+  ArrowRight, ChevronRight, Plus, Menu, X as XIcon,
+  RotateCcw, Star,
 } from 'lucide-react'
+import '../styles/landing.css'
 
 const WPP = 'https://wa.me/5553997065725?text=Ol%C3%A1%2C%20tenho%20d%C3%BAvidas%20sobre%20o%20BoxCerto!'
 
-const SEGMENTOS = [
-  { emoji: '🔧', label: 'Mecânica Geral' },
-  { emoji: '🎨', label: 'Funilaria e Pintura' },
-  { emoji: '⚡', label: 'Auto Elétrica' },
-  { emoji: '❄️', label: 'Ar Condicionado Auto' },
-  { emoji: '🏍️', label: 'Mecânica de Motos' },
+/* ── Custom SVG icons ─────────────────────────────────────── */
+function WhatsappIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm5.8 14.06c-.25.69-1.44 1.32-1.99 1.4-.51.08-1.15.11-1.86-.12-.43-.13-.98-.31-1.69-.62-2.97-1.28-4.9-4.27-5.05-4.47-.15-.2-1.21-1.61-1.21-3.07 0-1.46.77-2.18 1.04-2.48.27-.3.59-.37.79-.37.2 0 .39.002.57.01.18.008.43-.07.67.51.25.6.84 2.07.91 2.22.07.15.12.32.02.52-.1.2-.15.32-.3.49-.15.17-.31.39-.45.52-.15.15-.3.31-.13.61.17.3.76 1.25 1.63 2.02 1.12.99 2.06 1.3 2.36 1.45.3.15.47.12.64-.07.17-.2.74-.86.94-1.16.2-.3.39-.25.66-.15.27.1 1.7.8 1.99.95.3.15.49.22.56.34.07.13.07.72-.18 1.41Z" />
+    </svg>
+  )
+}
+function BoltFill(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" />
+    </svg>
+  )
+}
+
+/* ── Plate component ──────────────────────────────────────── */
+function Plate({ num, sm }) {
+  return (
+    <div className={'plate' + (sm ? ' sm' : '')}>
+      <div className="plate-strip" />
+      <div className="plate-num">{num}</div>
+      {!sm && <div className="plate-country">BRASIL</div>}
+    </div>
+  )
+}
+
+/* ── Nav ──────────────────────────────────────────────────── */
+function Nav() {
+  const [scrolled, setScrolled] = useState(false)
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    document.body.style.overflow = open ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [open])
+
+  const links = [
+    ['Funcionalidades', '#funcionalidades'],
+    ['Como funciona', '#como-funciona'],
+    ['Para quem', '#para-quem'],
+    ['Preços', '#precos'],
+  ]
+
+  return (
+    <>
+      <header className={'nav' + (scrolled ? ' scrolled' : '')}>
+        <div className="wrap nav-inner">
+          <a href="#topo" className="brand" onClick={() => setOpen(false)}>
+            <img src="/logo.svg" alt="BoxCerto" width={34} height={34} />
+            <span className="wm">Box<b>Certo</b></span>
+          </a>
+          <nav className="nav-links">
+            {links.map(([t, h]) => <a key={h} href={h}>{t}</a>)}
+          </nav>
+          <div className="nav-cta">
+            <Link className="login" to="/login">Entrar</Link>
+            <a className="btn btn-primary" href="#precos">
+              Começar grátis <ArrowRight />
+            </a>
+            <button
+              className="nav-burger"
+              onClick={() => setOpen(o => !o)}
+              aria-label="Menu"
+            >
+              {open ? <XIcon /> : <Menu />}
+            </button>
+          </div>
+        </div>
+      </header>
+      <div className={'mobile-menu' + (open ? ' open' : '')}>
+        {links.map(([t, h]) => (
+          <a key={h} href={h} onClick={() => setOpen(false)}>{t}</a>
+        ))}
+        <div className="mm-cta">
+          <Link className="btn btn-ghost btn-lg btn-block" to="/login" onClick={() => setOpen(false)}>Entrar</Link>
+          <a className="btn btn-primary btn-lg btn-block" href="#precos" onClick={() => setOpen(false)}>
+            Começar teste grátis
+          </a>
+        </div>
+      </div>
+    </>
+  )
+}
+
+/* ── Hero ─────────────────────────────────────────────────── */
+function Hero() {
+  return (
+    <section className="hero" id="topo">
+      <span className="glow g1" />
+      <span className="glow g2" />
+      <div className="wrap">
+        <div className="hero-grid">
+          <div className="hero-copy">
+            <span className="kicker">
+              <span className="dot" /> Gestão de oficina + orçamento no WhatsApp
+            </span>
+            <h1 className="h-display">
+              O orçamento da sua oficina,{' '}
+              <span className="wa">aprovado pelo WhatsApp</span> em 1 clique.
+            </h1>
+            <p className="lead">
+              Monte a OS e envie o orçamento por um link no WhatsApp. O cliente abre, aprova em
+              1 clique e acompanha o serviço até a retirada — tudo registrado com data e hora.
+              Mais clientes, estoque e financeiro num app feito pra oficina.
+            </p>
+            <div className="hero-cta">
+              <a className="btn btn-primary btn-lg" href="#precos">
+                Começar teste grátis de 7 dias <ArrowRight />
+              </a>
+              <a className="btn btn-ghost btn-lg" href="#whatsapp">
+                Ver como funciona
+              </a>
+            </div>
+            <div className="trust-line">
+              <span className="ti"><Check /> Sem cartão de crédito</span>
+              <span className="ti"><Check /> Pronto em 2 minutos</span>
+              <span className="ti"><Check /> Cancele quando quiser</span>
+            </div>
+            <div className="hero-rating">
+              <div className="avs">
+                <span>RK</span><span>AF</span><span>LL</span><span>GP</span>
+              </div>
+              <div>
+                <div className="stars">★★★★★</div>
+                <div className="rate-txt">Usada por oficinas de <b>todo o Brasil</b></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="hero-visual">
+            <img
+              className="device"
+              src="/hero-device.png"
+              alt="BoxCerto no notebook e no celular"
+              width={1448}
+              height={1086}
+            />
+            <div className="hero-float f-approved">
+              <div className="approved-pill">
+                <span className="check"><Check /></span>
+                Aprovado
+                <span className="ap-time">16/05 23:50</span>
+              </div>
+            </div>
+            <div className="hero-float f-plate">
+              <Plate num="QPL-4I82" sm />
+              <div className="fp-txt">
+                <b>Fiat Argo 1.0</b>
+                <span>R$ 320,00 · pronto</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="types-strip">
+          <div className="ts-label">Feito para todo tipo de oficina</div>
+          <div className="ts-row">
+            {[
+              ['Mecânica', <Wrench key="w1" />],
+              ['Funilaria e pintura', <BoltFill key="b1" />],
+              ['Auto elétrica', <BoltFill key="b2" />],
+              ['Troca de óleo', <Package key="p1" />],
+              ['Centro automotivo', <ShieldCheck key="s1" />],
+              ['Motos', <Wrench key="w2" />],
+              ['Autônomos', <Users key="u1" />],
+            ].map(([t, ic]) => (
+              <span className="type-chip" key={t}>{ic} {t}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ── WhatsApp Demo ────────────────────────────────────────── */
+function WhatsappDemo() {
+  const [step, setStep] = useState(0)
+  const timers = useRef([])
+
+  const run = () => {
+    timers.current.forEach(clearTimeout)
+    setStep(0)
+    const seq = [[1, 500], [2, 1700], [3, 2900], [4, 4400], [5, 5300]]
+    timers.current = seq.map(([s, t]) => setTimeout(() => setStep(s), t))
+  }
+
+  useEffect(() => {
+    run()
+    return () => timers.current.forEach(clearTimeout)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return (
+    <section className="section wa-sec" id="whatsapp">
+      <span className="glow g1" />
+      <div className="wrap">
+        <div className="wa-grid">
+          <div className="wa-copy">
+            <span className="kicker green"><span className="dot" /> Passo 1 · Você envia</span>
+            <h2 className="h-section">
+              Mandou o link pelo WhatsApp. O resto corre sozinho.
+            </h2>
+            <p className="lead">
+              O cliente sumiu no telefone? Você toca em "Enviar para cliente" e o BoxCerto manda
+              uma mensagem no WhatsApp com um link do orçamento. Ele abre no navegador, confere
+              peças e valores e aprova com um toque — e você é avisado na hora.
+            </p>
+            <div className="wa-steps">
+              <div className="wa-step">
+                <div className="num">1</div>
+                <div>
+                  <div className="st-b">Você monta o orçamento</div>
+                  <div className="st-p">Peças, serviços e valores direto na OS, em segundos.</div>
+                </div>
+              </div>
+              <div className="wa-step is-wa">
+                <div className="num"><WhatsappIcon /></div>
+                <div>
+                  <div className="st-b">Envia o link pelo WhatsApp</div>
+                  <div className="st-p">Uma mensagem com o link do orçamento, em 1 toque.</div>
+                </div>
+              </div>
+              <div className="wa-step">
+                <div className="num">3</div>
+                <div>
+                  <div className="st-b">O cliente abre o link no navegador</div>
+                  <div className="st-p">É lá que ele aprova — e acompanha o serviço depois.</div>
+                </div>
+              </div>
+            </div>
+            <a className="btn btn-green btn-lg" href="#precos">
+              <WhatsappIcon /> Quero enviar orçamentos assim
+            </a>
+          </div>
+
+          <div className="wa-demo-wrap">
+            <span className="glow" />
+            <div className="phone">
+              <div className="phone-notch" />
+              <div className="phone-screen">
+                <div className="wa-head">
+                  <div className="av"><img src="/logo.svg" alt="" /></div>
+                  <div className="htx">
+                    <div className="wn">Natusch Auto Certo</div>
+                    <div className="ws">conta comercial · online</div>
+                  </div>
+                </div>
+                <div className="wa-body">
+                  {step >= 1 && (
+                    <div className="bubble in">
+                      Boa noite, Rogério! 👋 Aqui é da Natusch Auto Certo.
+                      <div className="t">23:48</div>
+                    </div>
+                  )}
+                  {step >= 2 && (
+                    <div className="bubble in">
+                      Seu orçamento do Volvo XC40 ficou pronto 🧾 Toque no link pra ver e aprovar:
+                      <div className="t">23:48</div>
+                    </div>
+                  )}
+                  {step >= 3 && (
+                    <div className="wa-link-msg">
+                      <div className={'wa-link-card' + (step < 4 ? ' pulse' : '')}>
+                        <div className="wa-link-prev">
+                          <img className="lp-logo" src="/logo.svg" alt="" />
+                          <div className="lp-t">
+                            <b>Orçamento · OS #1042</b>
+                            <span>boxcerto.com/o/EEE-1133</span>
+                          </div>
+                        </div>
+                        <div className="wa-link-body">
+                          <div className="lb-ti">Volvo XC40 T-5 R-Design · R$ 947,50</div>
+                          <div className="lb-d">Natusch Auto Certo enviou seu orçamento</div>
+                          <div className="lb-cta"><ArrowRight /> Ver e aprovar orçamento</div>
+                        </div>
+                      </div>
+                      <div className="t">23:48</div>
+                    </div>
+                  )}
+                  {step >= 4 && (
+                    <div className="bubble out">
+                      Recebi! abrindo aqui 👍
+                      <div className="t read">23:49 ✓✓</div>
+                    </div>
+                  )}
+                  {step >= 5 && (
+                    <div className="wa-tap-hint"><ArrowRight /> abre no navegador →</div>
+                  )}
+                </div>
+              </div>
+              <button className="wa-replay" onClick={run}><RotateCcw /> Repetir</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ── Client Tracking ──────────────────────────────────────── */
+const STAGES = [
+  { lb: 'Orçamento', sub: 'Cliente recebe e revisa', Ic: FileText },
+  { lb: 'Aprovado',  sub: 'Aprova em 1 clique',      Ic: Check },
+  { lb: 'Em serviço', sub: 'Acompanha o reparo',     Ic: Wrench },
+  { lb: 'Pronto',    sub: 'Avisado pra retirar',      Ic: Bell },
+]
+const BANNERS = [
+  { cls: 'amber',  Ic: Clock,      ti: 'Aguardando sua aprovação',  sub: 'Revise e aprove para iniciarmos o serviço.' },
+  { cls: 'indigo', Ic: Check,      ti: 'Orçamento aprovado!',        sub: 'A oficina já foi notificada e em breve iniciará o serviço.' },
+  { cls: 'blue',   Ic: Wrench,     ti: 'Veículo em serviço',         sub: 'Nossa equipe está trabalhando. Você será avisado quando estiver pronto.' },
+  { cls: 'green',  Ic: Bell,       ti: 'Pronto para retirada!',      sub: 'Seu veículo está pronto. Fale com a oficina para combinar a retirada.' },
+]
+const TRACK_SERVICES = [
+  ['Diagnóstico eletrônico', 'R$ 380,00'],
+  ['Oleo 5w30 Mobil (x5)', 'R$ 239,50'],
+  ['Kit Filtros Volvo 492Bx2a', 'R$ 328,00'],
 ]
 
-// ── WhatsApp-style testimonial ─────────────────────────────────
-const AVATAR_GRAD = [
-  ['#1565C0','#0D47A1'],
-  ['#6A1B9A','#4A148C'],
-  ['#B71C1C','#7F0000'],
+function ClientTracking() {
+  const [stage, setStage] = useState(0)
+  const B = BANNERS[stage]
+
+  return (
+    <section className="section track-sec" id="acompanhamento">
+      <span className="glow g1" />
+      <div className="wrap">
+        <div className="section-head center">
+          <span className="eyebrow">Passo 2 · O cliente abre o link</span>
+          <h2 className="h-section">No navegador, ele aprova e acompanha tudo</h2>
+          <p className="lead">
+            O link abre uma página com a sua marca — sem app pra instalar, sem login. O cliente
+            aprova o orçamento e acompanha cada etapa, do "aprovado" até "pronto para retirada".
+          </p>
+        </div>
+
+        <div className="track-grid">
+          <div className="track-controls">
+            <div className="stage-pills">
+              {STAGES.map((s, i) => (
+                <button
+                  key={s.lb}
+                  className={'stage-pill' + (i === stage ? ' active' : i < stage ? ' done' : '')}
+                  onClick={() => setStage(i)}
+                >
+                  <span className="sp-ic">
+                    {i < stage ? <Check /> : i === stage ? <s.Ic /> : (i + 1)}
+                  </span>
+                  <span className="sp-tx">
+                    <b>{s.lb}</b>
+                    <span>{s.sub}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="tc-note">
+              <BoltFill /> Clique nas etapas para ver o que o cliente enxerga.
+            </div>
+          </div>
+
+          <div className="track-phone-wrap">
+            <span className="glow" />
+            <div className="phone">
+              <div className="phone-notch" />
+              <div className="phone-screen">
+                <div className="cp-browserbar">
+                  <span className="bb-dots"><i /><i /><i /></span>
+                  <span className="bb-url"><ShieldCheck /> boxcerto.com/o/EEE-1133</span>
+                </div>
+                <div className="cp-screen">
+                  <div className="cp-pad">
+                    <div className="cp-head">
+                      <div className="cp-logo"><b>AUTO<i>CERTO</i></b></div>
+                      <div>
+                        <div className="cp-name">Natusch Auto Certo ltda</div>
+                        <div className="cp-phone-n">(53) 3199-8786</div>
+                      </div>
+                    </div>
+
+                    <div className="cp-card">
+                      <div className="cp-label"><Package /> VEÍCULO</div>
+                      <div className="cp-veic-row">
+                        <Plate num="EEE-1133" sm />
+                        <div className="cp-veic-info">
+                          <b>Volvo XC 40 T-5 R-Design 2.0 252cv AWD 2018</b>
+                          <span>ROGÉRIO KUND NATUSCH FILHO</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="cp-card">
+                      <div className="cp-stepper">
+                        <div className="cp-step-line">
+                          <div className="fill" style={{ width: (stage / 3 * 100) + '%' }} />
+                        </div>
+                        {STAGES.map((s, i) => (
+                          <div key={s.lb} className={'cp-step' + (i === stage ? ' active' : i < stage ? ' done' : '')}>
+                            <div className="cs-dot">{i < stage ? <Check /> : (i + 1)}</div>
+                            <div className="cs-lb">{s.lb}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className={'cp-banner ' + B.cls}>
+                      <div className="cb-ic"><B.Ic /></div>
+                      <div>
+                        <div className="cb-ti">{B.ti}</div>
+                        <div className="cb-sub">{B.sub}</div>
+                      </div>
+                    </div>
+
+                    {stage === 0 ? (
+                      <div className="cp-card">
+                        <div className="cp-label"><Wrench /> SERVIÇOS E PEÇAS</div>
+                        {TRACK_SERVICES.map(([n, v]) => (
+                          <div className="cp-serv-row" key={n}><span>{n}</span><b>{v}</b></div>
+                        ))}
+                        <div className="cp-total">
+                          <span className="lbl">Total</span>
+                          <span className="val">R$ 947,50</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="cp-card">
+                        <div className="cp-approved-row">
+                          <span className="lbl">Ver orçamento aprovado</span>
+                          <span className="val">R$ 947,50 <ChevronRight /></span>
+                        </div>
+                      </div>
+                    )}
+
+                    {stage === 0 && (
+                      <>
+                        <button className="cp-btn indigo cp-pulse" onClick={() => setStage(1)}>
+                          <Check /> Aprovar orçamento
+                        </button>
+                        <button className="cp-btn ghost">
+                          <span className="gico"><WhatsappIcon /></span> Tenho uma dúvida
+                        </button>
+                      </>
+                    )}
+                    {(stage === 1 || stage === 2) && (
+                      <button className="cp-btn ghost">
+                        <span className="gico"><WhatsappIcon /></span> Falar com a oficina
+                      </button>
+                    )}
+                    {stage === 3 && (
+                      <button className="cp-btn green">
+                        <WhatsappIcon /> Falar com a oficina no WhatsApp
+                      </button>
+                    )}
+
+                    <div className="cp-foot">Gerenciado por <b>BoxCerto</b> · boxcerto.com</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ── Features ─────────────────────────────────────────────── */
+const FEATURES = [
+  { Ic: Wrench,       cls: '',      h: 'Ordem de Serviço',        p: 'Controle cada carro do orçamento à entrega: pronto, em manutenção, agendado. Tudo na palma da mão.',                          tag: 'OS organizada' },
+  { Ic: WhatsappIcon, cls: 'green', h: 'Orçamento no WhatsApp',   p: 'Envie por link, o cliente aprova em 1 clique e fica registrado com data e hora. Sem ligação, sem retrabalho.',                 tag: 'Aprovação em 1 clique' },
+  { Ic: Users,        cls: '',      h: 'Clientes e histórico',     p: 'Cada cliente com seus veículos e tudo que já foi feito. Aniversariantes e inativos pra você chamar de volta.',                tag: 'Relacionamento' },
+  { Ic: Package,      cls: 'amber', h: 'Estoque com alerta',       p: 'Saiba o que tem, o custo e a margem de cada peça. Alerta automático quando algo está acabando.',                              tag: 'Nunca falta peça' },
+  { Ic: TrendingUp,   cls: 'sky',   h: 'Financeiro e lucro',       p: 'Receitas, custos de peças e despesas calculados sozinhos. Veja o lucro líquido do mês sem planilha.',                        tag: 'Lucro na tela' },
+  { Ic: FileBarChart2,cls: '',      h: 'Relatórios prontos',       p: 'Serviços do mês, desempenho por técnico, clientes inativos. Os números da oficina sem dor de cabeça.',                       tag: 'Decisões com dados' },
 ]
+
+function Features() {
+  return (
+    <section className="section bg-soft" id="funcionalidades">
+      <div className="wrap">
+        <div className="section-head center">
+          <span className="eyebrow">Tudo num lugar só</span>
+          <h2 className="h-section">A oficina inteira em um app</h2>
+          <p className="lead">
+            Do orçamento ao financeiro, o BoxCerto junta o que você hoje resolve em caderno,
+            planilha e grupo de WhatsApp — num sistema simples, feito pra quem está com a mão na graxa.
+          </p>
+        </div>
+        <div className="feat-grid">
+          {FEATURES.map((f) => (
+            <div className="card feat-card" key={f.h}>
+              <div className={'feat-ic ' + f.cls}><f.Ic /></div>
+              <h3>{f.h}</h3>
+              <p>{f.p}</p>
+              <span className="tag"><Check /> {f.tag}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ── How It Works ─────────────────────────────────────────── */
+const STEPS = [
+  { Ic: Wrench,  n: '01', h: 'Abra a OS',          p: 'Cadastre o carro pela placa e adicione peças e serviços. Leva segundos.' },
+  { Ic: Send,    n: '02', h: 'Envie o orçamento',   p: 'Um toque em "Enviar para cliente" e o link vai pelo WhatsApp.', green: true },
+  { Ic: Check,   n: '03', h: 'Cliente aprova',      p: 'Ele vê tudo e aprova em 1 clique. Você é avisado na hora.',     green: true },
+  { Ic: Package, n: '04', h: 'Entregue e cobre',    p: 'Acompanhe a manutenção, entregue o veículo e o financeiro se atualiza sozinho.' },
+]
+
+function HowItWorks() {
+  return (
+    <section className="section how" id="como-funciona">
+      <div className="wrap">
+        <div className="section-head center">
+          <span className="eyebrow">Como funciona</span>
+          <h2 className="h-section">Da placa à aprovação em 4 passos</h2>
+          <p className="lead">Sem treinamento, sem manual. Se você usa WhatsApp, você usa o BoxCerto.</p>
+        </div>
+        <div className="steps-row">
+          {STEPS.map((s, i) => (
+            <div className={'step-card' + (s.green ? ' green' : '')} key={s.n}>
+              <div className="sn">PASSO {s.n}</div>
+              <div className="sic"><s.Ic /></div>
+              <h4>{s.h}</h4>
+              <p>{s.p}</p>
+              {i < STEPS.length - 1 && (
+                <div className="arrow"><ArrowRight /></div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ── Showcase ─────────────────────────────────────────────── */
+function SCRow({ rev, glow, eyebrow, title, lead, bullets, img, alt }) {
+  return (
+    <div className={'showcase' + (rev ? ' rev' : '')}>
+      <div className="sc-media">
+        <span className="glow" style={{
+          background: glow,
+          top: rev ? '-40px' : 'auto',
+          bottom: rev ? 'auto' : '-40px',
+          left: rev ? 'auto' : '-40px',
+          right: rev ? '-40px' : 'auto',
+        }} />
+        <div className="sc-frame"><img src={img} alt={alt} loading="lazy" /></div>
+      </div>
+      <div className="sc-copy">
+        <span className="eyebrow">{eyebrow}</span>
+        <h2 className="h-section">{title}</h2>
+        <p className="lead">{lead}</p>
+        <div className="sc-list">
+          {bullets.map((b, i) => (
+            <div className="sc-li" key={i}>
+              <span className="ck"><Check /></span>
+              <span dangerouslySetInnerHTML={{ __html: b }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Showcase() {
+  return (
+    <section className="section bg-soft">
+      <div className="wrap">
+        <SCRow
+          eyebrow="Painel da oficina"
+          glow="rgba(99,102,241,.18)"
+          title="Toda a oficina numa tela só"
+          lead="Abriu o app e já sabe o que está rolando: quantas OS em andamento, o que está pronto pra retirar, o que está em manutenção e os orçamentos esperando resposta."
+          bullets={[
+            '<b>Status na hora:</b> prontos, manutenção, orçamentos e agendados.',
+            '<b>Placa em destaque</b> pra achar o carro num piscar de olhos.',
+            '<b>Funciona no celular e no computador</b>, sincronizado.',
+          ]}
+          img="/screen-oficina-desktop.png"
+          alt="Painel da oficina no BoxCerto"
+        />
+        <SCRow
+          rev
+          eyebrow="Financeiro"
+          glow="rgba(34,197,94,.16)"
+          title="Veja o lucro do mês sem abrir planilha"
+          lead="O BoxCerto soma receitas, custos de peças e despesas automaticamente. Você bate o olho e sabe quanto sua oficina lucrou de verdade no mês."
+          bullets={[
+            '<b>Lucro líquido</b> calculado sozinho, mês a mês.',
+            '<b>Receitas, custos e despesas</b> separados e claros.',
+            '<b>Vendas de estoque</b> e formas de pagamento registradas.',
+          ]}
+          img="/screen-financeiro.png"
+          alt="Tela de financeiro do BoxCerto"
+        />
+        <SCRow
+          eyebrow="Estoque"
+          glow="rgba(245,158,11,.16)"
+          title="Nunca mais descobre que acabou a peça na hora"
+          lead="Controle quantidade, custo e preço de cada item. O sistema avisa quando algo está acabando — e você ainda vê a margem de cada venda."
+          bullets={[
+            '<b>Alerta de estoque baixo</b> automático.',
+            '<b>Custo e margem</b> visíveis em cada peça.',
+            '<b>Venda direta do balcão</b> entra no financeiro na hora.',
+          ]}
+          img="/screen-estoque.png"
+          alt="Tela de estoque do BoxCerto"
+        />
+        <SCRow
+          rev
+          eyebrow="Entrega e pagamento"
+          glow="rgba(34,197,94,.16)"
+          title="Fechou a conta, entregou o carro — tudo registrado"
+          lead="Na hora de entregar, o BoxCerto fecha a conta da OS, registra como o cliente pagou e guarda data, hora e observações da entrega. Seu caixa sempre bate no fim do dia."
+          bullets={[
+            '<b>PIX, dinheiro, débito, crédito</b> ou outros — você escolhe e registra.',
+            '<b>Conta fechada</b> automaticamente quando o pago bate o total.',
+            '<b>Data, hora e observações</b> da entrega salvas no histórico.',
+          ]}
+          img="/screen-entrega.png"
+          alt="Tela de entrega e pagamento do BoxCerto"
+        />
+      </div>
+    </section>
+  )
+}
+
+/* ── For Whom ─────────────────────────────────────────────── */
+const WHOM = [
+  { Ic: Wrench,    h: 'Oficina mecânica',     p: 'Geral, motor, suspensão, freios.' },
+  { Ic: BoltFill,  h: 'Funilaria e pintura',  p: 'Orçamento detalhado e aprovação rápida.' },
+  { Ic: BoltFill,  h: 'Auto elétrica',        p: 'Serviços e peças sempre registrados.' },
+  { Ic: Package,   h: 'Troca de óleo',        p: 'Giro rápido com estoque sob controle.' },
+  { Ic: ShieldCheck,h:'Centro automotivo',    p: 'Vários serviços num fluxo só.' },
+  { Ic: Wrench,    h: 'Oficina de motos',     p: 'Mesma agilidade sobre duas rodas.' },
+  { Ic: Package,   h: 'Pneus e alinhamento',  p: 'Venda de balcão e OS no mesmo lugar.' },
+  { Ic: Users,     h: 'Autônomo',             p: 'Profissionalize o atendimento sozinho.' },
+]
+
+function ForWhom() {
+  return (
+    <section className="section how" id="para-quem">
+      <div className="wrap">
+        <div className="section-head center">
+          <span className="eyebrow">Para quem é</span>
+          <h2 className="h-section">Não é só pra mecânica</h2>
+          <p className="lead">
+            Se você atende veículo, faz orçamento e quer parar de perder dinheiro na
+            desorganização, o BoxCerto é pra você.
+          </p>
+        </div>
+        <div className="whom-grid">
+          {WHOM.map((w) => (
+            <div className="whom-card" key={w.h}>
+              <div className="wic"><w.Ic /></div>
+              <b>{w.h}</b>
+              <p style={{ fontSize: '14px', color: 'var(--slate-500)', marginTop: '5px' }}>{w.p}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ── Testimonials (WhatsApp-style cards) ──────────────────── */
+const AVATAR_GRAD = [
+  ['#1565C0', '#0D47A1'],
+  ['#6A1B9A', '#4A148C'],
+  ['#B71C1C', '#7F0000'],
+]
+
 function WppCard({ nome, tipo, cidade, mensagem, hora, gradIdx = 0 }) {
   const [c1, c2] = AVATAR_GRAD[gradIdx % AVATAR_GRAD.length]
   return (
     <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200">
-      {/* header escuro (estilo WPP Business) */}
       <div className="px-4 py-3 flex items-center gap-3" style={{ background: '#075E54' }}>
         <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
           style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }}>
@@ -44,10 +712,9 @@ function WppCard({ nome, tipo, cidade, mensagem, hora, gradIdx = 0 }) {
           <p className="text-white/60 text-xs truncate">{tipo} · {cidade}</p>
         </div>
         <div className="flex gap-0.5 shrink-0">
-          {[1,2,3,4,5].map(i => <Star key={i} className="w-3 h-3 text-amber-400 fill-amber-400" />)}
+          {[1, 2, 3, 4, 5].map(i => <Star key={i} className="w-3 h-3 text-amber-400 fill-amber-400" />)}
         </div>
       </div>
-      {/* chat */}
       <div className="p-4" style={{ background: '#E5DDD5' }}>
         <div className="text-center mb-3">
           <span className="bg-black/15 text-white text-[9px] px-2 py-0.5 rounded-full">HOJE</span>
@@ -70,805 +737,385 @@ function WppCard({ nome, tipo, cidade, mensagem, hora, gradIdx = 0 }) {
   )
 }
 
-// ── Loss Calculator ────────────────────────────────────────────
-function Calculadora({ onCTA }) {
-  const [carros, setCarros] = useState(25)
-  const [ticket, setTicket] = useState(600)
-  const perda = Math.round(carros * ticket * 0.18)
+const TESTIMONIALS = [
+  {
+    nome: 'João Batista R.',
+    tipo: 'Mecânica Geral',
+    cidade: 'Curitiba, PR',
+    hora: '09:14',
+    mensagem: 'cara o sistema me salvou semana passada\n\ncliente chegou aqui falando que não tinha autorizado a troca de embreagem. abri o boxcerto, mostrei pra ele: nome dele, data, horário. ele ficou sem palavras e pagou na hora kkkk',
+    gradIdx: 0,
+  },
+  {
+    nome: 'Adriana F.',
+    tipo: 'Auto Elétrica',
+    cidade: 'Goiânia, GO',
+    hora: '14:22',
+    mensagem: "trabalho sozinha e ficava quase 1h por dia atendendo telefone de 'meu carro tá pronto?'\n\nagora mando o link com o status em 5 segundos e volto pro serviço. mudou meu dia completamente ⚡",
+    gradIdx: 1,
+  },
+  {
+    nome: 'Paulo R.',
+    tipo: 'Ar Condicionado Auto',
+    cidade: 'São Paulo, SP',
+    hora: '18:05',
+    mensagem: 'descobri que tava lucrando 30% menos do que achava porque não separava custo de peça do valor cobrado\n\no financeiro do sistema mostrou exatamente onde o dinheiro tava indo. agora sei o que ganho em cada carro',
+    gradIdx: 2,
+  },
+]
 
+function Testimonials() {
   return (
-    <section className="py-20 bg-slate-900">
-      <div className="max-w-3xl mx-auto px-5">
-        <div className="text-center mb-10">
-          <p className="text-indigo-400 font-semibold text-sm uppercase tracking-wider mb-3">Calculadora de Perda</p>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Quanto a bagunça custa para sua oficina?</h2>
-          <p className="text-slate-400 max-w-lg mx-auto">Orçamentos que somem, clientes que não voltam, lucro que você não mede. Isso tem um preço.</p>
+    <section className="section">
+      <div className="wrap">
+        <div className="section-head center">
+          <span className="eyebrow">Quem usa, recomenda</span>
+          <h2 className="h-section">Oficinas mais organizadas, donos mais tranquilos</h2>
         </div>
-        <div className="bg-slate-800 rounded-3xl p-8 border border-slate-700">
-          <div className="grid md:grid-cols-2 gap-8 mb-8">
-            <div>
-              <label className="block text-slate-300 text-sm font-semibold mb-3">
-                Carros atendidos por mês: <span className="text-indigo-400 text-lg font-bold">{carros}</span>
-              </label>
-              <input type="range" min="5" max="120" value={carros}
-                onChange={e => setCarros(+e.target.value)}
-                className="w-full h-2 rounded-full accent-indigo-500 cursor-pointer" />
-              <div className="flex justify-between text-xs text-slate-600 mt-1"><span>5</span><span>120</span></div>
-            </div>
-            <div>
-              <label className="block text-slate-300 text-sm font-semibold mb-3">
-                Ticket médio por carro: <span className="text-indigo-400 text-lg font-bold">R$ {ticket}</span>
-              </label>
-              <input type="range" min="150" max="3000" step="50" value={ticket}
-                onChange={e => setTicket(+e.target.value)}
-                className="w-full h-2 rounded-full accent-indigo-500 cursor-pointer" />
-              <div className="flex justify-between text-xs text-slate-600 mt-1"><span>R$150</span><span>R$3.000</span></div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl p-6 text-center mb-6 border border-red-700/40" style={{ background: 'rgba(127,29,29,0.25)' }}>
-            <p className="text-slate-400 text-sm mb-1">Estimativa de perda mensal por falta de controle</p>
-            <p className="text-5xl font-bold text-red-400 my-2">R$&nbsp;{perda.toLocaleString('pt-BR')}</p>
-            <p className="text-slate-500 text-xs">Orçamentos perdidos + clientes sem retorno + lucro que você não enxerga</p>
-          </div>
-
-          <div className="bg-slate-700/50 rounded-xl p-4 mb-6 text-center">
-            <p className="text-slate-300 text-sm">
-              O BoxCerto custa <span className="text-white font-bold">R$97/mês</span>.
-              Com apenas <span className="text-indigo-400 font-bold">1 cliente recuperado</span> você já paga o ano inteiro.
-            </p>
-          </div>
-
-          <button onClick={onCTA}
-            className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-500 transition-all flex items-center justify-center gap-2 text-lg">
-            Quero parar de perder esse dinheiro <ArrowRight className="w-5 h-5" />
-          </button>
+        <div className="tst-grid">
+          {TESTIMONIALS.map((t) => <WppCard key={t.nome} {...t} />)}
         </div>
       </div>
     </section>
   )
 }
 
-// ── Main Landing ───────────────────────────────────────────────
-export default function Landing() {
-  const navigate = useNavigate()
-  const { user, loading } = useAuth()
-  const cfg = useConfig()
-  usePageView('/landing')
-  usePageMeta({
-    title: 'BoxCerto | Sistema de Gestão para Oficina Mecânica',
-    description: 'Controle OS, orçamentos, clientes, estoque e financeiro da sua oficina em um sistema simples, online e fácil de usar. Teste grátis por 7 dias.',
-    canonical: 'https://boxcerto.com',
-  })
-  const pMensal    = parseFloat(cfg.price_monthly)        || 97
-  const pAnual     = parseFloat(cfg.price_annual)         || 958.80
-  const pAnualM    = parseFloat(cfg.price_annual_monthly) || 79.90
-  const economiaTotal = parseFloat((pMensal * 12 - pAnual).toFixed(2))
-  const economia   = Math.round(economiaTotal)
-  const [faqOpen, setFaqOpen] = useState(null)
-  const [scrolled, setScrolled] = useState(false)
-  const [showSticky, setShowSticky] = useState(false)
+/* ── Pricing ──────────────────────────────────────────────── */
+function Pricing({ config }) {
+  const pMonthly = Math.round(Number(config?.price_monthly) || 97)
+  const pAnnualMonthly = Number(config?.price_annual_monthly) || 79.90
+  const pAnnual = Number(config?.price_annual) || 958.80
+  const savings = (pMonthly * 12 - pAnnual).toFixed(2).replace('.', ',')
+  const [annualInt, annualDec] = pAnnualMonthly.toFixed(2).split('.')
 
-  useEffect(() => {
-    if (loading) return
-    if (!user) return
-    if (user.isAdmin) { navigate('/admin', { replace: true }); return }
-    if (user.isTecnico) { navigate('/tecnico', { replace: true }); return }
-    if (hasAccess(user)) { navigate('/app/oficina', { replace: true }); return }
-    navigate('/renovar', { replace: true })
-  }, [user, loading, navigate])
-
-  useEffect(() => {
-    const onScroll = () => {
-      setScrolled(window.scrollY > 40)
-      setShowSticky(window.scrollY > 600)
-    }
-    window.addEventListener('scroll', onScroll)
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  const goRegister = () => navigate('/cadastro')
-
-  const faqs = [
-    { q: 'Preciso instalar algum programa?', a: 'Não. O BoxCerto funciona direto no navegador — no celular, no tablet ou no computador. Só entrar e usar. Sem instalação, sem complicação.' },
-    { q: 'Funciona para quem trabalha sozinho?', a: 'Foi feito exatamente para isso. Um mecânico solo consegue usar sem treinamento nenhum. Se você sabe usar o WhatsApp, sabe usar o BoxCerto.' },
-    { q: 'Funciona para pintura, auto elétrica, ar condicionado e moto?', a: 'Sim. O BoxCerto foi pensado para qualquer negócio automotivo — mecânica geral, funilaria e pintura, auto elétrica, ar condicionado automotivo e mecânica de motos. Qualquer operação que receba veículo, faça serviço e precise de aprovação do cliente.' },
-    { q: 'É muito caro para uma oficina pequena?', a: 'R$97 por mês é menos que 1% do faturamento de qualquer oficina que fatura R$10k ou mais. Se você fechar 1 OS a mais por mês por causa do sistema, ele já se pagou — e sobra dinheiro.' },
-    { q: 'Já uso planilha, por que mudar?', a: 'Planilha não avisa quando peça está acabando, não envia WhatsApp ao cliente, não registra aprovação de orçamento com data e hora, não mostra o lucro real separando custo de peça. O BoxCerto faz tudo isso — e roda no celular.' },
-    { q: 'O BoxCerto emite nota fiscal?', a: 'Não, e é uma escolha intencional. O BoxCerto é desenhado para ser leve, rápido e sem burocracia. Sistemas fiscais adicionam complexidade e custo que a maioria das oficinas pequenas não precisa no dia a dia. Foco total na sua operação — do orçamento à entrega.' },
-    { q: 'Meus dados ficam seguros?', a: 'Sim. Todos os dados ficam em servidores seguros e protegidos. Nenhuma informação sua ou dos seus clientes é compartilhada com ninguém.' },
-    { q: 'O que acontece depois dos 7 dias grátis?', a: 'Você escolhe um plano e continua usando. Se não quiser assinar, pode sair sem custo algum. Não pedimos cartão para começar.' },
-    { q: 'Posso cancelar quando quiser?', a: 'No plano mensal, sim — cancela a qualquer momento sem multa, sem burocracia, em 1 clique. No anual, você trava o menor preço pelo ano todo.' },
+  const mensalFeats = [
+    'OS, Orçamento, Estoque e Financeiro',
+    'Orçamento por link no WhatsApp',
+    'Página de acompanhamento pro cliente',
+    'Relatórios e clientes ilimitados',
+    'Suporte humano em português',
+  ]
+  const anualFeats = [
+    ['Tudo do plano mensal', true],
+    ['Migração da sua planilha sem custo', false],
+    ['Treinamento de equipe (1h por chamada)', false],
+    ['Suporte prioritário no WhatsApp', false],
+    ['Garantia: não gostou em 30 dias, devolvemos', false],
   ]
 
   return (
-    <div className="min-h-screen bg-white">
+    <section className="section bg-soft pricing" id="precos">
+      <span className="glow g1" />
+      <div className="wrap">
+        <div className="section-head center">
+          <span className="eyebrow">Preço de oficina, não de software de empresa grande</span>
+          <h2 className="h-section">Menos que o custo de uma troca de óleo por mês.</h2>
+          <p className="lead">7 dias grátis pra testar. Sem cartão. Cancela quando quiser, sem multa.</p>
+        </div>
 
-      {/* ── NAV ──────────────────────────────────────── */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/95 backdrop-blur shadow-sm border-b border-gray-100' : 'bg-transparent'}`}>
-        <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <Logo iconOnly size="md" priority />
-            <span className={`font-bold text-lg transition-colors ${scrolled ? 'text-slate-900' : 'text-white'}`}>BoxCerto</span>
+        <div className="price-grid">
+          {/* Mensal */}
+          <div className="plan light">
+            <div className="pl-in">
+              <div className="pl-name">Mensal</div>
+              <div className="pl-tag">Flexibilidade total. Pague mês a mês.</div>
+              <div className="pl-amt">
+                <span className="cur">R$</span>
+                <span className="num">{pMonthly}</span>
+                <span className="per">/mês</span>
+              </div>
+              <div className="pl-feats">
+                {mensalFeats.map((f) => (
+                  <div className="pl-feat" key={f}>
+                    <span className="ck"><Check /></span> {f}
+                  </div>
+                ))}
+              </div>
+              <a className="btn btn-dark btn-lg btn-block pl-cta" href="/cadastro">Começar grátis</a>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Entrar — sempre visível, importante para usuários recorrentes */}
-            <button onClick={() => navigate('/login')}
-              className={`flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl border transition-all ${
-                scrolled
-                  ? 'border-gray-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600 bg-white'
-                  : 'border-white/30 text-white/90 hover:text-white hover:border-white/60'
-              }`}>
-              <LogIn className="w-4 h-4" />
-              Entrar
-            </button>
-            <button onClick={goRegister}
-              className="bg-indigo-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-indigo-500 transition-all shadow-sm">
-              Testar grátis
-            </button>
+
+          {/* Anual */}
+          <div className="plan dark">
+            <span className="pl-clip"><span className="pl-glow" /></span>
+            <div className="pl-badge">MAIS ESCOLHIDO</div>
+            <div className="pl-in">
+              <div className="pl-name">Anual</div>
+              <div className="pl-tag">2 meses grátis. Pagamento à vista ou parcelado.</div>
+              <div className="pl-amt">
+                <span className="cur">R$</span>
+                <span className="num">{annualInt}</span>
+                <span className="dec">,{annualDec}</span>
+                <span className="per">/mês</span>
+              </div>
+              <div className="pl-save"><BoltFill /> Economia de R$ {savings}/ano</div>
+              <div className="pl-feats">
+                {anualFeats.map(([f, bold]) => (
+                  <div className="pl-feat" key={f}>
+                    <span className="ck"><Check /></span>
+                    {bold ? <b>{f}</b> : f}
+                  </div>
+                ))}
+              </div>
+              <a className="btn btn-primary btn-lg btn-block pl-cta" href="/cadastro">Começar grátis</a>
+            </div>
           </div>
         </div>
-      </nav>
 
-      {/* ── HERO ─────────────────────────────────────── */}
-      <section className="relative bg-slate-900 pt-16 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-indigo-600/15 rounded-full blur-3xl" />
+        <div className="price-foot">Sem fidelidade · Sem multa de cancelamento · Cancela direto no painel</div>
+      </div>
+    </section>
+  )
+}
 
-        <div className="relative max-w-6xl mx-auto px-5 pt-20 pb-0 text-center">
-          <div className="inline-flex items-center gap-2 bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-sm font-medium px-4 py-2 rounded-full mb-8">
-            <Zap className="w-4 h-4" />
-            7 dias grátis &middot; Sem cartão de crédito &middot; Cancele quando quiser
-          </div>
+/* ── FAQ ──────────────────────────────────────────────────── */
+const QA = [
+  ['Preciso colocar cartão de crédito pra testar?',
+   'Não. O teste de 7 dias é grátis e liberado com tudo. Você só decide assinar se gostar — e configura o pagamento depois, quando quiser.'],
+  ['Funciona no celular?',
+   'Sim. O BoxCerto funciona no celular e no computador, sincronizado. Você abre a oficina no balcão e acompanha tudo pelo telefone quando sai.'],
+  ['Como o cliente aprova o orçamento?',
+   'Você toca em "Enviar para cliente" e o orçamento vai por um link no WhatsApp. O cliente abre, confere peças e valores e aprova em 1 clique. A aprovação fica registrada com nome, data e hora.'],
+  ['Serve só pra oficina mecânica?',
+   'Não. Atende mecânica, funilaria e pintura, auto elétrica, troca de óleo, centro automotivo, oficina de motos, pneus e também profissionais autônomos.'],
+  ['Meus dados ficam seguros?',
+   'Sim. Suas informações ficam guardadas com segurança e backup automático. Seus clientes, OS e financeiro não se perdem se o celular quebrar.'],
+  ['Consigo cancelar quando quiser?',
+   'Sim. Não tem fidelidade nem multa. Se decidir parar, é só cancelar — sem burocracia.'],
+]
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight mb-6 max-w-4xl mx-auto">
-            Pare de perder orçamentos<br />
-            <span className="text-indigo-400">no WhatsApp.</span>
-          </h1>
-          <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Crie orçamentos profissionais, envie um link para o cliente aprovar pelo celular
-            e receba a confirmação com data e hora registradas. Simples, rápido e feito para qualquer oficina automotiva.
-          </p>
+function FaqItem({ q, a, open, onClick }) {
+  const ref = useRef(null)
+  return (
+    <div className={'faq-item' + (open ? ' open' : '')}>
+      <button className="faq-q" onClick={onClick}>
+        {q}
+        <span className="pm"><Plus /></span>
+      </button>
+      <div
+        className="faq-a"
+        style={{ maxHeight: open && ref.current ? ref.current.scrollHeight + 'px' : '0px' }}
+      >
+        <div className="inner" ref={ref}>{a}</div>
+      </div>
+    </div>
+  )
+}
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
-            <button onClick={goRegister}
-              className="w-full sm:w-auto bg-indigo-600 text-white text-lg font-bold px-8 py-4 rounded-2xl hover:bg-indigo-500 transition-all shadow-lg flex items-center justify-center gap-2 group">
-              Testar grátis por 7 dias — sem cartão
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <button onClick={() => navigate('/login')}
-              className="w-full sm:w-auto text-slate-400 hover:text-white text-base font-medium px-6 py-4 rounded-2xl border border-slate-700 hover:border-slate-500 transition-all flex items-center justify-center gap-2">
-              <LogIn className="w-4 h-4" /> Já tenho conta
-            </button>
-          </div>
-
-          <div className="flex items-center justify-center gap-2 mb-16">
-            <div className="flex -space-x-2">
-              {['C','A','M','J','R'].map((l,i) => (
-                <div key={i} className={`w-8 h-8 rounded-full border-2 border-slate-900 flex items-center justify-center text-xs font-bold text-white ${['bg-indigo-500','bg-emerald-500','bg-amber-500','bg-rose-500','bg-violet-500'][i]}`}>{l}</div>
-              ))}
-            </div>
-            <p className="text-slate-400 text-sm ml-1">
-              <span className="text-white font-bold">+347 oficinas</span> já usam o BoxCerto
-            </p>
-          </div>
-
-          {/* Mockup real do produto */}
-          <div className="relative w-full max-w-2xl mx-auto px-2">
-            <div className="absolute -inset-4 bg-indigo-500/20 rounded-3xl blur-3xl pointer-events-none" />
-            <img
-              src="/mockup01.webp"
-              alt="BoxCerto em uso — gestão de oficina no computador e no celular"
-              className="relative w-full h-auto"
-              loading="eager"
-              decoding="async"
-              width="1448"
-              height="1086"
+function Faq() {
+  const [open, setOpen] = useState(0)
+  return (
+    <section className="section" id="faq">
+      <div className="wrap">
+        <div className="section-head center">
+          <span className="eyebrow">Dúvidas</span>
+          <h2 className="h-section">Perguntas frequentes</h2>
+        </div>
+        <div className="faq-wrap">
+          {QA.map(([q, a], i) => (
+            <FaqItem
+              key={i}
+              q={q}
+              a={a}
+              open={open === i}
+              onClick={() => setOpen(open === i ? -1 : i)}
             />
-          </div>
-        </div>
-
-        <div className="relative mt-8">
-          <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M0 80L1440 80L1440 20C1200 70 800 0 0 60L0 80Z" fill="#f9fafb"/>
-          </svg>
-        </div>
-      </section>
-
-      {/* ── SOCIAL PROOF BAR ─────────────────────────── */}
-      <section className="bg-gray-50 py-10 border-b border-gray-100">
-        <div className="max-w-5xl mx-auto px-5">
-          <p className="text-center text-slate-400 text-xs font-semibold uppercase tracking-widest mb-6">Funciona para qualquer tipo de oficina automotiva</p>
-          <div className="flex flex-wrap justify-center gap-3">
-            {SEGMENTOS.map((s, i) => (
-              <div key={i} className="flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2 shadow-sm">
-                <span className="text-lg">{s.emoji}</span>
-                <span className="text-sm font-semibold text-slate-700">{s.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── APROVAÇÃO POR LINK — DIFERENCIAL #1 ──────── */}
-      <section className="py-20 bg-indigo-600 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 to-indigo-800" />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl" />
-        <div className="relative max-w-5xl mx-auto px-5">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-
-            {/* Copy */}
-            <div>
-              <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-indigo-200 text-xs font-bold px-3 py-1.5 rounded-full mb-6 uppercase tracking-wider">
-                <Zap className="w-3.5 h-3.5" /> Diferencial exclusivo
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-5 leading-tight">
-                Dê adeus ao<br />"não autorizei esse serviço."
-              </h2>
-              <p className="text-indigo-200 text-lg mb-6 leading-relaxed">
-                Você envia o orçamento por um <strong className="text-white">link exclusivo no WhatsApp</strong>. O cliente abre no navegador, vê o detalhamento completo e clica em <strong className="text-white">Aprovar</strong>. O BoxCerto registra a aprovação com <strong className="text-white">data e hora</strong> — segurança jurídica para você e agilidade para o cliente.
-              </p>
-              <ul className="space-y-3 mb-8">
-                {[
-                  'Link único por orçamento — não pode ser editado depois',
-                  'Cliente aprova no navegador, sem precisar ter o app',
-                  'Data e hora do aceite registradas automaticamente',
-                  'OS entra em execução assim que o cliente aprova',
-                  'Fim do "pode fazer" perdido no WhatsApp',
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-indigo-300 shrink-0 mt-0.5" />
-                    <span className="text-indigo-100 text-sm">{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <button onClick={goRegister}
-                className="bg-white text-indigo-600 font-bold px-8 py-4 rounded-2xl hover:bg-indigo-50 transition-all inline-flex items-center gap-2 shadow-xl">
-                Quero aprovar orçamentos assim <ArrowRight className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Visual: WPP link → browser page */}
-            <div className="flex flex-col items-center gap-4">
-
-              {/* Passo 1: WPP com link */}
-              <div className="w-full max-w-sm">
-                <p className="text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-2 text-center">1. Você envia o link pelo WhatsApp</p>
-                <div className="rounded-2xl overflow-hidden shadow-xl border border-white/10">
-                  <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: '#075E54' }}>
-                    <div className="w-7 h-7 rounded-full bg-emerald-200 flex items-center justify-center shrink-0">
-                      <span className="text-emerald-900 font-bold text-xs">C</span>
-                    </div>
-                    <div>
-                      <p className="text-white text-xs font-semibold">Carlos Mendonça</p>
-                      <p className="text-emerald-300 text-[10px]">online</p>
-                    </div>
-                  </div>
-                  <div className="p-3" style={{ background: '#E5DDD5' }}>
-                    <div className="flex justify-end">
-                      <div className="rounded-2xl rounded-tr-none px-3 py-2 max-w-[85%] shadow-sm" style={{ background: '#DCF8C6' }}>
-                        <p className="text-slate-700 text-xs mb-1.5">Olá Carlos! Segue o orçamento do seu Ranger 👇</p>
-                        {/* Link preview */}
-                        <div className="bg-white rounded-xl overflow-hidden border border-green-200">
-                          <div className="bg-indigo-600 px-3 py-2 flex items-center gap-2">
-                            <img src="/logo.svg" width="18" height="18" alt="" loading="lazy" decoding="async" style={{borderRadius:3}} />
-                            <span className="text-white text-[10px] font-bold">BoxCerto</span>
-                          </div>
-                          <div className="px-3 py-2">
-                            <p className="text-slate-800 text-[10px] font-bold">Orçamento #0042 — Ford Ranger</p>
-                            <p className="text-slate-500 text-[9px]">boxcerto.com/o/abc123 · Toque para ver</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-end gap-1 mt-1.5">
-                          <span className="text-[9px] text-slate-500">14:32</span>
-                          <span className="text-blue-500 text-[10px] font-black">✓✓</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Seta */}
-              <div className="text-indigo-300 text-2xl">↓</div>
-
-              {/* Passo 2: Tela do navegador */}
-              <div className="w-full max-w-sm">
-                <p className="text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-2 text-center">2. Cliente abre e aprova no navegador</p>
-                <div className="bg-white rounded-2xl overflow-hidden shadow-xl border border-white/10">
-                  {/* Browser bar */}
-                  <div className="bg-gray-100 px-3 py-2 flex items-center gap-2 border-b border-gray-200">
-                    <div className="flex gap-1">
-                      <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
-                    </div>
-                    <div className="flex-1 bg-white rounded-md px-2 py-0.5 text-[9px] text-slate-400 border border-gray-200">
-                      boxcerto.com/o/abc123
-                    </div>
-                  </div>
-                  {/* Orçamento page */}
-                  <div className="p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <img src="/logo.svg" width="24" height="24" alt="" loading="lazy" decoding="async" style={{borderRadius:5}} />
-                      <span className="text-xs font-bold text-slate-900">Orçamento #0042</span>
-                      <span className="ml-auto text-[9px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">Aguard. aprovação</span>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl p-3 mb-3 space-y-1.5">
-                      <div className="flex justify-between text-[10px]">
-                        <span className="text-slate-500">Troca de pastilhas</span>
-                        <span className="text-slate-800 font-semibold">R$280</span>
-                      </div>
-                      <div className="flex justify-between text-[10px]">
-                        <span className="text-slate-500">Fluido de freio</span>
-                        <span className="text-slate-800 font-semibold">R$80</span>
-                      </div>
-                      <div className="flex justify-between text-[10px]">
-                        <span className="text-slate-500">Mão de obra</span>
-                        <span className="text-slate-800 font-semibold">R$120</span>
-                      </div>
-                      <div className="border-t border-gray-200 pt-1.5 flex justify-between text-[10px]">
-                        <span className="font-bold text-slate-900">Total</span>
-                        <span className="font-bold text-slate-900">R$480,00</span>
-                      </div>
-                    </div>
-                    <button className="w-full bg-emerald-500 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-1.5">
-                      <Check className="w-3.5 h-3.5" /> Aprovar Orçamento
-                    </button>
-                    <p className="text-[9px] text-slate-400 text-center mt-2">Ao aprovar, você autoriza a execução do serviço</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Confirmação */}
-              <div className="w-full max-w-sm bg-emerald-500 rounded-2xl px-4 py-3 flex items-center gap-3 shadow-lg">
-                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center shrink-0">
-                  <Check className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-white text-xs font-bold">Aprovado! Oficina notificada.</p>
-                  <p className="text-emerald-100 text-[10px]">Registrado em 25/04/2025 às 14:35 — OS em execução</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── DORES ────────────────────────────────────── */}
-      <section className="py-20 bg-white">
-        <div className="max-w-5xl mx-auto px-5">
-          <div className="text-center mb-14">
-            <p className="text-red-500 font-semibold text-sm uppercase tracking-wider mb-3">A realidade de quem não usa</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Reconhece alguma dessas situações?</h2>
-            <p className="text-slate-500 max-w-xl mx-auto">Cada uma dessas situações representa dinheiro saindo do seu bolso toda semana.</p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
-            {[
-              { e: '📋', d: '"Onde foi que eu anotei o telefone desse cliente?"', t: 'Papéis perdidos, cadernos rasurados, post-it que some. Você perde tempo toda semana procurando informação que deveria estar na ponta dos dedos.' },
-              { e: '📞', d: '"Meu carro tá pronto?" — 3 vezes por dia.', t: 'Cliente ligando, você parando o serviço pra atender. Com o BoxCerto, você manda o status pelo WhatsApp em 1 toque — e o cliente para de ligar.' },
-              { e: '💸', d: 'Trabalhou o mês todo e não sabe quanto lucrou.', t: 'Recebeu dinheiro, pagou peça, pagou conta — mas no final, sobrou quanto? Sem separar custo de peça do valor cobrado, você pode estar trabalhando de graça.' },
-              { e: '🔧', d: '"Esse carro já veio aqui antes?" Não lembro.', t: 'Cliente volta e você não tem o histórico. Não sabe o que foi feito, quanto cobrou, quais peças usou. Cada atendimento recomeça do zero.' },
-              { e: '📄', d: '"Pode fazer" no WhatsApp — cliente sumiu.', t: 'Você mandou o orçamento por mensagem, o cliente não respondeu. Dias depois, o carro foi para o concorrente. Com o BoxCerto, o cliente aprova por link com 1 clique.' },
-              { e: '📦', d: '"Acabou a peça? Mas eu pedi semana passada..."', t: 'Sem controle de estoque, você descobre que a peça acabou na hora que o cliente está esperando. O BoxCerto desconta automaticamente e avisa antes de acabar.' },
-            ].map((item, i) => (
-              <div key={i} className="flex gap-4 p-5 bg-gray-50 rounded-2xl border border-gray-100 hover:border-red-200 hover:bg-red-50/30 transition-all group">
-                <span className="text-3xl shrink-0 mt-0.5">{item.e}</span>
-                <div>
-                  <p className="font-bold text-slate-900 mb-1.5 group-hover:text-red-700 transition-colors">"{item.d}"</p>
-                  <p className="text-slate-500 text-sm leading-relaxed">{item.t}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-10 text-center">
-            <p className="text-slate-400 text-sm mb-4">Se você se identificou com qualquer um desses, o BoxCerto é para você.</p>
-            <button onClick={goRegister}
-              className="bg-indigo-600 text-white font-bold px-8 py-4 rounded-2xl hover:bg-indigo-700 transition-all inline-flex items-center gap-2 shadow-lg">
-              Quero resolver isso agora <ArrowRight className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FLUXO BOXCERTO ───────────────────────────── */}
-      <section className="py-20 bg-gray-50 border-y border-gray-100">
-        <div className="max-w-5xl mx-auto px-5">
-          <div className="text-center mb-14">
-            <p className="text-indigo-600 font-semibold text-sm uppercase tracking-wider mb-3">Como funciona</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">O Fluxo BoxCerto</h2>
-            <p className="text-slate-500 max-w-xl mx-auto">Da entrada do carro até a entrega, cada etapa organizada — no celular, no tablet ou no computador.</p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {[
-              { n: '1', emoji: '🚗', title: 'Entrada', desc: 'Cadastra o veículo em segundos — placa, modelo, KM, observações.' },
-              { n: '2', emoji: '📝', title: 'Orçamento', desc: 'Monte com peças, mão de obra, garantia e desconto. PDF automático.' },
-              { n: '3', emoji: '✅', title: 'Aprovação', desc: 'Link no WhatsApp → cliente abre no navegador → aprova com 1 clique.', destaque: true },
-              { n: '4', emoji: '⚙️', title: 'Execução', desc: 'Equipe executa com status claro. Todo mundo sabe o que está acontecendo.' },
-              { n: '5', emoji: '🏁', title: 'Entrega', desc: 'Histórico registrado, financeiro atualizado, recibo em PDF.' },
-            ].map((step, i) => (
-              <div key={i} className={`relative flex flex-col items-center text-center p-5 rounded-2xl border-2 transition-all ${step.destaque ? 'border-indigo-400 bg-indigo-50 shadow-lg shadow-indigo-100' : 'border-gray-100 bg-white'}`}>
-                {step.destaque && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap">
-                    ⭐ DIFERENCIAL
-                  </div>
-                )}
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black mb-3 ${step.destaque ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-slate-600'}`}>
-                  {step.n}
-                </div>
-                <span className="text-2xl mb-2">{step.emoji}</span>
-                <p className={`font-bold mb-1.5 text-sm ${step.destaque ? 'text-indigo-800' : 'text-slate-900'}`}>{step.title}</p>
-                <p className={`text-xs leading-relaxed ${step.destaque ? 'text-indigo-600' : 'text-slate-500'}`}>{step.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── ANTES / DEPOIS ───────────────────────────── */}
-      <section className="py-20 bg-white">
-        <div className="max-w-4xl mx-auto px-5">
-          <div className="text-center mb-12">
-            <p className="text-indigo-600 font-semibold text-sm uppercase tracking-wider mb-3">A transformação</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900">Antes e depois do BoxCerto</h2>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-red-50 border-2 border-red-100 rounded-3xl p-7">
-              <div className="flex items-center gap-2 mb-6">
-                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                  <X className="w-4 h-4 text-red-500" />
-                </div>
-                <h3 className="font-bold text-slate-900 text-lg">Sem BoxCerto</h3>
-              </div>
-              <ul className="space-y-3">
-                {[
-                  'Orçamento perdido no WhatsApp',
-                  '"Pode fazer" sem registro formal',
-                  'Cliente ligando sem parar',
-                  'Carro parado sem responsável',
-                  'Controle em papel ou planilha',
-                  'Lucro calculado "no olho"',
-                  'Histórico do cliente inexistente',
-                  'Peça acaba sem aviso',
-                  'Recibo escrito à mão',
-                  'Financeiro impossível de entender',
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3">
-                    <div className="w-5 h-5 rounded-full bg-red-200 flex items-center justify-center shrink-0">
-                      <X className="w-3 h-3 text-red-600" />
-                    </div>
-                    <span className="text-slate-600 text-sm">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="bg-emerald-50 border-2 border-emerald-200 rounded-3xl p-7">
-              <div className="flex items-center gap-2 mb-6">
-                <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
-                  <Check className="w-4 h-4 text-emerald-600" />
-                </div>
-                <h3 className="font-bold text-slate-900 text-lg">Com BoxCerto</h3>
-              </div>
-              <ul className="space-y-3">
-                {[
-                  'Link de orçamento enviado pelo WhatsApp',
-                  'Cliente aprova no navegador — data e hora registradas',
-                  'Status automático no WhatsApp — cliente para de ligar',
-                  'Todo carro com responsável e prazo',
-                  'Tudo no celular, tablet ou computador',
-                  'Lucro real separando custo de peça',
-                  'Histórico completo de qualquer cliente',
-                  'Alerta de estoque baixo automático',
-                  'Recibo em PDF em 1 toque',
-                  'Financeiro claro no fim de cada mês',
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3">
-                    <div className="w-5 h-5 rounded-full bg-emerald-200 flex items-center justify-center shrink-0">
-                      <Check className="w-3 h-3 text-emerald-700" />
-                    </div>
-                    <span className="text-slate-700 text-sm font-medium">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-          <div className="mt-10 text-center">
-            <button onClick={goRegister}
-              className="bg-indigo-600 text-white font-bold px-8 py-4 rounded-2xl hover:bg-indigo-700 transition-all inline-flex items-center gap-2 shadow-lg">
-              Quero a versão "Com BoxCerto" <ArrowRight className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ── MÓDULOS ──────────────────────────────────── */}
-      <section className="py-20 bg-slate-900">
-        <div className="max-w-5xl mx-auto px-5">
-          <div className="text-center mb-14">
-            <p className="text-indigo-400 font-semibold text-sm uppercase tracking-wider mb-3">Módulos do sistema</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Tudo que sua oficina precisa. Nada que não precisa.</h2>
-            <p className="text-slate-400 max-w-xl mx-auto">Sem menus complicados. Sem treinamento. 5 abas — no celular, no tablet ou no computador.</p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[
-              { icon: <Wrench className="w-6 h-6 text-white" />, bg: 'bg-indigo-600', title: 'Oficina — Visão em tempo real', desc: 'Dashboard com todos os carros. Placa, modelo, cliente e status por cor. Um toque para WhatsApp com o status atualizado.', items: ['Dashboard por cores: orçamento, serviço, pronto', 'Agendamento e KM do veículo', 'Envio de status ao cliente pelo WhatsApp'] },
-              { icon: <Search className="w-6 h-6 text-white" />, bg: 'bg-violet-600', title: 'Histórico — Memória eterna', desc: 'Busque qualquer cliente ou placa e veja tudo que já foi feito. Nunca mais perca o histórico, mesmo que o cliente volte anos depois.', items: ['Busca por placa, nome ou CPF', 'Linha do tempo de todas as OS', 'Lista completa de clientes e veículos'] },
-              { icon: <TrendingUp className="w-6 h-6 text-white" />, bg: 'bg-emerald-600', title: 'Financeiro — Lucro real', desc: 'Veja quanto entrou, quanto custou e quanto você realmente lucrou. O custo de peça fica invisível para o cliente — só você vê.', items: ['Lucro líquido do mês em destaque', 'Custo de peça separado do valor cobrado', 'Controle de despesas fixas'] },
-              { icon: <FileText className="w-6 h-6 text-white" />, bg: 'bg-amber-500', title: 'Orçamento — Profissional em PDF', desc: 'Monte item por item com desconto, garantia por peça e recibo de pagamento. Envie o link de aprovação pelo WhatsApp.', items: ['PDF profissional com logo da sua oficina', 'Link exclusivo para aprovação do cliente', 'Aprovação com registro de data e hora'] },
-              { icon: <Package className="w-6 h-6 text-white" />, bg: 'bg-rose-500', title: 'Estoque — Chega de peça faltando', desc: 'Cadastre suas peças e o app desconta automaticamente ao usar na OS. Alerta de estoque baixo antes de acabar na hora errada.', items: ['Baixa automática ao usar no orçamento', 'Alerta de estoque baixo configurável', 'Relatório imprimível em 1 toque'] },
-            ].map((f, i) => (
-              <div key={i} className="bg-slate-800 rounded-2xl p-6 border border-slate-700 hover:border-slate-500 transition-all">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-10 h-10 ${f.bg} rounded-xl flex items-center justify-center shrink-0`}>{f.icon}</div>
-                  <p className="text-white font-bold text-sm leading-tight">{f.title}</p>
-                </div>
-                <p className="text-slate-400 text-sm mb-4 leading-relaxed">{f.desc}</p>
-                <ul className="space-y-2">
-                  {f.items.map((item, j) => (
-                    <li key={j} className="flex items-center gap-2 text-sm text-slate-300">
-                      <CheckCircle className="w-4 h-4 text-indigo-400 shrink-0" />{item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── DEPOIMENTOS (WHATSAPP STYLE) ─────────────── */}
-      <section className="py-20 bg-white">
-        <div className="max-w-5xl mx-auto px-5">
-          <div className="text-center mb-14">
-            <p className="text-indigo-600 font-semibold text-sm uppercase tracking-wider mb-3">Quem usa</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">Quem usa, não volta ao papel.</h2>
-            <p className="text-slate-500">Mensagens reais de clientes BoxCerto</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-5">
-            <WppCard
-              gradIdx={0}
-              nome="João Batista R."
-              tipo="Mecânica Geral"
-              cidade="Curitiba, PR"
-              hora="09:14"
-              mensagem={"cara o sistema me salvou semana passada\n\ncliente chegou aqui falando que não tinha autorizado a troca de embreagem. abri o boxcerto, mostrei pra ele: nome dele, data, horário. ele ficou sem palavras e pagou na hora kkkk"}
-            />
-            <WppCard
-              gradIdx={1}
-              nome="Adriana F."
-              tipo="Auto Elétrica"
-              cidade="Goiânia, GO"
-              hora="14:22"
-              mensagem={"trabalho sozinha e ficava quase 1h por dia atendendo telefone de 'meu carro tá pronto?'\n\nagora mando o link com o status em 5 segundos e volto pro serviço. mudou meu dia completamente ⚡"}
-            />
-            <WppCard
-              gradIdx={2}
-              nome="Paulo R."
-              tipo="Ar Condicionado Auto"
-              cidade="São Paulo, SP"
-              hora="18:05"
-              mensagem={"descobri que tava lucrando 30% menos do que achava porque não separava custo de peça do valor cobrado\n\no financeiro do sistema mostrou exatamente onde o dinheiro tava indo. agora sei o que ganho em cada carro"}
-            />
-          </div>
-          <div className="mt-10 flex justify-center">
-            <div className="inline-flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-2xl px-6 py-4">
-              <div className="flex -space-x-1.5">
-                {['C','A','M','J','R','P','L'].map((l,i) => (
-                  <div key={i} className={`w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white ${['bg-indigo-500','bg-emerald-500','bg-amber-500','bg-rose-500','bg-violet-500','bg-blue-500','bg-orange-500'][i]}`}>{l}</div>
-                ))}
-              </div>
-              <div>
-                <div className="flex gap-0.5 mb-0.5">
-                  {[1,2,3,4,5].map(i => <Star key={i} className="w-3 h-3 text-amber-400 fill-amber-400" />)}
-                </div>
-                <p className="text-slate-600 text-xs font-medium">+347 oficinas avaliaram 5 estrelas</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── CALCULADORA ──────────────────────────────── */}
-      <Calculadora onCTA={goRegister} />
-
-      {/* ── PREÇOS ───────────────────────────────────── */}
-      <section id="precos" className="py-20 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-5">
-          <div className="text-center mb-14">
-            <p className="text-indigo-600 font-semibold text-sm uppercase tracking-wider mb-3">Preços</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">Menos de R$100 por mês. Controle total da oficina.</h2>
-            <p className="text-slate-500 max-w-xl mx-auto mb-3">Comece grátis por 7 dias. Sem cartão. Sem compromisso.</p>
-            <p className="text-slate-400 text-sm italic">Se o BoxCerto evitar 1 orçamento perdido no mês, ele já se paga.</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-            {/* Mensal */}
-            <div className="bg-white rounded-3xl p-8 border-2 border-gray-200 flex flex-col">
-              <h3 className="text-lg font-bold text-slate-900 mb-1">Plano Mensal</h3>
-              <p className="text-slate-400 text-sm mb-6">Flexibilidade total, cancele quando quiser</p>
-              <div className="flex items-end gap-1 mb-8">
-                <span className="text-5xl font-bold text-slate-900">R${pMensal % 1 === 0 ? pMensal.toFixed(0) : pMensal.toFixed(2).replace('.',',')}</span>
-                <span className="text-slate-400 mb-1.5">/mês</span>
-              </div>
-              <ul className="space-y-3 mb-8 flex-1">
-                {[
-                  'OS ilimitadas',
-                  'Clientes e veículos ilimitados',
-                  'Aprovação de orçamento por link',
-                  'Orçamento com link pelo WhatsApp',
-                  'Histórico completo',
-                  'Controle financeiro',
-                  'Estoque com alerta automático',
-                  'Acesso em qualquer dispositivo',
-                ].map((b, i) => (
-                  <li key={i} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-indigo-400 shrink-0" />
-                    <span className="text-slate-600 text-sm">{b}</span>
-                  </li>
-                ))}
-              </ul>
-              <button onClick={goRegister}
-                className="w-full border-2 border-indigo-600 text-indigo-600 font-bold py-3.5 rounded-2xl hover:bg-indigo-50 transition-colors">
-                Testar 7 dias grátis
-              </button>
-            </div>
-
-            {/* Anual — botão verde para guiar o olho */}
-            <div className="bg-indigo-600 rounded-3xl p-8 relative flex flex-col shadow-xl shadow-indigo-200">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-xs font-black px-4 py-1.5 rounded-full whitespace-nowrap shadow-sm">
-                ⭐ MAIS POPULAR — 2 MESES GRÁTIS
-              </div>
-              <h3 className="text-lg font-bold text-white mb-1 mt-2">Plano Anual</h3>
-              <p className="text-indigo-200 text-sm mb-2">Pague uma vez, use o ano todo</p>
-              <div className="flex items-end gap-1">
-                <span className="text-5xl font-bold text-white">R${pAnualM.toFixed(2).replace('.',',')}</span>
-                <span className="text-indigo-200 mb-1.5">/mês</span>
-              </div>
-              <p className="text-indigo-300 text-sm mt-1">Cobrado uma vez ao ano: R${pAnual.toFixed(2).replace('.',',')}</p>
-              <p className="text-amber-300 text-xs font-semibold mb-6">Economia de R${economiaTotal.toFixed(2).replace('.',',')} comparado ao plano mensal</p>
-              <ul className="space-y-3 mb-8 flex-1">
-                {[
-                  'Tudo do plano mensal',
-                  'Prioridade no suporte',
-                  'Acesso antecipado a novidades',
-                  'Menor preço garantido',
-                  '7 dias grátis para testar',
-                  '7 dias para testar sem risco',
-                ].map((b, i) => (
-                  <li key={i} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-indigo-200 shrink-0" />
-                    <span className="text-white text-sm">{b}</span>
-                  </li>
-                ))}
-              </ul>
-              <button onClick={goRegister}
-                className="w-full bg-emerald-500 text-white font-bold py-3.5 rounded-2xl hover:bg-emerald-400 transition-colors shadow-lg text-base">
-                Testar grátis e economizar R$ {economia}
-              </button>
-              <p className="text-indigo-300 text-xs text-center mt-3">Teste grátis por 7 dias. Depois, R${pAnual.toFixed(2).replace('.',',')}/ano.</p>
-            </div>
-          </div>
-
-          {/* Trust badges */}
-          <div className="flex flex-wrap items-center justify-center gap-6 mt-10 text-sm text-slate-400">
-            <div className="flex items-center gap-2"><Shield className="w-4 h-4" /> Pagamento 100% seguro</div>
-            <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4" /> 7 dias grátis, sem cartão</div>
-            <div className="flex items-center gap-2"><X className="w-4 h-4" /> Cancele em 1 clique</div>
-            <div className="flex items-center gap-2"><Shield className="w-4 h-4" /> Dados protegidos pela LGPD</div>
-          </div>
-
-          {/* Guarantee */}
-          <div className="mt-10 bg-white border-2 border-emerald-200 rounded-3xl p-6 max-w-xl mx-auto text-center">
-            <div className="w-14 h-14 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Shield className="w-7 h-7 text-emerald-500" />
-            </div>
-            <h3 className="font-bold text-slate-900 text-lg mb-2">Teste Grátis por 7 Dias — Cancelamento em 1 Clique</h3>
-            <p className="text-slate-500 text-sm leading-relaxed">
-              Comece sem cartão de crédito. Se não gostar dentro dos 7 dias, é só sair — sem custo, sem burocracia, sem nenhuma pergunta.
-            </p>
-          </div>
-
-          <div className="text-center mt-8">
-            <p className="text-slate-400 text-sm mb-2">Ainda com dúvida? Fale agora com um especialista em oficinas.</p>
-            <a href={WPP} target="_blank" rel="noreferrer"
-              className="inline-flex items-center gap-2 text-emerald-600 font-semibold text-sm hover:text-emerald-700 transition-colors">
-              <MessageCircle className="w-4 h-4" />
-              Conversar pelo WhatsApp
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FAQ ──────────────────────────────────────── */}
-      <section className="py-20 bg-white">
-        <div className="max-w-2xl mx-auto px-5">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-slate-900 mb-3">Perguntas frequentes</h2>
-            <p className="text-slate-500">Tudo que você precisa saber antes de começar.</p>
-          </div>
-          <div className="space-y-3">
-            {faqs.map((faq, i) => (
-              <div key={i} className="border border-gray-200 rounded-2xl overflow-hidden">
-                <button onClick={() => setFaqOpen(faqOpen === i ? null : i)}
-                  className="w-full flex items-center justify-between p-5 text-left hover:bg-gray-50 transition-colors">
-                  <span className="font-semibold text-slate-900 pr-4">{faq.q}</span>
-                  {faqOpen === i
-                    ? <ChevronUp className="w-5 h-5 text-slate-400 shrink-0" />
-                    : <ChevronDown className="w-5 h-5 text-slate-400 shrink-0" />
-                  }
-                </button>
-                {faqOpen === i && (
-                  <div className="px-5 pb-5 text-slate-500 leading-relaxed text-sm border-t border-gray-50 pt-3">
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA FINAL ────────────────────────────────── */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 to-indigo-800" />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
-        <div className="relative max-w-3xl mx-auto px-5 text-center">
-          <p className="text-indigo-300 font-semibold text-sm uppercase tracking-wider mb-4">Está esperando o quê?</p>
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-5 leading-tight">
-            Organize sua oficina e aprove<br />orçamentos mais rápido.
-          </h2>
-          <p className="text-indigo-200 text-lg mb-10 max-w-xl mx-auto leading-relaxed">
-            Teste o BoxCerto grátis por 7 dias e veja como fica o fluxo da sua oficina — sem caderno, sem planilha e sem orçamento perdido no WhatsApp.
-          </p>
-          <button onClick={goRegister}
-            className="bg-white text-indigo-600 font-bold text-lg px-10 py-5 rounded-2xl hover:bg-indigo-50 transition-all inline-flex items-center gap-3 shadow-xl group mb-6">
-            Começar teste grátis — 7 dias sem cartão
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </button>
-          <p className="text-indigo-300 text-sm">
-            Sem cartão &middot; Cancele em 1 clique &middot; +347 oficinas já usam
-          </p>
-        </div>
-      </section>
-
-      {/* ── FOOTER ───────────────────────────────────── */}
-      <footer className="bg-slate-900 py-10">
-        <div className="max-w-6xl mx-auto px-5 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Logo iconOnly size="sm" />
-            <span className="font-bold text-white">BoxCerto</span>
-            <span className="text-slate-600 text-xs">Gestão de Oficina</span>
-          </div>
-          <div className="flex flex-wrap justify-center gap-5 text-slate-400 text-sm">
-            <button onClick={() => navigate('/login')} className="hover:text-white transition-colors flex items-center gap-1.5">
-              <LogIn className="w-3.5 h-3.5" /> Entrar na conta
-            </button>
-            <button onClick={goRegister} className="hover:text-white transition-colors">Cadastrar</button>
-            <a href={WPP} target="_blank" rel="noreferrer"
-              className="hover:text-white transition-colors flex items-center gap-1.5">
-              <MessageCircle className="w-3.5 h-3.5" /> Ainda com dúvida? Fale com a gente
-            </a>
-            <a href="mailto:contato@boxcerto.com" className="hover:text-white transition-colors">contato@boxcerto.com</a>
-          </div>
-          <p className="text-slate-600 text-sm">&copy; 2025 BoxCerto</p>
-        </div>
-      </footer>
-
-      {/* ── STICKY MOBILE CTA ────────────────────────── */}
-      <div className={`fixed bottom-0 left-0 right-0 z-50 transition-all duration-300 md:hidden ${showSticky ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`}>
-        <div className="bg-white border-t border-gray-200 px-4 py-3 shadow-2xl flex items-center gap-3">
-          <div className="flex-1">
-            <p className="text-xs text-slate-500">7 dias grátis, sem cartão</p>
-            <p className="text-sm font-bold text-slate-900">Comece a organizar sua oficina agora</p>
-          </div>
-          <button onClick={goRegister}
-            className="bg-indigo-600 text-white text-sm font-bold px-5 py-3 rounded-xl hover:bg-indigo-700 transition-colors shrink-0 flex items-center gap-1.5">
-            Testar grátis <ArrowRight className="w-4 h-4" />
-          </button>
+          ))}
         </div>
       </div>
+    </section>
+  )
+}
 
+/* ── Final CTA ────────────────────────────────────────────── */
+function FinalCta() {
+  return (
+    <section className="section final-cta">
+      <span className="glow g1" />
+      <span className="glow g2" />
+      <div className="wrap">
+        <div className="final-inner">
+          <span className="kicker green" style={{
+            background: 'rgba(34,197,94,.14)',
+            borderColor: 'rgba(34,197,94,.3)',
+            color: '#86efac',
+          }}>
+            <span className="dot" /> Sua oficina mais organizada hoje
+          </span>
+          <h2 style={{ marginTop: '20px' }}>
+            Comece o teste grátis e mande seu primeiro orçamento ainda hoje.
+          </h2>
+          <p>
+            Leva 2 minutos pra configurar. Sem cartão, sem compromisso —
+            só a sua oficina rodando melhor.
+          </p>
+          <div className="final-cta-btns">
+            <a className="btn btn-primary btn-lg" href="/cadastro">
+              Começar teste grátis de 7 dias <ArrowRight />
+            </a>
+            <a className="btn btn-green btn-lg" href={WPP} target="_blank" rel="noreferrer">
+              <WhatsappIcon /> Falar no WhatsApp
+            </a>
+          </div>
+          <div className="trust-line">
+            <span className="ti"><Check /> Sem cartão</span>
+            <span className="ti"><Check /> 7 dias grátis</span>
+            <span className="ti"><Check /> Cancele quando quiser</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ── Footer ───────────────────────────────────────────────── */
+const FOOTER_COLS = [
+  ['Produto',  ['Funcionalidades', 'Como funciona', 'Para quem', 'Preços']],
+  ['Empresa',  ['Sobre', 'Blog', 'Contato', 'Seja parceiro']],
+  ['Suporte',  ['Central de ajuda', 'WhatsApp', 'Status', 'Treinamentos']],
+]
+
+function Footer() {
+  return (
+    <footer className="footer">
+      <div className="wrap">
+        <div className="footer-top">
+          <div className="f-brand">
+            <a className="brand" href="#topo">
+              <img src="/logo.svg" alt="BoxCerto" width={34} height={34} />
+              <span className="wm">Box<b>Certo</b></span>
+            </a>
+            <p>Gestão de oficina de verdade: orçamento aprovado pelo WhatsApp, OS, clientes, estoque e financeiro num app só.</p>
+            <a className="f-wa" href={WPP} target="_blank" rel="noreferrer">
+              <WhatsappIcon /> Falar com a gente no WhatsApp
+            </a>
+          </div>
+          {FOOTER_COLS.map(([h, items]) => (
+            <div className="f-col" key={h}>
+              <h5>{h}</h5>
+              {items.map((it) => <a href="#" key={it}>{it}</a>)}
+            </div>
+          ))}
+        </div>
+        <div className="footer-bottom">
+          <div>© 2026 BoxCerto · Gestão de oficina mecânica online</div>
+          <div className="fb-links">
+            <a href="#">Termos</a>
+            <a href="#">Privacidade</a>
+            <a href="#">LGPD</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  )
+}
+
+/* ── Main Landing component ───────────────────────────────── */
+export default function Landing() {
+  const navigate = useNavigate()
+  const { user, loading } = useAuth()
+  const config = useConfig()
+
+  usePageView('/landing')
+  usePageMeta({
+    title: 'BoxCerto — Gestão de Oficina Mecânica Online',
+    description: 'Envie orçamentos por link no WhatsApp, cliente aprova em 1 clique. Controle OS, clientes, estoque e financeiro. Teste grátis 7 dias — sem cartão.',
+    canonical: 'https://boxcerto.com',
+  })
+
+  // Auth redirect
+  useEffect(() => {
+    if (loading || !user) return
+    if (user.isAdmin)   { navigate('/admin',      { replace: true }); return }
+    if (user.isTecnico) { navigate('/tecnico',    { replace: true }); return }
+    if (hasAccess(user)){ navigate('/app/oficina', { replace: true }); return }
+    navigate('/renovar', { replace: true })
+  }, [user, loading, navigate])
+
+  // Scroll reveal (ported from design's app.jsx)
+  useEffect(() => {
+    const blocks = []
+
+    document.querySelectorAll(
+      '.lp .section-head, .lp .hero-copy, .lp .hero-visual, .lp .wa-copy, .lp .wa-demo-wrap, .lp .track-controls, .lp .track-phone-wrap, .lp .sc-copy, .lp .sc-media, .lp .types-strip'
+    ).forEach((el) => blocks.push(el))
+
+    document.querySelectorAll(
+      '.lp .feat-grid, .lp .steps-row, .lp .whom-grid, .lp .tst-grid, .lp .faq-wrap, .lp .ts-row, .lp .final-inner'
+    ).forEach((grid) => {
+      Array.from(grid.children).forEach((child, i) => {
+        child.style.animationDelay = Math.min(i * 70, 420) + 'ms'
+        blocks.push(child)
+      })
+    })
+
+    blocks.forEach((el) => el.classList.add('reveal'))
+
+    let pending = new Set(blocks)
+
+    const show = (el) => {
+      el.classList.add('in')
+      pending.delete(el)
+      const cleanup = () => {
+        el.classList.remove('reveal', 'in')
+        el.style.animationDelay = ''
+      }
+      el.addEventListener('animationend', cleanup, { once: true })
+      setTimeout(cleanup, 1500)
+    }
+
+    let ticking = false
+    const sweep = () => {
+      ticking = false
+      const vh = window.innerHeight || document.documentElement.clientHeight
+      pending.forEach((el) => {
+        if (el.getBoundingClientRect().top < vh * 0.90) show(el)
+      })
+      if (!pending.size) teardown()
+    }
+    const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(sweep) } }
+
+    let io = null
+    if ('IntersectionObserver' in window) {
+      io = new IntersectionObserver((entries) => {
+        entries.forEach((e) => { if (e.isIntersecting) show(e.target) })
+        if (!pending.size) teardown()
+      }, { threshold: 0.06, rootMargin: '0px 0px -8% 0px' })
+      blocks.forEach((el) => io.observe(el))
+    }
+
+    function teardown() {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      document.removeEventListener('scroll', onScroll, true)
+      if (io) io.disconnect()
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    document.addEventListener('scroll', onScroll, true)
+    sweep() // reveal above-the-fold immediately
+
+    return teardown
+  }, [])
+
+  return (
+    <div className="lp" style={{ fontFamily: 'var(--font-body)', color: 'var(--slate-700)', background: '#fff', fontSize: '17px', lineHeight: '1.6', WebkitFontSmoothing: 'antialiased' }}>
+      <Nav />
+      <main>
+        <Hero />
+        <WhatsappDemo />
+        <ClientTracking />
+        <Features />
+        <HowItWorks />
+        <Showcase />
+        <ForWhom />
+        <Testimonials />
+        <Pricing config={config} />
+        <Faq />
+        <FinalCta />
+      </main>
+      <Footer />
     </div>
   )
 }
