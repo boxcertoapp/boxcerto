@@ -644,8 +644,10 @@
   .lp .nav-links { display: none; }
   .lp .nav-cta .login { display: none; }
   .lp .nav-burger { display: flex; }
-  /* Esconde o botão CTA do nav em telas médias — o menu mobile já tem o CTA */
-  .lp .nav-cta .btn { display: none; }
+  /* Compacta o botão CTA do nav em mobile */
+  .lp .nav-cta { gap: 8px; }
+  .lp .nav-cta .btn { padding: 10px 15px; font-size: 14px; gap: 0; }
+  .lp .nav-cta .btn svg { display: none; }
   .lp .hero-grid { grid-template-columns: 1fr; gap: 48px; }
   .lp .hero-visual { max-width: 520px; margin: 0 auto; }
   .lp .wa-grid { grid-template-columns: 1fr; gap: 48px; }
@@ -667,6 +669,8 @@
   .lp .hero-float.f-approved { left: -6px; }
   .lp .hero-float.f-plate { right: -4px; }
   .lp .phone { width: min(320px, 86vw); }
+  /* Em telas muito pequenas o texto do botão do nav fica só "Grátis" */
+  .lp .nav-cta .btn { padding: 9px 11px; font-size: 13px; }
 }
 @media (max-width: 860px) {
   .lp .section { padding: 72px 0; }
