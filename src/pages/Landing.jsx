@@ -96,7 +96,7 @@ function Nav() {
           <a key={h} href={h} onClick={() => setOpen(false)}>{t}</a>
         ))}
         <div className="mm-cta">
-          <Link className="btn btn-ghost btn-lg btn-block" to="/login" onClick={() => setOpen(false)}>Entrar</Link>
+          <Link className="mm-enter" to="/login" onClick={() => setOpen(false)}>Entrar</Link>
           <a className="btn btn-primary btn-lg btn-block" href="#precos" onClick={() => setOpen(false)}>
             Começar teste grátis
           </a>
