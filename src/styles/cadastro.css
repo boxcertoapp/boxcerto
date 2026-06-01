@@ -1,0 +1,273 @@
+/* ============================================================
+   BoxCerto — Cadastro (página de conversão)
+   Split desktop (dark | white) · mobile FORM-FIRST
+   Scoped: tokens re-declarados (idempotentes com landing.css)
+   ============================================================ */
+
+:root {
+  --indigo:       #4f46e5;
+  --indigo-700:   #4338ca;
+  --indigo-50:    #eef0fe;
+  --indigo-100:   #e0e3fc;
+  --green:        #22c55e;
+  --green-600:    #16a34a;
+  --green-50:     #ecfdf3;
+  --green-100:    #d3f6df;
+  --amber:        #f59e0b;
+  --red:          #ef4444;
+  --red-50:       #fdecec;
+  --ink:          #14161f;
+  --slate-700:    #3c4254;
+  --slate-600:    #5a617a;
+  --slate-500:    #767d96;
+  --slate-400:    #9aa0b6;
+  --line:         #e8eaf3;
+  --line-soft:    #eef0f6;
+  --bg-soft:      #f6f7fb;
+  --font-display: "Plus Jakarta Sans", -apple-system, system-ui, sans-serif;
+  --font-body:    "Manrope", -apple-system, system-ui, sans-serif;
+  --font-mono:    "Space Mono", ui-monospace, monospace;
+  --r-md:         14px;
+  --r-pill:       999px;
+  --sh-xs:        0 1px 2px rgba(20,22,31,.05);
+  --sh-sm:        0 2px 8px rgba(20,22,31,.06);
+  --sh-indigo:    0 18px 40px -16px rgba(79,70,229,.45);
+}
+
+.cad-page { min-height: 100vh; }
+
+/* ---------- DESKTOP SPLIT ---------- */
+.cad-grid {
+  display: grid;
+  grid-template-columns: 1.02fr .98fr;
+  min-height: 100vh;
+}
+
+/* LEFT — marketing (dark) */
+.cad-left {
+  position: relative; overflow: hidden;
+  background: radial-gradient(120% 120% at 15% 0%, #20254a 0%, #14163a 42%, #0e1030 100%);
+  color: #d7daf0;
+  padding: 56px clamp(36px, 4.5vw, 80px);
+  display: flex; flex-direction: column; justify-content: center;
+}
+.cad-left .l-glow { position: absolute; border-radius: 50%; filter: blur(70px); pointer-events: none; }
+.cad-left .l-glow.a { width: 420px; height: 420px; background: rgba(99,102,241,.32); top: -160px; left: -120px; }
+.cad-left .l-glow.b { width: 360px; height: 360px; background: rgba(34,197,94,.16); bottom: -140px; right: -100px; }
+.cad-left-in { position: relative; z-index: 2; max-width: 520px; }
+
+.cad-brand { display: flex; align-items: center; margin-bottom: 40px; }
+
+.cad-left h1 {
+  color: #fff; font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(34px, 3.4vw, 50px); line-height: 1.04;
+  letter-spacing: -0.02em; margin: 0;
+}
+.cad-left h1 .hl { color: #8b93ff; }
+.cad-left h1 .am { color: var(--amber); }
+.cad-left .l-sub { font-size: 18px; color: #aab0d8; margin: 20px 0 30px; max-width: 460px; line-height: 1.5; }
+
+.cad-benefits { display: grid; gap: 15px; margin-bottom: 32px; }
+.cad-benefit { display: flex; align-items: flex-start; gap: 13px; font-size: 16px; color: #d7daf0; font-family: var(--font-body); }
+.cad-benefit .ck { flex: none; width: 26px; height: 26px; border-radius: 50%; background: rgba(34,197,94,.18); display: grid; place-items: center; margin-top: 1px; }
+.cad-benefit .ck svg { width: 14px; height: 14px; color: var(--green); }
+
+.cad-social { display: flex; align-items: center; gap: 13px; margin-bottom: 38px; }
+.cad-social .avs { display: flex; }
+.cad-social .avs span { width: 38px; height: 38px; border-radius: 50%; border: 2.5px solid #14163a; margin-left: -11px; display: grid; place-items: center; font-weight: 800; color: #fff; font-size: 12.5px; font-family: var(--font-display); }
+.cad-social .avs span:first-child { margin-left: 0; }
+.cad-social .sc-tx { font-size: 14.5px; color: #c2c7e6; font-weight: 600; line-height: 1.3; font-family: var(--font-body); }
+.cad-social .sc-tx .stars { color: var(--amber); letter-spacing: 1px; font-size: 14px; }
+.cad-social .sc-tx b { color: #fff; }
+
+.cad-mock img { width: 100%; max-width: 440px; filter: drop-shadow(0 30px 50px rgba(0,0,0,.4)); }
+
+/* reinforcement title — only on mobile (shown below the form) */
+.cad-left .l-rein-title {
+  display: none; font-family: var(--font-display); font-weight: 800;
+  color: #fff; font-size: 20px; margin-bottom: 18px;
+  text-align: center; letter-spacing: -.02em;
+}
+
+/* RIGHT — form (white) */
+.cad-right {
+  background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  padding: 48px clamp(24px, 3.5vw, 72px);
+}
+.cad-form-card { width: 100%; max-width: 432px; }
+
+/* mobile-only mini brand (hidden on desktop) */
+.cad-m-brand { display: none; }
+
+/* badge */
+.cad-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-mono); font-size: 12px; font-weight: 700; letter-spacing: .02em;
+  color: var(--green-600); background: var(--green-50); border: 1px solid var(--green-100);
+  padding: 7px 13px; border-radius: var(--r-pill);
+}
+.cad-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+
+.cad-form-card h2 {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(26px, 3vw, 32px); line-height: 1.1;
+  margin: 16px 0 8px; color: var(--ink); letter-spacing: -0.02em;
+}
+.cad-form-card .c-sub { font-size: 15.5px; color: var(--slate-600); margin-bottom: 18px; font-family: var(--font-body); line-height: 1.45; }
+
+/* social proof inside form */
+.cad-form-social {
+  display: flex; align-items: center; gap: 11px;
+  padding: 12px 0 4px; margin-bottom: 16px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.cad-form-social .avs { display: flex; }
+.cad-form-social .avs span {
+  width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff;
+  margin-left: -9px; display: grid; place-items: center;
+  font-weight: 800; color: #fff; font-size: 10.5px;
+  font-family: var(--font-display); box-shadow: var(--sh-xs);
+}
+.cad-form-social .avs span:first-child { margin-left: 0; }
+.cad-form-social .fs-tx { font-size: 13px; color: var(--slate-600); font-weight: 600; line-height: 1.25; font-family: var(--font-body); }
+.cad-form-social .fs-tx .stars { color: var(--amber); letter-spacing: .5px; font-size: 12px; }
+.cad-form-social .fs-tx b { color: var(--ink); }
+
+/* error banner */
+.cad-error {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: var(--red-50); border: 1px solid #fca5a5;
+  color: #dc2626; font-size: 14px; font-weight: 600;
+  padding: 12px 14px; border-radius: 12px; margin-bottom: 14px;
+  font-family: var(--font-body);
+}
+.cad-error svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+
+/* Google button */
+.btn-google {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 11px;
+  background: #fff; border: 1.5px solid var(--line); border-radius: var(--r-pill);
+  padding: 14px 18px; font-family: var(--font-display); font-weight: 700; font-size: 15.5px;
+  color: var(--ink); cursor: pointer;
+  transition: border-color .18s, box-shadow .18s, transform .15s;
+  box-shadow: var(--sh-xs);
+}
+.btn-google:hover { border-color: var(--slate-400); box-shadow: var(--sh-sm); transform: translateY(-1px); }
+.btn-google svg { width: 20px; height: 20px; flex: none; }
+.btn-google .g-fast {
+  font-size: 11.5px; font-weight: 700; color: var(--green-600);
+  background: var(--green-50); border-radius: var(--r-pill);
+  padding: 2px 8px; font-family: var(--font-body); white-space: nowrap;
+}
+
+/* divider */
+.cad-or {
+  display: flex; align-items: center; gap: 14px;
+  margin: 18px 0; color: var(--slate-400); font-size: 13px;
+  font-weight: 700; font-family: var(--font-body);
+}
+.cad-or::before, .cad-or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+/* fields */
+.cad-fields { display: grid; gap: 14px; }
+.field label {
+  display: block; font-family: var(--font-display); font-weight: 700;
+  font-size: 13.5px; color: var(--slate-700); margin-bottom: 7px;
+}
+.field .inp-wrap { position: relative; }
+.field input {
+  width: 100%; height: 52px; border: 1.5px solid var(--line);
+  border-radius: var(--r-md); padding: 0 16px;
+  font-family: var(--font-body); font-size: 16px; color: var(--ink);
+  background: #fff; transition: border-color .15s, box-shadow .15s;
+  -webkit-appearance: none; box-sizing: border-box;
+}
+.field input::placeholder { color: var(--slate-400); }
+.field input:focus { outline: none; border-color: var(--indigo); box-shadow: 0 0 0 3px var(--indigo-50); }
+.field input.has-icon { padding-right: 46px; }
+.field .hint { font-size: 12.5px; color: var(--slate-500); margin-top: 6px; font-family: var(--font-body); }
+.field .eye {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  width: 36px; height: 36px; border: none; background: none; cursor: pointer;
+  display: grid; place-items: center; color: var(--slate-400); border-radius: 9px;
+}
+.field .eye:hover { color: var(--slate-600); background: var(--bg-soft); }
+.field .eye svg { width: 19px; height: 19px; }
+
+/* coupon collapsible */
+.cad-coupon-toggle {
+  background: none; border: none; cursor: pointer;
+  font-family: var(--font-body); font-weight: 700; font-size: 13.5px;
+  color: var(--indigo); padding: 4px 0;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.cad-coupon-toggle svg { width: 14px; height: 14px; transition: transform .2s; }
+.cad-coupon-toggle.open svg { transform: rotate(45deg); }
+.cad-coupon-field { overflow: hidden; max-height: 0; transition: max-height .25s ease, opacity .2s; opacity: 0; }
+.cad-coupon-field.open { max-height: 120px; opacity: 1; margin-top: 4px; }
+
+/* scoped buttons (evita conflito com Tailwind ou outros estilos) */
+.cad-page .btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  font-family: var(--font-display); font-weight: 700; font-size: 16px;
+  padding: 14px 22px; border-radius: var(--r-pill);
+  border: 1px solid transparent; cursor: pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  white-space: nowrap; letter-spacing: -0.01em;
+}
+.cad-page .btn svg { width: 18px; height: 18px; }
+.cad-page .btn-primary { background: var(--indigo); color: #fff; box-shadow: var(--sh-indigo); }
+.cad-page .btn-primary:hover:not(:disabled) { background: var(--indigo-700); transform: translateY(-2px); }
+.cad-page .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+
+/* submit button */
+.cad-submit { width: 100%; height: 56px; margin-top: 4px; font-size: 17px; }
+.cad-submit svg { width: 19px; height: 19px; }
+
+/* reassurance */
+.cad-reassure { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 14px; }
+.cad-reassure .micro { font-size: 13px; color: var(--slate-500); font-weight: 600; text-align: center; font-family: var(--font-body); }
+.cad-reassure .secure { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--slate-500); font-weight: 600; font-family: var(--font-body); }
+.cad-reassure .secure svg { width: 14px; height: 14px; color: var(--green-600); }
+
+.cad-terms { font-size: 12px; color: var(--slate-400); text-align: center; line-height: 1.5; margin-top: 16px; font-family: var(--font-body); }
+.cad-terms a { color: var(--slate-600); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.cad-terms a:hover { color: var(--indigo); }
+
+.cad-foot {
+  margin-top: 20px; padding-top: 18px;
+  border-top: 1px solid var(--line-soft);
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.cad-foot .login-line { font-size: 14.5px; color: var(--slate-600); font-weight: 600; font-family: var(--font-body); }
+.cad-foot .login-line a { color: var(--indigo); font-weight: 800; }
+.cad-foot .expert { display: inline-flex; align-items: center; gap: 8px; color: var(--green-600); font-weight: 700; font-size: 14px; font-family: var(--font-body); }
+.cad-foot .expert svg { width: 17px; height: 17px; }
+
+/* ---------- RESPONSIVE: mobile FORM-FIRST ---------- */
+@media (max-width: 900px) {
+  .cad-grid { grid-template-columns: 1fr; min-height: 0; }
+  /* form column sobe */
+  .cad-right { order: -1; padding: 26px 20px 30px; align-items: flex-start; }
+  /* marketing column vai abaixo como reforço */
+  .cad-left { padding: 8px 22px 48px; justify-content: flex-start; }
+  .cad-left .l-glow.a { top: -120px; }
+  /* oculta headline grande — o card já cobre a intenção */
+  .cad-left h1, .cad-left .l-sub { display: none; }
+  .cad-left .cad-brand { display: none; }
+  /* mini brand no topo do form */
+  .cad-m-brand { display: flex; justify-content: center; align-items: center; margin: 4px 0 18px; }
+  /* reforço textual mobile */
+  .cad-left .l-rein-title { display: block; }
+  .cad-left-in { max-width: 520px; margin: 0 auto; }
+  .cad-mock img { max-width: 380px; margin: 0 auto; }
+  .cad-social { margin-bottom: 8px; }
+}
+
+@media (max-width: 480px) {
+  .cad-form-card { max-width: 100%; }
+  .field input { height: 50px; }
+  .cad-submit { height: 54px; }
+  .cad-right { padding: 20px 16px 28px; }
+}
