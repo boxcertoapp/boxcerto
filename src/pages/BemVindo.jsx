@@ -337,6 +337,18 @@ export default function BemVindo() {
 
         <ProgressBar current={stepIdx} total={steps.length} />
 
+        {/* ── Dica de email (aparece só no primeiro passo) ── */}
+        {stepIdx === 0 && (
+          <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 mb-5">
+            <span className="text-base shrink-0 mt-px">📬</span>
+            <p className="text-xs text-amber-800 leading-relaxed">
+              <strong>Verifique seu email!</strong> Se não aparecer na caixa principal, confira a aba{' '}
+              <strong>Promoções</strong> e arraste para <strong>Principal</strong> — assim você recebe
+              todas as dicas do BoxCerto.
+            </p>
+          </div>
+        )}
+
         {/* ── PASSO: Nome da Oficina ──────────────────────── */}
         {currentStep === 'oficina' && (
           <div>

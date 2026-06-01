@@ -8,7 +8,14 @@ const FROM          = 'BoxCerto <equipe@boxcerto.com>'
 const REPLY_TO      = 'suporte@boxcerto.com'
 const APP_URL       = 'https://boxcerto.com'
 
-const sendViaResend = async ({ to, subject, html, text }) => {
+// Emails transacionais não levam List-Unsubscribe (sinaliza marketing pro Gmail)
+const TRANSACTIONAL_TYPES = new Set([
+  'payment_success', 'payment_failed', 'cancelation_confirmed',
+  'reativacao_inadimplente', 'ticket_reply', 'tecnico_invite',
+  'affiliate_magic_link',
+])
+
+const sendViaResend = async ({ to, subject, html, text, transactional = false }) => {
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -22,10 +29,12 @@ const sendViaResend = async ({ to, subject, html, text }) => {
       html,
       ...(text ? { text } : {}),
       reply_to: REPLY_TO,
-      headers: {
-        'List-Unsubscribe':      `<mailto:${REPLY_TO}?subject=descadastrar>`,
-        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-      },
+      ...(!transactional ? {
+        headers: {
+          'List-Unsubscribe':      `<mailto:${REPLY_TO}?subject=descadastrar>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        },
+      } : {}),
     }),
   })
   if (!res.ok) {
@@ -633,9 +642,10 @@ module.exports = async (req, res) => {
 
   const { subject, html } = template(data)
   const text = toPlainText(html)
+  const transactional = TRANSACTIONAL_TYPES.has(type)
 
   try {
-    const result = await sendViaResend({ to, subject, html, text })
+    const result = await sendViaResend({ to, subject, html, text, transactional })
     console.log(`✅ Email [${type}] enviado para ${to}`)
     return res.status(200).json({ ok: true, id: result.id })
   } catch (err) {
