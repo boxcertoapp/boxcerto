@@ -1,7 +1,67 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, Component } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { captureAffiliateRef } from './lib/affiliateTracking'
+
+// ── Proteção contra tela em branco pós-deploy ─────────────────────────────
+// Quando um novo deploy muda os nomes dos chunks (hash), usuários que já
+// estavam na página tentam carregar o chunk antigo → 404 → blank screen.
+// Este ErrorBoundary detecta ChunkLoadError e faz um reload automático
+// (uma vez por sessão, para evitar loop infinito).
+const CHUNK_RELOAD_KEY = 'bxc_csr'
+
+class ChunkErrorBoundary extends Component {
+  state = { crashed: false, isChunk: false }
+
+  static getDerivedStateFromError(err) {
+    const msg = (err?.message || '').toLowerCase()
+    const isChunk =
+      msg.includes('failed to fetch dynamically imported module') ||
+      msg.includes('importing a module script failed') ||
+      msg.includes('loading chunk') ||
+      err?.name === 'ChunkLoadError'
+    return { crashed: true, isChunk }
+  }
+
+  componentDidCatch(err) {
+    if (this.state.isChunk && !sessionStorage.getItem(CHUNK_RELOAD_KEY)) {
+      sessionStorage.setItem(CHUNK_RELOAD_KEY, '1')
+      window.location.reload()
+    }
+  }
+
+  render() {
+    if (!this.state.crashed) return this.props.children
+
+    // Chunk desatualizado + ainda não tentou recarregar → spinner (reload vem logo)
+    if (this.state.isChunk && !sessionStorage.getItem(CHUNK_RELOAD_KEY)) {
+      return <PageLoader />
+    }
+
+    // Erro real ou reload já tentado → UI de recuperação
+    return (
+      <div style={{
+        minHeight: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        gap: 16, padding: 24, fontFamily: 'system-ui, sans-serif',
+      }}>
+        <p style={{ color: '#374151', fontSize: 16, textAlign: 'center', maxWidth: 360, margin: 0, lineHeight: 1.55 }}>
+          Houve uma atualização no sistema.<br />
+          Recarregue a página para continuar.
+        </p>
+        <button
+          onClick={() => { sessionStorage.removeItem(CHUNK_RELOAD_KEY); window.location.reload() }}
+          style={{
+            background: '#4f46e5', color: '#fff', border: 'none',
+            borderRadius: 999, padding: '12px 28px', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+          }}
+        >
+          Recarregar agora
+        </button>
+      </div>
+    )
+  }
+}
 
 // ── Eager: apenas Landing (home page /) ───────────────────────────────────
 // Login e Register são lazy para que vendor-supabase NÃO apareça no
@@ -67,6 +127,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <ChunkErrorBoundary>
         <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Públicas */}
@@ -134,6 +195,7 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
+        </ChunkErrorBoundary>
       </BrowserRouter>
     </AuthProvider>
   )
