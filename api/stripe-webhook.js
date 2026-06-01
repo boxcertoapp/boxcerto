@@ -9,7 +9,10 @@ const sendEmail = async (type, to, data) => {
       : 'https://boxcerto.com'
     const res = await fetch(`${baseUrl}/api/send-email`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type':      'application/json',
+        'x-internal-secret': process.env.EMAIL_SECRET || '',
+      },
       body: JSON.stringify({ type, to, ...data }),
     })
     if (!res.ok) {

@@ -617,6 +617,12 @@ module.exports = async (req, res) => {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
+  // ── Autenticação interna ────────────────────────────────
+  const EMAIL_SECRET = process.env.EMAIL_SECRET
+  if (EMAIL_SECRET && req.headers['x-internal-secret'] !== EMAIL_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+
   const { type, to, ...data } = req.body || {}
   if (!type || !to) return res.status(400).json({ error: 'type e to são obrigatórios' })
 
