@@ -4,17 +4,29 @@
 // Body: { type, to, nome, oficina, ...extras }
 // ============================================================
 const RESEND_API_KEY = process.env.RESEND_API_KEY
-const FROM          = 'BoxCerto <noreply@boxcerto.com>'
+const FROM          = 'BoxCerto <oi@boxcerto.com>'
+const REPLY_TO      = 'suporte@boxcerto.com'
 const APP_URL       = 'https://boxcerto.com'
 
-const sendViaResend = async ({ to, subject, html }) => {
+const sendViaResend = async ({ to, subject, html, text }) => {
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${RESEND_API_KEY}`,
       'Content-Type':  'application/json',
     },
-    body: JSON.stringify({ from: FROM, to: [to], subject, html }),
+    body: JSON.stringify({
+      from:     FROM,
+      to:       [to],
+      subject,
+      html,
+      ...(text ? { text } : {}),
+      reply_to: REPLY_TO,
+      headers: {
+        'List-Unsubscribe':      `<mailto:${REPLY_TO}?subject=descadastrar>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
+    }),
   })
   if (!res.ok) {
     const err = await res.json()
@@ -24,7 +36,14 @@ const sendViaResend = async ({ to, subject, html }) => {
 }
 
 // ── Estilos base reutilizáveis ──────────────────────────────
-const base = (content) => `
+const base = (content) => `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+</head>
+<body style="margin:0;padding:0;background:#f8fafc">
 <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#f8fafc">
   <div style="background:#4f46e5;border-radius:14px;padding:28px;text-align:center;margin-bottom:24px">
     <h1 style="color:white;margin:0;font-size:24px;letter-spacing:-0.5px">BoxCerto</h1>
@@ -35,7 +54,22 @@ const base = (content) => `
     BoxCerto · <a href="${APP_URL}" style="color:#94a3b8">boxcerto.com</a><br>
     Dúvidas? Responda este e-mail ou fale pelo <a href="https://wa.me/5553997065725" style="color:#94a3b8">WhatsApp</a>.
   </p>
-</div>`
+</div>
+</body>
+</html>`
+
+// ── Converte HTML em texto simples (fallback multipart) ─────
+const toPlainText = (html) =>
+  html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<\/h[1-6]>/gi, '\n\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '$2 ($1)')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
 
 const card = (content) =>
   `<div style="background:white;border-radius:14px;padding:28px;border:1px solid #e2e8f0;margin-bottom:16px">${content}</div>`
@@ -256,7 +290,7 @@ const templates = {
 
   // ── Pagamento falhou ─────────────────────────────────────
   payment_failed: ({ nome, oficina }) => ({
-    subject: `⚠️ Problema com o pagamento da sua assinatura BoxCerto`,
+    subject: `Ação necessária: pagamento da assinatura BoxCerto`,
     html: base(`
       ${card(`
         <h2 style="color:#1e293b;margin:0 0 12px">Não conseguimos processar seu pagamento</h2>
@@ -405,8 +439,8 @@ const templates = {
         </p>
         ${diasPassados < 28 ? `
         <div style="background:#fefce8;border-radius:12px;padding:20px;border:2px solid #fde68a;margin-bottom:20px;text-align:center">
-          <p style="color:#92400e;font-size:13px;font-weight:600;margin:0 0 6px;text-transform:uppercase;letter-spacing:.05em">Oferta especial para você</p>
-          <p style="color:#78350f;font-size:28px;font-weight:800;margin:0">30% OFF</p>
+          <p style="color:#92400e;font-size:13px;font-weight:600;margin:0 0 6px">Uma condição especial só para você</p>
+          <p style="color:#78350f;font-size:22px;font-weight:800;margin:0">desconto de 30%</p>
           <p style="color:#92400e;font-size:13px;margin:6px 0 0">no primeiro mês — use o cupom <strong>VOLTEI30</strong> no checkout</p>
         </div>` : ''}
         ${btn(`${APP_URL}/assinar`, diasPassados >= 28 ? 'Recuperar minha conta →' : 'Reativar com desconto →')}
@@ -424,7 +458,7 @@ const templates = {
 
   // ── Reativação de inadimplente ───────────────────────────
   reativacao_inadimplente: ({ nome, oficina }) => ({
-    subject: `⚠️ Acesso da ${oficina} suspenso — resolva em 1 minuto, ${nome}`,
+    subject: `Acesso suspenso — como regularizar agora, ${nome}`,
     html: base(`
       ${card(`
         <h2 style="color:#1e293b;margin:0 0 12px">Sua conta está temporariamente suspensa</h2>
@@ -505,7 +539,7 @@ const templates = {
 
   // ── Comissões mensais geradas ────────────────────────────
   affiliate_commission_generated: ({ nome, month_label, count, total, tier }) => ({
-    subject: `💰 Suas comissões de ${month_label} foram geradas — BoxCerto`,
+    subject: `Suas comissões de ${month_label} foram geradas — BoxCerto`,
     html: base(`
       ${card(`
         <h2 style="color:#1e293b;margin:0 0 12px">Novas comissões geradas, ${nome}! 💰</h2>
@@ -592,9 +626,10 @@ module.exports = async (req, res) => {
   if (!RESEND_API_KEY) return res.status(500).json({ error: 'RESEND_API_KEY não configurada' })
 
   const { subject, html } = template(data)
+  const text = toPlainText(html)
 
   try {
-    const result = await sendViaResend({ to, subject, html })
+    const result = await sendViaResend({ to, subject, html, text })
     console.log(`✅ Email [${type}] enviado para ${to}`)
     return res.status(200).json({ ok: true, id: result.id })
   } catch (err) {
