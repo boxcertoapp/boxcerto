@@ -78,9 +78,9 @@ function Nav() {
           </nav>
           <div className="nav-cta">
             <Link className="login" to="/login">Entrar</Link>
-            <a className="btn btn-primary" href="#precos">
+            <Link className="btn btn-primary" to="/cadastro">
               Começar grátis <ArrowRight />
-            </a>
+            </Link>
             <button
               className="nav-burger"
               onClick={() => setOpen(o => !o)}
@@ -97,9 +97,9 @@ function Nav() {
         ))}
         <div className="mm-cta">
           <Link className="mm-enter" to="/login" onClick={() => setOpen(false)}>Entrar</Link>
-          <a className="btn btn-primary btn-lg btn-block" href="#precos" onClick={() => setOpen(false)}>
+          <Link className="btn btn-primary btn-lg btn-block" to="/cadastro" onClick={() => setOpen(false)}>
             Começar teste grátis
-          </a>
+          </Link>
         </div>
       </div>
     </>
