@@ -4,7 +4,7 @@
 // Body: { type, to, nome, oficina, ...extras }
 // ============================================================
 const RESEND_API_KEY = process.env.RESEND_API_KEY
-const FROM          = 'BoxCerto <oi@boxcerto.com>'
+const FROM          = 'BoxCerto <equipe@boxcerto.com>'
 const REPLY_TO      = 'suporte@boxcerto.com'
 const APP_URL       = 'https://boxcerto.com'
 
