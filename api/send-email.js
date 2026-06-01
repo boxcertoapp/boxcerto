@@ -362,6 +362,29 @@ const templates = {
     `),
   }),
 
+  // ── Cancelamento confirmado (disparo imediato pelo webhook) ─
+  cancelation_confirmed: ({ nome, oficina }) => ({
+    subject: `Assinatura do BoxCerto encerrada — ${oficina}`,
+    html: base(`
+      ${card(`
+        <h2 style="color:#1e293b;margin:0 0 12px">Assinatura encerrada, ${nome} 👋</h2>
+        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 16px">
+          Confirmamos o encerramento da assinatura da <strong>${oficina}</strong>.
+          Lamentamos ver você partir — se houver algo que poderíamos ter feito melhor,
+          adoraríamos ouvir (é só responder este e-mail).
+        </p>
+        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px">
+          Todos os seus dados <strong>ficam salvos por 30 dias</strong>. Se mudar de ideia,
+          você retoma exatamente de onde parou — sem perder clientes, OS ou histórico.
+        </p>
+        ${btn(`${APP_URL}/assinar`, 'Reativar minha conta →')}
+      `)}
+      ${notice('#6b7280','#f8fafc','#e2e8f0',
+        '🔒 <strong>Dados preservados por 30 dias.</strong> Clientes, veículos, OS e financeiro ficam guardados enquanto aguardamos sua volta.'
+      )}
+    `),
+  }),
+
   // ── Win-back: reengajamento pós-trial ────────────────────
   win_back: ({ nome, oficina, diasPassados }) => ({
     subject: diasPassados >= 28

@@ -236,6 +236,21 @@ module.exports = async (req, res) => {
           next_billing_at:        null,
         })
         console.log('🚫 Assinatura cancelada:', customerId)
+
+        // Email imediato de confirmação de cancelamento + link de reativação
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('email, responsavel, oficina')
+            .eq('stripe_customer_id', customerId)
+            .single()
+          if (profile?.email) {
+            await sendEmail('cancelation_confirmed', profile.email, {
+              nome:    profile.responsavel || profile.email.split('@')[0],
+              oficina: profile.oficina     || 'sua oficina',
+            })
+          }
+        } catch (e) { console.error('Erro ao enviar email de cancelamento:', e.message) }
         break
       }
 
@@ -246,11 +261,22 @@ module.exports = async (req, res) => {
           ? new Date(subscription.current_period_end * 1000).toISOString()
           : null
 
+        // Mapa de status Stripe → status interno
+        // past_due = safety net: invoice.payment_failed já deveria ter marcado,
+        // mas em caso de race condition ou falha de webhook este garante o bloqueio
+        const statusMap = {
+          active:   { status: 'active',       canceled_at: null },
+          past_due: { status: 'inadimplente' },
+          unpaid:   { status: 'inadimplente' },
+          paused:   { status: 'inadimplente' },
+        }
+        const statusUpdate = statusMap[subscription.status] || {}
+
         await updateByCustomerId(customerId, {
           next_billing_at: nextBilling,
-          ...(subscription.status === 'active' ? { status: 'active', canceled_at: null } : {}),
+          ...statusUpdate,
         })
-        console.log('🔄 Assinatura atualizada:', customerId)
+        console.log(`🔄 Assinatura atualizada (${subscription.status}):`, customerId)
         break
       }
 

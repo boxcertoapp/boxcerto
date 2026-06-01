@@ -4,6 +4,7 @@ import { Eye, EyeOff, AlertCircle, CheckCircle, MessageCircle, Plus, ArrowRight,
 import Logo from '../components/Logo'
 import { useAuth } from '../contexts/AuthContext'
 import { usePageView } from '../hooks/usePageView'
+import { usePageMeta } from '../hooks/usePageMeta'
 import { supabase } from '../lib/supabase'
 import { titleCaseName } from '../lib/text'
 import { sendCapi } from '../lib/metaCapi'
@@ -80,6 +81,11 @@ export default function Register() {
   const navigate       = useNavigate()
   const [searchParams] = useSearchParams()
   usePageView('/cadastro')
+  usePageMeta({
+    title:       'Criar conta grátis — BoxCerto | Sistema para Oficina Mecânica',
+    description: 'Crie sua conta grátis e teste o BoxCerto por 7 dias sem cartão. OS digital, estoque, financeiro e aprovação de orçamento pelo WhatsApp — tudo em um app para oficina mecânica.',
+    canonical:   'https://boxcerto.com/cadastro',
+  })
 
   const origem        = searchParams.get('origem') || ''
   const isDiagnostico = origem === 'diagnostico'

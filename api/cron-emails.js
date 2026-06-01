@@ -338,6 +338,40 @@ module.exports = async (req, res) => {
     }
   }
 
+  // ── Cancelados: sequência de win-back (7d e 30d pós-cancel) ─
+  // O email imediato já é enviado pelo stripe-webhook ao cancelar.
+  // Aqui completamos a sequência de reengajamento via cron.
+  const { data: cancelados } = await supabase
+    .from('profiles')
+    .select('id, email, responsavel, oficina, canceled_at')
+    .eq('status', 'cancelado')
+    .not('email', 'is', null)
+    .not('canceled_at', 'is', null)
+
+  for (const u of (cancelados || [])) {
+    if (!u.email || !u.canceled_at) continue
+
+    const nome    = u.responsavel || u.oficina || 'dono da oficina'
+    const oficina = u.oficina || 'sua oficina'
+    const diasSinceCancel = Math.floor((agora - new Date(u.canceled_at)) / (1000 * 60 * 60 * 24))
+
+    // Win-back 7 dias: "sentimos sua falta" com 30% OFF
+    if (diasSinceCancel >= 7 && !(await jaEnviou(u.email, 'cancelado_win_back_7d'))) {
+      const ok = await enviarEmail('win_back', u.email, { nome, oficina, diasPassados: 7 })
+      if (ok) { await registrarLog(u.email, 'cancelado_win_back_7d'); resultados.enviados++ }
+      else resultados.erros++
+      continue
+    }
+
+    // Win-back 30 dias: "última chance — dados serão removidos"
+    if (diasSinceCancel >= 30 && !(await jaEnviou(u.email, 'cancelado_win_back_30d'))) {
+      const ok = await enviarEmail('win_back', u.email, { nome, oficina, diasPassados: 30 })
+      if (ok) { await registrarLog(u.email, 'cancelado_win_back_30d'); resultados.enviados++ }
+      else resultados.erros++
+      continue
+    }
+  }
+
   console.log('[cron] Concluído:', resultados)
 
   // ── Comissões mensais (só no dia 1 de cada mês) ──────────

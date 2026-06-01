@@ -128,9 +128,9 @@ function Hero() {
               Mais clientes, estoque e financeiro num app feito pra oficina.
             </p>
             <div className="hero-cta">
-              <a className="btn btn-primary btn-lg" href="#precos">
+              <Link className="btn btn-primary btn-lg" to="/cadastro">
                 Começar teste grátis de 7 dias <ArrowRight />
-              </a>
+              </Link>
               <a className="btn btn-ghost btn-lg" href="#whatsapp">
                 Ver como funciona
               </a>
