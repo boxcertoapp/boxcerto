@@ -250,37 +250,42 @@ function SetPasswordModal({ current, onDone }) {
 // ── Identity modal (personaliza slug e cupom) ─────────────────
 function IdentityModal({ current, onSave, onClose, isFirst = false }) {
   const appUrl = window.location.origin
-  const [slug,    setSlug]    = useState(current.slug        || '')
-  const [coupon,  setCoupon]  = useState(current.coupon_code || '')
-  const [loading, setLoading] = useState(false)
-  const [erro,    setErro]    = useState('')
+  const [displayName, setDisplayName] = useState(current.display_name || '')
+  const [slug,        setSlug]        = useState(current.slug        || '')
+  const [coupon,      setCoupon]      = useState(current.coupon_code || '')
+  const [loading,     setLoading]     = useState(false)
+  const [erro,        setErro]        = useState('')
 
-  const slugOk   = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(slug)   && slug.length   >= 3 && slug.length   <= 30
-  const couponOk = /^[A-Z0-9]{4,12}$/.test(coupon)
+  const slugOk        = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(slug) && slug.length >= 3 && slug.length <= 30
+  const couponOk      = /^[A-Z0-9]{4,12}$/.test(coupon)
+  const displayNameOk = displayName.trim().length === 0 || displayName.trim().length >= 2
 
-  const handleSlug = (v) => setSlug(v.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/^-+|-+$/g, ''))
-  const handleCoupon = (v) => setCoupon(v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12))
+  const handleSlug       = (v) => setSlug(v.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/^-+|-+$/g, ''))
+  const handleCoupon     = (v) => setCoupon(v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12))
+  const handleDisplayName = (v) => setDisplayName(v.slice(0, 50))
 
   const save = async () => {
     setErro('')
-    if (!slugOk)   { setErro('Slug inválido. Use letras minúsculas, números e hífens (3–30 caracteres).'); return }
-    if (!couponOk) { setErro('Cupom inválido. Use letras maiúsculas e números (4–12 caracteres).'); return }
+    if (!slugOk)        { setErro('Slug inválido. Use letras minúsculas, números e hífens (3–30 caracteres).'); return }
+    if (!couponOk)      { setErro('Cupom inválido. Use letras maiúsculas e números (4–12 caracteres).'); return }
+    if (!displayNameOk) { setErro('Nome público muito curto. Mínimo 2 caracteres.'); return }
     setLoading(true)
     try {
       const res  = await fetch('/api/affiliate-auth', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-          action:       'update-identity',
-          partner_id:   current.id,
-          access_token: current.accessToken,
-          new_slug:     slug   !== current.slug        ? slug   : undefined,
-          new_coupon:   coupon !== current.coupon_code ? coupon : undefined,
+          action:           'update-identity',
+          partner_id:       current.id,
+          access_token:     current.accessToken,
+          new_slug:         slug        !== current.slug        ? slug        : undefined,
+          new_coupon:       coupon      !== current.coupon_code ? coupon      : undefined,
+          new_display_name: displayName !== current.display_name             ? displayName : undefined,
         }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Erro ao salvar.')
-      onSave(json.slug, json.coupon_code)
+      onSave(json.slug, json.coupon_code, json.display_name ?? null)
       onClose()
     } catch (e) { setErro(e.message) }
     setLoading(false)
@@ -311,6 +316,25 @@ function IdentityModal({ current, onSave, onClose, isFirst = false }) {
         )}
 
         <div className="space-y-4 mt-4">
+          {/* Nome público */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
+              Nome público <span className="font-normal text-slate-400">(aparece na sua página de indicação)</span>
+            </label>
+            <input
+              value={displayName}
+              onChange={e => handleDisplayName(e.target.value)}
+              placeholder={current.nome || 'Ex: CriaVídeos, Peças Já...'}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
+            <p className="text-slate-400 text-xs mt-1">
+              {displayName.trim() ? `Aparece como: ${displayName.trim()}` : `Deixe em branco para usar seu nome cadastrado`}
+            </p>
+            {displayName.trim().length > 0 && !displayNameOk && (
+              <p className="text-red-500 text-xs mt-1">Mínimo 2 caracteres.</p>
+            )}
+          </div>
+
           {/* Slug */}
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1">Seu link de indicação</label>
@@ -625,8 +649,9 @@ function Dashboard({ session, onLogout, firstLogin = false, onIdentitySaved }) {
   const [identityModal, setIdentityModal] = useState(firstLogin && !mustSetPwd)
   const [pixKey,    setPixKey]    = useState(partner.pix_key  || '')
   const [pixType,   setPixType]   = useState(partner.pix_type || '')
-  const [partnerSlug,   setPartnerSlug]   = useState(partner.slug        || '')
-  const [partnerCoupon, setPartnerCoupon] = useState(partner.coupon_code || '')
+  const [partnerSlug,        setPartnerSlug]        = useState(partner.slug                       || '')
+  const [partnerCoupon,      setPartnerCoupon]      = useState(partner.coupon_code                || '')
+  const [partnerDisplayName, setPartnerDisplayName] = useState(partner.materials?.displayName     || '')
   const [copied,    setCopied]    = useState(null)
 
   const appUrl = window.location.origin
@@ -651,13 +676,19 @@ function Dashboard({ session, onLogout, firstLogin = false, onIdentitySaved }) {
     localStorage.setItem(SESSION_KEY, JSON.stringify(stored))
   }
 
-  const handleIdentitySaved = (newSlug, newCoupon) => {
+  const handleIdentitySaved = (newSlug, newCoupon, newDisplayName) => {
     setPartnerSlug(newSlug)
     setPartnerCoupon(newCoupon)
+    if (newDisplayName !== undefined) setPartnerDisplayName(newDisplayName || '')
     const stored = JSON.parse(localStorage.getItem(SESSION_KEY) || '{}')
-    stored.partner = { ...stored.partner, slug: newSlug, coupon_code: newCoupon }
+    stored.partner = {
+      ...stored.partner,
+      slug:         newSlug,
+      coupon_code:  newCoupon,
+      materials:    { ...(stored.partner?.materials || {}), displayName: newDisplayName ?? stored.partner?.materials?.displayName },
+    }
     localStorage.setItem(SESSION_KEY, JSON.stringify(stored))
-    if (onIdentitySaved) onIdentitySaved(newSlug, newCoupon)
+    if (onIdentitySaved) onIdentitySaved(newSlug, newCoupon, newDisplayName)
   }
 
   const handlePwdDone = () => {
@@ -682,7 +713,7 @@ function Dashboard({ session, onLogout, firstLogin = false, onIdentitySaved }) {
       )}
       {identityModal && (
         <IdentityModal
-          current={{ id: partner.id, accessToken: session.accessToken, slug: partnerSlug, coupon_code: partnerCoupon }}
+          current={{ id: partner.id, accessToken: session.accessToken, slug: partnerSlug, coupon_code: partnerCoupon, display_name: partnerDisplayName, nome: partner.nome }}
           onSave={handleIdentitySaved}
           onClose={() => setIdentityModal(false)}
           isFirst={firstLogin}

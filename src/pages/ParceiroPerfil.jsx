@@ -798,7 +798,7 @@ export default function ParceiroPerfil() {
   // Objeto de display derivado dos dados reais do parceiro
   const mat = partner.materials || {}
   const p = {
-    name:        partner.nome,
+    name:        mat.displayName || partner.nome,
     initials:    getInitials(partner.nome),
     color:       mat.color || partnerColor(partner.slug),
     category:    mat.category || tipoLabel(partner.tipo),

@@ -303,13 +303,13 @@ async function handleUpdatePix(req, res, supabase, body) {
 
 // ── UPDATE-IDENTITY: personaliza slug e cupom do parceiro ────
 async function handleUpdateIdentity(req, res, supabase, body) {
-  const { partner_id, access_token, new_slug, new_coupon } = body
+  const { partner_id, access_token, new_slug, new_coupon, new_display_name } = body
 
   if (!partner_id || !access_token) {
     return res.status(400).json({ error: 'partner_id e access_token obrigatórios.' })
   }
-  if (!new_slug && !new_coupon) {
-    return res.status(400).json({ error: 'Informe ao menos slug ou cupom para atualizar.' })
+  if (!new_slug && !new_coupon && new_display_name === undefined) {
+    return res.status(400).json({ error: 'Informe ao menos slug, cupom ou nome público para atualizar.' })
   }
 
   // Validação de formato
@@ -327,7 +327,7 @@ async function handleUpdateIdentity(req, res, supabase, body) {
   // Verifica sessão
   const { data: partner } = await supabase
     .from('affiliate_partners')
-    .select('access_token, access_token_exp, slug, coupon_code')
+    .select('access_token, access_token_exp, slug, coupon_code, materials')
     .eq('id', partner_id)
     .maybeSingle()
 
@@ -361,6 +361,12 @@ async function handleUpdateIdentity(req, res, supabase, body) {
   if (new_slug)   updates.slug        = new_slug
   if (new_coupon) updates.coupon_code = new_coupon
 
+  // Merge displayName no JSONB materials (preserva outros campos)
+  if (new_display_name !== undefined) {
+    const trimmed = new_display_name.trim()
+    updates.materials = { ...(partner.materials || {}), displayName: trimmed || null }
+  }
+
   const { error } = await supabase
     .from('affiliate_partners')
     .update(updates)
@@ -368,11 +374,16 @@ async function handleUpdateIdentity(req, res, supabase, body) {
 
   if (error) return res.status(500).json({ error: error.message })
 
+  const displayName = new_display_name !== undefined
+    ? (new_display_name.trim() || null)
+    : (partner.materials?.displayName || null)
+
   console.log('[AffiliateAuth] Identidade atualizada:', partner_id, Object.keys(updates).join(', '))
   return res.status(200).json({
-    ok:          true,
-    slug:        updates.slug        || partner.slug,
-    coupon_code: updates.coupon_code || partner.coupon_code,
+    ok:           true,
+    slug:         updates.slug        || partner.slug,
+    coupon_code:  updates.coupon_code || partner.coupon_code,
+    display_name: displayName,
   })
 }
 
