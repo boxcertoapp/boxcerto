@@ -18,18 +18,15 @@ module.exports = async (req, res) => {
   if (!email) return res.status(400).json({ error: 'email obrigatório' })
 
   const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
-  // Usa env var do servidor; fallback ao VITE_ que Vercel também expõe em serverless
+  // Price ID do plano mensal — env var com fallback hardcoded (price IDs são públicos)
   const PRICE_MONTHLY =
     process.env.STRIPE_PRICE_MONTHLY ||
-    process.env.VITE_STRIPE_PRICE_MONTHLY
+    process.env.VITE_STRIPE_PRICE_MONTHLY ||
+    'price_1TP5ZhRzYtXgEJJx6iMgObmd'
 
   if (!STRIPE_SECRET_KEY) {
     console.error('[create-trial-checkout] STRIPE_SECRET_KEY não configurada')
     return res.status(500).json({ error: 'Stripe não configurado' })
-  }
-  if (!PRICE_MONTHLY) {
-    console.error('[create-trial-checkout] STRIPE_PRICE_MONTHLY não configurada')
-    return res.status(500).json({ error: 'Price ID não configurado' })
   }
 
   const stripe = new Stripe(STRIPE_SECRET_KEY)

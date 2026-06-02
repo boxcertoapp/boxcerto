@@ -207,8 +207,7 @@ export default function Register() {
 
     // ── Fluxo card-required: vindo de /comecar (tráfego pago) ──
     // Redireciona para Stripe Checkout com trial de 7 dias + cartão obrigatório.
-    // Em subscription mode o Stripe SEMPRE exige cartão — mesmo no trial.
-    // Email de boas-vindas é enviado pelo webhook após confirmação do cartão.
+    // Não tem fallback para o fluxo normal — cartão é obrigatório nesse fluxo.
     if (isCardTrial) {
       try {
         const checkoutRes = await fetch('/api/create-trial-checkout', {
@@ -223,13 +222,15 @@ export default function Register() {
         if (checkoutData.url) {
           clearAffiliateData()
           window.location.href = checkoutData.url
-          return // página vai redirecionar — mantém loading=true
+          return
         }
-        console.error('[Register] Checkout sem URL:', checkoutData)
+        // API retornou erro — mostra para o usuário
+        setError(checkoutData.error || 'Erro ao criar sessão de pagamento. Tente novamente.')
       } catch (e) {
-        console.error('[Register] Stripe checkout error:', e)
-        // fallback: segue o fluxo normal se Stripe falhar
+        setError('Erro de conexão ao processar pagamento. Tente novamente.')
       }
+      setLoading(false)
+      return // nunca avança sem o cartão no fluxo pago
     }
 
     setLoading(false)
