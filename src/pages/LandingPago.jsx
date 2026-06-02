@@ -199,7 +199,7 @@ function TNav({ onCTA }) {
             Box<b style={{ color: '#a5acff' }}>Certo</b>
           </span>
         </Link>
-        <Link to="/cadastro" onClick={() => { pushCTA('nav') }} className="btn btn-green" style={{ fontSize: 14, padding: '10px 20px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+        <Link to="/cadastro?trial=card" onClick={() => { pushCTA('nav') }} className="btn btn-green" style={{ fontSize: 14, padding: '10px 20px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
           Criar conta grátis <ArrowRight style={{ width: 16, height: 16 }} />
         </Link>
       </div>
@@ -231,7 +231,7 @@ function THero({ onCTA }) {
             </Reveal>
             <Reveal delay={140}>
               <div className="thero-cta">
-                <Link to="/cadastro" onClick={() => pushCTA('hero')} className="btn btn-green btn-lg" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+                <Link to="/cadastro?trial=card" onClick={() => pushCTA('hero')} className="btn btn-green btn-lg" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
                   Criar minha conta grátis <ArrowRight />
                 </Link>
                 <span className="thero-micro">
@@ -351,7 +351,7 @@ function WhatsappDemo() {
                 </div>
               </div>
             </div>
-            <Link to="/cadastro" onClick={() => pushCTA('wa-cta')} className="btn btn-green btn-lg" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+            <Link to="/cadastro?trial=card" onClick={() => pushCTA('wa-cta')} className="btn btn-green btn-lg" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
               <WhatsappIcon style={{ width: 18, height: 18 }} /> Quero enviar orçamentos assim
             </Link>
           </div>
@@ -579,7 +579,7 @@ function TPricing() {
                     </div>
                   ))}
                 </div>
-                <Link to="/cadastro" onClick={() => pushCTA('pricing')} className="btn btn-green btn-lg pc-cta" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+                <Link to="/cadastro?trial=card" onClick={() => pushCTA('pricing')} className="btn btn-green btn-lg pc-cta" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
                   Criar minha conta grátis <ArrowRight />
                 </Link>
                 <div className="tprice-guarantee">
@@ -686,7 +686,7 @@ function TSticky() {
         <b>Crie sua conta grátis</b>
         <span>Pronto em 2 minutos · cancele quando quiser</span>
       </div>
-      <Link to="/cadastro" onClick={() => pushCTA('sticky')} className="btn btn-green" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, padding: '10px 18px', borderRadius: 12 }}>
+      <Link to="/cadastro?trial=card" onClick={() => pushCTA('sticky')} className="btn btn-green" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, padding: '10px 18px', borderRadius: 12 }}>
         Criar conta <ArrowRight style={{ width: 15, height: 15 }} />
       </Link>
     </div>

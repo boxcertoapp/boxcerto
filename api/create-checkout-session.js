@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { priceId, email, officeName, plan, affiliateCoupon } = req.body
+  const { priceId, email, officeName, plan, affiliateCoupon, cardRequired, successPath } = req.body
 
   if (!priceId || !email) {
     return res.status(400).json({ error: 'priceId e email são obrigatórios' })
@@ -35,19 +35,18 @@ export default async function handler(req, res) {
   }
 
   try {
+    const origin = req.headers.origin || 'https://boxcerto.com'
+
     const session = await stripe.checkout.sessions.create({
       mode: plan === 'annual' ? 'payment' : 'subscription',
       payment_method_types: ['card'],
       customer_email: email,
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price: priceId, quantity: 1 }],
+      // cardRequired: exige cartão mesmo durante o trial (tráfego pago)
+      ...(cardRequired ? { payment_method_collection: 'always' } : {}),
       // Aplica desconto do parceiro se cupom válido encontrado
       ...(stripePromoCodeId ? { discounts: [{ promotion_code: stripePromoCodeId }] } : {}),
-      subscription_data: plan === 'monthly' ? {
+      subscription_data: plan !== 'annual' ? {
         trial_period_days: 7,
         metadata: { officeName, plan },
       } : undefined,
@@ -55,8 +54,10 @@ export default async function handler(req, res) {
         metadata: { officeName, plan },
       } : undefined,
       metadata: { officeName, plan, email, affiliate_coupon: affiliateCoupon || '' },
-      success_url: `${req.headers.origin}/app/oficina?payment=success`,
-      cancel_url: `${req.headers.origin}/cadastro?payment=cancelled`,
+      success_url: successPath
+        ? `${origin}${successPath}`
+        : `${origin}/app/oficina?payment=success`,
+      cancel_url: `${origin}/cadastro?payment=cancelled`,
     })
 
     res.status(200).json({ url: session.url })

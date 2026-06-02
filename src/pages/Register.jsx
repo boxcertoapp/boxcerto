@@ -89,6 +89,7 @@ export default function Register() {
 
   const origem        = searchParams.get('origem') || ''
   const isDiagnostico = origem === 'diagnostico'
+  const isCardTrial   = searchParams.get('trial') === 'card'
 
   // 3 campos: nome, email, senha (oficina e whatsapp vão no BemVindo)
   const [form, setForm]             = useState({ nome: '', email: '', password: '' })
@@ -163,9 +164,8 @@ export default function Register() {
       affiliateCoupon,
     })
 
-    setLoading(false)
-
     if (!result.ok) {
+      setLoading(false)
       const msg = humanizeError(result.error)
       setError(msg)
       track('cadastro_signup_error', { erro: result.error })
@@ -205,6 +205,38 @@ export default function Register() {
       }))
     } catch {}
 
+    // ── Fluxo card-required: vindo de /comecar (tráfego pago) ──
+    // Redireciona para Stripe Checkout com trial de 7 dias + cartão obrigatório.
+    // Email de boas-vindas é enviado pelo webhook após confirmação do cartão.
+    if (isCardTrial) {
+      try {
+        const checkoutRes = await fetch('/api/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            priceId:     import.meta.env.VITE_STRIPE_PRICE_MONTHLY,
+            email:       form.email.trim(),
+            officeName:  '',
+            plan:        'monthly',
+            cardRequired: true,
+            successPath: `/bem-vindo?nome=${encodeURIComponent(nomeNormalized)}`,
+          }),
+        })
+        const checkoutData = await checkoutRes.json()
+        if (checkoutData.url) {
+          clearAffiliateData()
+          window.location.href = checkoutData.url
+          return // página vai redirecionar — mantém loading=true
+        }
+      } catch (e) {
+        console.error('[Register] Stripe checkout error:', e)
+        // fallback: segue o fluxo normal se Stripe falhar
+      }
+    }
+
+    setLoading(false)
+
+    // ── Fluxo normal: trial sem cartão ─────────────────────────
     fetch('/api/send-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -437,15 +469,19 @@ export default function Register() {
               {/* Submit */}
               <button type="submit" disabled={loading} className="btn btn-primary cad-submit">
                 {loading
-                  ? 'Criando sua conta...'
-                  : <><span>Criar conta grátis</span><ArrowRight /></>
+                  ? (isCardTrial ? 'Aguarde, preparando pagamento...' : 'Criando sua conta...')
+                  : <><span>{isCardTrial ? 'Criar conta e adicionar cartão' : 'Criar conta grátis'}</span><ArrowRight /></>
                 }
               </button>
             </div>
 
             {/* Reassurance */}
             <div className="cad-reassure">
-              <span className="micro">Leva menos de 1 minuto · não precisa de cartão</span>
+              <span className="micro">
+                {isCardTrial
+                  ? 'Leva 1 minuto · 7 dias grátis · cartão necessário · cancele quando quiser'
+                  : 'Leva menos de 1 minuto · não precisa de cartão'}
+              </span>
               <span className="secure"><Lock /> Seus dados protegidos · conta cancelável quando quiser</span>
             </div>
 
