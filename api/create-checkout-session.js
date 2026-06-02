@@ -8,10 +8,15 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { priceId, email, officeName, plan, affiliateCoupon, cardRequired, successPath } = req.body
+  const { email, officeName, plan, affiliateCoupon, cardRequired, successPath } = req.body
+  // priceId: aceita do body ou usa fallback do servidor (VITE_ é exposto em serverless)
+  const priceId = req.body.priceId
+    || process.env.STRIPE_PRICE_MONTHLY
+    || process.env.VITE_STRIPE_PRICE_MONTHLY
+    || 'price_1TP5ZhRzYtXgEJJx6iMgObmd'
 
-  if (!priceId || !email) {
-    return res.status(400).json({ error: 'priceId e email são obrigatórios' })
+  if (!email) {
+    return res.status(400).json({ error: 'email é obrigatório' })
   }
 
   // Busca o stripe_promo_code_id do parceiro se cupom fornecido
