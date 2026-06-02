@@ -26,7 +26,15 @@ class ChunkErrorBoundary extends Component {
   componentDidCatch(err) {
     if (this.state.isChunk && !sessionStorage.getItem(CHUNK_RELOAD_KEY)) {
       sessionStorage.setItem(CHUNK_RELOAD_KEY, '1')
-      window.location.reload()
+      // Limpa todos os caches do Service Worker antes de recarregar
+      // para garantir que o browser busca os novos chunks do servidor
+      if ('caches' in window) {
+        caches.keys()
+          .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+          .finally(() => window.location.reload())
+      } else {
+        window.location.reload()
+      }
     }
   }
 

@@ -4,11 +4,10 @@
 // Cache de fallback para assets estáticos
 // ============================================================
 
-const CACHE_NAME = 'boxcerto-v4'
+const CACHE_NAME = 'boxcerto-v5'
 
-// Assets estáticos que podem ser cacheados offline
+// NÃO inclui '/' — index.html nunca pode ser cacheado (hashes de chunk mudam a cada deploy)
 const STATIC_ASSETS = [
-  '/',
   '/manifest.json',
   '/pwa-192.png',
   '/pwa-512.png',
