@@ -614,7 +614,7 @@ function LoginScreen({ onLoginSuccess }) {
 
 // ── Dashboard view ────────────────────────────────────────────
 function Dashboard({ session, onLogout, firstLogin = false, onIdentitySaved }) {
-  const { partner, commissions = [], activeRefs = 0, tier = 20, totals = {} } = session
+  const { partner, commissions = [], activeRefs = 0, trialLeads = 0, tier = 20, totals = {} } = session
 
   // Sequência de modais no 1º login:
   // 1. SetPasswordModal (obrigatório se !has_password)
@@ -748,11 +748,29 @@ function Dashboard({ session, onLogout, firstLogin = false, onIdentitySaved }) {
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard icon={DollarSign}  label="Total recebido"    value={fmt(totals.paid)}     color="emerald" />
           <StatCard icon={Clock}       label="A receber (dia 5)" value={fmt(totals.approved)} color="indigo"  />
           <StatCard icon={TrendingUp}  label="Pendente aprovação" value={fmt(totals.pending)} color="amber"   />
           <StatCard icon={Users}       label="Refs ativas"        value={activeRefs}           sub={`Tier: ${tier}%`} color="slate" />
+        </div>
+        {/* Funil de conversão */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <h2 className="text-sm font-bold text-slate-800 mb-3">📊 Funil de conversão</h2>
+          <div className="flex items-center gap-0">
+            <div className="flex-1 bg-indigo-50 rounded-l-xl px-4 py-3 text-center border border-indigo-100">
+              <p className="text-2xl font-bold text-indigo-700">{trialLeads}</p>
+              <p className="text-xs text-indigo-500 mt-0.5">Em trial</p>
+            </div>
+            <div className="text-slate-300 text-lg px-1">→</div>
+            <div className="flex-1 bg-emerald-50 rounded-r-xl px-4 py-3 text-center border border-emerald-100">
+              <p className="text-2xl font-bold text-emerald-700">{activeRefs}</p>
+              <p className="text-xs text-emerald-600 mt-0.5">Pagando</p>
+            </div>
+          </div>
+          <p className="text-xs text-slate-400 mt-3">
+            <strong>Em trial:</strong> cadastraram pelo seu link mas ainda não assinaram. <strong>Pagando:</strong> assinantes ativos que geram comissão mensal.
+          </p>
         </div>
 
         {/* Link e cupom */}

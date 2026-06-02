@@ -385,7 +385,19 @@ function sanitize(p) {
 }
 
 async function loadData(supabase, partnerId) {
-  const [{ data: commissions }, { count: activeRefs }] = await Promise.all([
+  // Busca slug e cupom do parceiro para encontrar leads não convertidos
+  const { data: partnerInfo } = await supabase
+    .from('affiliate_partners')
+    .select('slug, coupon_code')
+    .eq('id', partnerId)
+    .single()
+
+  // Monta filtro OR para leads (cadastros via link/cupom que ainda não pagaram)
+  const filters = []
+  if (partnerInfo?.slug)        filters.push(`affiliate_ref.eq.${partnerInfo.slug}`)
+  if (partnerInfo?.coupon_code) filters.push(`affiliate_coupon.eq.${partnerInfo.coupon_code}`)
+
+  const baseQueries = [
     supabase
       .from('affiliate_commissions')
       .select('id, type, reference_month, amount, tier_applied, plan_value, status, customer_email, approved_at, paid_at, created_at')
@@ -396,7 +408,17 @@ async function loadData(supabase, partnerId) {
       .select('id', { count: 'exact', head: true })
       .eq('affiliate_partner_id', partnerId)
       .eq('status', 'active'),
-  ])
+    // Leads: registrados via link/cupom mas ainda sem affiliate_partner_id (não converteram)
+    filters.length
+      ? supabase
+          .from('profiles')
+          .select('id', { count: 'exact', head: true })
+          .or(filters.join(','))
+          .is('affiliate_partner_id', null)
+      : Promise.resolve({ count: 0 }),
+  ]
+
+  const [{ data: commissions }, { count: activeRefs }, { count: trialLeads }] = await Promise.all(baseQueries)
 
   const comms = commissions || []
   const refs  = activeRefs  || 0
@@ -405,6 +427,7 @@ async function loadData(supabase, partnerId) {
   return {
     commissions: comms,
     activeRefs:  refs,
+    trialLeads:  trialLeads || 0,
     tier,
     totals: {
       paid:     comms.filter(c => c.status === 'paid').reduce((s, c) => s + Number(c.amount), 0),
