@@ -578,8 +578,8 @@ function TPricing() {
               <span className="pc-glow" />
               <div className="pc-in">
                 <span className="pc-badge"><BoltIcon /> COMECE GRÁTIS</span>
-                <div className="pc-free">Sua oficina organizada por <span className="u">R$ 79,90/mês</span></div>
-                <div className="pc-after">No plano anual (ou R$ 97/mês no mensal). <b>Comece grátis</b> e cancele quando quiser.</div>
+                <div className="pc-free"><b>7 dias grátis</b>, depois <span className="u">R$ 97/mês</span></div>
+                <div className="pc-after">Cancele antes e não paga nada. Quer pagar menos? Migre para o plano anual (<b>R$ 79,90/mês</b>) direto no app a qualquer momento.</div>
                 <div className="pc-feats">
                   {PRICE_FEATS.map(f => (
                     <div key={f} className="pc-feat">
@@ -597,9 +597,7 @@ function TPricing() {
               </div>
             </div>
             <div className="tprice-mini">
-              <span>Anual</span><span className="pm-price">R$ 79,90/mês</span>
-              <span className="dot-sep" />
-              <span>Mensal</span><span className="pm-price">R$ 97</span>
+              Plano mensal · sem fidelidade · cancele quando quiser
             </div>
           </div>
         </Reveal>
