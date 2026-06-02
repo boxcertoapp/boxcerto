@@ -447,9 +447,16 @@ export default function OrcamentoPublico() {
 
         {/* Dados do veículo */}
         <div className="bg-white rounded-2xl border border-gray-100 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Car className="w-4 h-4 text-slate-400" />
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Veículo</p>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Car className="w-4 h-4 text-slate-400" />
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Veículo</p>
+            </div>
+            {os.numero_os && (
+              <span className="text-[10px] font-mono font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded">
+                #{os.numero_os.slice(0,3)}-{os.numero_os.slice(3)}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <div className="bg-slate-800 px-3 py-2 rounded-lg shrink-0">

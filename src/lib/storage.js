@@ -7,6 +7,9 @@ import { supabase } from './supabase'
 export const norm = str =>
   (str || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
+// Helper: formata número de OS para exibição — '0010626' → '#001-0626'
+export const formatNumeroOS = (n) => n ? `#${n.slice(0, 3)}-${n.slice(3)}` : null
+
 // Helper: obtém o ID do usuário autenticado atual (usa sessão em cache, sem network)
 const getCurrentUserId = async () => {
   const { data: { session } } = await supabase.auth.getSession()
@@ -58,6 +61,7 @@ const mapOS = (os) => !os ? null : ({
   aprovacaoToken: os.aprovacao_token || null,
   aprovacaoStatus: os.aprovacao_status || 'pendente',
   aprovadoEm: os.aprovado_em || null,
+  numeroOS: os.numero_os || null,
   // Bloco 1 — técnico
   notasInternas: os.notas_internas || [],
   checklist:     os.checklist      || [],
@@ -279,6 +283,14 @@ export const osStorage = {
 
   create: async ({ officeName: _o, vehicleId, observacoes = '', km = '', agendadoPara = null }) => {
     const user_id = await getCurrentUserId()
+
+    // Gera número único de OS de forma atômica no banco
+    let numero_os = null
+    try {
+      const { data: numData } = await supabase.rpc('gerar_numero_os', { p_user_id: user_id })
+      numero_os = numData || null
+    } catch (_) { /* se falhar, prossegue sem número (não bloqueia criação) */ }
+
     const { data, error } = await supabase.from('service_orders').insert({
       user_id,
       vehicle_id: vehicleId,
@@ -287,6 +299,7 @@ export const osStorage = {
       agendado_para: agendadoPara,
       payments: [],
       desconto: { tipo: 'valor', valor: 0 },
+      numero_os,
     }).select().single()
     if (error) throw new Error(error.message)
     return mapOS(data)
@@ -419,7 +432,13 @@ export const osStorage = {
   getByToken: async (token) => {
     const { data, error } = await supabase.rpc('get_os_by_token', { p_token: token })
     if (error || !data) return null
-    return data
+    // Busca numero_os separadamente (a RPC pode não incluir colunas novas)
+    const { data: extra } = await supabase
+      .from('service_orders')
+      .select('numero_os')
+      .eq('aprovacao_token', token)
+      .maybeSingle()
+    return { ...data, numero_os: extra?.numero_os || null }
   },
 
   // Aprova OS pelo token (público)
@@ -648,6 +667,7 @@ export const printOS = ({ os, client, vehicle, items, officeData, formatCurrency
     </div></div>
     <div style="text-align:right">
       <div style="background:#4f46e5;color:white;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;display:inline-block;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Ordem de Serviço</div>
+      ${os.numeroOS ? `<div style="font-size:13px;font-weight:800;color:#4f46e5;margin-bottom:4px">#${os.numeroOS.slice(0,3)}-${os.numeroOS.slice(3)}</div>` : ''}
       <div style="font-size:12px;color:#64748b">Data: ${formatDateFn(os.createdAt)}</div>
       ${os.km ? `<div style="font-size:12px;color:#64748b">KM: ${os.km}</div>` : ''}
     </div>
@@ -852,8 +872,9 @@ export const downloadOsPDF = async ({ os, client, vehicle, items, officeData, fo
   doc.setFillColor(...C.indigo)
   doc.roundedRect(W - mr - 42, y, 42, 7, 2, 2, 'F')
   txt('ORDEM DE SERVIÇO', W - mr - 21, y + 5, { size: 7, bold: true, color: [255, 255, 255], align: 'center' })
-  txt(`Data: ${formatDateFn(os.createdAt)}`, W - mr, y + 10, { size: 8, color: C.med, align: 'right' })
-  if (os.km) txt(`KM: ${os.km}`, W - mr, y + 14, { size: 8, color: C.med, align: 'right' })
+  if (os.numeroOS) txt(`#${os.numeroOS.slice(0,3)}-${os.numeroOS.slice(3)}`, W - mr, y + 10, { size: 9, bold: true, color: C.indigo, align: 'right' })
+  txt(`Data: ${formatDateFn(os.createdAt)}`, W - mr, os.numeroOS ? y + 14 : y + 10, { size: 8, color: C.med, align: 'right' })
+  if (os.km) txt(`KM: ${os.km}`, W - mr, os.numeroOS ? y + 18 : y + 14, { size: 8, color: C.med, align: 'right' })
 
   y += 19; line(y); y += 5
 

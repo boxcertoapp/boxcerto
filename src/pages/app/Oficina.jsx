@@ -16,7 +16,7 @@ import { sendCapi } from '../../lib/metaCapi'
 import FipeSeletor from '../../components/FipeSeletor'
 import {
   osStorage, itemStorage, clientStorage, vehicleStorage,
-  STATUS_LABELS, STATUS_COLORS, formatCurrency, formatDate,
+  STATUS_LABELS, STATUS_COLORS, formatCurrency, formatDate, formatNumeroOS,
   SERVICOS_COMUNS, GARANTIA_OPTIONS, officeDataStorage,
   printOS, printReceipt, downloadOsPDF, downloadReceiptPDF, buildDescontoLabel, inventoryStorage, norm
 } from '../../lib/storage'
@@ -439,7 +439,12 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-slate-900 text-sm truncate">{os.vehicle?.modelo}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-slate-900 text-sm truncate">{os.vehicle?.modelo}</p>
+                    {os.numeroOS && (
+                      <span className="text-[10px] font-mono font-bold text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded shrink-0">{formatNumeroOS(os.numeroOS)}</span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <p className="text-xs text-slate-500 truncate">{os.client?.nome} · {formatDate(os.createdAt)}</p>
                     {os.aprovacaoStatus === 'aprovado' && (
@@ -1538,7 +1543,12 @@ function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false }) {
         <div className="flex items-center gap-2 p-4 border-b border-gray-100 shrink-0">
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full shrink-0"><X className="w-5 h-5 text-slate-600" /></button>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-slate-900 truncate">{os.vehicle?.placa} · {editForm.modelo || os.vehicle?.modelo}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-bold text-slate-900 truncate">{os.vehicle?.placa} · {editForm.modelo || os.vehicle?.modelo}</p>
+              {os.numeroOS && (
+                <span className="text-[10px] font-mono font-bold text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded shrink-0">{formatNumeroOS(os.numeroOS)}</span>
+              )}
+            </div>
             <p className="text-xs text-slate-400 truncate">{editForm.clienteNome || os.client?.nome} · {formatDate(os.createdAt)}</p>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
