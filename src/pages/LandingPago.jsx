@@ -18,9 +18,11 @@ import { usePageMeta } from '../hooks/usePageMeta'
 // ── CSS específico desta LP ──────────────────────────────────
 const CSS = `
 /* Announce */
-.tannounce{background:var(--ink);color:#e9ebf6;text-align:center;font-size:13.5px;font-weight:600;padding:9px 16px;display:flex;align-items:center;justify-content:center;gap:9px;line-height:1.3;}
-.tannounce .spark{color:var(--green);font-size:14px;}
-.tannounce b{color:#fff;}
+.tannounce{background:var(--ink);color:#e9ebf6;text-align:center;font-size:13.5px;font-weight:600;padding:9px 16px;display:flex;align-items:center;justify-content:center;gap:8px;line-height:1.35;flex-wrap:nowrap;}
+.tannounce .spark{color:var(--green);font-size:14px;flex-shrink:0;}
+.tannounce b{color:#fff;white-space:nowrap;}
+@media(max-width:480px){.tannounce{font-size:11.5px;padding:7px 12px;gap:6px;}}
+@media(max-width:360px){.tannounce{font-size:11px;padding:6px 10px;}}
 
 /* Nav mínima */
 .tnav{position:sticky;top:0;z-index:60;background:rgba(14,16,30,.72);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid rgba(255,255,255,.07);}
@@ -119,11 +121,17 @@ const CSS = `
 /* Sticky CTA mobile */
 .tsticky{position:fixed;left:0;right:0;bottom:0;z-index:70;background:rgba(255,255,255,.95);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:none;align-items:center;gap:12px;box-shadow:0 -8px 24px -16px rgba(20,22,31,.3);transform:translateY(120%);transition:transform .3s cubic-bezier(.2,.7,.2,1);}
 .tsticky.show{transform:translateY(0);}
-.tsticky .ts-tx{flex:1;min-width:0;}
-.tsticky .ts-tx b{display:block;font-family:var(--font-display);font-weight:800;color:var(--ink);font-size:14px;line-height:1.15;}
-.tsticky .ts-tx span{font-size:11.5px;color:var(--slate-500);font-weight:600;}
-.tsticky .btn{flex:none;}
+.tsticky .ts-tx{flex:1;min-width:0;overflow:hidden;}
+.tsticky .ts-tx b{display:block;font-family:var(--font-display);font-weight:800;color:var(--ink);font-size:14px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tsticky .ts-tx span{font-size:11.5px;color:var(--slate-500);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;}
+.tsticky .btn{flex:none;white-space:nowrap;}
 @media(max-width:760px){.tsticky{display:flex;}}
+@media(max-width:400px){
+  .tsticky{gap:8px;padding:8px 12px calc(8px + env(safe-area-inset-bottom));}
+  .tsticky .ts-tx b{font-size:13px;}
+  .tsticky .ts-tx span{font-size:10.5px;}
+}
+@media(max-width:340px){.tsticky .ts-tx span{display:none;}}
 body.has-tsticky{padding-bottom:74px;}
 `
 
@@ -684,7 +692,7 @@ function TSticky() {
     <div className={`tsticky${show ? ' show' : ''}`}>
       <div className="ts-tx">
         <b>Crie sua conta grátis</b>
-        <span>Pronto em 2 minutos · cancele quando quiser</span>
+        <span>2 min · cancele quando quiser</span>
       </div>
       <Link to="/cadastro?trial=card" onClick={() => pushCTA('sticky')} className="btn btn-green" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, padding: '10px 18px', borderRadius: 12 }}>
         Criar conta <ArrowRight style={{ width: 15, height: 15 }} />
