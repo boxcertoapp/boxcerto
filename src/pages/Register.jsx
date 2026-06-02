@@ -207,19 +207,16 @@ export default function Register() {
 
     // ── Fluxo card-required: vindo de /comecar (tráfego pago) ──
     // Redireciona para Stripe Checkout com trial de 7 dias + cartão obrigatório.
+    // Em subscription mode o Stripe SEMPRE exige cartão — mesmo no trial.
     // Email de boas-vindas é enviado pelo webhook após confirmação do cartão.
     if (isCardTrial) {
       try {
-        const checkoutRes = await fetch('/api/create-checkout-session', {
+        const checkoutRes = await fetch('/api/create-trial-checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            priceId:     import.meta.env.VITE_STRIPE_PRICE_MONTHLY,
-            email:       form.email.trim(),
-            officeName:  '',
-            plan:        'monthly',
-            cardRequired: true,
-            successPath: `/bem-vindo?nome=${encodeURIComponent(nomeNormalized)}`,
+            email: form.email.trim(),
+            nome:  nomeNormalized,
           }),
         })
         const checkoutData = await checkoutRes.json()
@@ -228,6 +225,7 @@ export default function Register() {
           window.location.href = checkoutData.url
           return // página vai redirecionar — mantém loading=true
         }
+        console.error('[Register] Checkout sem URL:', checkoutData)
       } catch (e) {
         console.error('[Register] Stripe checkout error:', e)
         // fallback: segue o fluxo normal se Stripe falhar
