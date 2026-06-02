@@ -613,6 +613,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
   const [client, setClient] = useState(null)
   const [km, setKm] = useState('')
   const [agendadoPara, setAgendadoPara] = useState('')
+  const [showAgenda, setShowAgenda] = useState(false)
   const [cepLoading, setCepLoading] = useState(false)
   const [newClient, setNewClient] = useState({
     nome: '', whatsapp: '', cpf: '', email: '', dataNascimento: '',
@@ -849,26 +850,49 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
                       onChange={e => setKm(e.target.value.replace(/\D/g, ''))} className={inp} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1 flex items-center gap-1"><CalendarClock className="w-3 h-3" />Agendar entrada</label>
-                    <input type="text" inputMode="numeric" placeholder="DD/MM/AAAA"
-                      value={agendadoPara}
-                      onChange={e => {
-                        const val = formatData(e.target.value)
-                        // Bloqueia datas anteriores a hoje
-                        if (val.length === 10) {
-                          const iso = dataBRtoISO(val)
+                    {!showAgenda ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowAgenda(true)}
+                        className="flex items-center gap-1.5 text-xs text-indigo-600 font-semibold hover:text-indigo-800 transition-colors py-1"
+                      >
+                        <CalendarClock className="w-3.5 h-3.5" />
+                        Agendar entrada
+                      </button>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-medium text-slate-600 flex items-center gap-1">
+                            <CalendarClock className="w-3 h-3" />Agendar entrada
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => { setShowAgenda(false); setAgendadoPara('') }}
+                            className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                          >
+                            Remover
+                          </button>
+                        </div>
+                        <input type="text" inputMode="numeric" placeholder="DD/MM/AAAA"
+                          value={agendadoPara}
+                          onChange={e => {
+                            const val = formatData(e.target.value)
+                            if (val.length === 10) {
+                              const iso = dataBRtoISO(val)
+                              const hoje = new Date(); hoje.setHours(0,0,0,0)
+                              if (iso && new Date(iso + 'T12:00') < hoje) return
+                            }
+                            setAgendadoPara(val)
+                          }}
+                          maxLength={10} className={inp} autoFocus />
+                        {agendadoPara.length === 10 && (() => {
+                          const iso = dataBRtoISO(agendadoPara)
                           const hoje = new Date(); hoje.setHours(0,0,0,0)
-                          if (iso && new Date(iso + 'T12:00') < hoje) return
-                        }
-                        setAgendadoPara(val)
-                      }}
-                      maxLength={10} className={inp} />
-                    {agendadoPara.length === 10 && (() => {
-                      const iso = dataBRtoISO(agendadoPara)
-                      const hoje = new Date(); hoje.setHours(0,0,0,0)
-                      if (iso && new Date(iso + 'T12:00') < hoje)
-                        return <p className="text-xs text-red-500 mt-1">Data não pode ser anterior a hoje.</p>
-                    })()}
+                          if (iso && new Date(iso + 'T12:00') < hoje)
+                            return <p className="text-xs text-red-500 mt-1">Data não pode ser anterior a hoje.</p>
+                        })()}
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

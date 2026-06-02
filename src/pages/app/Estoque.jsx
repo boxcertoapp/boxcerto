@@ -526,6 +526,17 @@ export default function Estoque() {
   const [sortBy, setSortBy] = useState('az') // az | qty_asc | qty_desc | val_asc | val_desc
   const [showSortMenu, setShowSortMenu] = useState(false)
 
+  // Trava scroll do container principal quando modal está aberto
+  useEffect(() => {
+    const main = document.querySelector('main')
+    if (showAdd || showVenda) {
+      if (main) main.style.overflow = 'hidden'
+    } else {
+      if (main) main.style.overflow = ''
+    }
+    return () => { if (main) main.style.overflow = '' }
+  }, [showAdd, showVenda])
+
   const SORT_OPTIONS = [
     { key: 'az',       label: 'A → Z' },
     { key: 'qty_asc',  label: 'Qtd ↑ (menor)' },
@@ -666,11 +677,21 @@ export default function Estoque() {
         </button>
       )}
 
-      {/* Formulário de adição */}
+      {/* Modal de adição — overlay com backdrop */}
       {showAdd && (
-        <div className="bg-white rounded-2xl border border-indigo-100 p-4 mb-4 shadow-sm">
-          <p className="text-sm font-bold text-slate-900 mb-3">Novo Produto</p>
-          <ProductForm onSave={handleAdd} onCancel={() => setShowAdd(false)} />
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-6"
+          style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(2px)' }}>
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <p className="text-sm font-bold text-slate-900">Novo Produto</p>
+              <button onClick={() => setShowAdd(false)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-gray-100 transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4">
+              <ProductForm onSave={handleAdd} onCancel={() => setShowAdd(false)} />
+            </div>
+          </div>
         </div>
       )}
 
@@ -742,20 +763,24 @@ export default function Estoque() {
         </div>
       )}
 
-      {/* FABs */}
-      <button
-        onClick={() => setShowVenda(true)}
-        className="fixed bottom-24 right-20 h-12 px-4 bg-green-600 rounded-full shadow-lg shadow-green-200 flex items-center gap-2 hover:bg-green-700 transition-all active:scale-95 z-40"
-      >
-        <ShoppingCart className="w-4 h-4 text-white" />
-        <span className="text-white text-sm font-bold">Vender</span>
-      </button>
-      <button
-        onClick={() => { setShowAdd(true); setEditId(null) }}
-        className="fixed bottom-24 right-4 w-14 h-14 bg-indigo-600 rounded-full shadow-lg shadow-indigo-200 flex items-center justify-center hover:bg-indigo-700 transition-all active:scale-95 z-40"
-      >
-        <Plus className="w-7 h-7 text-white" />
-      </button>
+      {/* FABs — ocultos quando qualquer modal está aberto */}
+      {!showAdd && !showVenda && (
+        <>
+          <button
+            onClick={() => setShowVenda(true)}
+            className="fixed bottom-24 right-20 h-12 px-4 bg-green-600 rounded-full shadow-lg shadow-green-200 flex items-center gap-2 hover:bg-green-700 transition-all active:scale-95 z-40"
+          >
+            <ShoppingCart className="w-4 h-4 text-white" />
+            <span className="text-white text-sm font-bold">Vender</span>
+          </button>
+          <button
+            onClick={() => { setShowAdd(true); setEditId(null) }}
+            className="fixed bottom-24 right-4 w-14 h-14 bg-indigo-600 rounded-full shadow-lg shadow-indigo-200 flex items-center justify-center hover:bg-indigo-700 transition-all active:scale-95 z-40"
+          >
+            <Plus className="w-7 h-7 text-white" />
+          </button>
+        </>
+      )}
 
       {/* Modal de Venda */}
       {showVenda && (

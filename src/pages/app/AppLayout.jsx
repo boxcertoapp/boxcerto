@@ -173,7 +173,7 @@ export default function AppLayout() {
 
                 {/* Popup */}
                 {showNotifyPopup && (
-                  <div className="absolute left-0 top-10 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50">
+                  <div className="absolute left-0 top-10 w-72 max-w-[calc(100vw-1rem)] bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50">
                     <button onClick={() => setShowNotifyPopup(false)} className="absolute top-3 right-3 text-slate-300 hover:text-slate-500">
                       <X className="w-4 h-4" />
                     </button>
