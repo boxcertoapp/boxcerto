@@ -299,7 +299,8 @@ export const osStorage = {
       agendado_para: agendadoPara,
       payments: [],
       desconto: { tipo: 'valor', valor: 0 },
-      numero_os,
+      // Só inclui numero_os se existir — evita 400 antes do SQL de migração ser rodado
+      ...(numero_os ? { numero_os } : {}),
     }).select().single()
     if (error) throw new Error(error.message)
     return mapOS(data)
