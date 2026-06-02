@@ -93,6 +93,7 @@ const Diagnostico     = lazy(() => import('./pages/Diagnostico'))
 const LandingOficinaP = lazy(() => import('./pages/LandingOficinaP'))
 const LandingOrcamento= lazy(() => import('./pages/LandingOrcamento'))
 const LandingVsPlanilha = lazy(() => import('./pages/LandingVsPlanilha'))
+const LandingPago       = lazy(() => import('./pages/LandingPago'))
 const BemVindo          = lazy(() => import('./pages/BemVindo'))
 const LandingDemo       = lazy(() => import('./pages/LandingDemo'))
 const Parceiro            = lazy(() => import('./pages/Parceiro'))
@@ -150,6 +151,7 @@ export default function App() {
             <Route path="/o/:token"       element={<OrcamentoPublico />} />
             <Route path="/termos"         element={<Termos />} />
             <Route path="/privacidade"    element={<Privacidade />} />
+            <Route path="/comecar"        element={<LandingPago />} />
             <Route path="/lp"             element={<LandingAds />} />
             <Route path="/lp2"            element={<LandingAds2 />} />
             <Route path="/lpdiagnostico"                        element={<Diagnostico />} />
