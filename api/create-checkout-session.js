@@ -9,11 +9,8 @@ module.exports = async (req, res) => {
   }
 
   const { email, officeName, plan, affiliateCoupon, cardRequired, successPath } = req.body || {}
-  // priceId: aceita do body ou usa fallback do servidor (VITE_ é exposto em serverless)
-  const priceId = req.body?.priceId
-    || process.env.STRIPE_PRICE_MONTHLY
-    || process.env.VITE_STRIPE_PRICE_MONTHLY
-    || 'price_1TS4lGRzYtXgEJJxve7kSSAs'
+  // priceId: aceita do body ou usa o price mensal R$ 97,00 fixado (price IDs são públicos)
+  const priceId = req.body?.priceId || 'price_1TS4lGRzYtXgEJJxve7kSSAs'
 
   if (!email) {
     return res.status(400).json({ error: 'email é obrigatório' })
