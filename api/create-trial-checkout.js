@@ -18,9 +18,12 @@ module.exports = async (req, res) => {
   if (!email) return res.status(400).json({ error: 'email obrigatório' })
 
   const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
-  // Price ID do plano mensal R$ 97,00 (price IDs são públicos, não há risco).
-  // Fixado no código para não depender de env var no Vercel (evita preço errado).
-  const PRICE_MONTHLY = 'price_1TS4lGRzYtXgEJJxve7kSSAs'
+  // Price ID do plano mensal — env var primeiro (editável no Vercel),
+  // com fallback hardcoded R$ 97,00 caso a env var esteja ausente.
+  const PRICE_MONTHLY =
+    process.env.STRIPE_PRICE_MONTHLY ||
+    process.env.VITE_STRIPE_PRICE_MONTHLY ||
+    'price_1TS4lGRzYtXgEJJxve7kSSAs'
 
   if (!STRIPE_SECRET_KEY) {
     console.error('[create-trial-checkout] STRIPE_SECRET_KEY não configurada')
