@@ -22,7 +22,7 @@ module.exports = async (req, res) => {
   const PRICE_MONTHLY =
     process.env.STRIPE_PRICE_MONTHLY ||
     process.env.VITE_STRIPE_PRICE_MONTHLY ||
-    'price_1TP5ZhRzYtXgEJJx6iMgObmd'
+    'price_1TS4lGRzYtXgEJJxve7kSSAs'
 
   if (!STRIPE_SECRET_KEY) {
     console.error('[create-trial-checkout] STRIPE_SECRET_KEY não configurada')

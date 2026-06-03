@@ -13,7 +13,7 @@ module.exports = async (req, res) => {
   const priceId = req.body?.priceId
     || process.env.STRIPE_PRICE_MONTHLY
     || process.env.VITE_STRIPE_PRICE_MONTHLY
-    || 'price_1TP5ZhRzYtXgEJJx6iMgObmd'
+    || 'price_1TS4lGRzYtXgEJJxve7kSSAs'
 
   if (!email) {
     return res.status(400).json({ error: 'email é obrigatório' })
