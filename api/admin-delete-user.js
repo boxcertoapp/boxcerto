@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+const { createClient } = require('@supabase/supabase-js')
 
 // Admin client com service role key — bypass completo de RLS
 const supabaseAdmin = createClient(
@@ -21,7 +21,7 @@ const USER_TABLES = [
   'profiles',          // perfil (por último, antes do auth.users)
 ]
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }

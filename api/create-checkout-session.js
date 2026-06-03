@@ -1,16 +1,16 @@
-import Stripe from 'stripe'
-import { createClient } from '@supabase/supabase-js'
+const Stripe = require('stripe')
+const { createClient } = require('@supabase/supabase-js')
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { email, officeName, plan, affiliateCoupon, cardRequired, successPath } = req.body
+  const { email, officeName, plan, affiliateCoupon, cardRequired, successPath } = req.body || {}
   // priceId: aceita do body ou usa fallback do servidor (VITE_ é exposto em serverless)
-  const priceId = req.body.priceId
+  const priceId = req.body?.priceId
     || process.env.STRIPE_PRICE_MONTHLY
     || process.env.VITE_STRIPE_PRICE_MONTHLY
     || 'price_1TP5ZhRzYtXgEJJx6iMgObmd'
