@@ -104,6 +104,10 @@ export default function Financeiro() {
   const [showAddExp, setShowAddExp] = useState(false)
   const [newExp, setNewExp] = useState({ descricao: '', valor: '' })
   const [expError, setExpError] = useState('')
+  const [triedExp, setTriedExp] = useState(false)
+  const expBorder = (val) => triedExp && !String(val || '').trim()
+    ? 'border-red-400 focus:border-red-400'
+    : 'border-indigo-200 focus:border-indigo-400'
   const [officeData, setOfficeData] = useState({})
   const [revertingId, setRevertingId] = useState(null)
   const [showRevertConfirm, setShowRevertConfirm] = useState(null) // os object
@@ -166,7 +170,8 @@ export default function Financeiro() {
     : null
 
   const addExpense = async () => {
-    if (!newExp.descricao || !newExp.valor) return setExpError('Preencha todos os campos.')
+    if (!newExp.descricao || !newExp.valor) { setTriedExp(true); return setExpError('Preencha todos os campos.') }
+    setTriedExp(false)
     await expenseStorage.add({ officeName: user.oficina, descricao: newExp.descricao, valor: parseFloat(newExp.valor), mes, ano })
     setNewExp({ descricao: '', valor: '' })
     setExpError('')
@@ -303,7 +308,7 @@ export default function Financeiro() {
               placeholder="Ex: Aluguel, Luz, Internet..."
               value={newExp.descricao}
               onChange={(e) => setNewExp({ ...newExp, descricao: e.target.value })}
-              className="w-full px-3 py-2.5 rounded-lg border border-indigo-200 text-sm focus:outline-none focus:border-indigo-400 bg-white"
+              className={`w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none bg-white transition-colors ${expBorder(newExp.descricao)}`}
             />
             <div className="flex gap-2">
               <input
@@ -311,7 +316,7 @@ export default function Financeiro() {
                 placeholder="Valor (R$)"
                 value={newExp.valor}
                 onChange={(e) => setNewExp({ ...newExp, valor: e.target.value })}
-                className="flex-1 px-3 py-2.5 rounded-lg border border-indigo-200 text-sm focus:outline-none focus:border-indigo-400 bg-white"
+                className={`flex-1 px-3 py-2.5 rounded-lg border text-sm focus:outline-none bg-white transition-colors ${expBorder(newExp.valor)}`}
               />
               <button
                 onClick={addExpense}

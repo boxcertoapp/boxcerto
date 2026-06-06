@@ -43,9 +43,12 @@ function ClientForm({ initial, onSave, onCancel, saveLabel = 'Salvar' }) {
   const [cepLoading, setCepLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [triedSave, setTriedSave] = useState(false)
 
   const f = (key, val) => setForm(p => ({ ...p, [key]: val }))
   const inp = 'w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50'
+  const inpReqBase = 'w-full px-3 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-colors'
+  const reqInp = (val) => `${inpReqBase} ${triedSave && !String(val || '').trim() ? 'border-red-400 focus:border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-indigo-400 focus:ring-indigo-50'}`
 
   const handleCEP = async (val) => {
     const cep = val.replace(/\D/g, '')
@@ -65,8 +68,11 @@ function ClientForm({ initial, onSave, onCancel, saveLabel = 'Salvar' }) {
   }
 
   const handleSave = async () => {
-    if (!form.nome.trim()) return setError('Nome é obrigatório.')
-    if (!form.whatsapp.trim()) return setError('WhatsApp é obrigatório.')
+    if (!form.nome.trim() || !form.whatsapp.trim()) {
+      setTriedSave(true)
+      if (!form.nome.trim()) return setError('Nome é obrigatório.')
+      return setError('WhatsApp é obrigatório.')
+    }
     setError('')
     setLoading(true)
     try {
@@ -87,12 +93,12 @@ function ClientForm({ initial, onSave, onCancel, saveLabel = 'Salvar' }) {
       )}
       <div>
         <label className="block text-xs font-medium text-slate-600 mb-1">Nome Completo *</label>
-        <input autoFocus value={form.nome} onChange={e => f('nome', e.target.value)} placeholder="João da Silva" className={inp} />
+        <input autoFocus value={form.nome} onChange={e => f('nome', e.target.value)} placeholder="João da Silva" className={reqInp(form.nome)} />
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="block text-xs font-medium text-slate-600 mb-1">WhatsApp *</label>
-          <input value={form.whatsapp} onChange={e => f('whatsapp', formatWpp(e.target.value))} placeholder="(51) 99999-9999" maxLength={15} className={inp} />
+          <input value={form.whatsapp} onChange={e => f('whatsapp', formatWpp(e.target.value))} placeholder="(51) 99999-9999" maxLength={15} className={reqInp(form.whatsapp)} />
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-600 mb-1">CPF</label>

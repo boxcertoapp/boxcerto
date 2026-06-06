@@ -633,6 +633,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showFipe, setShowFipe] = useState(true)
+  const [triedSave, setTriedSave] = useState(false)
 
   useEffect(() => {
     const root = document.documentElement
@@ -765,8 +766,10 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
   }
 
   const createAndOpen = async () => {
-    if (!newClient.nome || !newClient.whatsapp || !newClient.modelo)
+    if (!newClient.nome || !newClient.whatsapp || !newClient.modelo) {
+      setTriedSave(true)
       return setError('Nome, WhatsApp e Modelo são obrigatórios.')
+    }
     if (!validateCPF(newClient.cpf))
       return setError('CPF inválido. Verifique os 11 dígitos.')
     setLoading(true)
@@ -815,6 +818,9 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
   }
 
   const inp = 'w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 text-sm'
+  const inpReqBase = 'w-full px-3 py-2.5 rounded-xl border focus:outline-none focus:ring-2 text-sm transition-colors'
+  // Borda vermelha só após tentar salvar e enquanto o campo obrigatório estiver vazio
+  const reqInp = (val) => `${inpReqBase} ${triedSave && !val ? 'border-red-400 focus:border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-indigo-400 focus:ring-indigo-50'}`
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40"
@@ -921,7 +927,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
                       value={newClient.nome}
                       onChange={e => handleNomeChange(e.target.value)}
                       autoFocus
-                      className={`${inp} ${existingClient ? 'border-green-400 bg-green-50' : ''}`}
+                      className={existingClient ? `${inpReqBase} border-green-400 bg-green-50 focus:ring-green-50` : reqInp(newClient.nome)}
                     />
                     {existingClient && (
                       <span className="absolute right-3 top-[2.1rem] text-xs text-green-600 font-semibold flex items-center gap-1">
@@ -967,7 +973,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">WhatsApp *</label>
                     <input data-tour="input-whatsapp" type="text" placeholder="(51) 99999-9999" value={newClient.whatsapp}
-                      onChange={e => setNewClient(p => ({...p, whatsapp: formatWpp(e.target.value)}))} maxLength={15} className={inp} />
+                      onChange={e => setNewClient(p => ({...p, whatsapp: formatWpp(e.target.value)}))} maxLength={15} className={reqInp(newClient.whatsapp)} />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1 flex items-center gap-1"><Mail className="w-3 h-3" />E-mail</label>
@@ -1022,7 +1028,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
                         <input data-tour="input-modelo-manual" type="text" placeholder="Ex: Honda CG 160 2022 Gasolina"
                           value={newClient.modelo}
                           onChange={e => setNewClient(p => ({ ...p, modelo: e.target.value }))}
-                          className={inp} />
+                          className={reqInp(newClient.modelo)} />
                         <button type="button" onClick={() => { setNewClient(p => ({ ...p, modelo: '' })); setShowFipe(true) }}
                           className="w-full py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-xs text-indigo-600 font-semibold hover:bg-indigo-100 transition-colors">
                           🔍 Busca fácil por marca e modelo

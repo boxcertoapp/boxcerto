@@ -442,20 +442,27 @@ function ProductForm({ initial, onSave, onCancel }) {
     valorCompra: '', valorVenda: '', fornecedor: ''
   })
 
+  const [triedSave, setTriedSave] = useState(false)
+
   const f = (key, val) => setForm(p => ({ ...p, [key]: val }))
-  const inp = 'w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 text-sm'
+  const inpBase = 'w-full px-3 py-2.5 rounded-xl border focus:outline-none focus:ring-2 text-sm transition-colors'
+  const okBorder  = 'border-gray-200 focus:border-indigo-400 focus:ring-indigo-50'
+  const errBorder = 'border-red-400 focus:border-red-400 focus:ring-red-100'
+  const inp = `${inpBase} ${okBorder}`
+  // Borda vermelha só após tentar salvar e enquanto o campo estiver vazio
+  const reqInp = (val) => `${inpBase} ${triedSave && !val ? errBorder : okBorder}`
 
   return (
     <div className="space-y-3">
       <div>
         <label className="block text-xs font-medium text-slate-600 mb-1">Produto *</label>
-        <input value={form.produto} onChange={e => f('produto', e.target.value)} placeholder="Ex: Filtro de óleo Fram" className={inp} autoFocus />
+        <input value={form.produto} onChange={e => f('produto', e.target.value)} placeholder="Ex: Filtro de óleo Fram" className={reqInp(form.produto)} autoFocus />
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="block text-xs font-medium text-slate-600 mb-1">Qtd. em estoque *</label>
-          <input type="number" value={form.quantidade} onChange={e => f('quantidade', e.target.value)} placeholder="0" className={inp} min="0" />
+          <input type="number" value={form.quantidade} onChange={e => f('quantidade', e.target.value)} placeholder="0" className={reqInp(form.quantidade)} min="0" />
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-600 mb-1">Fornecedor</label>
@@ -466,11 +473,11 @@ function ProductForm({ initial, onSave, onCancel }) {
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="block text-xs font-medium text-slate-600 mb-1">Valor de Compra *</label>
-          <input type="number" value={form.valorCompra} onChange={e => f('valorCompra', e.target.value)} placeholder="0,00" className={inp} min="0" step="0.01" />
+          <input type="number" value={form.valorCompra} onChange={e => f('valorCompra', e.target.value)} placeholder="0,00" className={reqInp(form.valorCompra)} min="0" step="0.01" />
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-600 mb-1">Valor de Venda *</label>
-          <input type="number" value={form.valorVenda} onChange={e => f('valorVenda', e.target.value)} placeholder="0,00" className={inp} min="0" step="0.01" />
+          <input type="number" value={form.valorVenda} onChange={e => f('valorVenda', e.target.value)} placeholder="0,00" className={reqInp(form.valorVenda)} min="0" step="0.01" />
         </div>
       </div>
 
@@ -504,7 +511,10 @@ function ProductForm({ initial, onSave, onCancel }) {
         </button>
         <button
           onClick={() => {
-            if (!form.produto || !form.quantidade || !form.valorCompra || !form.valorVenda) return showToast('Preencha todos os campos obrigatórios.')
+            if (!form.produto || !form.quantidade || !form.valorCompra || !form.valorVenda) {
+              setTriedSave(true)
+              return showToast('Preencha todos os campos obrigatórios.')
+            }
             onSave(form)
           }}
           className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition-colors"
