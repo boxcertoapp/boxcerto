@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { showSaveCheck } from '../../components/SaveCheck'
+import { showToast } from '../../components/Toast'
 
 // ── Máscaras ──────────────────────────────────────────────
 const formatCNPJ = (val) => {
@@ -189,7 +190,7 @@ function AbaRelatorios({ user }) {
   <div style="text-align:center;color:#94a3b8;font-size:11px;margin-top:24px">Gerado por BoxCerto &bull; boxcerto.com</div>
 </body></html>`
     const win = window.open('', '_blank', 'width=900,height=700')
-    if (!win) { alert('Permita pop-ups'); return }
+    if (!win) { showToast('Permita pop-ups para gerar o documento.', 'warning'); return }
     win.document.write(html)
     win.document.close()
     win.onload = () => { win.focus(); win.print() }
@@ -231,7 +232,7 @@ function AbaRelatorios({ user }) {
   <div style="text-align:center;color:#94a3b8;font-size:11px;margin-top:24px">Gerado por BoxCerto &bull; boxcerto.com</div>
 </body></html>`
     const win = window.open('', '_blank', 'width=900,height=700')
-    if (!win) { alert('Permita pop-ups'); return }
+    if (!win) { showToast('Permita pop-ups para gerar o documento.', 'warning'); return }
     win.document.write(html)
     win.document.close()
     win.onload = () => { win.focus(); win.print() }
@@ -710,7 +711,7 @@ export default function Menu() {
   const handleLogoChange = (e) => {
     const file = e.target.files[0]
     if (!file) return
-    if (file.size > 1024 * 1024) return alert('A imagem deve ter no máximo 1MB.')
+    if (file.size > 1024 * 1024) return showToast('A imagem deve ter no máximo 1MB.', 'warning')
     const reader = new FileReader()
     reader.onload = (ev) => autoSaveLogo(ev.target.result)
     reader.readAsDataURL(file)
@@ -732,9 +733,9 @@ export default function Menu() {
       })
       const data = await resp.json()
       if (data.url) { window.open(data.url, '_blank') }
-      else { alert('Não foi possível abrir o portal. Tente novamente.') }
+      else { showToast('Não foi possível abrir o portal. Tente novamente.') }
     } catch (e) {
-      alert('Erro ao conectar ao portal de cobrança.')
+      showToast('Erro ao conectar ao portal de cobrança.')
     } finally {
       setPortalLoading(false)
     }

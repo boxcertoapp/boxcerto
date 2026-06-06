@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { showSaveCheck } from '../../components/SaveCheck'
+import { showToast } from '../../components/Toast'
 import {
   inventoryStorage, vendaStorage, clientStorage,
   officeDataStorage, formatCurrency, norm,
@@ -56,7 +57,7 @@ function printEstoque({ items, officeData, formatCurrencyFn }) {
 </body></html>`
 
   const win = window.open('', '_blank', 'width=900,height=700')
-  if (!win) { alert('Permita pop-ups'); return }
+  if (!win) { showToast('Permita pop-ups para gerar o documento.', 'warning'); return }
   win.document.write(html)
   win.document.close()
   win.onload = () => { win.focus(); win.print() }
@@ -503,7 +504,7 @@ function ProductForm({ initial, onSave, onCancel }) {
         </button>
         <button
           onClick={() => {
-            if (!form.produto || !form.quantidade || !form.valorCompra || !form.valorVenda) return alert('Preencha os campos obrigatórios.')
+            if (!form.produto || !form.quantidade || !form.valorCompra || !form.valorVenda) return showToast('Preencha todos os campos obrigatórios.')
             onSave(form)
           }}
           className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition-colors"

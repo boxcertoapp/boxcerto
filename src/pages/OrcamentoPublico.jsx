@@ -5,6 +5,7 @@ import {
   Shield, Loader2, XCircle, ChevronDown, ChevronUp, Bell, RefreshCw,
 } from 'lucide-react'
 import { osStorage, formatCurrency } from '../lib/storage'
+import { showToast } from '../components/Toast'
 
 // ── Stepper ──────────────────────────────────────────────────────
 const PASSOS = [
@@ -350,10 +351,10 @@ export default function OrcamentoPublico() {
           body: JSON.stringify({ token }),
         }).catch(() => {})
       } else {
-        alert('Não foi possível aprovar. O orçamento pode ter sido alterado.')
+        showToast('Não foi possível aprovar. O orçamento pode ter sido alterado.')
       }
     } catch {
-      alert('Erro ao aprovar. Tente novamente.')
+      showToast('Erro ao aprovar. Tente novamente.')
     } finally {
       setAprovando(false)
     }

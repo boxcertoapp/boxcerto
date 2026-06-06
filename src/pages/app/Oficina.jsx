@@ -15,6 +15,7 @@ import { supabase } from '../../lib/supabase'
 import { sendCapi } from '../../lib/metaCapi'
 import FipeSeletor from '../../components/FipeSeletor'
 import { showSaveCheck } from '../../components/SaveCheck'
+import { showToast } from '../../components/Toast'
 import {
   osStorage, itemStorage, clientStorage, vehicleStorage,
   STATUS_LABELS, STATUS_COLORS, formatCurrency, formatDate, formatNumeroOS,
@@ -1490,7 +1491,7 @@ function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false }) {
 
   const handleEnviarCliente = async () => {
     const phone = os.client?.whatsapp?.replace(/\D/g, '')
-    if (!phone) return alert('Cliente sem WhatsApp cadastrado.')
+    if (!phone) return showToast('Cliente sem WhatsApp cadastrado.', 'warning')
     setEnviando(true)
     try {
       // Generate token if not exists, or reuse existing
@@ -1512,7 +1513,7 @@ function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false }) {
       window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`, '_blank')
       window.dispatchEvent(new CustomEvent('boxcerto:orcamento-enviado'))
     } catch (e) {
-      alert('Erro ao gerar link de aprovação.')
+      showToast('Erro ao gerar link de aprovação.')
     } finally {
       setEnviando(false)
     }
@@ -1532,7 +1533,7 @@ function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false }) {
 
   const handleShareWpp = () => {
     const phone = os.client?.whatsapp?.replace(/\D/g, '')
-    if (!phone) return alert('Cliente sem WhatsApp cadastrado.')
+    if (!phone) return showToast('Cliente sem WhatsApp cadastrado.', 'warning')
     const linhas = items.map(i => `  • ${i.descricao}: ${formatCurrency(i.venda)}`).join('\n')
     const desc = descontoValor > 0 ? `\n\n  🏷️ Desconto: − ${formatCurrency(descontoValor)}\n  *Total: ${formatCurrency(totalComDesconto)}*` : `\n\n*Total: ${formatCurrency(totals.venda)}*`
     const msg = `*Orçamento — ${os.vehicle?.modelo} (${os.vehicle?.placa})*\n\nOlá ${os.client?.nome}! Segue o orçamento:\n\n${linhas}${desc}\n\nQualquer dúvida, estamos à disposição!`

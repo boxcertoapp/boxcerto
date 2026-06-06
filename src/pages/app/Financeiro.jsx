@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { TrendingUp, TrendingDown, Plus, Trash2, X, AlertCircle, Printer, RotateCcw, ShoppingCart, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { showSaveCheck } from '../../components/SaveCheck'
+import { showToast } from '../../components/Toast'
 import {
   osStorage, expenseStorage, officeDataStorage, vendaStorage,
   formatCurrency, formatDate
@@ -85,7 +86,7 @@ function printFinanceiro({ mes, ano, totalReceitas, totalLucroOS, totalDespesas,
 </body></html>`
 
   const win = window.open('', '_blank', 'width=900,height=700')
-  if (!win) { alert('Permita pop-ups'); return }
+  if (!win) { showToast('Permita pop-ups para gerar o relatório.', 'warning'); return }
   win.document.write(html)
   win.document.close()
   win.onload = () => { win.focus(); win.print() }

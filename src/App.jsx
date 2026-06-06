@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, Component } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { captureAffiliateRef } from './lib/affiliateTracking'
+import Toaster from './components/Toast'
 
 // ── Proteção contra tela em branco pós-deploy ─────────────────────────────
 // Quando um novo deploy muda os nomes dos chunks (hash), usuários que já
@@ -136,6 +137,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <Toaster />
         <ChunkErrorBoundary>
         <Suspense fallback={<PageLoader />}>
           <Routes>

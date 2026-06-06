@@ -2,6 +2,7 @@
 // CAMADA DE DADOS — Supabase
 // ============================================================
 import { supabase } from './supabase'
+import { showToast } from '../components/Toast'
 
 // Helper: normaliza string removendo acentos para busca insensível a acento
 export const norm = str =>
@@ -724,7 +725,7 @@ export const printOS = ({ os, client, vehicle, items, officeData, formatCurrency
 </body></html>`
 
   const win = window.open('', '_blank', 'width=800,height=900')
-  if (!win) { alert('Permita pop-ups para gerar o PDF'); return }
+  if (!win) { showToast('Permita pop-ups para gerar o PDF.', 'warning'); return }
   win.document.write(html)
   win.document.close()
   win.onload = () => { win.focus(); win.print() }
@@ -802,7 +803,7 @@ export const printReceipt = ({ os, client, vehicle, items, officeData, formatCur
 </body></html>`
 
   const win = window.open('', '_blank', 'width=500,height=700')
-  if (!win) { alert('Permita pop-ups para gerar o recibo'); return }
+  if (!win) { showToast('Permita pop-ups para gerar o recibo.', 'warning'); return }
   win.document.write(html)
   win.document.close()
   win.onload = () => { win.focus(); win.print() }
@@ -1186,7 +1187,7 @@ export const printVendaReceipt = ({ venda, clienteNome, officeData, formatCurren
 </body></html>`
 
   const win = window.open('', '_blank', 'width=520,height=700')
-  if (!win) { alert('Permita pop-ups para imprimir'); return }
+  if (!win) { showToast('Permita pop-ups para imprimir.', 'warning'); return }
   win.document.write(html)
   win.document.close()
   win.onload = () => { win.focus(); win.print() }
