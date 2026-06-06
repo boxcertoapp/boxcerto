@@ -70,7 +70,7 @@ export default function AppLayout() {
   // - Demais → contida
   const path = location.pathname
   const pageMaxW =
-    ['/app/oficina', '/app/estoque', '/app/historico', '/app/financeiro'].some(p => path.startsWith(p))
+    ['/app/oficina', '/app/estoque', '/app/historico', '/app/financeiro', '/app/clientes-preview'].some(p => path.startsWith(p))
       ? 'max-w-6xl'
       : path.startsWith('/app/menu')
         ? 'max-w-4xl'

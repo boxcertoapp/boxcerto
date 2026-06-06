@@ -277,9 +277,11 @@ export default function ClientesPreview() {
       {/* Header + busca fixos */}
       <div className="sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm px-4 pt-4 pb-2 border-b border-gray-100">
         <div className="flex items-center gap-2 mb-3">
-          <Users className="w-5 h-5 text-indigo-600" />
-          <h1 className="text-xl font-bold text-slate-900">Clientes</h1>
-          <span className="text-sm text-slate-400 font-medium">{clients.length}</span>
+          {view === 'veiculos'
+            ? <Car className="w-5 h-5 text-indigo-600" />
+            : <Users className="w-5 h-5 text-indigo-600" />}
+          <h1 className="text-xl font-bold text-slate-900">{view === 'veiculos' ? 'Veículos' : 'Clientes'}</h1>
+          <span className="text-sm text-slate-400 font-medium">{view === 'veiculos' ? vehicles.length : clients.length}</span>
 
           {/* Toggle Clientes | Veículos */}
           <div className="ml-auto flex bg-gray-100 rounded-xl p-0.5">
