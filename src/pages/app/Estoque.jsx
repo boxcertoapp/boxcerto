@@ -181,6 +181,7 @@ function VendaModal({ inventory, officeData, onClose, onVendaCompleta }) {
       })
       setVendaFeita({ ...venda, clienteNome: nomeCliente, whatsapp: clienteSelecionado?.whatsapp || novoCliente.whatsapp })
       onVendaCompleta()
+      showSaveCheck('Venda registrada!')
     } catch (e) {
       setErro(e.message || 'Erro ao registrar venda.')
       setLoading(false)

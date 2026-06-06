@@ -5,6 +5,7 @@ import {
   Calendar, Plus, AlertCircle, Edit2, Check, ArrowUpDown, Gauge, Mail
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { showSaveCheck } from '../../components/SaveCheck'
 import {
   vehicleStorage, clientStorage, osStorage, vendaStorage,
   formatCurrency, formatDate, STATUS_LABELS, STATUS_COLORS
@@ -183,6 +184,7 @@ function ClientModal({ mode, client, officeName, onClose, onSaved }) {
     }
     onSaved()
     onClose()
+    showSaveCheck(isEdit ? 'Cliente salvo!' : 'Cliente cadastrado!')
   }
 
   return (

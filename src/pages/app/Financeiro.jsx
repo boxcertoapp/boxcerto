@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { TrendingUp, TrendingDown, Plus, Trash2, X, AlertCircle, Printer, RotateCcw, ShoppingCart, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { showSaveCheck } from '../../components/SaveCheck'
 import {
   osStorage, expenseStorage, officeDataStorage, vendaStorage,
   formatCurrency, formatDate
@@ -170,6 +171,7 @@ export default function Financeiro() {
     setExpError('')
     setShowAddExp(false)
     await reload()
+    showSaveCheck('Despesa adicionada!')
   }
 
   const prevMonth = () => {

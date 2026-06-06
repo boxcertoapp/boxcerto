@@ -1365,6 +1365,7 @@ function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false }) {
     if (status === 'entregue') { setShowRevertConfirm(true); return }
     await osStorage.updateStatus(os.id, s)
     setStatus(s)
+    showSaveCheck(STATUS_LABELS[s] || 'Salvo!')
   }
 
   const handleDeliveryConfirm = async ({ deliveredAt, deliveryNotes, payments, desconto: d }) => {
@@ -1374,6 +1375,7 @@ function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false }) {
     setStatus('entregue')
     setDeliveryInfo({ deliveredAt, payments, deliveryNotes, desconto: d })
     setShowDelivery(false)
+    showSaveCheck('Veículo entregue!')
   }
 
   const handleRevert = async () => {
@@ -1443,6 +1445,7 @@ function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false }) {
     setShowAddItem(false)
     await reload()
     if (os.aprovacaoStatus === 'aprovado') setItensAlteradosAposAprovacao(true)
+    showSaveCheck('Item adicionado!')
   }
 
   const handleRemoveItem = async (itemId) => {

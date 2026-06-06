@@ -9,6 +9,7 @@ import {
   Smartphone, Bell, BellOff, BellRing
 } from 'lucide-react'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
+import { showSaveCheck } from '../../components/SaveCheck'
 
 // ── Máscaras ──────────────────────────────────────────────
 const formatCNPJ = (val) => {
@@ -682,6 +683,7 @@ export default function Menu() {
     setSavedFields({ nome: officeData.nome, endereco: officeData.endereco, telefone: officeData.telefone, cnpj: officeData.cnpj })
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
+    showSaveCheck('Dados salvos!')
     // Onboarding: notifica checklist que oficina foi configurada
     window.dispatchEvent(new CustomEvent('boxcerto:oficina-configurada'))
   }
