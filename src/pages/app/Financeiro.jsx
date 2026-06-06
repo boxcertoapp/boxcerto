@@ -253,8 +253,11 @@ export default function Financeiro() {
         </div>
       </div>
 
+      {/* Conteúdo do mês — masonry 2 colunas no desktop */}
+      <div className="space-y-4 lg:space-y-0 lg:columns-2 lg:gap-4">
+
       {/* Cards secundários */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 lg:mb-4 lg:break-inside-avoid">
         <div className="bg-white rounded-2xl border border-gray-100 p-4">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-4 h-4 text-green-500" />
@@ -274,7 +277,7 @@ export default function Financeiro() {
       </div>
 
       {/* Despesas Fixas */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-4">
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 lg:mb-4 lg:break-inside-avoid">
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-bold text-slate-900">Despesas do Mês</p>
           <button
@@ -341,7 +344,7 @@ export default function Financeiro() {
 
       {/* Vendas Avulsas */}
       {vendas.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-4">
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 lg:mb-4 lg:break-inside-avoid">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <ShoppingCart className="w-4 h-4 text-green-600" />
@@ -429,7 +432,7 @@ export default function Financeiro() {
       )}
 
       {/* OS Entregues */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-4">
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 lg:mb-4 lg:break-inside-avoid">
         <p className="text-sm font-bold text-slate-900 mb-3">Carros Entregues no Mês</p>
         {deliveredOS.length === 0 ? (
           <p className="text-center text-slate-400 text-sm py-4">Nenhum carro entregue ainda</p>
@@ -460,6 +463,8 @@ export default function Financeiro() {
           </div>
         )}
       </div>
+
+      </div>{/* fim masonry */}
 
       {/* Revert confirm modal */}
       {showRevertConfirm && (

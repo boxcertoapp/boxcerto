@@ -503,7 +503,7 @@ export default function Historico() {
               <p className="font-medium">Nenhum resultado</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3">
               {results.map(v => (
                 <button key={v.id} onClick={() => openVehicle(v)}
                   className="w-full bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3 text-left hover:border-indigo-100 transition-all">
@@ -539,6 +539,7 @@ export default function Historico() {
                 value={sortClientes}
                 onChange={setSortClientes}
               />
+              <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
               {(showMoreClients ? sortedClients : sortedClients.slice(0, LIMIT)).map(c => {
                 const veiculos = clientVehicles.filter(v => v.clientId === c.id)
                 const vendas   = clienteVendasMap[c.id]
@@ -586,6 +587,7 @@ export default function Historico() {
                   </div>
                 )
               })}
+              </div>
               {sortedClients.length > LIMIT && (
                 <button onClick={() => setShowMoreClients(p => !p)}
                   className="w-full py-3 rounded-2xl border border-gray-200 text-sm text-slate-500 font-medium hover:bg-gray-50 transition-colors">
@@ -625,6 +627,7 @@ export default function Historico() {
                 value={sortVeiculos}
                 onChange={setSortVeiculos}
               />
+              <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3">
               {(showMoreVehicles ? sortedVehicles : sortedVehicles.slice(0, LIMIT)).map(v => {
                 const osCount = osCountMap[v.id] || 0
                 const lastDate = lastOsDateMap[v.id]
@@ -644,6 +647,7 @@ export default function Historico() {
                   </button>
                 )
               })}
+              </div>
               {sortedVehicles.length > LIMIT && (
                 <button onClick={() => setShowMoreVehicles(p => !p)}
                   className="w-full py-3 rounded-2xl border border-gray-200 text-sm text-slate-500 font-medium hover:bg-gray-50 transition-colors">

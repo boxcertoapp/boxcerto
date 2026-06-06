@@ -64,8 +64,17 @@ export default function AppLayout() {
 
   const diasRestantes = user.status === 'trial' ? trialDaysLeft(user) : null
 
-  // Páginas de lista usam largura ampla no desktop (grid multi-coluna)
-  const isWidePage = ['/app/oficina', '/app/estoque'].some(p => location.pathname.startsWith(p))
+  // Largura do container desktop conforme o tipo de conteúdo da página:
+  // - Listas/dashboard (Oficina, Estoque, Histórico, Financeiro) → ampla (grid multi-coluna)
+  // - Menu (formulários/config) → média (leitura confortável, menos espaço vazio)
+  // - Demais → contida
+  const path = location.pathname
+  const pageMaxW =
+    ['/app/oficina', '/app/estoque', '/app/historico', '/app/financeiro'].some(p => path.startsWith(p))
+      ? 'max-w-6xl'
+      : path.startsWith('/app/menu')
+        ? 'max-w-4xl'
+        : 'max-w-3xl'
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -132,9 +141,8 @@ export default function AppLayout() {
         {/* Main content — offset for sidebar */}
         <div className="ml-56 flex-1 flex flex-col min-h-screen">
           <main ref={mainDesktopRef} className="flex-1 overflow-y-auto">
-            {/* Páginas de lista (Oficina/Estoque) usam largura ampla + grid;
-                páginas de coluna única mantêm largura de leitura confortável */}
-            <div className={`${isWidePage ? 'max-w-6xl' : 'max-w-3xl'} mx-auto px-4 xl:px-8`}>
+            {/* Largura adaptada ao tipo de página (ver pageMaxW acima) */}
+            <div className={`${pageMaxW} mx-auto px-4 xl:px-8`}>
               <Outlet />
             </div>
           </main>
