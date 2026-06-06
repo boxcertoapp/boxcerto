@@ -433,16 +433,18 @@ function ClienteCard({ c, expanded, onToggle, compact = false, onOpenVehicle, on
 
       {expanded && (
         <div className="px-3 pb-3 pt-1 border-t border-gray-50 space-y-3">
-          <div className="flex items-center gap-2 pt-2">
-            {c.whatsapp && <span className="text-xs text-slate-500 flex items-center gap-1"><Phone className="w-3 h-3" />{c.whatsapp}</span>}
+          {c.whatsapp && (
+            <p className="text-xs text-slate-500 flex items-center gap-1 pt-2"><Phone className="w-3 h-3" />{c.whatsapp}</p>
+          )}
+          <div className="flex items-center gap-2">
             <button onClick={(e) => { e.stopPropagation(); onEditClient?.(c) }}
-              className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-indigo-600 transition-colors">
-              <Edit2 className="w-3 h-3" /> Editar
+              className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors">
+              <Edit2 className="w-3.5 h-3.5" /> Editar cliente
             </button>
             {wppLink && (
               <a href={wppLink} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
                 className="ml-auto inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-green-100 transition-colors">
-                <MessageCircle className="w-3.5 h-3.5" /> Chamar no WhatsApp
+                <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
               </a>
             )}
           </div>
