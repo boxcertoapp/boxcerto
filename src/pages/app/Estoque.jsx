@@ -692,18 +692,21 @@ export default function Estoque() {
         </button>
       )}
 
-      {/* Modal de adição — overlay com backdrop */}
+      {/* Modal de adição — bottom-sheet no mobile, card no desktop */}
       {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-6"
-          style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(2px)' }}>
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+        <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center sm:p-6"
+          style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(2px)' }}
+          onClick={() => setShowAdd(false)}>
+          <div
+            className="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md shadow-2xl max-h-[88vh] flex flex-col"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
               <p className="text-sm font-bold text-slate-900">Novo Produto</p>
               <button onClick={() => setShowAdd(false)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-gray-100 transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="p-4">
+            <div className="p-4 overflow-y-auto" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
               <ProductForm onSave={handleAdd} onCancel={() => setShowAdd(false)} />
             </div>
           </div>
