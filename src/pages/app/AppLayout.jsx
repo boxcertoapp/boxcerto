@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import { NavLink, Outlet, Navigate, useNavigate, useLocation } from 'react-router-dom'
-import { Wrench, Clock, TrendingUp, Menu, Package, Zap, Bell, X } from 'lucide-react'
+import { Wrench, Clock, TrendingUp, Menu, Package, Zap, Bell, X, Users } from 'lucide-react'
 import { useAuth, hasAccess, trialDaysLeft } from '../../contexts/AuthContext'
 import AnnouncementBanner from '../../components/AnnouncementBanner'
 import Logo from '../../components/Logo'
@@ -10,7 +10,7 @@ import { usePushNotifications } from '../../hooks/usePushNotifications'
 
 const tabs = [
   { to: '/app/oficina',    icon: Wrench,     label: 'Oficina' },
-  { to: '/app/historico',  icon: Clock,      label: 'Histórico' },
+  { to: '/app/historico',  icon: Users,      label: 'Clientes' },
   { to: '/app/financeiro', icon: TrendingUp, label: 'Financeiro' },
   { to: '/app/estoque',    icon: Package,    label: 'Estoque' },
   { to: '/app/menu',       icon: Menu,       label: 'Menu' },
@@ -70,7 +70,7 @@ export default function AppLayout() {
   // - Demais → contida
   const path = location.pathname
   const pageMaxW =
-    ['/app/oficina', '/app/estoque', '/app/historico', '/app/financeiro', '/app/clientes-preview'].some(p => path.startsWith(p))
+    ['/app/oficina', '/app/estoque', '/app/historico', '/app/financeiro'].some(p => path.startsWith(p))
       ? 'max-w-6xl'
       : path.startsWith('/app/menu')
         ? 'max-w-4xl'

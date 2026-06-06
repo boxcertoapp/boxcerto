@@ -1,20 +1,21 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Search, Car, Clock, ChevronRight, X, FileText, Users, Phone, MapPin,
-  Calendar, Plus, AlertCircle, Edit2, Check, ArrowUpDown, Gauge, Mail
+  Search, Car, Clock, ChevronRight, ChevronDown, X, FileText, Users, Phone, MapPin,
+  Calendar, Plus, AlertCircle, Edit2, Check, ArrowUpDown, Gauge, Mail,
+  MessageCircle, Cake, TrendingUp, List, LayoutGrid
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { showSaveCheck } from '../../components/SaveCheck'
 import {
   vehicleStorage, clientStorage, osStorage, vendaStorage,
-  formatCurrency, formatDate, STATUS_LABELS, STATUS_COLORS
+  formatCurrency, formatDate, STATUS_LABELS, STATUS_COLORS, norm
 } from '../../lib/storage'
 
-function PlateTag({ placa }) {
+function PlateTag({ placa, sm }) {
   return (
-    <div className="bg-slate-800 px-2 py-1 rounded-lg shrink-0">
-      <span className="text-white text-xs font-bold plate-mercosul tracking-widest">{placa}</span>
+    <div className={`bg-slate-800 rounded-lg shrink-0 ${sm ? 'px-2 py-0.5' : 'px-2 py-1'}`}>
+      <span className={`text-white font-bold plate-mercosul tracking-widest ${sm ? 'text-[11px]' : 'text-xs'}`}>{placa}</span>
     </div>
   )
 }
@@ -357,113 +358,250 @@ function VehicleTimeline({ vehicle, client, officeName, onBack, onVehicleUpdated
   )
 }
 
-// ── SORT CHIPS ─────────────────────────────────────────────
-function SortChips({ options, value, onChange }) {
+// ── Helpers de cliente ─────────────────────────────────────
+const INATIVO_DIAS = 90
+
+function diasDesde(dateStr) {
+  if (!dateStr) return null
+  const d = new Date(dateStr)
+  if (isNaN(d)) return null
+  return Math.floor((Date.now() - d.getTime()) / 86400000)
+}
+function tempoRelativo(dateStr) {
+  const dias = diasDesde(dateStr)
+  if (dias === null) return 'sem visita registrada'
+  if (dias <= 0) return 'hoje'
+  if (dias === 1) return 'ontem'
+  if (dias < 30) return `há ${dias} dias`
+  const meses = Math.floor(dias / 30)
+  if (meses < 12) return `há ${meses} ${meses === 1 ? 'mês' : 'meses'}`
+  const anos = Math.floor(meses / 12)
+  return `há ${anos} ${anos === 1 ? 'ano' : 'anos'}`
+}
+function mesAniversario(dataNascimento) {
+  if (!dataNascimento) return null
+  const d = new Date(dataNascimento)
+  if (isNaN(d)) return null
+  return d.getUTCMonth()
+}
+
+// ── Card de cliente (cards / lista) ─────────────────────────
+function ClienteCard({ c, expanded, onToggle, compact = false, onOpenVehicle, onEditClient }) {
+  const wppLink = c.whatsapp ? `https://wa.me/55${c.whatsapp.replace(/\D/g, '')}` : null
+  const inicial = (c.nome?.[0] || '?').toUpperCase()
+
   return (
-    <div className="flex gap-1.5 flex-wrap mb-3">
-      {options.map(opt => (
-        <button key={opt.key} onClick={() => onChange(opt.key)}
-          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all border ${
-            value === opt.key
-              ? 'bg-indigo-600 text-white border-indigo-600'
-              : 'bg-white text-slate-500 border-gray-200 hover:border-indigo-300'
-          }`}>
-          {opt.label}
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden transition-all">
+      {compact ? (
+        <button onClick={onToggle} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-sm ${c.inativo ? 'bg-amber-50 text-amber-600' : 'bg-indigo-50 text-indigo-600'}`}>{inicial}</div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <p className="font-semibold text-slate-900 text-sm truncate">{c.nome}</p>
+              {c.aniversariante && <Cake className="w-3 h-3 text-pink-500 shrink-0" />}
+              {c.inativo && <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full shrink-0">sumido</span>}
+            </div>
+            <p className="text-[11px] text-slate-400 truncate">{c.veiculos.length} veíc · {tempoRelativo(c.lastVisit)}</p>
+          </div>
+          {c.totalGasto > 0 && <span className="text-xs font-bold text-slate-700 shrink-0">{formatCurrency(c.totalGasto)}</span>}
+          <ChevronDown className={`w-4 h-4 text-slate-300 shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`} />
         </button>
-      ))}
+      ) : (
+        <button onClick={onToggle} className="w-full flex items-center gap-3 p-3 text-left">
+          <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 font-bold text-base ${c.inativo ? 'bg-amber-50 text-amber-600' : 'bg-indigo-50 text-indigo-600'}`}>{inicial}</div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-slate-900 text-sm truncate">{c.nome}</p>
+              {c.aniversariante && <Cake className="w-3.5 h-3.5 text-pink-500 shrink-0" />}
+            </div>
+            <p className="text-xs text-slate-400 truncate mt-0.5 flex items-center gap-1">
+              <Car className="w-3 h-3 shrink-0" />
+              {c.veiculos.length} {c.veiculos.length === 1 ? 'veículo' : 'veículos'}
+              <span className="text-slate-300">·</span>
+              {tempoRelativo(c.lastVisit)}
+            </p>
+          </div>
+          <div className="text-right shrink-0 flex flex-col items-end gap-1">
+            {c.totalGasto > 0 && <span className="text-sm font-bold text-slate-900">{formatCurrency(c.totalGasto)}</span>}
+            {c.inativo
+              ? <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">sumido</span>
+              : <span className="w-2 h-2 rounded-full bg-green-400" title="ativo" />}
+          </div>
+          <ChevronDown className={`w-4 h-4 text-slate-300 shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        </button>
+      )}
+
+      {expanded && (
+        <div className="px-3 pb-3 pt-1 border-t border-gray-50 space-y-3">
+          <div className="flex items-center gap-2 pt-2">
+            {c.whatsapp && <span className="text-xs text-slate-500 flex items-center gap-1"><Phone className="w-3 h-3" />{c.whatsapp}</span>}
+            <button onClick={(e) => { e.stopPropagation(); onEditClient?.(c) }}
+              className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-indigo-600 transition-colors">
+              <Edit2 className="w-3 h-3" /> Editar
+            </button>
+            {wppLink && (
+              <a href={wppLink} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
+                className="ml-auto inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-green-100 transition-colors">
+                <MessageCircle className="w-3.5 h-3.5" /> Chamar no WhatsApp
+              </a>
+            )}
+          </div>
+          {c.veiculos.length > 0 ? (
+            <div className="space-y-1.5">
+              {c.veiculos.map(v => (
+                <button key={v.id} onClick={(e) => { e.stopPropagation(); onOpenVehicle?.(v, c) }}
+                  className="w-full flex items-center gap-2.5 bg-gray-50 rounded-xl px-2.5 py-2 text-left hover:bg-indigo-50 transition-colors">
+                  <PlateTag placa={v.placa} sm />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-700 truncate">{v.modelo}</p>
+                    <p className="text-[11px] text-slate-400">{v.osCount} OS · {tempoRelativo(v.lastOs)}</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-slate-400 py-1">Nenhum veículo cadastrado.</p>
+          )}
+        </div>
+      )}
     </div>
   )
 }
 
-const LIMIT = 10
+// ── Card de veículo ─────────────────────────────────────────
+function VeiculoCard({ v, compact = false, onClick }) {
+  return (
+    <button onClick={onClick}
+      className={`w-full bg-white rounded-2xl border border-gray-100 flex items-center gap-3 text-left hover:border-indigo-100 transition-colors ${compact ? 'px-3 py-2' : 'p-3'}`}>
+      <PlateTag placa={v.placa} sm={compact} />
+      <div className="flex-1 min-w-0">
+        <p className={`font-semibold text-slate-900 truncate ${compact ? 'text-[13px]' : 'text-sm'}`}>{v.modelo}</p>
+        <p className={`text-slate-400 truncate ${compact ? 'text-[11px]' : 'text-xs'}`}>
+          {v.clientNome}{compact ? ` · ${v.osCount} OS` : ''}
+        </p>
+      </div>
+      {!compact && (
+        <div className="text-right shrink-0">
+          <p className="text-xs text-slate-400">{v.osCount} OS</p>
+          <p className="text-[10px] text-slate-300">{tempoRelativo(v.lastOs)}</p>
+        </div>
+      )}
+      <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+    </button>
+  )
+}
 
 // ── MAIN ─────────────────────────────────────────────────
 export default function Historico() {
   const { user } = useAuth()
-  const [tab, setTab] = useState('busca')
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState([])
-  const [searched, setSearched] = useState(false)
-  const [selected, setSelected] = useState(null)
-  const [allClients, setAllClients] = useState([])
-  const [allVehicles, setAllVehicles] = useState([])
-  const [clientVehicles, setClientVehicles] = useState([])
-  const [osCountMap, setOsCountMap] = useState({})
-  const [lastOsDateMap, setLastOsDateMap] = useState({})
-  const [showMoreClients, setShowMoreClients] = useState(false)
-  const [showMoreVehicles, setShowMoreVehicles] = useState(false)
-  const [clientModal, setClientModal] = useState(null) // null | { mode, client? }
-  const [sortClientes, setSortClientes] = useState('az')
-  const [sortVeiculos, setSortVeiculos] = useState('recent')
-  const [clienteVendasMap, setClienteVendasMap] = useState({}) // clientId → { count, total }
+  const [loading, setLoading]   = useState(true)
+  const [clients, setClients]   = useState([])   // enriquecidos
+  const [vehicles, setVehicles] = useState([])   // enriquecidos
+  const [view, setView]         = useState('clientes') // clientes | veiculos
+  const [display, setDisplay]   = useState('cards')     // cards | list
+  const [query, setQuery]       = useState('')
+  const [filtro, setFiltro]     = useState('todos')     // todos | sumidos | aniversario | top
+  const [expandedId, setExpandedId] = useState(null)
+  const [selected, setSelected] = useState(null)        // { vehicle, client } → VehicleTimeline
+  const [clientModal, setClientModal] = useState(null)  // null | { mode, client? }
 
   const loadData = async () => {
-    setShowMoreClients(false)
-    setShowMoreVehicles(false)
+    const [cls, vhs, vendasStats, allOS] = await Promise.all([
+      clientStorage.getAll(user.oficina),
+      vehicleStorage.getAll(user.oficina),
+      vendaStorage.getClientStats().catch(() => ({})),
+      osStorage.getAll(user.oficina),
+    ])
 
-    if (tab === 'clientes') {
-      const [clients, vehicles, vendasStats] = await Promise.all([
-        clientStorage.getAll(user.oficina),
-        vehicleStorage.getAll(user.oficina),
-        vendaStorage.getClientStats().catch(() => ({})),
-      ])
-      setAllClients(clients)
-      setClientVehicles(vehicles)
-      setClienteVendasMap(vendasStats)
-    }
-    if (tab === 'veiculos') {
-      const [vehicles, clients, allOS] = await Promise.all([
-        vehicleStorage.getAll(user.oficina),
-        clientStorage.getAll(user.oficina),
-        osStorage.getAll(user.oficina),
-      ])
-      const counts = {}
-      const lastDate = {}
-      allOS.forEach(os => {
-        counts[os.vehicleId] = (counts[os.vehicleId] || 0) + 1
-        if (!lastDate[os.vehicleId] || os.createdAt > lastDate[os.vehicleId]) {
-          lastDate[os.vehicleId] = os.createdAt
-        }
-      })
-      setOsCountMap(counts)
-      setLastOsDateMap(lastDate)
-      setAllVehicles(vehicles.map(v => ({ ...v, client: clients.find(c => c.id === v.clientId) })))
-    }
+    const osPorVeiculo = {}
+    allOS.forEach(os => {
+      const m = osPorVeiculo[os.vehicleId] || { count: 0, last: null, entregue: 0 }
+      m.count += 1
+      if (!m.last || (os.createdAt && os.createdAt > m.last)) m.last = os.createdAt
+      if (os.status === 'entregue') m.entregue += (os.totals?.venda || 0)
+      osPorVeiculo[os.vehicleId] = m
+    })
+
+    const vehiclesEnriched = vhs.map(v => ({
+      ...v,
+      osCount: osPorVeiculo[v.id]?.count || 0,
+      lastOs:  osPorVeiculo[v.id]?.last || null,
+      osTotal: osPorVeiculo[v.id]?.entregue || 0,
+    }))
+
+    const mesAtual = new Date().getMonth()
+    const clientsEnriched = cls.map(c => {
+      const veiculos = vehiclesEnriched
+        .filter(v => v.clientId === c.id)
+        .sort((a, b) => (b.lastOs || '').localeCompare(a.lastOs || ''))
+      const lastVisit = veiculos.reduce((acc, v) => (!acc || (v.lastOs && v.lastOs > acc)) ? (v.lastOs || acc) : acc, null)
+      const totalOS = veiculos.reduce((s, v) => s + v.osTotal, 0)
+      const totalVendas = vendasStats[c.id]?.total || 0
+      const dias = diasDesde(lastVisit)
+      return {
+        ...c,
+        veiculos,
+        lastVisit,
+        totalGasto: totalOS + totalVendas,
+        inativo: dias === null ? false : dias > INATIVO_DIAS,
+        aniversariante: mesAniversario(c.dataNascimento) === mesAtual,
+      }
+    })
+
+    setClients(clientsEnriched)
+    setVehicles(vehiclesEnriched.map(v => {
+      const cli = cls.find(c => c.id === v.clientId) || null
+      return { ...v, client: cli, clientNome: cli?.nome || '—' }
+    }))
+    setLoading(false)
   }
 
-  useEffect(() => { loadData() }, [tab])
+  useEffect(() => { loadData() }, [])
 
-  // Sorted clients
-  const sortedClients = [...allClients].sort((a, b) => {
-    if (sortClientes === 'az') return a.nome.localeCompare(b.nome)
-    if (sortClientes === 'za') return b.nome.localeCompare(a.nome)
-    return 0
-  })
+  // Contadores dos chips
+  const counts = {
+    todos:       clients.length,
+    sumidos:     clients.filter(c => c.inativo).length,
+    aniversario: clients.filter(c => c.aniversariante).length,
+  }
 
-  // Sorted vehicles
-  const sortedVehicles = [...allVehicles].sort((a, b) => {
-    if (sortVeiculos === 'recent') {
-      const aDate = lastOsDateMap[a.id] || a.createdAt || ''
-      const bDate = lastOsDateMap[b.id] || b.createdAt || ''
-      return bDate.localeCompare(aDate)
+  // Lista de clientes filtrada + busca
+  const clientesFiltrados = (() => {
+    let list = [...clients]
+    if (filtro === 'sumidos')     list = list.filter(c => c.inativo)
+    if (filtro === 'aniversario') list = list.filter(c => c.aniversariante)
+    if (filtro === 'top')         list = list.sort((a, b) => b.totalGasto - a.totalGasto)
+    else                          list = list.sort((a, b) => a.nome.localeCompare(b.nome))
+    const q = norm(query.trim())
+    if (q.length >= 1) {
+      list = list.filter(c =>
+        norm(c.nome).includes(q) ||
+        (c.cpf || '').includes(q) ||
+        c.veiculos.some(v => norm(v.placa).includes(q) || norm(v.modelo).includes(q))
+      )
     }
-    if (sortVeiculos === 'az') return a.placa.localeCompare(b.placa)
-    if (sortVeiculos === 'za') return b.placa.localeCompare(a.placa)
-    return 0
-  })
+    return list
+  })()
 
-  const doSearch = async (q) => {
-    setQuery(q)
-    if (q.trim().length < 2) { setResults([]); setSearched(false); return }
-    const vehicles = await vehicleStorage.search(user.oficina, q.trim())
-    setResults(vehicles)
-    setSearched(true)
-  }
+  // Lista de veículos filtrada + busca
+  const veiculosFiltrados = (() => {
+    let list = [...vehicles].sort((a, b) => (b.lastOs || '').localeCompare(a.lastOs || ''))
+    const q = norm(query.trim())
+    if (q.length >= 1) {
+      list = list.filter(v => norm(v.placa).includes(q) || norm(v.modelo).includes(q) || norm(v.clientNome).includes(q))
+    }
+    return list
+  })()
 
-  const openVehicle = (vehicle) => {
-    const client = vehicle.client || allClients.find(c => c.id === vehicle.clientId) || null
-    setSelected({ vehicle, client })
-  }
+  const CHIPS = [
+    { key: 'todos',       label: 'Todos',           count: counts.todos,       icon: null },
+    { key: 'sumidos',     label: 'Sumidos',         count: counts.sumidos,     icon: Clock },
+    { key: 'aniversario', label: 'Aniversariantes', count: counts.aniversario, icon: Cake },
+    { key: 'top',         label: 'Maiores gastos',  count: null,               icon: TrendingUp },
+  ]
+
+  const openVehicle = (vehicle, client) => setSelected({ vehicle, client: client || null })
 
   if (selected) {
     return <VehicleTimeline
@@ -477,195 +615,133 @@ export default function Historico() {
 
   return (
     <div className="pb-36">
-      {/* Tabs */}
-      <div className="px-4 pt-4">
-        <div className="flex bg-gray-100 rounded-2xl p-1 gap-1 mb-4">
-          {[{ key:'busca', label:'Busca' }, { key:'clientes', label:'Clientes' }, { key:'veiculos', label:'Veículos' }].map(t => (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${tab === t.key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Header + busca + filtros fixos */}
+      <div className="sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm px-4 pt-4 pb-2 border-b border-gray-100">
+        <div className="flex items-center gap-2 mb-3">
+          {view === 'veiculos'
+            ? <Car className="w-5 h-5 text-indigo-600" />
+            : <Users className="w-5 h-5 text-indigo-600" />}
+          <h1 className="text-xl font-bold text-slate-900">{view === 'veiculos' ? 'Veículos' : 'Clientes'}</h1>
+          <span className="text-sm text-slate-400 font-medium">{view === 'veiculos' ? vehicles.length : clients.length}</span>
 
-      {/* ── BUSCA ── */}
-      {tab === 'busca' && (
-        <div className="px-4">
-          <div className="relative mb-6">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input type="text" value={query} onChange={e => doSearch(e.target.value)}
-              placeholder="Buscar por placa, nome, CPF..."
-              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-gray-200 bg-white text-slate-900 placeholder-slate-300 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 text-sm" />
-            {query && <button onClick={() => { setQuery(''); setResults([]); setSearched(false) }} className="absolute right-4 top-1/2 -translate-y-1/2"><X className="w-4 h-4 text-slate-400" /></button>}
+          {/* Toggle Clientes | Veículos */}
+          <div className="ml-auto flex bg-gray-100 rounded-xl p-0.5">
+            {[['clientes', 'Clientes'], ['veiculos', 'Veículos']].map(([k, lbl]) => (
+              <button key={k} onClick={() => setView(k)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${view === k ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>
+                {lbl}
+              </button>
+            ))}
           </div>
-          {!searched ? (
-            <div className="text-center py-16 text-slate-400">
-              <Search className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">Busque por placa, nome ou CPF</p>
-              <p className="text-sm mt-1">Digite ao menos 2 caracteres</p>
-            </div>
-          ) : results.length === 0 ? (
-            <div className="text-center py-16 text-slate-400">
-              <Car className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">Nenhum resultado</p>
-            </div>
-          ) : (
-            <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3">
-              {results.map(v => (
-                <button key={v.id} onClick={() => openVehicle(v)}
-                  className="w-full bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3 text-left hover:border-indigo-100 transition-all">
-                  <PlateTag placa={v.placa} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-900 text-sm">{v.modelo}</p>
-                    <p className="text-slate-400 text-xs">{v.client?.nome}</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
-                </button>
-              ))}
-            </div>
-          )}
         </div>
-      )}
 
-      {/* ── CLIENTES ── */}
-      {tab === 'clientes' && (
-        <div className="px-4">
-          {allClients.length === 0 ? (
-            <div className="text-center py-16 text-slate-400">
-              <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">Nenhum cliente cadastrado</p>
-              <p className="text-sm mt-1">Use o + para cadastrar</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-slate-400 font-medium">{allClients.length} clientes</p>
-              </div>
-              <SortChips
-                options={[{ key: 'az', label: 'A → Z' }, { key: 'za', label: 'Z → A' }]}
-                value={sortClientes}
-                onChange={setSortClientes}
-              />
-              <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
-              {(showMoreClients ? sortedClients : sortedClients.slice(0, LIMIT)).map(c => {
-                const veiculos = clientVehicles.filter(v => v.clientId === c.id)
-                const vendas   = clienteVendasMap[c.id]
-                return (
-                  <div key={c.id}
-                    onClick={() => setClientModal({ mode: 'edit', client: c })}
-                    className="bg-white rounded-2xl border border-gray-100 p-4 cursor-pointer hover:border-indigo-100 hover:shadow-sm transition-all">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <p className="font-semibold text-slate-900 truncate">{c.nome}</p>
-                          <Edit2 className="w-3 h-3 text-slate-300 shrink-0" />
-                        </div>
-                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
-                          {c.whatsapp && <span className="text-xs text-slate-400 flex items-center gap-1"><Phone className="w-3 h-3" />{c.whatsapp}</span>}
-                          {c.cpf && <span className="text-xs text-slate-400">CPF: {c.cpf}</span>}
-                          {c.dataNascimento && <span className="text-xs text-slate-400 flex items-center gap-1"><Calendar className="w-3 h-3" />{formatDate(c.dataNascimento)}</span>}
-                        </div>
-                        {(c.cidade || c.endereco) && (
-                          <p className="text-xs text-slate-400 mt-1 flex items-center gap-1 truncate">
-                            <MapPin className="w-3 h-3 shrink-0" />
-                            {[c.endereco, c.numero, c.bairro, c.cidade, c.uf].filter(Boolean).join(', ')}
-                          </p>
-                        )}
-                      </div>
-                      {vendas && (
-                        <div className="shrink-0 text-right">
-                          <p className="text-xs font-bold text-green-700">{formatCurrency(vendas.total)}</p>
-                          <p className="text-xs text-slate-400">{vendas.count} venda{vendas.count !== 1 ? 's' : ''}</p>
-                        </div>
-                      )}
-                    </div>
-                    {veiculos.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-50">
-                        {veiculos.map(v => (
-                          <button key={v.id}
-                            onClick={e => { e.stopPropagation(); openVehicle({ ...v, client: c }) }}
-                            className="flex items-center gap-1.5 bg-gray-50 hover:bg-indigo-50 rounded-lg px-2 py-1 transition-colors">
-                            <PlateTag placa={v.placa} />
-                            <span className="text-xs text-slate-600">{v.modelo}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-              </div>
-              {sortedClients.length > LIMIT && (
-                <button onClick={() => setShowMoreClients(p => !p)}
-                  className="w-full py-3 rounded-2xl border border-gray-200 text-sm text-slate-500 font-medium hover:bg-gray-50 transition-colors">
-                  {showMoreClients ? 'Ver menos' : `Ver mais ${sortedClients.length - LIMIT} clientes`}
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* FAB add client */}
+        {/* Busca + alternar visualização */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder={view === 'clientes' ? 'Buscar cliente, placa ou CPF...' : 'Buscar placa, modelo ou dono...'}
+              className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50"
+            />
+            {query && (
+              <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+                <X className="w-4 h-4 text-slate-400" />
+              </button>
+            )}
+          </div>
           <button
-            onClick={() => setClientModal({ mode: 'create' })}
-            className="fixed bottom-24 right-4 w-14 h-14 bg-indigo-600 rounded-full shadow-lg shadow-indigo-200 flex items-center justify-center hover:bg-indigo-700 transition-all active:scale-95 z-40"
+            onClick={() => setDisplay(d => d === 'cards' ? 'list' : 'cards')}
+            title={display === 'cards' ? 'Ver em lista' : 'Ver em cards'}
+            aria-label={display === 'cards' ? 'Ver em lista' : 'Ver em cards'}
+            className="shrink-0 w-10 h-10 rounded-xl border border-gray-200 bg-white flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:border-indigo-300 transition-colors"
           >
-            <Plus className="w-7 h-7 text-white" />
+            {display === 'cards' ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
           </button>
         </div>
-      )}
 
-      {/* ── VEÍCULOS ── */}
-      {tab === 'veiculos' && (
-        <div className="px-4">
-          {allVehicles.length === 0 ? (
+        {/* Chips (insight + filtro) — só na visão Clientes */}
+        {view === 'clientes' && (
+          <div className="flex gap-1.5 mt-2.5 overflow-x-auto pb-1 -mx-4 px-4">
+            {CHIPS.map(chip => {
+              const active = filtro === chip.key
+              const Icon = chip.icon
+              return (
+                <button key={chip.key} onClick={() => setFiltro(chip.key)}
+                  className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                    active ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-gray-200 hover:border-indigo-300'
+                  }`}>
+                  {Icon && <Icon className="w-3.5 h-3.5" />}
+                  {chip.label}
+                  {chip.count != null && chip.count > 0 && (
+                    <span className={`text-[10px] font-bold ${active ? 'text-indigo-100' : 'text-slate-400'}`}>{chip.count}</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Conteúdo */}
+      <div className="px-4 pt-3">
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="w-7 h-7 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+          </div>
+        ) : view === 'clientes' ? (
+          clientesFiltrados.length === 0 ? (
             <div className="text-center py-16 text-slate-400">
-              <Car className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">Nenhum veículo cadastrado</p>
+              <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p className="font-medium">
+                {filtro === 'sumidos' ? 'Nenhum cliente sumido 🎉'
+                  : filtro === 'aniversario' ? 'Nenhum aniversariante este mês'
+                  : query ? 'Nenhum cliente encontrado'
+                  : 'Nenhum cliente cadastrado'}
+              </p>
+              {!query && filtro === 'todos' && <p className="text-sm mt-1">Use o + para cadastrar</p>}
             </div>
           ) : (
-            <div className="space-y-3">
-              <p className="text-xs text-slate-400 font-medium">{allVehicles.length} veículos</p>
-              <SortChips
-                options={[
-                  { key: 'recent', label: 'Mais recente' },
-                  { key: 'az', label: 'Placa A→Z' },
-                  { key: 'za', label: 'Placa Z→A' },
-                ]}
-                value={sortVeiculos}
-                onChange={setSortVeiculos}
-              />
-              <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3">
-              {(showMoreVehicles ? sortedVehicles : sortedVehicles.slice(0, LIMIT)).map(v => {
-                const osCount = osCountMap[v.id] || 0
-                const lastDate = lastOsDateMap[v.id]
-                return (
-                  <button key={v.id} onClick={() => openVehicle(v)}
-                    className="w-full bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3 text-left hover:border-indigo-100 transition-all">
-                    <PlateTag placa={v.placa} />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-900 text-sm">{v.modelo}</p>
-                      <p className="text-slate-400 text-xs">{v.client?.nome}</p>
-                      {lastDate && <p className="text-slate-300 text-[10px]">Última OS: {formatDate(lastDate)}</p>}
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-xs text-slate-400">{osCount} OS</p>
-                      <ChevronRight className="w-4 h-4 text-slate-300 mt-1 ml-auto" />
-                    </div>
-                  </button>
-                )
-              })}
-              </div>
-              {sortedVehicles.length > LIMIT && (
-                <button onClick={() => setShowMoreVehicles(p => !p)}
-                  className="w-full py-3 rounded-2xl border border-gray-200 text-sm text-slate-500 font-medium hover:bg-gray-50 transition-colors">
-                  {showMoreVehicles ? 'Ver menos' : `Ver mais ${sortedVehicles.length - LIMIT} veículos`}
-                </button>
-              )}
+            <div className={display === 'list'
+              ? 'space-y-1.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2 lg:items-start'
+              : 'space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5 lg:items-start'}>
+              {clientesFiltrados.map(c => (
+                <ClienteCard key={c.id} c={c}
+                  compact={display === 'list'}
+                  expanded={expandedId === c.id}
+                  onToggle={() => setExpandedId(id => id === c.id ? null : c.id)}
+                  onOpenVehicle={(v, cli) => openVehicle(v, cli)}
+                  onEditClient={(cli) => setClientModal({ mode: 'edit', client: cli })} />
+              ))}
             </div>
-          )}
-        </div>
-      )}
+          )
+        ) : (
+          veiculosFiltrados.length === 0 ? (
+            <div className="text-center py-16 text-slate-400">
+              <Car className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p className="font-medium">{query ? 'Nenhum veículo encontrado' : 'Nenhum veículo cadastrado'}</p>
+            </div>
+          ) : (
+            <div className={display === 'list'
+              ? 'space-y-1.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2'
+              : 'space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5'}>
+              {veiculosFiltrados.map(v => (
+                <VeiculoCard key={v.id} v={v} compact={display === 'list'}
+                  onClick={() => openVehicle(v, v.client)} />
+              ))}
+            </div>
+          )
+        )}
+      </div>
+
+      {/* FAB novo cliente */}
+      <button
+        onClick={() => setClientModal({ mode: 'create' })}
+        className="fixed bottom-24 right-4 w-14 h-14 bg-indigo-600 rounded-full shadow-lg shadow-indigo-200 flex items-center justify-center hover:bg-indigo-700 transition-all active:scale-95 z-40"
+      >
+        <Plus className="w-7 h-7 text-white" />
+      </button>
 
       {/* Client Modal (create or edit) */}
       {clientModal && (

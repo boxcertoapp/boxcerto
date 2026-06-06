@@ -115,7 +115,6 @@ const Financeiro = lazy(() => import('./pages/app/Financeiro'))
 const AppMenu    = lazy(() => import('./pages/app/Menu'))
 const Estoque    = lazy(() => import('./pages/app/Estoque'))
 const Suporte    = lazy(() => import('./pages/app/Suporte'))
-const ClientesPreview = lazy(() => import('./pages/app/ClientesPreview')) // protótipo oculto
 const AdminPanel      = lazy(() => import('./pages/admin/AdminPanel'))
 const TecnicoConvite  = lazy(() => import('./pages/TecnicoConvite'))
 const TecnicoLayout   = lazy(() => import('./pages/tecnico/TecnicoLayout'))
@@ -202,8 +201,6 @@ export default function App() {
               <Route path="estoque"    element={<Estoque />} />
               <Route path="suporte"    element={<Suporte />} />
               <Route path="menu"       element={<AppMenu />} />
-              {/* Protótipo oculto — não aparece no menu, acesso só pela URL */}
-              <Route path="clientes-preview" element={<ClientesPreview />} />
             </Route>
 
             {/* Fallback */}
