@@ -5,6 +5,7 @@ import { useAuth, hasAccess, trialDaysLeft } from '../../contexts/AuthContext'
 import AnnouncementBanner from '../../components/AnnouncementBanner'
 import Logo from '../../components/Logo'
 import OnboardingWizard from '../../components/OnboardingWizard'
+import SaveCheck from '../../components/SaveCheck'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 
 const tabs = [
@@ -62,6 +63,9 @@ export default function AppLayout() {
   if (!hasAccess(user)) return <Navigate to="/renovar" replace />
 
   const diasRestantes = user.status === 'trial' ? trialDaysLeft(user) : null
+
+  // Páginas de lista usam largura ampla no desktop (grid multi-coluna)
+  const isWidePage = ['/app/oficina', '/app/estoque'].some(p => location.pathname.startsWith(p))
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -128,7 +132,9 @@ export default function AppLayout() {
         {/* Main content — offset for sidebar */}
         <div className="ml-56 flex-1 flex flex-col min-h-screen">
           <main ref={mainDesktopRef} className="flex-1 overflow-y-auto">
-            <div className="max-w-3xl mx-auto">
+            {/* Páginas de lista (Oficina/Estoque) usam largura ampla + grid;
+                páginas de coluna única mantêm largura de leitura confortável */}
+            <div className={`${isWidePage ? 'max-w-6xl' : 'max-w-3xl'} mx-auto px-4 xl:px-8`}>
               <Outlet />
             </div>
           </main>
@@ -236,6 +242,9 @@ export default function AppLayout() {
 
       {/* Onboarding wizard fullscreen — 3 fases (criar OS, enviar WhatsApp, configurar oficina) */}
       <OnboardingWizard />
+
+      {/* Animação de check ao salvar (global) */}
+      <SaveCheck />
 
       {/* Fundo decorativo desktop */}
       <div className="fixed inset-0 -z-10 bg-gradient-to-br from-slate-100 to-indigo-50 hidden lg:block" />

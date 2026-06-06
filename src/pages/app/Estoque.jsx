@@ -5,6 +5,7 @@ import {
   ShoppingCart, UserPlus, CheckCircle2
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { showSaveCheck } from '../../components/SaveCheck'
 import {
   inventoryStorage, vendaStorage, clientStorage,
   officeDataStorage, formatCurrency, norm,
@@ -577,6 +578,7 @@ export default function Estoque() {
     await inventoryStorage.create({ officeName: user.oficina, ...form })
     setShowAdd(false)
     await reload()
+    showSaveCheck('Produto adicionado!')
   }
 
   const handleEdit = async (form) => {
@@ -591,6 +593,7 @@ export default function Estoque() {
     })
     setEditId(null)
     await reload()
+    showSaveCheck('Salvo!')
   }
 
   const handleDelete = async (id) => {
@@ -703,7 +706,7 @@ export default function Estoque() {
           <p className="text-sm mt-1">{items.length === 0 ? 'Adicione produtos com o botão +' : 'Tente outra busca'}</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
           {filtered.map(item => {
             const emBaixoEstoque = item.alertaAtivo && item.quantidade <= item.quantidadeMin
             const isEditing = editId === item.id

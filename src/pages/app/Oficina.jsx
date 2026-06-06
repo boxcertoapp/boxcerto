@@ -14,6 +14,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { sendCapi } from '../../lib/metaCapi'
 import FipeSeletor from '../../components/FipeSeletor'
+import { showSaveCheck } from '../../components/SaveCheck'
 import {
   osStorage, itemStorage, clientStorage, vehicleStorage,
   STATUS_LABELS, STATUS_COLORS, formatCurrency, formatDate, formatNumeroOS,
@@ -347,7 +348,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> Prontos para retirar
           </p>
-          <div className="space-y-2">
+          <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
             {data.prontos.map(os => (
               <button key={os.id} onClick={() => onOpenOS(os)}
                 className="w-full bg-white rounded-2xl border border-green-100 p-3 flex items-center gap-3 text-left hover:border-green-200 transition-colors shadow-sm">
@@ -371,7 +372,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Wrench className="w-3.5 h-3.5 text-blue-500" /> Em manutenção
           </p>
-          <div className="space-y-2">
+          <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
             {data.manutencao.map(os => (
               <button key={os.id} onClick={() => onOpenOS(os)}
                 className={`w-full bg-white rounded-2xl border p-3 flex items-center gap-3 text-left transition-colors ${
@@ -422,7 +423,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5 text-amber-500" /> Orçamentos abertos
           </p>
-          <div className="space-y-2">
+          <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
             {data.orcamento.map(os => (
               <button key={os.id} data-tour="card-onboarding-os" onClick={() => onOpenOS(os)}
                 className={`w-full bg-white rounded-2xl border p-3 flex items-center gap-3 text-left transition-colors ${
@@ -782,6 +783,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
         totals: itemStorage.totals([]),
       }
       window.dispatchEvent(new CustomEvent('boxcerto:os-criada', { detail: { osId: createdOS.id } }))
+      showSaveCheck('OS Aberta!')
       if (onCreated) onCreated(hydratedOS)
       else onClose()
     } catch (e) {
@@ -802,6 +804,7 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
         totals: itemStorage.totals([]),
       }
       window.dispatchEvent(new CustomEvent('boxcerto:os-criada', { detail: { osId: createdOS.id } }))
+      showSaveCheck('OS Aberta!')
       if (onCreated) onCreated(hydratedOS)
       else onClose()
     } catch (e) {
@@ -1408,6 +1411,7 @@ function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false }) {
     ])
     setSavingEdit(false)
     setShowEditData(false)
+    showSaveCheck('Salvo!')
   }
 
   const handleEditCep = async (val) => {
