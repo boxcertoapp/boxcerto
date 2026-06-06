@@ -737,13 +737,16 @@ export default function Historico() {
         )}
       </div>
 
-      {/* FAB novo cliente */}
-      <button
-        onClick={() => setClientModal({ mode: 'create' })}
-        className="fixed bottom-24 right-4 w-14 h-14 bg-indigo-600 rounded-full shadow-lg shadow-indigo-200 flex items-center justify-center hover:bg-indigo-700 transition-all active:scale-95 z-40"
-      >
-        <Plus className="w-7 h-7 text-white" />
-      </button>
+      {/* FAB novo cliente — só na visão Clientes (veículos entram pela Nova OS) */}
+      {view === 'clientes' && (
+        <button
+          onClick={() => setClientModal({ mode: 'create' })}
+          title="Novo cliente"
+          className="fixed bottom-24 right-4 w-14 h-14 bg-indigo-600 rounded-full shadow-lg shadow-indigo-200 flex items-center justify-center hover:bg-indigo-700 transition-all active:scale-95 z-40"
+        >
+          <Plus className="w-7 h-7 text-white" />
+        </button>
+      )}
 
       {/* Client Modal (create or edit) */}
       {clientModal && (
