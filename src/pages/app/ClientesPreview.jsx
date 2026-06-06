@@ -7,13 +7,20 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
   Search, X, Users, Car, MessageCircle, ChevronRight, ChevronDown,
-  Cake, Clock, TrendingUp, Phone, List, LayoutGrid,
+  Cake, Clock, TrendingUp, Phone, List, LayoutGrid, ArrowLeft, FileText,
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import {
   clientStorage, vehicleStorage, osStorage, vendaStorage,
-  formatCurrency, formatDate, norm,
+  formatCurrency, formatDate, norm, STATUS_LABELS,
 } from '../../lib/storage'
+
+const STATUS_BADGE = {
+  orcamento:  'bg-amber-50 text-amber-700',
+  manutencao: 'bg-blue-50 text-blue-700',
+  pronto:     'bg-green-50 text-green-700',
+  entregue:   'bg-slate-100 text-slate-500',
+}
 
 // ── Helpers ──────────────────────────────────────────────────
 const INATIVO_DIAS = 90
@@ -65,7 +72,7 @@ function Avatar({ nome, inativo }) {
 }
 
 // ── Card de cliente ──────────────────────────────────────────
-function ClienteCard({ c, expanded, onToggle, compact = false }) {
+function ClienteCard({ c, expanded, onToggle, compact = false, onOpenVehicle }) {
   const wppLink = c.whatsapp
     ? `https://wa.me/55${c.whatsapp.replace(/\D/g, '')}`
     : null
@@ -136,14 +143,16 @@ function ClienteCard({ c, expanded, onToggle, compact = false }) {
           {c.veiculos.length > 0 ? (
             <div className="space-y-1.5">
               {c.veiculos.map(v => (
-                <div key={v.id} className="flex items-center gap-2.5 bg-gray-50 rounded-xl px-2.5 py-2">
+                <button key={v.id}
+                  onClick={(e) => { e.stopPropagation(); onOpenVehicle?.(v, c) }}
+                  className="w-full flex items-center gap-2.5 bg-gray-50 rounded-xl px-2.5 py-2 text-left hover:bg-indigo-50 transition-colors">
                   <PlateTag placa={v.placa} sm />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-700 truncate">{v.modelo}</p>
                     <p className="text-[11px] text-slate-400">{v.osCount} OS · {tempoRelativo(v.lastOs)}</p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
-                </div>
+                </button>
               ))}
             </div>
           ) : (
@@ -156,9 +165,10 @@ function ClienteCard({ c, expanded, onToggle, compact = false }) {
 }
 
 // ── Card de veículo (visão Veículos) ─────────────────────────
-function VeiculoCard({ v, compact = false }) {
+function VeiculoCard({ v, compact = false, onClick }) {
   return (
-    <div className={`w-full bg-white rounded-2xl border border-gray-100 flex items-center gap-3 ${compact ? 'px-3 py-2' : 'p-3'}`}>
+    <button onClick={onClick}
+      className={`w-full bg-white rounded-2xl border border-gray-100 flex items-center gap-3 text-left hover:border-indigo-100 transition-colors ${compact ? 'px-3 py-2' : 'p-3'}`}>
       <PlateTag placa={v.placa} sm={compact} />
       <div className="flex-1 min-w-0">
         <p className={`font-semibold text-slate-900 truncate ${compact ? 'text-[13px]' : 'text-sm'}`}>{v.modelo}</p>
@@ -173,6 +183,72 @@ function VeiculoCard({ v, compact = false }) {
         </div>
       )}
       <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+    </button>
+  )
+}
+
+// ── Histórico de um veículo (drill-down) ─────────────────────
+function VeiculoHistorico({ vehicle, client, onBack }) {
+  const [orders, setOrders] = useState(null)
+
+  useEffect(() => {
+    osStorage.getByVehicle(vehicle.id).then(setOrders).catch(() => setOrders([]))
+  }, [vehicle.id])
+
+  return (
+    <div className="fixed inset-0 z-[70] bg-gray-50 flex flex-col">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-100 px-3 py-3 flex items-center gap-3 shrink-0">
+        <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full shrink-0">
+          <ArrowLeft className="w-5 h-5 text-slate-600" />
+        </button>
+        <PlateTag placa={vehicle.placa} />
+        <div className="min-w-0">
+          <p className="font-bold text-slate-900 text-sm truncate">{vehicle.modelo}</p>
+          <p className="text-xs text-slate-400 truncate">{client?.nome || '—'}</p>
+        </div>
+      </header>
+
+      {/* Lista de OS */}
+      <div className="flex-1 overflow-y-auto px-4 py-4">
+        {orders === null ? (
+          <div className="flex justify-center py-20">
+            <div className="w-7 h-7 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="text-center py-16 text-slate-400">
+            <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="font-medium">Nenhuma OS registrada</p>
+            <p className="text-sm mt-1">Este veículo ainda não tem histórico.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-slate-400 font-medium mb-1">{orders.length} ordem{orders.length !== 1 ? 'ns' : ''} de serviço</p>
+            {orders.map(os => (
+              <div key={os.id} className="bg-white rounded-2xl border border-gray-100 p-3.5">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${STATUS_BADGE[os.status] || 'bg-gray-100 text-slate-500'}`}>
+                    {STATUS_LABELS[os.status] || os.status}
+                  </span>
+                  <span className="text-xs text-slate-400">{formatDate(os.createdAt)}</span>
+                </div>
+                {(os.items || []).length > 0 && (
+                  <div className="space-y-0.5 mb-2">
+                    {os.items.slice(0, 4).map(it => (
+                      <p key={it.id} className="text-xs text-slate-500 truncate">• {it.descricao}</p>
+                    ))}
+                    {os.items.length > 4 && <p className="text-xs text-slate-300">+{os.items.length - 4} itens</p>}
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-1 border-t border-gray-50">
+                  {os.km && <span className="text-[11px] text-slate-400">KM {os.km}</span>}
+                  <span className="text-sm font-bold text-slate-900 ml-auto">{formatCurrency(os.totals?.venda || 0)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -189,6 +265,7 @@ export default function ClientesPreview() {
   const [query, setQuery]   = useState('')
   const [filtro, setFiltro] = useState('todos')    // todos | sumidos | aniversario | top
   const [expandedId, setExpandedId] = useState(null)
+  const [openVeic, setOpenVeic] = useState(null)   // { vehicle, client } → drill-down
 
   useEffect(() => {
     let alive = true
@@ -291,6 +368,11 @@ export default function ClientesPreview() {
     { key: 'aniversario', label: 'Aniversariantes', count: counts.aniversario, icon: Cake,        accent: 'pink' },
     { key: 'top',         label: 'Maiores gastos', count: null,               icon: TrendingUp,  accent: 'green' },
   ]
+
+  // Drill-down: histórico do veículo selecionado
+  if (openVeic) {
+    return <VeiculoHistorico vehicle={openVeic.vehicle} client={openVeic.client} onBack={() => setOpenVeic(null)} />
+  }
 
   return (
     <div className="pb-36">
@@ -399,7 +481,8 @@ export default function ClientesPreview() {
                 <ClienteCard key={c.id} c={c}
                   compact={display === 'list'}
                   expanded={expandedId === c.id}
-                  onToggle={() => setExpandedId(id => id === c.id ? null : c.id)} />
+                  onToggle={() => setExpandedId(id => id === c.id ? null : c.id)}
+                  onOpenVehicle={(v, cli) => setOpenVeic({ vehicle: v, client: cli })} />
               ))}
             </div>
           )
@@ -413,7 +496,10 @@ export default function ClientesPreview() {
             <div className={display === 'list'
               ? 'space-y-1.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2'
               : 'space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5'}>
-              {veiculosFiltrados.map(v => <VeiculoCard key={v.id} v={v} compact={display === 'list'} />)}
+              {veiculosFiltrados.map(v => (
+                <VeiculoCard key={v.id} v={v} compact={display === 'list'}
+                  onClick={() => setOpenVeic({ vehicle: v, client: { nome: v.clientNome } })} />
+              ))}
             </div>
           )
         )}
