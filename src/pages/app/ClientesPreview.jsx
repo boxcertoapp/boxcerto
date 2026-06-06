@@ -7,7 +7,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
   Search, X, Users, Car, MessageCircle, ChevronRight, ChevronDown,
-  Cake, Clock, TrendingUp, Phone, Wrench,
+  Cake, Clock, TrendingUp, Phone, List, LayoutGrid,
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import {
@@ -65,37 +65,57 @@ function Avatar({ nome, inativo }) {
 }
 
 // ── Card de cliente ──────────────────────────────────────────
-function ClienteCard({ c, expanded, onToggle }) {
+function ClienteCard({ c, expanded, onToggle, compact = false }) {
   const wppLink = c.whatsapp
     ? `https://wa.me/55${c.whatsapp.replace(/\D/g, '')}`
     : null
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden transition-all">
-      <button onClick={onToggle} className="w-full flex items-center gap-3 p-3 text-left">
-        <Avatar nome={c.nome} inativo={c.inativo} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="font-semibold text-slate-900 text-sm truncate">{c.nome}</p>
-            {c.aniversariante && <Cake className="w-3.5 h-3.5 text-pink-500 shrink-0" />}
+      {compact ? (
+        // ── Linha enxuta (modo lista) ──
+        <button onClick={onToggle} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-sm ${c.inativo ? 'bg-amber-50 text-amber-600' : 'bg-indigo-50 text-indigo-600'}`}>
+            {(c.nome?.[0] || '?').toUpperCase()}
           </div>
-          <p className="text-xs text-slate-400 truncate mt-0.5 flex items-center gap-1">
-            <Car className="w-3 h-3 shrink-0" />
-            {c.veiculos.length} {c.veiculos.length === 1 ? 'veículo' : 'veículos'}
-            <span className="text-slate-300">·</span>
-            {tempoRelativo(c.lastVisit)}
-          </p>
-        </div>
-        <div className="text-right shrink-0 flex flex-col items-end gap-1">
-          {c.totalGasto > 0 && (
-            <span className="text-sm font-bold text-slate-900">{formatCurrency(c.totalGasto)}</span>
-          )}
-          {c.inativo
-            ? <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">sumido</span>
-            : <span className="w-2 h-2 rounded-full bg-green-400" title="ativo" />}
-        </div>
-        <ChevronDown className={`w-4 h-4 text-slate-300 shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`} />
-      </button>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <p className="font-semibold text-slate-900 text-sm truncate">{c.nome}</p>
+              {c.aniversariante && <Cake className="w-3 h-3 text-pink-500 shrink-0" />}
+              {c.inativo && <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full shrink-0">sumido</span>}
+            </div>
+            <p className="text-[11px] text-slate-400 truncate">{c.veiculos.length} veíc · {tempoRelativo(c.lastVisit)}</p>
+          </div>
+          {c.totalGasto > 0 && <span className="text-xs font-bold text-slate-700 shrink-0">{formatCurrency(c.totalGasto)}</span>}
+          <ChevronDown className={`w-4 h-4 text-slate-300 shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        </button>
+      ) : (
+        // ── Card completo (modo cards) ──
+        <button onClick={onToggle} className="w-full flex items-center gap-3 p-3 text-left">
+          <Avatar nome={c.nome} inativo={c.inativo} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-slate-900 text-sm truncate">{c.nome}</p>
+              {c.aniversariante && <Cake className="w-3.5 h-3.5 text-pink-500 shrink-0" />}
+            </div>
+            <p className="text-xs text-slate-400 truncate mt-0.5 flex items-center gap-1">
+              <Car className="w-3 h-3 shrink-0" />
+              {c.veiculos.length} {c.veiculos.length === 1 ? 'veículo' : 'veículos'}
+              <span className="text-slate-300">·</span>
+              {tempoRelativo(c.lastVisit)}
+            </p>
+          </div>
+          <div className="text-right shrink-0 flex flex-col items-end gap-1">
+            {c.totalGasto > 0 && (
+              <span className="text-sm font-bold text-slate-900">{formatCurrency(c.totalGasto)}</span>
+            )}
+            {c.inativo
+              ? <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">sumido</span>
+              : <span className="w-2 h-2 rounded-full bg-green-400" title="ativo" />}
+          </div>
+          <ChevronDown className={`w-4 h-4 text-slate-300 shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        </button>
+      )}
 
       {expanded && (
         <div className="px-3 pb-3 pt-1 border-t border-gray-50 space-y-3">
@@ -136,18 +156,22 @@ function ClienteCard({ c, expanded, onToggle }) {
 }
 
 // ── Card de veículo (visão Veículos) ─────────────────────────
-function VeiculoCard({ v }) {
+function VeiculoCard({ v, compact = false }) {
   return (
-    <div className="w-full bg-white rounded-2xl border border-gray-100 p-3 flex items-center gap-3">
-      <PlateTag placa={v.placa} />
+    <div className={`w-full bg-white rounded-2xl border border-gray-100 flex items-center gap-3 ${compact ? 'px-3 py-2' : 'p-3'}`}>
+      <PlateTag placa={v.placa} sm={compact} />
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-slate-900 text-sm truncate">{v.modelo}</p>
-        <p className="text-xs text-slate-400 truncate">{v.clientNome}</p>
+        <p className={`font-semibold text-slate-900 truncate ${compact ? 'text-[13px]' : 'text-sm'}`}>{v.modelo}</p>
+        <p className={`text-slate-400 truncate ${compact ? 'text-[11px]' : 'text-xs'}`}>
+          {v.clientNome}{compact ? ` · ${v.osCount} OS` : ''}
+        </p>
       </div>
-      <div className="text-right shrink-0">
-        <p className="text-xs text-slate-400">{v.osCount} OS</p>
-        <p className="text-[10px] text-slate-300">{tempoRelativo(v.lastOs)}</p>
-      </div>
+      {!compact && (
+        <div className="text-right shrink-0">
+          <p className="text-xs text-slate-400">{v.osCount} OS</p>
+          <p className="text-[10px] text-slate-300">{tempoRelativo(v.lastOs)}</p>
+        </div>
+      )}
       <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
     </div>
   )
@@ -161,6 +185,7 @@ export default function ClientesPreview() {
   const [vehicles, setVehicles] = useState([])
 
   const [view, setView]     = useState('clientes') // clientes | veiculos
+  const [display, setDisplay] = useState('cards')  // cards | list
   const [query, setQuery]   = useState('')
   const [filtro, setFiltro] = useState('todos')    // todos | sumidos | aniversario | top
   const [expandedId, setExpandedId] = useState(null)
@@ -296,20 +321,30 @@ export default function ClientesPreview() {
           </div>
         </div>
 
-        {/* Busca */}
-        <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder={view === 'clientes' ? 'Buscar cliente, placa ou CPF...' : 'Buscar placa, modelo ou dono...'}
-            className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50"
-          />
-          {query && (
-            <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2">
-              <X className="w-4 h-4 text-slate-400" />
-            </button>
-          )}
+        {/* Busca + alternar visualização */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder={view === 'clientes' ? 'Buscar cliente, placa ou CPF...' : 'Buscar placa, modelo ou dono...'}
+              className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50"
+            />
+            {query && (
+              <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+                <X className="w-4 h-4 text-slate-400" />
+              </button>
+            )}
+          </div>
+          <button
+            onClick={() => setDisplay(d => d === 'cards' ? 'list' : 'cards')}
+            title={display === 'cards' ? 'Ver em lista' : 'Ver em cards'}
+            aria-label={display === 'cards' ? 'Ver em lista' : 'Ver em cards'}
+            className="shrink-0 w-10 h-10 rounded-xl border border-gray-200 bg-white flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:border-indigo-300 transition-colors"
+          >
+            {display === 'cards' ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
+          </button>
         </div>
 
         {/* Chips (insight + filtro) — só na visão Clientes */}
@@ -357,9 +392,12 @@ export default function ClientesPreview() {
               </p>
             </div>
           ) : (
-            <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5 lg:items-start">
+            <div className={display === 'list'
+              ? 'space-y-1.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2 lg:items-start'
+              : 'space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5 lg:items-start'}>
               {clientesFiltrados.map(c => (
                 <ClienteCard key={c.id} c={c}
+                  compact={display === 'list'}
                   expanded={expandedId === c.id}
                   onToggle={() => setExpandedId(id => id === c.id ? null : c.id)} />
               ))}
@@ -372,8 +410,10 @@ export default function ClientesPreview() {
               <p className="font-medium">{query ? 'Nenhum veículo encontrado' : 'Nenhum veículo cadastrado'}</p>
             </div>
           ) : (
-            <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
-              {veiculosFiltrados.map(v => <VeiculoCard key={v.id} v={v} />)}
+            <div className={display === 'list'
+              ? 'space-y-1.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2'
+              : 'space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5'}>
+              {veiculosFiltrados.map(v => <VeiculoCard key={v.id} v={v} compact={display === 'list'} />)}
             </div>
           )
         )}
