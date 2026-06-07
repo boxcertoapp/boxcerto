@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { TrendingUp, TrendingDown, Plus, Trash2, X, AlertCircle, Printer, RotateCcw, ShoppingCart, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { showSaveCheck } from '../../components/SaveCheck'
@@ -9,6 +9,52 @@ import {
 } from '../../lib/storage'
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+const MESES_CURTOS = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
+
+// Anima o número do valor (count-up suave)
+function useCountUp(target, dur = 600) {
+  const [val, setVal] = useState(target)
+  const from = useRef(target)
+  const raf  = useRef(null)
+  useEffect(() => {
+    const start = performance.now()
+    const a = from.current, b = target
+    cancelAnimationFrame(raf.current)
+    const tick = (t) => {
+      const p = Math.min(1, (t - start) / dur)
+      const e = 1 - Math.pow(1 - p, 3)
+      setVal(a + (b - a) * e)
+      if (p < 1) raf.current = requestAnimationFrame(tick)
+      else from.current = b
+    }
+    raf.current = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf.current)
+  }, [target, dur])
+  return val
+}
+
+// Micro-gráfico de barras dos últimos meses (lucro de serviços)
+function MiniBars({ serie }) {
+  if (!serie.length || serie.every(s => s.valor === 0)) return null
+  const max = Math.max(1, ...serie.map(s => Math.abs(s.valor)))
+  return (
+    <div className="flex items-end gap-1.5 h-16 shrink-0" aria-hidden="true">
+      {serie.map((s, i) => {
+        const h = Math.max(7, Math.round((Math.abs(s.valor) / max) * 50))
+        const atual = i === serie.length - 1
+        return (
+          <div key={i} className="flex flex-col items-center gap-1.5">
+            <div className="w-2.5 rounded-full transition-all duration-500"
+              style={{ height: h, background: atual ? '#ffffff' : 'rgba(255,255,255,.32)' }} />
+            <span className="text-[8px] font-medium" style={{ color: atual ? '#fff' : 'rgba(255,255,255,.5)' }}>
+              {MESES_CURTOS[s.mes]}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 function printFinanceiro({ mes, ano, totalReceitas, totalLucroOS, totalDespesas, lucroLiquido, deliveredOS, expenses, officeData }) {
   const osRows = deliveredOS.map(os => `
@@ -101,6 +147,7 @@ export default function Financeiro() {
   const [deliveredOS, setDeliveredOS] = useState([])
   const [vendas, setVendas] = useState([])
   const [prevLucro, setPrevLucro] = useState(null) // previous month net profit
+  const [serie, setSerie] = useState([])           // últimos 6 meses (lucro OS) p/ mini-gráfico
   const [showAddExp, setShowAddExp] = useState(false)
   const [newExp, setNewExp] = useState({ descricao: '', valor: '' })
   const [expError, setExpError] = useState('')
@@ -150,6 +197,18 @@ export default function Financeiro() {
     const prevVendasCusto   = prevVendas.reduce((s, v) => s + v.items.reduce((si, i) => si + (i.custo || 0) * i.quantidade, 0), 0)
     const prevVendasLucro   = prevVendasReceita - prevVendasCusto
     setPrevLucro(prevLucroOS + prevVendasLucro - prevDespesas)
+
+    // Série dos últimos 6 meses (lucro de serviços/OS) para o mini-gráfico
+    const s = []
+    for (let i = 5; i >= 0; i--) {
+      let mm = mes - i, yy = ano
+      while (mm < 0) { mm += 12; yy -= 1 }
+      const del = filterByMonth(allOS, mm, yy)
+      const rec = del.reduce((acc, os) => acc + os.totals.venda, 0)
+      const cus = del.reduce((acc, os) => acc + os.totals.custo, 0)
+      s.push({ mes: mm, ano: yy, valor: rec - cus })
+    }
+    setSerie(s)
   }
 
   useEffect(() => { reload() }, [mes, ano, user.oficina])
@@ -165,9 +224,9 @@ export default function Financeiro() {
   const totalDespesas = expenses.reduce((s, e) => s + e.valor, 0)
   const lucroLiquido  = totalLucroOS - totalDespesas
 
-  const lucroVariacao = prevLucro !== null && prevLucro !== 0
-    ? ((lucroLiquido - prevLucro) / Math.abs(prevLucro)) * 100
-    : null
+  // Diferença absoluta vs mês anterior (mais clara que % — evita o "-99%" estranho)
+  const delta     = prevLucro !== null ? lucroLiquido - prevLucro : null
+  const animLucro = useCountUp(lucroLiquido)
 
   const addExpense = async () => {
     if (!newExp.descricao || !newExp.valor) { setTriedExp(true); return setExpError('Preencha todos os campos.') }
@@ -231,31 +290,45 @@ export default function Financeiro() {
         <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-slate-600">›</button>
       </div>
 
-      {/* Card Lucro Líquido */}
-      <div className={`rounded-2xl p-6 text-white ${lucroLiquido >= 0 ? 'bg-indigo-600' : 'bg-red-500'}`}>
-        <p className="text-indigo-200 text-sm font-medium mb-1">Lucro Líquido do Mês</p>
-        <p className="text-4xl font-bold mb-1">{formatCurrency(lucroLiquido)}</p>
-        {/* Comparison with previous month */}
-        {lucroVariacao !== null && (
-          <div className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full mb-3 ${lucroVariacao >= 0 ? 'bg-green-500/30 text-green-100' : 'bg-red-400/30 text-red-100'}`}>
-            {lucroVariacao >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-            {lucroVariacao >= 0 ? '+' : ''}{lucroVariacao.toFixed(0)}% vs mês anterior
+      {/* Card Lucro Líquido — polido */}
+      <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg shadow-indigo-200/50"
+        style={{ background: lucroLiquido >= 0
+          ? 'linear-gradient(135deg,#6366f1 0%,#4f46e5 45%,#4338ca 100%)'
+          : 'linear-gradient(135deg,#fb7185 0%,#ef4444 50%,#dc2626 100%)' }}>
+        {/* glows decorativos */}
+        <span className="pointer-events-none absolute -top-12 -right-10 w-44 h-44 rounded-full bg-white/10 blur-2xl" />
+        <span className="pointer-events-none absolute -bottom-16 -left-8 w-40 h-40 rounded-full bg-white/[0.06] blur-2xl" />
+
+        <div className="relative flex items-start gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-white/70 text-sm font-medium mb-1">Lucro Líquido do Mês</p>
+            <p className="text-4xl font-bold mb-2 tracking-tight">{formatCurrency(animLucro)}</p>
+            {delta !== null && delta !== 0 && (
+              <div className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${delta > 0 ? 'bg-green-400/25 text-green-50' : 'bg-black/20 text-white/90'}`}>
+                {delta > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                {delta > 0 ? '+' : '−'}{formatCurrency(Math.abs(delta))} vs mês anterior
+              </div>
+            )}
+            {delta === 0 && prevLucro !== null && (
+              <div className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-white/15 text-white/90">
+                igual ao mês anterior
+              </div>
+            )}
           </div>
-        )}
-        {lucroVariacao === null && prevLucro !== null && prevLucro === 0 && (
-          <p className="text-xs text-indigo-300 mb-3">Mês anterior: R$ 0</p>
-        )}
-        <div className="grid grid-cols-3 gap-3 text-center">
+          <MiniBars serie={serie} />
+        </div>
+
+        <div className="relative grid grid-cols-3 gap-3 text-center mt-5">
           <div>
-            <p className="text-indigo-200 text-xs">Receitas</p>
+            <p className="text-white/60 text-xs">Receitas</p>
             <p className="font-bold text-sm">{formatCurrency(totalReceitas)}</p>
           </div>
           <div>
-            <p className="text-indigo-200 text-xs">Custos Peças</p>
+            <p className="text-white/60 text-xs">Custos Peças</p>
             <p className="font-bold text-sm">{formatCurrency(totalCustos)}</p>
           </div>
           <div>
-            <p className="text-indigo-200 text-xs">Despesas</p>
+            <p className="text-white/60 text-xs">Despesas</p>
             <p className="font-bold text-sm">{formatCurrency(totalDespesas)}</p>
           </div>
         </div>
