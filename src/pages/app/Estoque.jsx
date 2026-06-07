@@ -799,7 +799,7 @@ export default function Estoque() {
         <>
           <button
             onClick={() => setShowVenda(true)}
-            className="fixed bottom-24 right-20 h-12 px-4 bg-green-600 rounded-full shadow-lg shadow-green-200 flex items-center gap-2 hover:bg-green-700 transition-all active:scale-95 z-40"
+            className="fixed bottom-24 right-20 h-14 px-5 bg-green-600 rounded-full shadow-lg shadow-green-200 flex items-center gap-2 hover:bg-green-700 transition-all active:scale-95 z-40"
           >
             <ShoppingCart className="w-4 h-4 text-white" />
             <span className="text-white text-sm font-bold">Vender</span>
