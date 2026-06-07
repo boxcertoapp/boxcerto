@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { showSaveCheck } from '../../components/SaveCheck'
+import SkeletonList from '../../components/Skeleton'
 import {
   vehicleStorage, clientStorage, osStorage, vendaStorage,
   formatCurrency, formatDate, STATUS_LABELS, STATUS_COLORS, norm
@@ -689,9 +690,7 @@ export default function Historico() {
       {/* Conteúdo */}
       <div className="px-4 pt-3">
         {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="w-7 h-7 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
-          </div>
+          <SkeletonList count={6} className="lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5 lg:space-y-0" />
         ) : view === 'clientes' ? (
           clientesFiltrados.length === 0 ? (
             <div className="text-center py-16 text-slate-400">
@@ -741,7 +740,7 @@ export default function Historico() {
       {view === 'clientes' && (
         <button
           onClick={() => setClientModal({ mode: 'create' })}
-          title="Novo cliente"
+          title="Novo cliente" aria-label="Novo cliente"
           className="fixed bottom-24 right-4 w-14 h-14 bg-indigo-600 rounded-full shadow-lg shadow-indigo-200 flex items-center justify-center hover:bg-indigo-700 transition-all active:scale-95 z-40"
         >
           <Plus className="w-7 h-7 text-white" />

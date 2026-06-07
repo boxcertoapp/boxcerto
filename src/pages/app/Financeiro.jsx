@@ -223,7 +223,7 @@ export default function Financeiro() {
         <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-slate-600">‹</button>
         <div className="flex items-center gap-2">
           <h2 className="text-base font-bold text-slate-900">{MESES[mes]} {ano}</h2>
-          <button onClick={handlePrint} title="Imprimir relatório"
+          <button onClick={handlePrint} title="Imprimir relatório" aria-label="Imprimir relatório"
             className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center hover:bg-indigo-100 transition-colors">
             <Printer className="w-4 h-4 text-indigo-600" />
           </button>

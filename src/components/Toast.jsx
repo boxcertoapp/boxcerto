@@ -12,8 +12,16 @@ import { AlertCircle, CheckCircle2, AlertTriangle, Info, X } from 'lucide-react'
 export function showToast(message, type = 'error', opts = {}) {
   if (!message) return
   window.dispatchEvent(new CustomEvent('boxcerto:toast', {
-    detail: { message, type, duration: opts.duration },
+    detail: { message, type, duration: opts.duration, action: opts.action },
   }))
+}
+
+// Atalho para toast com botão "Desfazer"
+export function showUndoToast(message, onUndo, opts = {}) {
+  showToast(message, opts.type || 'info', {
+    duration: opts.duration || 5000,
+    action: { label: opts.label || 'Desfazer', onClick: onUndo },
+  })
 }
 
 const TYPES = {
@@ -47,6 +55,14 @@ function ToastItem({ t, onClose }) {
         <Icon className="w-[18px] h-[18px]" />
       </span>
       <p className="flex-1 min-w-0 text-sm font-medium text-slate-800 leading-snug py-0.5">{t.message}</p>
+      {t.action && (
+        <button
+          onClick={() => { t.action.onClick?.(); onClose() }}
+          className="shrink-0 text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors px-2 py-0.5"
+        >
+          {t.action.label}
+        </button>
+      )}
       <button
         onClick={onClose}
         aria-label="Fechar"
@@ -73,10 +89,10 @@ export default function Toaster() {
 
   useEffect(() => {
     const onToast = (e) => {
-      const { message, type = 'error', duration } = e.detail || {}
+      const { message, type = 'error', duration, action } = e.detail || {}
       const id = ++idRef.current
       const ttl = duration || (type === 'error' ? 4200 : 3200)
-      setToasts(list => [...list.slice(-2), { id, message, type, leaving: false }]) // máx 3 na tela
+      setToasts(list => [...list.slice(-2), { id, message, type, action, leaving: false }]) // máx 3 na tela
       timers.current['hide_' + id] = setTimeout(() => remove(id), ttl)
     }
     window.addEventListener('boxcerto:toast', onToast)

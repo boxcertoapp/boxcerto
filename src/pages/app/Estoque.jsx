@@ -7,6 +7,8 @@ import {
 import { useAuth } from '../../contexts/AuthContext'
 import { showSaveCheck } from '../../components/SaveCheck'
 import { showToast } from '../../components/Toast'
+import ConfirmDialog from '../../components/ConfirmDialog'
+import SkeletonList from '../../components/Skeleton'
 import {
   inventoryStorage, vendaStorage, clientStorage,
   officeDataStorage, formatCurrency, norm,
@@ -538,6 +540,8 @@ export default function Estoque() {
   const [showVenda, setShowVenda] = useState(false)
   const [sortBy, setSortBy] = useState('az') // az | qty_asc | qty_desc | val_asc | val_desc
   const [showSortMenu, setShowSortMenu] = useState(false)
+  const [loadingList, setLoadingList] = useState(true)
+  const [confirmDel, setConfirmDel] = useState(null) // produto a excluir
 
   // Trava scroll do container principal quando modal está aberto
   useEffect(() => {
@@ -565,6 +569,7 @@ export default function Estoque() {
     ])
     setItems(inv)
     setOfficeData(od || {})
+    setLoadingList(false)
   }
   useEffect(() => { reload() }, [])
 
@@ -608,10 +613,16 @@ export default function Estoque() {
     showSaveCheck('Salvo!')
   }
 
-  const handleDelete = async (id) => {
-    if (!confirm('Remover este produto do estoque?')) return
-    await inventoryStorage.remove(id)
+  const handleDelete = (id) => {
+    const item = items.find(i => i.id === id)
+    setConfirmDel(item || { id })
+  }
+  const confirmDelete = async () => {
+    if (!confirmDel) return
+    await inventoryStorage.remove(confirmDel.id)
+    setConfirmDel(null)
     await reload()
+    showToast('Produto removido.', 'success')
   }
 
   const handleAjusteQtd = async (id, delta) => {
@@ -655,7 +666,7 @@ export default function Estoque() {
           <button
             onClick={() => setShowSortMenu(p => !p)}
             className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-50 transition-colors"
-            title="Ordenar"
+            title="Ordenar" aria-label="Ordenar produtos"
           >
             <ArrowUpDown className="w-4 h-4 text-slate-600" />
           </button>
@@ -674,7 +685,7 @@ export default function Estoque() {
         <button
           onClick={() => printEstoque({ items: filtered, officeData, formatCurrencyFn: formatCurrency })}
           className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-50 transition-colors shrink-0"
-          title="Relatório de estoque"
+          title="Relatório de estoque" aria-label="Relatório de estoque"
         >
           <Printer className="w-4 h-4 text-slate-600" />
         </button>
@@ -714,7 +725,9 @@ export default function Estoque() {
       )}
 
       {/* Lista */}
-      {filtered.length === 0 ? (
+      {loadingList ? (
+        <SkeletonList count={5} className="lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5 lg:space-y-0" />
+      ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-slate-400">
           <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="font-medium">{items.length === 0 ? 'Estoque vazio' : 'Nenhum produto encontrado'}</p>
@@ -744,10 +757,10 @@ export default function Estoque() {
                         {item.fornecedor && <p className="text-xs text-slate-400 mt-0.5">{item.fornecedor}</p>}
                       </div>
                       <div className="flex gap-1 shrink-0">
-                        <button onClick={() => setEditId(item.id)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                        <button onClick={() => setEditId(item.id)} aria-label="Editar produto" className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
                           <Edit2 className="w-3.5 h-3.5 text-slate-400" />
                         </button>
-                        <button onClick={() => handleDelete(item.id)} className="p-1.5 hover:bg-red-50 rounded-lg transition-colors">
+                        <button onClick={() => handleDelete(item.id)} aria-label="Remover produto" className="p-1.5 hover:bg-red-50 rounded-lg transition-colors">
                           <Trash2 className="w-3.5 h-3.5 text-red-400" />
                         </button>
                       </div>
@@ -793,6 +806,7 @@ export default function Estoque() {
           </button>
           <button
             onClick={() => { setShowAdd(true); setEditId(null) }}
+            aria-label="Novo produto"
             className="fixed bottom-24 right-4 w-14 h-14 bg-indigo-600 rounded-full shadow-lg shadow-indigo-200 flex items-center justify-center hover:bg-indigo-700 transition-all active:scale-95 z-40"
           >
             <Plus className="w-7 h-7 text-white" />
@@ -809,6 +823,17 @@ export default function Estoque() {
           onVendaCompleta={reload}
         />
       )}
+
+      {/* Confirmação de exclusão de produto */}
+      <ConfirmDialog
+        open={!!confirmDel}
+        danger
+        title="Remover produto?"
+        message={confirmDel ? `"${confirmDel.produto || 'Este produto'}" será removido do estoque. Essa ação não pode ser desfeita.` : ''}
+        confirmLabel="Remover"
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmDel(null)}
+      />
     </div>
   )
 }

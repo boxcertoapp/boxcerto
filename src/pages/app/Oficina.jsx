@@ -15,7 +15,8 @@ import { supabase } from '../../lib/supabase'
 import { sendCapi } from '../../lib/metaCapi'
 import FipeSeletor from '../../components/FipeSeletor'
 import { showSaveCheck } from '../../components/SaveCheck'
-import { showToast } from '../../components/Toast'
+import { showToast, showUndoToast } from '../../components/Toast'
+import SkeletonList, { SkeletonCards } from '../../components/Skeleton'
 import {
   osStorage, itemStorage, clientStorage, vehicleStorage,
   STATUS_LABELS, STATUS_COLORS, formatCurrency, formatDate, formatNumeroOS,
@@ -178,6 +179,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
   const [data, setData] = useState({ all: [], prontos: [], manutencao: [], orcamento: [], agendados: [] })
   const [filtroAgenda, setFiltroAgenda] = useState('hoje')
   const [agendaAberta, setAgendaAberta] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const load = async () => {
@@ -193,6 +195,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
         orcamento: active.filter(os => os.status === 'orcamento' && !agendadosIds.has(os.id)),
         agendados,
       })
+      setLoading(false)
     }
     load()
   }, [officeName])
@@ -228,6 +231,19 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
   ]
 
   const activeCount = data.all.filter(os => !os.agendadoPara || os.status !== 'orcamento').length
+
+  if (loading) {
+    return (
+      <div className="p-4 pb-36 space-y-5">
+        <div className="space-y-2">
+          <div className="h-4 w-24 bg-gray-100 rounded animate-pulse" />
+          <div className="h-6 w-44 bg-gray-200 rounded animate-pulse" />
+        </div>
+        <SkeletonCards />
+        <SkeletonList count={4} />
+      </div>
+    )
+  }
 
   return (
     <div className="p-4 pb-36 space-y-5">
@@ -474,6 +490,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
       <button
         data-tour="fab-nova-os"
         onClick={onNewOS}
+        aria-label="Nova OS"
         className="fixed bottom-24 right-4 w-14 h-14 bg-indigo-600 rounded-full shadow-lg shadow-indigo-200 flex items-center justify-center hover:bg-indigo-700 transition-all active:scale-95 z-40"
       >
         <Plus className="w-7 h-7 text-white" />
@@ -1456,9 +1473,20 @@ function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false }) {
   }
 
   const handleRemoveItem = async (itemId) => {
+    const item = items.find(i => i.id === itemId)
     await itemStorage.remove(itemId)
     await reload()
     if (os.aprovacaoStatus === 'aprovado') setItensAlteradosAposAprovacao(true)
+    if (item) {
+      showUndoToast('Item removido.', async () => {
+        await itemStorage.add({
+          osId: os.id, descricao: item.descricao, custo: item.custo,
+          venda: item.venda, garantia: item.garantia, inventoryId: item.inventoryId,
+        })
+        await reload()
+        showToast('Item restaurado.', 'success')
+      })
+    }
   }
 
   const handleAddFromStock = async (stockItem, qty, forceAdd = false) => {
