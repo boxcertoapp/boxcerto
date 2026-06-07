@@ -339,7 +339,7 @@ export default function Financeiro() {
 
       {/* Cards secundários */}
       <div className="grid grid-cols-2 gap-3 lg:mb-4 lg:break-inside-avoid">
-        <div className="bg-white rounded-2xl border border-gray-100 p-4">
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-4 h-4 text-green-500" />
             <span className="text-xs text-slate-500 font-medium">Lucro Bruto</span>
@@ -347,7 +347,7 @@ export default function Financeiro() {
           <p className="text-xl font-bold text-slate-900">{formatCurrency(totalLucroOS)}</p>
           <p className="text-xs text-slate-400 mt-1">{deliveredOS.length} OS · {vendas.length} venda{vendas.length !== 1 ? 's' : ''}</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-4">
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <TrendingDown className="w-4 h-4 text-red-400" />
             <span className="text-xs text-slate-500 font-medium">Total Despesas</span>

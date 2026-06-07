@@ -1293,7 +1293,7 @@ export const STATUS_COLORS = {
   orcamento: 'bg-amber-100 text-amber-700',
   manutencao: 'bg-blue-100 text-blue-700',
   pronto: 'bg-green-100 text-green-700',
-  entregue: 'bg-gray-100 text-gray-500',
+  entregue: 'bg-slate-100 text-slate-500',
 }
 
 export const GARANTIA_OPTIONS = ['', '30 dias', '60 dias', '90 dias', '6 meses', '1 ano']

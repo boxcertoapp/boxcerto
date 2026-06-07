@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react'
 import {
   Package, Plus, Trash2, X, AlertTriangle,
   Search, Bell, Printer, Edit2, Check, ArrowUpDown,
-  ShoppingCart, UserPlus, CheckCircle2
+  ShoppingCart, UserPlus, CheckCircle2, DollarSign
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { showSaveCheck } from '../../components/SaveCheck'
 import { showToast } from '../../components/Toast'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import SkeletonList from '../../components/Skeleton'
+import EmptyState from '../../components/EmptyState'
 import {
   inventoryStorage, vendaStorage, clientStorage,
   officeDataStorage, formatCurrency, norm,
@@ -637,17 +638,26 @@ export default function Estoque() {
     <div className="p-4 pb-36">
       {/* Header stats */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="bg-white rounded-2xl border border-gray-100 p-3 text-center">
-          <p className="text-2xl font-bold text-slate-900">{items.length}</p>
-          <p className="text-xs text-slate-400 mt-0.5">Produtos</p>
+        <div className="bg-white rounded-2xl border border-gray-100 p-3 shadow-sm flex flex-col items-center">
+          <div className="w-7 h-7 mb-1.5 rounded-xl bg-indigo-50 flex items-center justify-center">
+            <Package className="w-4 h-4 text-indigo-500" />
+          </div>
+          <p className="text-2xl font-bold text-slate-900 leading-none">{items.length}</p>
+          <p className="text-xs text-slate-400 mt-1">Produtos</p>
         </div>
-        <div className={`rounded-2xl border p-3 text-center ${emAlerta.length > 0 ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'}`}>
-          <p className={`text-2xl font-bold ${emAlerta.length > 0 ? 'text-red-600' : 'text-slate-900'}`}>{emAlerta.length}</p>
-          <p className={`text-xs mt-0.5 ${emAlerta.length > 0 ? 'text-red-400' : 'text-slate-400'}`}>Em alerta</p>
+        <div className={`rounded-2xl border p-3 shadow-sm flex flex-col items-center ${emAlerta.length > 0 ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'}`}>
+          <div className={`w-7 h-7 mb-1.5 rounded-xl flex items-center justify-center ${emAlerta.length > 0 ? 'bg-red-100' : 'bg-amber-50'}`}>
+            <AlertTriangle className={`w-4 h-4 ${emAlerta.length > 0 ? 'text-red-500' : 'text-amber-500'}`} />
+          </div>
+          <p className={`text-2xl font-bold leading-none ${emAlerta.length > 0 ? 'text-red-600' : 'text-slate-900'}`}>{emAlerta.length}</p>
+          <p className={`text-xs mt-1 ${emAlerta.length > 0 ? 'text-red-400' : 'text-slate-400'}`}>Em alerta</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-3 text-center">
-          <p className="text-sm font-bold text-slate-900">{formatCurrency(totalInvestido)}</p>
-          <p className="text-xs text-slate-400 mt-0.5">Investido</p>
+        <div className="bg-white rounded-2xl border border-gray-100 p-3 shadow-sm flex flex-col items-center justify-center">
+          <div className="w-7 h-7 mb-1.5 rounded-xl bg-green-50 flex items-center justify-center">
+            <DollarSign className="w-4 h-4 text-green-500" />
+          </div>
+          <p className="text-sm font-bold text-slate-900 leading-tight text-center">{formatCurrency(totalInvestido)}</p>
+          <p className="text-xs text-slate-400 mt-1">Investido</p>
         </div>
       </div>
 
@@ -728,11 +738,17 @@ export default function Estoque() {
       {loadingList ? (
         <SkeletonList count={5} className="lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5 lg:space-y-0" />
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-slate-400">
-          <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">{items.length === 0 ? 'Estoque vazio' : 'Nenhum produto encontrado'}</p>
-          <p className="text-sm mt-1">{items.length === 0 ? 'Adicione produtos com o botão +' : 'Tente outra busca'}</p>
-        </div>
+        items.length === 0 ? (
+          <EmptyState
+            icon={Package}
+            tone="indigo"
+            title="Estoque vazio"
+            subtitle="Cadastre peças e produtos para controlar quantidade, custo e margem — e receber alerta quando algo estiver acabando."
+            action={{ label: 'Adicionar produto', icon: Plus, onClick: () => { setShowAdd(true); setEditId(null) } }}
+          />
+        ) : (
+          <EmptyState icon={Search} tone="slate" title="Nenhum produto encontrado" subtitle="Tente outra busca." />
+        )
       ) : (
         <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
           {filtered.map(item => {

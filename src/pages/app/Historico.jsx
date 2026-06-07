@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { showSaveCheck } from '../../components/SaveCheck'
 import SkeletonList from '../../components/Skeleton'
 import PlateTag from '../../components/PlateTag'
+import EmptyState from '../../components/EmptyState'
 import {
   vehicleStorage, clientStorage, osStorage, vendaStorage,
   formatCurrency, formatDate, STATUS_LABELS, STATUS_COLORS, norm
@@ -687,16 +688,24 @@ export default function Historico() {
           <SkeletonList count={6} className="lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5 lg:space-y-0" />
         ) : view === 'clientes' ? (
           clientesFiltrados.length === 0 ? (
-            <div className="text-center py-16 text-slate-400">
-              <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">
-                {filtro === 'sumidos' ? 'Nenhum cliente sumido 🎉'
+            (!query && filtro === 'todos') ? (
+              <EmptyState
+                icon={Users}
+                tone="indigo"
+                title="Sua carteira de clientes começa aqui"
+                subtitle="Cadastre seus clientes para acompanhar histórico, total gasto e quem anda sumido — e trazê-los de volta."
+                action={{ label: 'Cadastrar cliente', icon: Plus, onClick: () => setClientModal({ mode: 'create' }) }}
+              />
+            ) : (
+              <EmptyState
+                icon={filtro === 'aniversario' ? Cake : filtro === 'sumidos' ? Clock : Users}
+                tone={filtro === 'aniversario' ? 'pink' : 'slate'}
+                title={filtro === 'sumidos' ? 'Nenhum cliente sumido 🎉'
                   : filtro === 'aniversario' ? 'Nenhum aniversariante este mês'
-                  : query ? 'Nenhum cliente encontrado'
-                  : 'Nenhum cliente cadastrado'}
-              </p>
-              {!query && filtro === 'todos' && <p className="text-sm mt-1">Use o + para cadastrar</p>}
-            </div>
+                  : 'Nenhum cliente encontrado'}
+                subtitle={filtro === 'sumidos' ? 'Todos os seus clientes voltaram nos últimos meses.' : undefined}
+              />
+            )
           ) : (
             <div className={display === 'list'
               ? 'space-y-1.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2 lg:items-start'
@@ -713,10 +722,12 @@ export default function Historico() {
           )
         ) : (
           veiculosFiltrados.length === 0 ? (
-            <div className="text-center py-16 text-slate-400">
-              <Car className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">{query ? 'Nenhum veículo encontrado' : 'Nenhum veículo cadastrado'}</p>
-            </div>
+            <EmptyState
+              icon={Car}
+              tone={query ? 'slate' : 'indigo'}
+              title={query ? 'Nenhum veículo encontrado' : 'Nenhum veículo ainda'}
+              subtitle={query ? 'Tente outra busca.' : 'Os veículos aparecem aqui quando você cria a primeira OS na aba Oficina.'}
+            />
           ) : (
             <div className={display === 'list'
               ? 'space-y-1.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2'

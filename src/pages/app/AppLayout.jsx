@@ -16,6 +16,16 @@ const tabs = [
   { to: '/app/menu',       icon: Menu,       label: 'Menu' },
 ]
 
+// Avatar da oficina (inicial) — cara de "minha marca"
+function OficinaAvatar({ nome, className = 'w-7 h-7 text-xs' }) {
+  const inicial = (nome?.trim()?.[0] || 'O').toUpperCase()
+  return (
+    <div className={`rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 text-white font-bold flex items-center justify-center shrink-0 ${className}`}>
+      {inicial}
+    </div>
+  )
+}
+
 export default function AppLayout() {
   const { user, loading } = useAuth()
   const navigate  = useNavigate()
@@ -85,13 +95,12 @@ export default function AppLayout() {
 
         {/* Sidebar */}
         <aside className="w-56 bg-white border-r border-gray-100 flex flex-col fixed top-0 left-0 h-screen z-40">
-          {/* Logo */}
-          <div className="px-5 py-4 border-b border-gray-100">
-            <div className="flex items-center gap-2.5">
-              <Logo size="sm" priority />
-              <div className="min-w-0">
-                <p className="text-[10px] text-slate-400 truncate">{user.oficina}</p>
-              </div>
+          {/* Logo + oficina */}
+          <div className="px-5 py-4 border-b border-gray-100 space-y-3">
+            <Logo size="sm" priority />
+            <div className="flex items-center gap-2">
+              <OficinaAvatar nome={user.oficina} />
+              <p className="text-xs font-semibold text-slate-700 truncate">{user.oficina}</p>
             </div>
           </div>
 
@@ -212,7 +221,10 @@ export default function AppLayout() {
               </div>
             )}
           </div>
-          <span className="text-xs text-slate-400 truncate max-w-[150px]">{user.oficina}</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs font-medium text-slate-500 truncate max-w-[110px]">{user.oficina}</span>
+            <OficinaAvatar nome={user.oficina} className="w-6 h-6 text-[11px]" />
+          </div>
         </header>
 
         {/* Content */}
@@ -228,14 +240,16 @@ export default function AppLayout() {
                 key={to}
                 to={to}
                 className={({ isActive }) =>
-                  `flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors ${
+                  `relative flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors ${
                     isActive ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <div className={`p-1.5 rounded-xl transition-colors ${isActive ? 'bg-indigo-50' : ''}`}>
+                    {/* indicador superior animado */}
+                    <span className={`absolute top-0 h-[3px] rounded-full bg-indigo-600 transition-all duration-300 ${isActive ? 'w-8 opacity-100' : 'w-0 opacity-0'}`} />
+                    <div className={`p-1.5 rounded-xl transition-all duration-200 ${isActive ? 'bg-indigo-50 scale-110' : ''}`}>
                       <Icon className="w-5 h-5" />
                     </div>
                     <span className="text-[9px] font-medium">{label}</span>

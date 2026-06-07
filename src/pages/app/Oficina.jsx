@@ -15,6 +15,7 @@ import { supabase } from '../../lib/supabase'
 import { sendCapi } from '../../lib/metaCapi'
 import FipeSeletor from '../../components/FipeSeletor'
 import PlateTag from '../../components/PlateTag'
+import EmptyState from '../../components/EmptyState'
 import { showSaveCheck } from '../../components/SaveCheck'
 import { showToast, showUndoToast } from '../../components/Toast'
 import SkeletonList, { SkeletonCards } from '../../components/Skeleton'
@@ -494,11 +495,13 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
       )}
 
       {activeCount === 0 && data.agendados.length === 0 && (
-        <div className="text-center py-16 text-slate-400">
-          <Car className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">Tudo tranquilo por aqui!</p>
-          <p className="text-sm mt-1">Toque no + para abrir uma OS</p>
-        </div>
+        <EmptyState
+          icon={Car}
+          tone="indigo"
+          title="Tudo tranquilo por aqui!"
+          subtitle="Nenhuma OS em aberto. Crie a primeira ordem de serviço e mande o orçamento pelo WhatsApp."
+          action={{ label: 'Criar primeira OS', icon: Plus, onClick: onNewOS }}
+        />
       )}
 
       {/* FAB */}
