@@ -4,7 +4,7 @@
 // Cache de fallback para assets estáticos
 // ============================================================
 
-const CACHE_NAME = 'boxcerto-v5'
+const CACHE_NAME = 'boxcerto-v6'
 
 // NÃO inclui '/' — index.html nunca pode ser cacheado (hashes de chunk mudam a cada deploy)
 const STATIC_ASSETS = [
@@ -86,6 +86,11 @@ self.addEventListener('fetch', (event) => {
   // (chrome-extension://, moz-extension://, etc. causam TypeError no cache.put)
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return
 
+  // Navegações (documento/HTML) NÃO passam pelo SW — o browser busca direto da rede.
+  // Mantém o index.html sempre fresco e tira o SW do caminho crítico de carregamento
+  // da página (evita tela branca / erros de "Failed to convert to Response").
+  if (event.request.mode === 'navigate' || event.request.destination === 'document') return
+
   // Ignora requisições para APIs externas, Supabase e rotas /api/*
   if (
     url.hostname.includes('supabase.co') ||
@@ -116,14 +121,9 @@ self.addEventListener('fetch', (event) => {
         return response
       })
       .catch(() => {
-        // Offline: tenta servir do cache
-        return caches.match(event.request).then((cached) => {
-          if (cached) return cached
-          // Para navegação, serve a index como fallback (SPA)
-          if (event.request.destination === 'document') {
-            return caches.match('/')
-          }
-        })
+        // Offline/falha: serve do cache se houver; senão devolve um erro de rede
+        // VÁLIDO (nunca undefined — undefined quebra o respondWith).
+        return caches.match(event.request).then((cached) => cached || Response.error())
       })
   )
 })
