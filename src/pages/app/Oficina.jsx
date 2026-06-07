@@ -295,7 +295,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
 
       {/* ── AGENDA ─────────────────────────────────────────── */}
       {data.agendados.length > 0 && (
-        <div ref={agendaRef} className="scroll-mt-2">
+        <div ref={agendaRef} className="scroll-mt-20 lg:scroll-mt-4">
           {/* Cabeçalho colapsável */}
           <button
             onClick={() => setAgendaAberta(a => !a)}
@@ -376,7 +376,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
 
       {/* Prontos para retirar */}
       {data.prontos.length > 0 && (
-        <div ref={prontosRef} className="scroll-mt-2">
+        <div ref={prontosRef} className="scroll-mt-20 lg:scroll-mt-4">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> Prontos para retirar
           </p>
@@ -400,7 +400,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
 
       {/* Em manutenção */}
       {data.manutencao.length > 0 && (
-        <div ref={manutencaoRef} className="scroll-mt-2">
+        <div ref={manutencaoRef} className="scroll-mt-20 lg:scroll-mt-4">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Wrench className="w-3.5 h-3.5 text-blue-500" /> Em manutenção
           </p>
@@ -451,7 +451,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
 
       {/* Orçamentos */}
       {data.orcamento.length > 0 && (
-        <div ref={orcamentoRef} className="scroll-mt-2">
+        <div ref={orcamentoRef} className="scroll-mt-20 lg:scroll-mt-4">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5 text-amber-500" /> Orçamentos abertos
           </p>

@@ -1,7 +1,7 @@
 // ── Placa de veículo realista ───────────────────────────────
-// Detecta o formato e renderiza:
-//  • Mercosul (ABC1D23) → placa branca com faixa azul "BR" no topo
-//  • Antiga   (ABC-1234) → placa cinza clássica
+// Detecta o formato e renderiza (ambas no MESMO tamanho):
+//  • Mercosul (ABC1D23) → faixa azul "BR · BRASIL" + número
+//  • Antiga   (ABC-1234) → faixa cinza "BRASIL" + número
 // Fallback: Mercosul (padrão atual de emplacamento).
 
 function limpar(placa) {
@@ -21,27 +21,39 @@ function fmtAntiga(placa) {
 }
 
 export default function PlateTag({ placa, sm = false }) {
-  const tipo = tipoPlaca(placa)
-  const numCls = `plate-mercosul font-extrabold tracking-widest text-slate-900 ${sm ? 'text-[11px]' : 'text-[13px]'}`
+  const tipo   = tipoPlaca(placa)
+  const numero = tipo === 'antiga' ? fmtAntiga(placa) : limpar(placa)
 
-  // ── Placa cinza antiga ──
+  // Tipografia igual à de antes (fonte de placa, bold, espaçada)
+  const numCls = `plate-mercosul font-bold tracking-widest text-slate-900 ${sm ? 'text-[11px]' : 'text-sm'}`
+  // Wrapper comum → garante o MESMO tamanho nas duas
+  const wrap   = `inline-flex flex-col shrink-0 overflow-hidden rounded-md border bg-white shadow-sm ${sm ? 'min-w-[58px]' : 'min-w-[72px]'}`
+  const bandH  = sm ? 'h-[8px]' : 'h-[10px]'
+  const numPad = sm ? 'px-1.5 pb-[3px] pt-px' : 'px-2 pb-1 pt-0.5'
+  const labelFs = sm ? 4.5 : 5.5
+
   if (tipo === 'antiga') {
     return (
-      <div className={`inline-flex shrink-0 items-center rounded-md border border-slate-400/80 bg-gradient-to-b from-slate-200 to-slate-300 ${sm ? 'px-1.5 py-[3px]' : 'px-2 py-1'}`}>
-        <span className={numCls}>{fmtAntiga(placa)}</span>
+      <div className={`${wrap} border-slate-400/80`} style={{ background: 'linear-gradient(#e5e7eb,#cbd5e1)' }}>
+        <div className={`flex items-center justify-center bg-slate-500 ${bandH}`}>
+          <span className="font-semibold leading-none text-white" style={{ fontSize: labelFs, letterSpacing: '.08em' }}>BRASIL</span>
+        </div>
+        <div className={`text-center ${numPad}`}>
+          <span className={numCls}>{numero}</span>
+        </div>
       </div>
     )
   }
 
-  // ── Placa Mercosul ──
+  // Mercosul
   return (
-    <div className="inline-flex flex-col shrink-0 overflow-hidden rounded-md border border-slate-300 bg-white shadow-sm">
-      <div className={`flex items-center justify-between bg-[#1e3a8a] px-1 ${sm ? 'h-[7px]' : 'h-[9px]'}`}>
-        <span className="font-bold leading-none text-white" style={{ fontSize: sm ? 4.5 : 5.5, letterSpacing: '.04em' }}>BR</span>
-        <span className="rounded-[1px] bg-green-400" style={{ width: sm ? 4 : 5, height: sm ? 2.5 : 3 }} />
+    <div className={`${wrap} border-slate-300`}>
+      <div className={`flex items-center justify-between bg-[#1e3a8a] px-1 ${bandH}`}>
+        <span className="font-bold leading-none text-white" style={{ fontSize: labelFs, letterSpacing: '.04em' }}>BR</span>
+        <span className="font-semibold leading-none text-white" style={{ fontSize: labelFs, letterSpacing: '.06em' }}>BRASIL</span>
       </div>
-      <div className={`text-center ${sm ? 'px-1.5 pb-[3px] pt-px' : 'px-2 pb-1 pt-0.5'}`}>
-        <span className={numCls}>{limpar(placa)}</span>
+      <div className={`text-center ${numPad}`}>
+        <span className={numCls}>{numero}</span>
       </div>
     </div>
   )
