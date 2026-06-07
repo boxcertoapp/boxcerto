@@ -257,23 +257,35 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
 
       {/* Cards rápidos — 4 cards */}
       <div className="grid grid-cols-4 gap-2">
-        <div className="bg-green-50 rounded-2xl p-2.5 text-center border border-green-100">
-          <p className="text-xl font-bold text-green-700">{data.prontos.length}</p>
-          <p className="text-[10px] text-green-600 mt-0.5 font-medium leading-tight">Pronto{data.prontos.length !== 1 ? 's' : ''}</p>
+        <div className="bg-white rounded-2xl p-3 text-center border border-gray-100 shadow-sm transition-all lg:hover:shadow-md lg:hover:-translate-y-0.5">
+          <div className="w-7 h-7 mx-auto mb-1.5 rounded-xl bg-green-100 flex items-center justify-center">
+            <CheckCircle2 className="w-4 h-4 text-green-600" />
+          </div>
+          <p className="text-xl font-bold text-green-700 leading-none">{data.prontos.length}</p>
+          <p className="text-[10px] text-slate-500 mt-1 font-medium leading-tight">Pronto{data.prontos.length !== 1 ? 's' : ''}</p>
         </div>
-        <div className="bg-blue-50 rounded-2xl p-2.5 text-center border border-blue-100">
-          <p className="text-xl font-bold text-blue-700">{data.manutencao.length}</p>
-          <p className="text-[10px] text-blue-600 mt-0.5 font-medium leading-tight">Manutenção</p>
+        <div className="bg-white rounded-2xl p-3 text-center border border-gray-100 shadow-sm transition-all lg:hover:shadow-md lg:hover:-translate-y-0.5">
+          <div className="w-7 h-7 mx-auto mb-1.5 rounded-xl bg-blue-100 flex items-center justify-center">
+            <Wrench className="w-4 h-4 text-blue-600" />
+          </div>
+          <p className="text-xl font-bold text-blue-700 leading-none">{data.manutencao.length}</p>
+          <p className="text-[10px] text-slate-500 mt-1 font-medium leading-tight">Manutenção</p>
         </div>
-        <div className="bg-amber-50 rounded-2xl p-2.5 text-center border border-amber-100">
-          <p className="text-xl font-bold text-amber-700">{data.orcamento.length}</p>
-          <p className="text-[10px] text-amber-600 mt-0.5 font-medium leading-tight">Orçamento{data.orcamento.length !== 1 ? 's' : ''}</p>
+        <div className="bg-white rounded-2xl p-3 text-center border border-gray-100 shadow-sm transition-all lg:hover:shadow-md lg:hover:-translate-y-0.5">
+          <div className="w-7 h-7 mx-auto mb-1.5 rounded-xl bg-amber-100 flex items-center justify-center">
+            <FileText className="w-4 h-4 text-amber-600" />
+          </div>
+          <p className="text-xl font-bold text-amber-600 leading-none">{data.orcamento.length}</p>
+          <p className="text-[10px] text-slate-500 mt-1 font-medium leading-tight">Orçamento{data.orcamento.length !== 1 ? 's' : ''}</p>
         </div>
-        <div className="bg-indigo-50 rounded-2xl p-2.5 text-center border border-indigo-100 relative">
-          <p className="text-xl font-bold text-indigo-700">{data.agendados.length}</p>
-          <p className="text-[10px] text-indigo-600 mt-0.5 font-medium leading-tight">Agendados</p>
+        <div className="bg-white rounded-2xl p-3 text-center border border-gray-100 shadow-sm transition-all lg:hover:shadow-md lg:hover:-translate-y-0.5 relative">
+          <div className="w-7 h-7 mx-auto mb-1.5 rounded-xl bg-indigo-100 flex items-center justify-center">
+            <CalendarClock className="w-4 h-4 text-indigo-600" />
+          </div>
+          <p className="text-xl font-bold text-indigo-700 leading-none">{data.agendados.length}</p>
+          <p className="text-[10px] text-slate-500 mt-1 font-medium leading-tight">Agendados</p>
           {atrasados.length > 0 && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{atrasados.length}</span>
+            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">{atrasados.length}</span>
           )}
         </div>
       </div>
