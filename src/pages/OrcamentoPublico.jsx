@@ -5,6 +5,7 @@ import {
   Shield, Loader2, XCircle, ChevronDown, ChevronUp, Bell, RefreshCw,
 } from 'lucide-react'
 import { osStorage, formatCurrency } from '../lib/storage'
+import PlateTag from '../components/PlateTag'
 import { showToast } from '../components/Toast'
 
 // ── Stepper ──────────────────────────────────────────────────────
@@ -460,10 +461,7 @@ export default function OrcamentoPublico() {
             )}
           </div>
           <div className="flex items-center gap-3">
-            <div className="bg-slate-800 px-3 py-2 rounded-lg shrink-0">
-              <p className="text-white font-bold tracking-widest text-sm">{os.vehicle?.placa}</p>
-              <p className="text-slate-500 text-[9px] text-center">BRASIL</p>
-            </div>
+            <PlateTag placa={os.vehicle?.placa} />
             <div>
               <p className="font-semibold text-slate-900">{os.vehicle?.modelo}</p>
               <p className="text-sm text-slate-400">{os.client?.nome}</p>

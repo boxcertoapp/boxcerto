@@ -8,18 +8,12 @@ import {
 import { useAuth } from '../../contexts/AuthContext'
 import { showSaveCheck } from '../../components/SaveCheck'
 import SkeletonList from '../../components/Skeleton'
+import PlateTag from '../../components/PlateTag'
 import {
   vehicleStorage, clientStorage, osStorage, vendaStorage,
   formatCurrency, formatDate, STATUS_LABELS, STATUS_COLORS, norm
 } from '../../lib/storage'
 
-function PlateTag({ placa, sm }) {
-  return (
-    <div className={`bg-slate-800 rounded-lg shrink-0 ${sm ? 'px-2 py-0.5' : 'px-2 py-1'}`}>
-      <span className={`text-white font-bold plate-mercosul tracking-widest ${sm ? 'text-[11px]' : 'text-xs'}`}>{placa}</span>
-    </div>
-  )
-}
 
 // ── SHARED FORM HELPERS ───────────────────────────────────
 const formatWpp = (val) => {

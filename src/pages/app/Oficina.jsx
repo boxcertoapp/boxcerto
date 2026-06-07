@@ -14,6 +14,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { sendCapi } from '../../lib/metaCapi'
 import FipeSeletor from '../../components/FipeSeletor'
+import PlateTag from '../../components/PlateTag'
 import { showSaveCheck } from '../../components/SaveCheck'
 import { showToast, showUndoToast } from '../../components/Toast'
 import SkeletonList, { SkeletonCards } from '../../components/Skeleton'
@@ -60,15 +61,6 @@ const WPP_MESSAGES = {
     `Olá ${cliente}! 🚗 Faz ${dias} dias desde a última visita do seu *${modelo}*. Que tal agendar uma revisão?`,
   aniversario: (cliente) =>
     `Olá ${cliente}! 🎂 Hoje é seu aniversário! A equipe da oficina deseja um dia incrível. Aproveite nosso desconto especial de aniversário! 🎁`,
-}
-
-function PlateTag({ placa }) {
-  return (
-    <div className="bg-slate-800 px-2.5 py-1.5 rounded-lg flex flex-col items-center min-w-[80px]">
-      <span className="text-white text-sm font-bold plate-mercosul tracking-widest">{placa}</span>
-      <span className="text-slate-500 text-[8px] mt-0.5">BRASIL</span>
-    </div>
-  )
 }
 
 function localDatetimeNow() {
@@ -179,6 +171,13 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
   const [data, setData] = useState({ all: [], prontos: [], manutencao: [], orcamento: [], agendados: [] })
   const [filtroAgenda, setFiltroAgenda] = useState('hoje')
   const [agendaAberta, setAgendaAberta] = useState(false)
+
+  // Refs das seções para o scroll ao tocar nos cards rápidos
+  const prontosRef    = useRef(null)
+  const manutencaoRef = useRef(null)
+  const orcamentoRef  = useRef(null)
+  const agendaRef     = useRef(null)
+  const scrollToSec = (ref) => ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -255,44 +254,48 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
         </p>
       </div>
 
-      {/* Cards rápidos — 4 cards */}
+      {/* Cards rápidos — 4 cards (clicáveis → rolam para a seção) */}
       <div className="grid grid-cols-4 gap-2">
-        <div className="bg-white rounded-2xl p-3 text-center border border-gray-100 shadow-sm transition-all lg:hover:shadow-md lg:hover:-translate-y-0.5">
-          <div className="w-7 h-7 mx-auto mb-1.5 rounded-xl bg-green-100 flex items-center justify-center">
+        <button type="button" onClick={() => scrollToSec(prontosRef)}
+          className="bg-green-50 rounded-2xl p-3 text-center border border-green-100/80 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 active:scale-95">
+          <div className="w-7 h-7 mx-auto mb-1.5 rounded-xl bg-white shadow-sm flex items-center justify-center">
             <CheckCircle2 className="w-4 h-4 text-green-600" />
           </div>
           <p className="text-xl font-bold text-green-700 leading-none">{data.prontos.length}</p>
-          <p className="text-[10px] text-slate-500 mt-1 font-medium leading-tight">Pronto{data.prontos.length !== 1 ? 's' : ''}</p>
-        </div>
-        <div className="bg-white rounded-2xl p-3 text-center border border-gray-100 shadow-sm transition-all lg:hover:shadow-md lg:hover:-translate-y-0.5">
-          <div className="w-7 h-7 mx-auto mb-1.5 rounded-xl bg-blue-100 flex items-center justify-center">
+          <p className="text-[10px] text-green-700/70 mt-1 font-semibold leading-tight">Pronto{data.prontos.length !== 1 ? 's' : ''}</p>
+        </button>
+        <button type="button" onClick={() => scrollToSec(manutencaoRef)}
+          className="bg-blue-50 rounded-2xl p-3 text-center border border-blue-100/80 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 active:scale-95">
+          <div className="w-7 h-7 mx-auto mb-1.5 rounded-xl bg-white shadow-sm flex items-center justify-center">
             <Wrench className="w-4 h-4 text-blue-600" />
           </div>
           <p className="text-xl font-bold text-blue-700 leading-none">{data.manutencao.length}</p>
-          <p className="text-[10px] text-slate-500 mt-1 font-medium leading-tight">Manutenção</p>
-        </div>
-        <div className="bg-white rounded-2xl p-3 text-center border border-gray-100 shadow-sm transition-all lg:hover:shadow-md lg:hover:-translate-y-0.5">
-          <div className="w-7 h-7 mx-auto mb-1.5 rounded-xl bg-amber-100 flex items-center justify-center">
+          <p className="text-[10px] text-blue-700/70 mt-1 font-semibold leading-tight">Manutenção</p>
+        </button>
+        <button type="button" onClick={() => scrollToSec(orcamentoRef)}
+          className="bg-amber-50 rounded-2xl p-3 text-center border border-amber-100/80 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 active:scale-95">
+          <div className="w-7 h-7 mx-auto mb-1.5 rounded-xl bg-white shadow-sm flex items-center justify-center">
             <FileText className="w-4 h-4 text-amber-600" />
           </div>
           <p className="text-xl font-bold text-amber-600 leading-none">{data.orcamento.length}</p>
-          <p className="text-[10px] text-slate-500 mt-1 font-medium leading-tight">Orçamento{data.orcamento.length !== 1 ? 's' : ''}</p>
-        </div>
-        <div className="bg-white rounded-2xl p-3 text-center border border-gray-100 shadow-sm transition-all lg:hover:shadow-md lg:hover:-translate-y-0.5 relative">
-          <div className="w-7 h-7 mx-auto mb-1.5 rounded-xl bg-indigo-100 flex items-center justify-center">
+          <p className="text-[10px] text-amber-700/70 mt-1 font-semibold leading-tight">Orçamento{data.orcamento.length !== 1 ? 's' : ''}</p>
+        </button>
+        <button type="button" onClick={() => { setAgendaAberta(true); setTimeout(() => scrollToSec(agendaRef), 60) }}
+          className="bg-indigo-50 rounded-2xl p-3 text-center border border-indigo-100/80 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 active:scale-95 relative">
+          <div className="w-7 h-7 mx-auto mb-1.5 rounded-xl bg-white shadow-sm flex items-center justify-center">
             <CalendarClock className="w-4 h-4 text-indigo-600" />
           </div>
           <p className="text-xl font-bold text-indigo-700 leading-none">{data.agendados.length}</p>
-          <p className="text-[10px] text-slate-500 mt-1 font-medium leading-tight">Agendados</p>
+          <p className="text-[10px] text-indigo-700/70 mt-1 font-semibold leading-tight">Agendados</p>
           {atrasados.length > 0 && (
             <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">{atrasados.length}</span>
           )}
-        </div>
+        </button>
       </div>
 
       {/* ── AGENDA ─────────────────────────────────────────── */}
       {data.agendados.length > 0 && (
-        <div>
+        <div ref={agendaRef} className="scroll-mt-2">
           {/* Cabeçalho colapsável */}
           <button
             onClick={() => setAgendaAberta(a => !a)}
@@ -373,7 +376,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
 
       {/* Prontos para retirar */}
       {data.prontos.length > 0 && (
-        <div>
+        <div ref={prontosRef} className="scroll-mt-2">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> Prontos para retirar
           </p>
@@ -397,7 +400,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
 
       {/* Em manutenção */}
       {data.manutencao.length > 0 && (
-        <div>
+        <div ref={manutencaoRef} className="scroll-mt-2">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Wrench className="w-3.5 h-3.5 text-blue-500" /> Em manutenção
           </p>
@@ -448,7 +451,7 @@ function Dashboard({ officeName, onOpenOS, onNewOS }) {
 
       {/* Orçamentos */}
       {data.orcamento.length > 0 && (
-        <div>
+        <div ref={orcamentoRef} className="scroll-mt-2">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5 text-amber-500" /> Orçamentos abertos
           </p>
