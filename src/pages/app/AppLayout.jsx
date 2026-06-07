@@ -96,12 +96,9 @@ export default function AppLayout() {
         {/* Sidebar */}
         <aside className="w-56 bg-white border-r border-gray-100 flex flex-col fixed top-0 left-0 h-screen z-40">
           {/* Logo + oficina */}
-          <div className="px-5 py-4 border-b border-gray-100 space-y-3">
+          <div className="px-5 py-4 border-b border-gray-100">
             <Logo size="sm" priority />
-            <div className="flex items-center gap-2">
-              <OficinaAvatar nome={user.oficina} />
-              <p className="text-xs font-semibold text-slate-700 truncate">{user.oficina}</p>
-            </div>
+            <p className="text-[11px] font-medium text-slate-500 truncate mt-2">{user.oficina}</p>
           </div>
 
           {/* Nav links */}
