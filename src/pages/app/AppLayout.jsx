@@ -7,6 +7,7 @@ import Logo from '../../components/Logo'
 import OnboardingWizard from '../../components/OnboardingWizard'
 import SaveCheck from '../../components/SaveCheck'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
+import { officeDataStorage } from '../../lib/storage'
 
 const tabs = [
   { to: '/app/oficina',    icon: Wrench,     label: 'Oficina' },
@@ -16,8 +17,15 @@ const tabs = [
   { to: '/app/menu',       icon: Menu,       label: 'Menu' },
 ]
 
-// Avatar da oficina (inicial) — cara de "minha marca"
-function OficinaAvatar({ nome, className = 'w-7 h-7 text-xs' }) {
+// Avatar da oficina — logotipo da oficina se houver; senão a inicial.
+function OficinaAvatar({ nome, logo, className = 'w-7 h-7 text-xs' }) {
+  if (logo) {
+    return (
+      <div className={`rounded-lg overflow-hidden bg-white border border-gray-200 flex items-center justify-center shrink-0 ${className}`}>
+        <img src={logo} alt="Logo da oficina" className="w-full h-full object-contain" />
+      </div>
+    )
+  }
   const inicial = (nome?.trim()?.[0] || 'O').toUpperCase()
   return (
     <div className={`rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 text-white font-bold flex items-center justify-center shrink-0 ${className}`}>
@@ -34,6 +42,13 @@ export default function AppLayout() {
   // Refs dos containers de scroll — mobile e desktop
   const mainMobileRef  = useRef(null)
   const mainDesktopRef = useRef(null)
+
+  // Logotipo da oficina (das configurações) para os headers
+  const [officeLogo, setOfficeLogo] = useState(null)
+  useEffect(() => {
+    if (!user?.oficina) return
+    officeDataStorage.get(user.oficina).then(d => setOfficeLogo(d?.logo || null)).catch(() => {})
+  }, [user?.oficina])
 
   // Volta ao topo sempre que a rota mudar
   useEffect(() => {
@@ -95,10 +110,13 @@ export default function AppLayout() {
 
         {/* Sidebar */}
         <aside className="w-56 bg-white border-r border-gray-100 flex flex-col fixed top-0 left-0 h-screen z-40">
-          {/* Logo + oficina */}
+          {/* Logo do app + identidade da oficina */}
           <div className="px-5 py-4 border-b border-gray-100">
             <Logo size="sm" priority />
-            <p className="text-[11px] font-medium text-slate-500 truncate mt-2">{user.oficina}</p>
+            <div className="flex items-center gap-2 mt-2.5">
+              {officeLogo && <OficinaAvatar logo={officeLogo} nome={user.oficina} className="w-6 h-6" />}
+              <p className="text-[11px] font-medium text-slate-500 truncate">{user.oficina}</p>
+            </div>
           </div>
 
           {/* Nav links */}
@@ -220,7 +238,7 @@ export default function AppLayout() {
           </div>
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-xs font-medium text-slate-500 truncate max-w-[110px]">{user.oficina}</span>
-            <OficinaAvatar nome={user.oficina} className="w-6 h-6 text-[11px]" />
+            <OficinaAvatar nome={user.oficina} logo={officeLogo} className="w-6 h-6 text-[11px]" />
           </div>
         </header>
 
