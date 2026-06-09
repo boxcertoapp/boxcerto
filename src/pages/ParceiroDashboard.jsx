@@ -824,11 +824,24 @@ function Dashboard({ session, onLogout, firstLogin = false, onIdentitySaved }) {
             </button>
           </div>
           <div className="space-y-3">
+            {/* Nome exibido na página pública */}
+            <div className="flex items-center gap-2 bg-indigo-50/60 border border-indigo-100 rounded-xl px-4 py-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] text-indigo-400 uppercase tracking-wide font-semibold mb-0.5">Nome exibido na sua página</p>
+                <p className="text-sm font-bold text-slate-800 truncate">{partnerDisplayName || partner.nome}</p>
+              </div>
+              <button
+                onClick={() => setIdentityModal(true)}
+                className="shrink-0 flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 px-3 py-1.5 rounded-lg hover:bg-white transition-colors border border-transparent hover:border-indigo-200">
+                <Edit2 className="w-3.5 h-3.5" />
+                Editar
+              </button>
+            </div>
             <CopyField label="Link de indicação" value={link} mono />
             {coupon && <CopyField label="Cupom (10% de desconto para o indicado)" value={coupon} mono={false} />}
           </div>
           <p className="text-xs text-slate-400 mt-3">
-            Compartilhe seu link ou o cupom. Quando alguém se cadastrar, você recebe a comissão automaticamente.
+            O <strong>nome exibido</strong> é o que seus indicados veem na página — nunca seu e-mail. Compartilhe o link ou o cupom: quando alguém se cadastrar, você recebe a comissão automaticamente.
           </p>
           <div className="flex flex-wrap gap-2 mt-4">
             <a
