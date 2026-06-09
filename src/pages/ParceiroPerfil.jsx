@@ -255,6 +255,17 @@ function tipoLabel(tipo = '') {
   const map = { influencer: 'Canal parceiro', vendedor: 'Parceiro comercial', empresa: 'Empresa parceira', oficina: 'Parceiro oficial', outro: 'Parceiro BoxCerto' }
   return map[tipo] || 'Parceiro BoxCerto'
 }
+// Nome público a exibir: nunca mostra o e-mail do parceiro.
+function publicPartnerName(partner = {}) {
+  const dn = (partner.display_name || '').trim()
+  if (dn) return dn
+  const nome = (partner.nome || '').trim()
+  if (nome && !nome.includes('@')) return nome
+  const empresa = (partner.empresa || '').trim()
+  if (empresa) return empresa
+  if (nome.includes('@')) return nome.split('@')[0]   // só a parte antes do @, nunca o e-mail completo
+  return 'Parceiro BoxCerto'
+}
 
 // ── Inline SVG icons ─────────────────────────────────────────
 const IcArrow = () => (
@@ -818,10 +829,12 @@ export default function ParceiroPerfil() {
   if (!partner) return null
 
   // Objeto de display derivado dos dados reais do parceiro
-  const mat = partner.materials || {}
+  // materials só é tratado como config quando vier objeto (legado); array = lista de materiais
+  const mat = (partner.materials && !Array.isArray(partner.materials)) ? partner.materials : {}
+  const nomeExibicao = publicPartnerName(partner)
   const p = {
-    name:        mat.displayName || partner.nome,
-    initials:    getInitials(partner.nome),
+    name:        nomeExibicao,
+    initials:    getInitials(nomeExibicao),
     color:       mat.color || partnerColor(partner.slug),
     category:    mat.category || tipoLabel(partner.tipo),
     role:        mat.role || partner.empresa || tipoLabel(partner.tipo),

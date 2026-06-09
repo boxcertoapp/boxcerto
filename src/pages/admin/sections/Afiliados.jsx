@@ -200,10 +200,16 @@ function PartnerDetailModal({ partner, onClose, onReload }) {
   const [tab, setTab]             = useState('commissions')
   const [events, setEvents]       = useState([])
   const [commissions, setCommissions] = useState([])
+  const [customers, setCustomers] = useState([])
   const [loading, setLoading]     = useState(true)
   const [approving, setApproving] = useState(null) // id | 'all'
 
   useEffect(() => {
+    // Clientes atribuídos: por partner_id (convertidos) ou por ref/cupom (trials)
+    const orParts = [`affiliate_partner_id.eq.${partner.id}`]
+    if (partner.slug)        orParts.push(`affiliate_ref.eq.${partner.slug}`)
+    if (partner.coupon_code) orParts.push(`affiliate_coupon.eq.${partner.coupon_code}`)
+
     Promise.all([
       supabase
         .from('affiliate_events')
@@ -216,9 +222,15 @@ function PartnerDetailModal({ partner, onClose, onReload }) {
         .select('*')
         .eq('partner_id', partner.id)
         .order('created_at', { ascending: false }),
-    ]).then(([ev, cm]) => {
+      supabase
+        .from('profiles')
+        .select('id, oficina, responsavel, email, status, created_at, affiliate_partner_id')
+        .or(orParts.join(','))
+        .order('created_at', { ascending: false }),
+    ]).then(([ev, cm, cu]) => {
       setEvents(ev.data || [])
       setCommissions(cm.data || [])
+      setCustomers(cu.data || [])
       setLoading(false)
     })
   }, [partner.id])
@@ -303,7 +315,7 @@ function PartnerDetailModal({ partner, onClose, onReload }) {
 
         {/* Tabs */}
         <div className="flex border-b border-gray-100">
-          {[['commissions', 'Comissões'], ['events', 'Eventos']].map(([k, l]) => (
+          {[['commissions', 'Comissões'], ['clientes', 'Clientes'], ['events', 'Eventos']].map(([k, l]) => (
             <button key={k} onClick={() => setTab(k)}
               className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors
                 ${tab === k ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
@@ -311,6 +323,11 @@ function PartnerDetailModal({ partner, onClose, onReload }) {
               {k === 'commissions' && pendingComms.length > 0 && (
                 <span className="ml-1.5 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                   {pendingComms.length}
+                </span>
+              )}
+              {k === 'clientes' && customers.length > 0 && (
+                <span className="ml-1.5 bg-slate-200 text-slate-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  {customers.length}
                 </span>
               )}
             </button>
@@ -367,6 +384,25 @@ function PartnerDetailModal({ partner, onClose, onReload }) {
                         Aprovar
                       </button>
                     )}
+                  </div>
+                ))}
+              </div>
+            )
+          ) : tab === 'clientes' ? (
+            customers.length === 0 ? (
+              <p className="text-center text-sm text-slate-400 py-10">Nenhum cliente atribuído a este parceiro ainda.</p>
+            ) : (
+              <div className="space-y-2">
+                {customers.map(cu => (
+                  <div key={cu.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-slate-700 truncate">{cu.oficina || cu.responsavel || cu.email || '—'}</p>
+                      <p className="text-[11px] text-slate-400 truncate">{cu.email || '—'} · {fmtDate(cu.created_at)}</p>
+                    </div>
+                    {cu.affiliate_partner_id
+                      ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 shrink-0">pagante</span>
+                      : <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 shrink-0">trial</span>}
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 shrink-0">{cu.status}</span>
                   </div>
                 ))}
               </div>

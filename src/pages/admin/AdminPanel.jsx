@@ -49,6 +49,9 @@ export const loadUsers = async () => {
     cargo:       p.cargo        || null,
     activated:   p.activated    || false,
     firstActionAt: p.first_action_at || null,
+    affiliateRef:       p.affiliate_ref        || null,
+    affiliateCoupon:    p.affiliate_coupon     || null,
+    affiliatePartnerId: p.affiliate_partner_id || null,
   }))
 }
 

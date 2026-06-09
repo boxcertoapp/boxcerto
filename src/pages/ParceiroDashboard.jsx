@@ -651,7 +651,7 @@ function Dashboard({ session, onLogout, firstLogin = false, onIdentitySaved }) {
   const [pixType,   setPixType]   = useState(partner.pix_type || '')
   const [partnerSlug,        setPartnerSlug]        = useState(partner.slug                       || '')
   const [partnerCoupon,      setPartnerCoupon]      = useState(partner.coupon_code                || '')
-  const [partnerDisplayName, setPartnerDisplayName] = useState(partner.materials?.displayName     || '')
+  const [partnerDisplayName, setPartnerDisplayName] = useState(partner.display_name || partner.materials?.displayName || '')
   const [copied,    setCopied]    = useState(null)
 
   const appUrl = window.location.origin
@@ -685,7 +685,7 @@ function Dashboard({ session, onLogout, firstLogin = false, onIdentitySaved }) {
       ...stored.partner,
       slug:         newSlug,
       coupon_code:  newCoupon,
-      materials:    { ...(stored.partner?.materials || {}), displayName: newDisplayName ?? stored.partner?.materials?.displayName },
+      display_name: newDisplayName ?? stored.partner?.display_name,
     }
     localStorage.setItem(SESSION_KEY, JSON.stringify(stored))
     if (onIdentitySaved) onIdentitySaved(newSlug, newCoupon, newDisplayName)

@@ -336,6 +336,29 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
   // Limpa seleção ao mudar filtro ou busca
   useEffect(() => { setSelected(new Set()) }, [filter, query])
 
+  // ── Origem de afiliado: carrega parceiros e resolve o nome ──
+  const [partnerMaps, setPartnerMaps] = useState({ byId: {}, bySlug: {}, byCoupon: {} })
+  useEffect(() => {
+    supabase.from('affiliate_partners').select('*').then(({ data }) => {
+      const byId = {}, bySlug = {}, byCoupon = {}
+      ;(data || []).forEach(pt => {
+        const name = pt.display_name || pt.nome || pt.slug
+        byId[pt.id] = name
+        if (pt.slug)        bySlug[pt.slug.toLowerCase()]      = name
+        if (pt.coupon_code) byCoupon[pt.coupon_code.toUpperCase()] = name
+      })
+      setPartnerMaps({ byId, bySlug, byCoupon })
+    })
+  }, [])
+
+  const hasAffiliate = (u) => !!(u.affiliatePartnerId || u.affiliateRef || u.affiliateCoupon)
+  const partnerOf = (u) => {
+    if (u.affiliatePartnerId && partnerMaps.byId[u.affiliatePartnerId]) return partnerMaps.byId[u.affiliatePartnerId]
+    if (u.affiliateRef && partnerMaps.bySlug[u.affiliateRef.toLowerCase()]) return partnerMaps.bySlug[u.affiliateRef.toLowerCase()]
+    if (u.affiliateCoupon && partnerMaps.byCoupon[u.affiliateCoupon.toUpperCase()]) return partnerMaps.byCoupon[u.affiliateCoupon.toUpperCase()]
+    return u.affiliateRef || u.affiliateCoupon || null // mostra o ref/cupom mesmo sem parceiro resolvido
+  }
+
   const toggleSelect = (id) => {
     setSelected(prev => {
       const next = new Set(prev)
@@ -444,6 +467,7 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
       if (filter === 'pesquisando')  return u.cargo === 'pesquisando'
       if (filter === 'qualificado')  return u.tipoOficina && u.whatsapp && u.cargo && u.cargo !== 'pesquisando'
       if (filter === 'sem_qualif')   return !u.tipoOficina || !u.cargo
+      if (filter === 'parceiro')     return hasAffiliate(u)
       return u.status === filter
     })
     .filter(u => !query ||
@@ -478,6 +502,7 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
     pesquisando: users.filter(u => u.cargo === 'pesquisando').length,
     qualificado: users.filter(u => u.tipoOficina && u.whatsapp && u.cargo && u.cargo !== 'pesquisando').length,
     sem_qualif:  users.filter(u => !u.tipoOficina || !u.cargo).length,
+    parceiro:    users.filter(hasAffiliate).length,
   }
 
   const perfilUser = perfilId ? users.find(u => u.id === perfilId) : null
@@ -529,6 +554,7 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
           { key: 'google',       label: `Google (${counts.google})`,            style: 'normal' },
           { key: 'sem_wpp',      label: `Sem WhatsApp (${counts.sem_wpp})`,   style: 'warn'   },
           { key: 'qualificado',  label: `✅ Qualificados (${counts.qualificado})`, style: 'normal' },
+          { key: 'parceiro',     label: `↗ De parceiro (${counts.parceiro})`,   style: 'normal' },
           { key: 'pesquisando',  label: `🔍 Pesquisando (${counts.pesquisando})`, style: 'warn' },
           { key: 'sem_qualif',   label: `Sem qualificação (${counts.sem_qualif})`, style: 'warn' },
         ].map(f => (
@@ -635,6 +661,12 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
                           {CARGO_CONFIG[u.cargo].emoji} {CARGO_CONFIG[u.cargo].label}
                         </span>
                       )}
+                      {partnerOf(u) && (
+                        <span className="text-[10px] bg-violet-50 text-violet-700 px-1.5 py-0.5 rounded-full font-semibold"
+                          title={`Veio do parceiro: ${partnerOf(u)}`}>
+                          ↗ {partnerOf(u)}
+                        </span>
+                      )}
                       {u.isAdmin && <Shield className="w-3 h-3 text-amber-500" />}
                       {u.notasAdmin && <StickyNote className="w-3 h-3 text-amber-400" title="Tem notas" />}
                     </div>
@@ -707,6 +739,17 @@ export default function Clientes({ users, loadingUsers, reload, confirmarComSenh
                       {u.lastSeenAt && ` · Visto em ${formatDate(u.lastSeenAt)}`}
                       {u.nextBillingAt && ` · Próx. cobrança: ${formatDate(u.nextBillingAt)}`}
                     </p>
+
+                    {/* Origem de parceiro */}
+                    {partnerOf(u) && (
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <span className="text-slate-400">Origem:</span>
+                        <span className="font-semibold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full">
+                          ↗ Parceiro {partnerOf(u)}
+                        </span>
+                        {u.affiliateCoupon && <span className="text-slate-400">cupom {u.affiliateCoupon}</span>}
+                      </div>
+                    )}
 
                     {/* Trial editor */}
                     <div>

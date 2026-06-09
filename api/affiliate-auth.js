@@ -327,7 +327,7 @@ async function handleUpdateIdentity(req, res, supabase, body) {
   // Verifica sessão
   const { data: partner } = await supabase
     .from('affiliate_partners')
-    .select('access_token, access_token_exp, slug, coupon_code, materials')
+    .select('access_token, access_token_exp, slug, coupon_code, display_name')
     .eq('id', partner_id)
     .maybeSingle()
 
@@ -361,10 +361,9 @@ async function handleUpdateIdentity(req, res, supabase, body) {
   if (new_slug)   updates.slug        = new_slug
   if (new_coupon) updates.coupon_code = new_coupon
 
-  // Merge displayName no JSONB materials (preserva outros campos)
+  // Nome publico em coluna dedicada (evita conflito com materials)
   if (new_display_name !== undefined) {
-    const trimmed = new_display_name.trim()
-    updates.materials = { ...(partner.materials || {}), displayName: trimmed || null }
+    updates.display_name = new_display_name.trim() || null
   }
 
   const { error } = await supabase
@@ -376,7 +375,7 @@ async function handleUpdateIdentity(req, res, supabase, body) {
 
   const displayName = new_display_name !== undefined
     ? (new_display_name.trim() || null)
-    : (partner.materials?.displayName || null)
+    : (partner.display_name || null)
 
   console.log('[AffiliateAuth] Identidade atualizada:', partner_id, Object.keys(updates).join(', '))
   return res.status(200).json({
