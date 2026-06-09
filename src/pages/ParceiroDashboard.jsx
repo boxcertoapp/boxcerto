@@ -638,7 +638,7 @@ function LoginScreen({ onLoginSuccess }) {
 
 // ── Dashboard view ────────────────────────────────────────────
 function Dashboard({ session, onLogout, firstLogin = false, onIdentitySaved }) {
-  const { partner, commissions = [], activeRefs = 0, trialLeads = 0, tier = 20, totals = {} } = session
+  const { partner, commissions = [], activeRefs = 0, trialLeads = 0, totalSignups = 0, clicks = 0, tier = 20, totals = {} } = session
 
   // Sequência de modais no 1º login:
   // 1. SetPasswordModal (obrigatório se !has_password)
@@ -787,20 +787,28 @@ function Dashboard({ session, onLogout, firstLogin = false, onIdentitySaved }) {
         </div>
         {/* Funil de conversão */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
-          <h2 className="text-sm font-bold text-slate-800 mb-3">📊 Funil de conversão</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold text-slate-800">📊 Funil de indicações</h2>
+            <span className="text-xs text-slate-400">{clicks} clique{clicks !== 1 ? 's' : ''} no link</span>
+          </div>
           <div className="flex items-center gap-0">
-            <div className="flex-1 bg-indigo-50 rounded-l-xl px-4 py-3 text-center border border-indigo-100">
+            <div className="flex-1 bg-slate-50 rounded-l-xl px-3 py-3 text-center border border-slate-100">
+              <p className="text-2xl font-bold text-slate-700">{totalSignups}</p>
+              <p className="text-xs text-slate-500 mt-0.5">Cadastros</p>
+            </div>
+            <div className="text-slate-300 text-lg px-0.5">→</div>
+            <div className="flex-1 bg-indigo-50 px-3 py-3 text-center border border-indigo-100">
               <p className="text-2xl font-bold text-indigo-700">{trialLeads}</p>
               <p className="text-xs text-indigo-500 mt-0.5">Em trial</p>
             </div>
-            <div className="text-slate-300 text-lg px-1">→</div>
-            <div className="flex-1 bg-emerald-50 rounded-r-xl px-4 py-3 text-center border border-emerald-100">
+            <div className="text-slate-300 text-lg px-0.5">→</div>
+            <div className="flex-1 bg-emerald-50 rounded-r-xl px-3 py-3 text-center border border-emerald-100">
               <p className="text-2xl font-bold text-emerald-700">{activeRefs}</p>
               <p className="text-xs text-emerald-600 mt-0.5">Pagando</p>
             </div>
           </div>
           <p className="text-xs text-slate-400 mt-3">
-            <strong>Em trial:</strong> cadastraram pelo seu link mas ainda não assinaram. <strong>Pagando:</strong> assinantes ativos que geram comissão mensal.
+            <strong>Cadastros:</strong> contas criadas pelo seu link ou cupom. <strong>Em trial:</strong> testando, ainda não assinaram. <strong>Pagando:</strong> assinantes ativos que geram comissão mensal.
           </p>
         </div>
 
@@ -980,13 +988,16 @@ export default function ParceiroDashboard() {
 
   const applySessionData = useCallback((data, accessToken, isFirst = false) => {
     const full = {
-      partner:     data.partner,
-      commissions: data.commissions || [],
-      activeRefs:  data.activeRefs  || 0,
-      tier:        data.tier        || 20,
-      totals:      data.totals      || {},
+      partner:      data.partner,
+      commissions:  data.commissions  || [],
+      activeRefs:   data.activeRefs    || 0,
+      trialLeads:   data.trialLeads    || 0,
+      totalSignups: data.totalSignups  || 0,
+      clicks:       data.clicks        || 0,
+      tier:         data.tier          || 20,
+      totals:       data.totals        || {},
       accessToken,
-      exp:         data.session_exp ? new Date(data.session_exp).getTime() : Date.now() + 30 * 24 * 60 * 60 * 1000,
+      exp:          data.session_exp ? new Date(data.session_exp).getTime() : Date.now() + 30 * 24 * 60 * 60 * 1000,
     }
     saveSession(full, accessToken, new Date(full.exp))
     setSession(full)

@@ -407,18 +407,22 @@ async function loadData(supabase, partnerId) {
   if (partnerInfo?.slug)        filters.push(`affiliate_ref.eq.${partnerInfo.slug}`)
   if (partnerInfo?.coupon_code) filters.push(`affiliate_coupon.eq.${partnerInfo.coupon_code}`)
 
+  // "Todos que vieram pelo link": ref, cupom OU já vinculados ao parceiro
+  const signupFilters = [...filters, `affiliate_partner_id.eq.${partnerId}`]
+
   const baseQueries = [
     supabase
       .from('affiliate_commissions')
       .select('id, type, reference_month, amount, tier_applied, plan_value, status, customer_email, approved_at, paid_at, created_at')
       .eq('partner_id', partnerId)
       .order('created_at', { ascending: false }),
+    // Pagantes ativos
     supabase
       .from('profiles')
       .select('id', { count: 'exact', head: true })
       .eq('affiliate_partner_id', partnerId)
       .eq('status', 'active'),
-    // Leads: registrados via link/cupom mas ainda sem affiliate_partner_id (não converteram)
+    // Em trial: registrados via link/cupom mas ainda sem affiliate_partner_id (não converteram)
     filters.length
       ? supabase
           .from('profiles')
@@ -426,18 +430,37 @@ async function loadData(supabase, partnerId) {
           .or(filters.join(','))
           .is('affiliate_partner_id', null)
       : Promise.resolve({ count: 0 }),
+    // Total de cadastros pelo link (qualquer status)
+    supabase
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .or(signupFilters.join(',')),
+    // Cliques no link
+    supabase
+      .from('affiliate_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('partner_id', partnerId)
+      .eq('event_type', 'click'),
   ]
 
-  const [{ data: commissions }, { count: activeRefs }, { count: trialLeads }] = await Promise.all(baseQueries)
+  const [
+    { data: commissions },
+    { count: activeRefs },
+    { count: trialLeads },
+    { count: totalSignups },
+    { count: clicks },
+  ] = await Promise.all(baseQueries)
 
   const comms = commissions || []
   const refs  = activeRefs  || 0
   const tier  = refs >= 26 ? 30 : refs >= 11 ? 25 : 20
 
   return {
-    commissions: comms,
-    activeRefs:  refs,
-    trialLeads:  trialLeads || 0,
+    commissions:  comms,
+    activeRefs:   refs,
+    trialLeads:   trialLeads   || 0,
+    totalSignups: totalSignups || 0,
+    clicks:       clicks       || 0,
     tier,
     totals: {
       paid:     comms.filter(c => c.status === 'paid').reduce((s, c) => s + Number(c.amount), 0),
