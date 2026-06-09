@@ -33,7 +33,9 @@ module.exports = async (req, res) => {
   const stripe = new Stripe(STRIPE_SECRET_KEY)
 
   try {
-    const origin      = req.headers.origin || 'https://boxcerto.com'
+    const requestOrigin = req.headers.origin || ''
+    const allowedOrigins = new Set(['https://boxcerto.com', 'https://www.boxcerto.com'])
+    const origin      = allowedOrigins.has(requestOrigin) ? requestOrigin : 'https://boxcerto.com'
     const nomeParam   = nome ? `?nome=${encodeURIComponent(nome.split(' ')[0])}` : ''
     const successUrl  = `${origin}/bem-vindo${nomeParam}`
     const cancelUrl   = `${origin}/cadastro?trial=card`

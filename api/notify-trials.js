@@ -65,7 +65,11 @@ module.exports = async function handler(req, res) {
       try {
         const emailRes = await fetch(`${APP_URL}/api/send-email`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            ...(process.env.EMAIL_SECRET ? { 'x-internal-secret': process.env.EMAIL_SECRET } : {}),
+          },
           body: JSON.stringify({
             type: 'trial_ending',
             to: u.email,

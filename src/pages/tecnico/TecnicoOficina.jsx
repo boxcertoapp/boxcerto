@@ -536,6 +536,7 @@ function EstoqueTab({ meNome }) {
     const qtdInt = Math.max(1, parseInt(qty) || 1)
     await itemStorage.add({
       osId,
+      userId: user.masterId,
       descricao: qtdInt > 1 ? `${addModal.produto} (x${qtdInt})` : addModal.produto,
       custo: '',
       venda: addModal.valorVenda * qtdInt,

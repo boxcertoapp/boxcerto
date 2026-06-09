@@ -744,45 +744,67 @@ export default function ParceiroPerfil() {
   useEffect(() => {
     if (!slug) { navigate('/lp', { replace: true }); return }
 
-    supabase
-      .from('affiliate_partners')
-      .select('id, nome, slug, coupon_code, tipo, empresa, materials')
-      .eq('slug', slug)
-      .eq('status', 'active')
-      .maybeSingle()
-      .then(({ data }) => {
-        setLoading(false)
-        if (!data) {
-          // Parceiro não existe ou inativo → redireciona com ref
-          try {
-            const url = new URL(window.location.href)
-            url.searchParams.set('ref', slug)
-            window.history.replaceState({}, '', url.toString())
-            captureAffiliateRef()
-          } catch {}
-          navigate('/lp', { replace: true })
-          return
-        }
+    let active = true
 
-        setPartner(data)
+    async function loadPartner() {
+      let data = null
+      const rpcRes = await supabase.rpc('get_public_affiliate_partner', { p_slug: slug })
+      if (!rpcRes.error) {
+        data = Array.isArray(rpcRes.data) ? rpcRes.data[0] : rpcRes.data
+      } else {
+        const fallback = await supabase
+          .from('affiliate_partners')
+          .select('id, nome, slug, coupon_code, tipo, empresa, materials')
+          .eq('slug', slug)
+          .eq('status', 'active')
+          .maybeSingle()
+        data = fallback.data
+      }
 
-        // Salva ref e cupom no tracking
+      if (!active) return
+      setLoading(false)
+      if (!data) {
+        // Parceiro não existe ou inativo → redireciona com ref
         try {
           const url = new URL(window.location.href)
-          url.searchParams.set('ref', data.slug)
+          url.searchParams.set('ref', slug)
           window.history.replaceState({}, '', url.toString())
           captureAffiliateRef()
-          if (data.coupon_code) saveAffiliateCoupon(data.coupon_code)
         } catch {}
+        navigate('/lp', { replace: true })
+        return
+      }
 
-        // Registra evento de clique (fire-and-forget)
+      setPartner(data)
+
+      // Salva ref e cupom no tracking
+      try {
+        const url = new URL(window.location.href)
+        url.searchParams.set('ref', data.slug)
+        window.history.replaceState({}, '', url.toString())
+        captureAffiliateRef()
+        if (data.coupon_code) saveAffiliateCoupon(data.coupon_code)
+      } catch {}
+
+      // Registra evento de clique (fire-and-forget)
+      supabase.rpc('track_affiliate_click', {
+        p_partner_id: data.id,
+        p_slug: data.slug,
+        p_metadata: { source: 'perfil_lp', slug },
+      }).then(({ error }) => {
+        if (error) throw error
+      }).catch(() => {
         supabase.from('affiliate_events').insert({
           partner_id: data.id,
           event_type: 'click',
           metadata:   { source: 'perfil_lp', slug },
         }).catch(() => {})
       })
-  }, [slug])
+    }
+
+    loadPartner()
+    return () => { active = false }
+  }, [slug, navigate])
 
   const handleCTA = () => {
     const params = new URLSearchParams()

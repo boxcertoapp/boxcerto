@@ -1016,9 +1016,14 @@ export default function Menu() {
                                 onClick={async () => {
                                   setEmailEnviando(i)
                                   try {
+                                    const { data: session } = await import('../../lib/supabase').then(m => m.supabase.auth.getSession())
+                                    const token = session?.session?.access_token
                                     await fetch('/api/send-email', {
                                       method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
+                                      headers: {
+                                        'Content-Type': 'application/json',
+                                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                                      },
                                       body: JSON.stringify({
                                         type: 'tecnico_invite',
                                         to: t.email,

@@ -238,7 +238,10 @@ export default function Register() {
     // ── Fluxo normal: trial sem cartão ─────────────────────────
     fetch('/api/send-email', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(result.accessToken ? { Authorization: `Bearer ${result.accessToken}` } : {}),
+      },
       body: JSON.stringify({
         type: 'welcome', to: form.email.trim(),
         nome: nomeNormalized, oficina: '', trialDias: 7,

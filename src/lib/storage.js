@@ -458,8 +458,8 @@ export const itemStorage = {
     return (data || []).map(mapItem)
   },
 
-  add: async ({ osId, descricao, custo, venda, garantia = '', inventoryId = null }) => {
-    const user_id = await getCurrentUserId()
+  add: async ({ osId, descricao, custo, venda, garantia = '', inventoryId = null, userId = null }) => {
+    const user_id = userId || await getCurrentUserId()
     const { data, error } = await supabase.from('service_items').insert({
       user_id,
       os_id: osId, descricao,

@@ -43,9 +43,13 @@ function TicketCard({ ticket, onUpdate }) {
     if (!error) {
       // Dispara email de notificação para o cliente
       try {
+        const { data: { session } } = await supabase.auth.getSession()
         await fetch('/api/send-email', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
           body: JSON.stringify({
             type:     'ticket_reply',
             to:       ticket.email,

@@ -44,7 +44,9 @@ module.exports = async (req, res) => {
 
   try {
     const stripe  = new Stripe(STRIPE_SECRET_KEY)
-    const origin  = req.headers.origin || 'https://www.boxcerto.com'
+    const requestOrigin = req.headers.origin || ''
+    const allowedOrigins = new Set(['https://boxcerto.com', 'https://www.boxcerto.com'])
+    const origin  = allowedOrigins.has(requestOrigin) ? requestOrigin : 'https://www.boxcerto.com'
     const session = await stripe.billingPortal.sessions.create({
       customer:   profile.stripe_customer_id,
       return_url: `${origin}/app/menu`,

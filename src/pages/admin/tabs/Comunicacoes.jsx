@@ -156,7 +156,10 @@ function TemplateEditor() {
     if (!profile) return alert('Perfil não encontrado.')
     await fetch('/api/send-email', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      },
       body: JSON.stringify({ type: selected.slug, to: profile.email, nome: profile.responsavel, oficina: profile.oficina, dias: 3, trialDias: 7 }),
     })
     alert(`Email de teste enviado para ${profile.email}`)
@@ -333,13 +336,17 @@ export default function Comunicacoes({ users }) {
 
     const elegíveis = canal === 'email' ? await canSend(targets.map(u => u.id)) : targets
     let ok = 0, skip = 0, wppLinks = []
+    const { data: { session } } = await supabase.auth.getSession()
 
     for (const u of elegíveis) {
       if (canal === 'email' && u.email) {
         try {
           const res = await fetch('/api/send-email', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+            },
             body: JSON.stringify({
               type: template.key,
               to: u.email,

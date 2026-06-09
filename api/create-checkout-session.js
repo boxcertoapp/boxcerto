@@ -1,7 +1,9 @@
 const Stripe = require('stripe')
 const { createClient } = require('@supabase/supabase-js')
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY)
+  : null
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -9,14 +11,21 @@ module.exports = async (req, res) => {
   }
 
   const { email, officeName, plan, affiliateCoupon, cardRequired, successPath } = req.body || {}
-  // priceId: body → env var (editável no Vercel) → fallback hardcoded R$ 97,00
-  const priceId = req.body?.priceId
-    || process.env.STRIPE_PRICE_MONTHLY
-    || process.env.VITE_STRIPE_PRICE_MONTHLY
-    || 'price_1TS4lGRzYtXgEJJxve7kSSAs'
+  const priceIds = {
+    monthly: process.env.STRIPE_PRICE_MONTHLY || process.env.VITE_STRIPE_PRICE_MONTHLY || 'price_1TS4lGRzYtXgEJJxve7kSSAs',
+    annual:  process.env.STRIPE_PRICE_ANNUAL  || process.env.VITE_STRIPE_PRICE_ANNUAL,
+  }
+  const normalizedPlan = plan === 'annual' ? 'annual' : 'monthly'
+  const priceId = priceIds[normalizedPlan]
 
   if (!email) {
     return res.status(400).json({ error: 'email é obrigatório' })
+  }
+  if (!stripe) {
+    return res.status(500).json({ error: 'STRIPE_SECRET_KEY não configurada' })
+  }
+  if (!priceId) {
+    return res.status(500).json({ error: 'Preço Stripe não configurado' })
   }
 
   // Busca o stripe_promo_code_id do parceiro se cupom fornecido
@@ -40,10 +49,17 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const origin = req.headers.origin || 'https://boxcerto.com'
+    const requestOrigin = req.headers.origin || ''
+    const allowedOrigins = new Set(['https://boxcerto.com', 'https://www.boxcerto.com'])
+    const origin = allowedOrigins.has(requestOrigin) ? requestOrigin : 'https://boxcerto.com'
+    const safeSuccessPath = typeof successPath === 'string' &&
+      successPath.startsWith('/') &&
+      !successPath.startsWith('//')
+      ? successPath
+      : '/app/oficina?payment=success'
 
     const session = await stripe.checkout.sessions.create({
-      mode: plan === 'annual' ? 'payment' : 'subscription',
+      mode: normalizedPlan === 'annual' ? 'payment' : 'subscription',
       payment_method_types: ['card'],
       customer_email: email,
       line_items: [{ price: priceId, quantity: 1 }],
@@ -51,17 +67,15 @@ module.exports = async (req, res) => {
       ...(cardRequired ? { payment_method_collection: 'always' } : {}),
       // Aplica desconto do parceiro se cupom válido encontrado
       ...(stripePromoCodeId ? { discounts: [{ promotion_code: stripePromoCodeId }] } : {}),
-      subscription_data: plan !== 'annual' ? {
+      subscription_data: normalizedPlan !== 'annual' ? {
         trial_period_days: 7,
-        metadata: { officeName, plan },
+        metadata: { officeName, plan: normalizedPlan },
       } : undefined,
-      payment_intent_data: plan === 'annual' ? {
-        metadata: { officeName, plan },
+      payment_intent_data: normalizedPlan === 'annual' ? {
+        metadata: { officeName, plan: normalizedPlan },
       } : undefined,
-      metadata: { officeName, plan, email, affiliate_coupon: affiliateCoupon || '' },
-      success_url: successPath
-        ? `${origin}${successPath}`
-        : `${origin}/app/oficina?payment=success`,
+      metadata: { officeName, plan: normalizedPlan, email, affiliate_coupon: affiliateCoupon || '' },
+      success_url: `${origin}${safeSuccessPath}`,
       cancel_url: `${origin}/cadastro?payment=cancelled`,
     })
 

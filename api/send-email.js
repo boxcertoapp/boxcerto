@@ -3,10 +3,13 @@
 // POST /api/send-email
 // Body: { type, to, nome, oficina, ...extras }
 // ============================================================
+const { createClient } = require('@supabase/supabase-js')
+
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const FROM          = 'BoxCerto <equipe@boxcerto.com>'
 const REPLY_TO      = 'suporte@boxcerto.com'
 const APP_URL       = 'https://boxcerto.com'
+const ADMIN_EMAIL   = 'rogerioknfilho@gmail.com'
 
 // Emails transacionais não levam List-Unsubscribe (sinaliza marketing pro Gmail)
 const TRANSACTIONAL_TYPES = new Set([
@@ -620,20 +623,88 @@ const templates = {
 
 }
 
+const getHeaderValue = (value) => Array.isArray(value) ? value[0] : value
+
+const getBearerToken = (req) => {
+  const header = getHeaderValue(req.headers.authorization) || ''
+  return header.replace(/^Bearer\s+/i, '').trim()
+}
+
+const sameEmail = (a, b) =>
+  String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase()
+
+const createAuthedSupabase = (token) => {
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+  if (!url || !anonKey) return null
+
+  return createClient(url, anonKey, token ? {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  } : undefined)
+}
+
+const getRequester = async (req) => {
+  const token = getBearerToken(req)
+  if (!token) return { user: null, profile: null, isAdmin: false }
+
+  const supabase = createAuthedSupabase(token)
+  if (!supabase) return { user: null, profile: null, isAdmin: false }
+
+  const { data: { user }, error } = await supabase.auth.getUser(token)
+  if (error || !user) return { user: null, profile: null, isAdmin: false }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id,email,is_admin,tipo,master_id')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const isAdmin = profile?.is_admin === true ||
+    sameEmail(profile?.email, ADMIN_EMAIL) ||
+    sameEmail(user.email, ADMIN_EMAIL)
+
+  return { user, profile, isAdmin }
+}
+
+const authorizeEmailRequest = async (req, type, to) => {
+  const emailSecret = process.env.EMAIL_SECRET
+  const internalSecret = getHeaderValue(req.headers['x-internal-secret'])
+
+  if (emailSecret && internalSecret === emailSecret) {
+    return { ok: true, mode: 'internal' }
+  }
+
+  const requester = await getRequester(req)
+  if (!requester.user) {
+    return { ok: false, status: 401, error: 'Unauthorized' }
+  }
+
+  if (requester.isAdmin) {
+    return { ok: true, mode: 'admin' }
+  }
+
+  if (type === 'welcome' && sameEmail(to, requester.user.email)) {
+    return { ok: true, mode: 'self' }
+  }
+
+  if (type === 'tecnico_invite' && requester.profile && requester.profile.tipo !== 'tecnico') {
+    return { ok: true, mode: 'authenticated' }
+  }
+
+  return { ok: false, status: 403, error: 'Forbidden' }
+}
+
 // ── Handler ────────────────────────────────────────────────
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json')
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  // ── Autenticação interna ────────────────────────────────
-  const EMAIL_SECRET = process.env.EMAIL_SECRET
-  if (EMAIL_SECRET && req.headers['x-internal-secret'] !== EMAIL_SECRET) {
-    return res.status(401).json({ error: 'Unauthorized' })
-  }
-
   const { type, to, ...data } = req.body || {}
   if (!type || !to) return res.status(400).json({ error: 'type e to são obrigatórios' })
+
+  const auth = await authorizeEmailRequest(req, type, to)
+  if (!auth.ok) return res.status(auth.status).json({ error: auth.error })
 
   const template = templates[type]
   if (!template) return res.status(400).json({ error: `Template "${type}" não encontrado. Disponíveis: ${Object.keys(templates).join(', ')}` })

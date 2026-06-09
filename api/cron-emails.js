@@ -174,12 +174,14 @@ module.exports = async (req, res) => {
 
   // Segurança: aceita secret via header Authorization ou query param ?secret=
   const cronSecret = process.env.CRON_SECRET
-  if (cronSecret) {
-    const authHeader = (req.headers.authorization || '').replace('Bearer ', '')
-    const authQuery  = (req.query && req.query.secret) || ''
-    if (authHeader !== cronSecret && authQuery !== cronSecret) {
-      return res.status(401).json({ error: 'Não autorizado' })
-    }
+  if (!cronSecret) {
+    return res.status(500).json({ error: 'CRON_SECRET não configurado' })
+  }
+
+  const authHeader = (req.headers.authorization || '').replace('Bearer ', '')
+  const authQuery  = (req.query && req.query.secret) || ''
+  if (authHeader !== cronSecret && authQuery !== cronSecret) {
+    return res.status(401).json({ error: 'Não autorizado' })
   }
 
   const agora      = new Date()

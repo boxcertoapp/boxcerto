@@ -543,12 +543,16 @@ export default function Afiliados() {
       for (const c of approved) {
         amtByPartner[c.partner_id] = (amtByPartner[c.partner_id] || 0) + Number(c.amount)
       }
+      const { data: { session } } = await supabase.auth.getSession()
       for (const [pid, amt] of Object.entries(amtByPartner)) {
         const p = partners.find(x => x.id === pid)
         if (!p?.email) continue
         fetch('/api/send-email', {
           method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
           body: JSON.stringify({
             type:    'affiliate_payment_sent',
             to:      p.email,

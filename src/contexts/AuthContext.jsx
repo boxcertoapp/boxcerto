@@ -217,7 +217,7 @@ export function AuthProvider({ children }) {
 
   const register = async ({ oficina, responsavel, whatsapp, email, password, affiliateRef, affiliateCoupon }) => {
     const supabase = await getSupa()
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email, password,
       options: { data: {
         oficina, responsavel, whatsapp,
@@ -230,7 +230,7 @@ export function AuthProvider({ children }) {
         return { ok: false, error: 'Este e-mail já está cadastrado.' }
       return { ok: false, error: error.message }
     }
-    return { ok: true }
+    return { ok: true, accessToken: data?.session?.access_token || null }
   }
 
   const logout = async () => {
