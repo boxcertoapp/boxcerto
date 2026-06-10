@@ -596,17 +596,6 @@ export default function Oficina() {
 
   const openOS = (os) => setSelectedOS(os)
 
-  if (selectedOS) {
-    return (
-      <OSDetailModal
-        os={selectedOS}
-        onClose={() => { setSelectedOS(null); setOnboardingOsOpen(false); reload() }}
-        officeName={user.oficina}
-        onboardingOsOpen={onboardingOsOpen}
-      />
-    )
-  }
-
   return (
     <>
       <Dashboard
@@ -615,6 +604,14 @@ export default function Oficina() {
         onOpenOS={openOS}
         onNewOS={() => { setPrefillPlate(''); setShowNewOS(true) }}
       />
+      {selectedOS && (
+        <OSDetailModal
+          os={selectedOS}
+          onClose={() => { setSelectedOS(null); setOnboardingOsOpen(false); reload() }}
+          officeName={user.oficina}
+          onboardingOsOpen={onboardingOsOpen}
+        />
+      )}
       {showNewOS && (
         <NewOSModal
           officeName={user.oficina}
