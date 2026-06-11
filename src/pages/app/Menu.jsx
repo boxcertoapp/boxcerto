@@ -34,6 +34,7 @@ import {
   officeDataStorage, clientStorage, vehicleStorage, osStorage,
   formatCurrency, formatDate
 } from '../../lib/storage'
+import { escapeHtml } from '../../lib/text'
 import { usePWAInstall } from '../../hooks/usePWAInstall'
 import PWAInstallSheet from '../../components/PWAInstallSheet'
 
@@ -160,17 +161,17 @@ function AbaRelatorios({ user }) {
       const veiculos = vehicles.filter(v => v.clientId === c.id)
       return `
         <tr>
-          <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${c.nome}</td>
-          <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${c.whatsapp || '—'}</td>
-          <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${c.cpf || '—'}</td>
-          <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${veiculos.map(v => v.placa).join(', ') || '—'}</td>
-          <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${[c.cidade, c.uf].filter(Boolean).join('/')  || '—'}</td>
+          <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${escapeHtml(c.nome)}</td>
+          <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${escapeHtml(c.whatsapp || '—')}</td>
+          <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${escapeHtml(c.cpf || '—')}</td>
+          <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${escapeHtml(veiculos.map(v => v.placa).join(', ') || '—')}</td>
+          <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${escapeHtml([c.cidade, c.uf].filter(Boolean).join('/')  || '—')}</td>
         </tr>`
     }).join('')
     const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/><title>Relatório de Clientes</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;padding:32px;color:#1e293b}@media print{body{padding:16px}}</style></head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #e2e8f0">
-    <div style="font-size:18px;font-weight:800">${officeInfo || 'Minha Oficina'}</div>
+    <div style="font-size:18px;font-weight:800">${escapeHtml(officeInfo || 'Minha Oficina')}</div>
     <div style="text-align:right">
       <div style="background:#4f46e5;color:white;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;display:inline-block">Relatório de Clientes</div>
       <div style="font-size:12px;color:#64748b;margin-top:4px">${new Date().toLocaleDateString('pt-BR')}</div>
@@ -199,9 +200,9 @@ function AbaRelatorios({ user }) {
   const printServicos = (osList, mesLabel, officeInfo) => {
     const rows = osList.map(os => `
       <tr>
-        <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${os.vehicle?.placa || '—'}</td>
-        <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${os.vehicle?.modelo || '—'}</td>
-        <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${os.client?.nome || '—'}</td>
+        <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${escapeHtml(os.vehicle?.placa || '—')}</td>
+        <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${escapeHtml(os.vehicle?.modelo || '—')}</td>
+        <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${escapeHtml(os.client?.nome || '—')}</td>
         <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${os.deliveredAt ? new Date(os.deliveredAt).toLocaleDateString('pt-BR') : '—'}</td>
         <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px;text-align:right;font-weight:600">R$ ${(os.totals?.venda || 0).toFixed(2).replace('.', ',')}</td>
       </tr>`).join('')
@@ -209,7 +210,7 @@ function AbaRelatorios({ user }) {
     const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/><title>Serviços do Mês</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;padding:32px;color:#1e293b}@media print{body{padding:16px}}</style></head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #e2e8f0">
-    <div style="font-size:18px;font-weight:800">${officeInfo || 'Minha Oficina'}</div>
+    <div style="font-size:18px;font-weight:800">${escapeHtml(officeInfo || 'Minha Oficina')}</div>
     <div style="text-align:right">
       <div style="background:#10b981;color:white;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;display:inline-block">Serviços do Mês</div>
       <div style="font-size:13px;color:#1e293b;font-weight:700;margin-top:4px">${mesLabel}</div>

@@ -3,6 +3,7 @@
 // ============================================================
 import { supabase } from './supabase'
 import { showToast } from '../components/Toast'
+import { escapeHtml } from './text'
 
 // Helper: normaliza string removendo acentos para busca insensível a acento
 export const norm = str =>
@@ -647,44 +648,44 @@ export const printOS = ({ os, client, vehicle, items, officeData, formatCurrency
 
   const itemsRows = items.map(item => `
     <tr>
-      <td style="padding:10px 8px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#1e293b">${item.descricao}${item.garantia ? `<span style="font-size:10px;color:#64748b;margin-left:6px">🛡️ ${item.garantia}</span>` : ''}</td>
+      <td style="padding:10px 8px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#1e293b">${escapeHtml(item.descricao)}${item.garantia ? `<span style="font-size:10px;color:#64748b;margin-left:6px">🛡️ ${escapeHtml(item.garantia)}</span>` : ''}</td>
       <td style="padding:10px 8px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#1e293b;text-align:right;white-space:nowrap">${formatCurrencyFn(item.venda)}</td>
     </tr>`).join('')
 
   const logoHtml = officeData.logo
-    ? `<img src="${officeData.logo}" style="max-height:60px;max-width:160px;object-fit:contain" />`
+    ? `<img src="${escapeHtml(officeData.logo)}" style="max-height:60px;max-width:160px;object-fit:contain" />`
     : `<div style="width:44px;height:44px;background:#4f46e5;border-radius:10px;display:flex;align-items:center;justify-content:center"><span style="color:white;font-size:22px;font-weight:bold">B</span></div>`
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
-<head><meta charset="UTF-8"/><title>orcamento-${vehicle?.placa}-${client?.nome?.split(' ')[0] || 'cliente'}.pdf</title>
+<head><meta charset="UTF-8"/><title>orcamento-${escapeHtml(vehicle?.placa)}-${escapeHtml(client?.nome?.split(' ')[0] || 'cliente')}.pdf</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#1e293b;padding:32px;max-width:680px;margin:0 auto}@media print{body{padding:16px}}</style>
 </head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:24px;border-bottom:2px solid #e2e8f0">
     <div>${logoHtml}<div style="margin-top:10px">
-      <div style="font-size:18px;font-weight:800;color:#1e293b">${officeData.nome || 'Minha Oficina'}</div>
-      ${officeData.cnpj ? `<div style="font-size:12px;color:#64748b;margin-top:2px">CNPJ: ${officeData.cnpj}</div>` : ''}
-      ${officeData.endereco ? `<div style="font-size:12px;color:#64748b;margin-top:2px">${officeData.endereco}</div>` : ''}
-      ${officeData.telefone ? `<div style="font-size:12px;color:#64748b;margin-top:2px">Tel: ${officeData.telefone}</div>` : ''}
+      <div style="font-size:18px;font-weight:800;color:#1e293b">${escapeHtml(officeData.nome || 'Minha Oficina')}</div>
+      ${officeData.cnpj ? `<div style="font-size:12px;color:#64748b;margin-top:2px">CNPJ: ${escapeHtml(officeData.cnpj)}</div>` : ''}
+      ${officeData.endereco ? `<div style="font-size:12px;color:#64748b;margin-top:2px">${escapeHtml(officeData.endereco)}</div>` : ''}
+      ${officeData.telefone ? `<div style="font-size:12px;color:#64748b;margin-top:2px">Tel: ${escapeHtml(officeData.telefone)}</div>` : ''}
     </div></div>
     <div style="text-align:right">
       <div style="background:#4f46e5;color:white;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;display:inline-block;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Ordem de Serviço</div>
       ${os.numeroOS ? `<div style="font-size:13px;font-weight:800;color:#4f46e5;margin-bottom:4px">#${os.numeroOS.slice(0,3)}-${os.numeroOS.slice(3)}</div>` : ''}
       <div style="font-size:12px;color:#64748b">Data: ${formatDateFn(os.createdAt)}</div>
-      ${os.km ? `<div style="font-size:12px;color:#64748b">KM: ${os.km}</div>` : ''}
+      ${os.km ? `<div style="font-size:12px;color:#64748b">KM: ${escapeHtml(os.km)}</div>` : ''}
     </div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px">
     <div style="background:#f8fafc;border-radius:12px;padding:16px">
       <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Cliente</div>
-      <div style="font-weight:700;font-size:15px;color:#1e293b">${client?.nome || '—'}</div>
-      ${client?.whatsapp ? `<div style="font-size:13px;color:#64748b;margin-top:4px">${client.whatsapp}</div>` : ''}
-      ${client?.cpf ? `<div style="font-size:12px;color:#64748b;margin-top:2px">CPF: ${client.cpf}</div>` : ''}
+      <div style="font-weight:700;font-size:15px;color:#1e293b">${escapeHtml(client?.nome || '—')}</div>
+      ${client?.whatsapp ? `<div style="font-size:13px;color:#64748b;margin-top:4px">${escapeHtml(client.whatsapp)}</div>` : ''}
+      ${client?.cpf ? `<div style="font-size:12px;color:#64748b;margin-top:2px">CPF: ${escapeHtml(client.cpf)}</div>` : ''}
     </div>
     <div style="background:#f8fafc;border-radius:12px;padding:16px">
       <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Veículo</div>
-      <div style="font-weight:700;font-size:15px;color:#1e293b">${vehicle?.modelo || '—'}</div>
-      <div style="font-size:13px;font-weight:700;color:#4f46e5;margin-top:4px;letter-spacing:.1em">${vehicle?.placa || ''}</div>
+      <div style="font-weight:700;font-size:15px;color:#1e293b">${escapeHtml(vehicle?.modelo || '—')}</div>
+      <div style="font-size:13px;font-weight:700;color:#4f46e5;margin-top:4px;letter-spacing:.1em">${escapeHtml(vehicle?.placa || '')}</div>
     </div>
   </div>
   <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
@@ -709,7 +710,7 @@ export const printOS = ({ os, client, vehicle, items, officeData, formatCurrency
   </div>
   ${os.observacoes ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:16px;margin-bottom:24px">
     <div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Observações</div>
-    <div style="font-size:13px;color:#78350f">${os.observacoes}</div>
+    <div style="font-size:13px;color:#78350f">${escapeHtml(os.observacoes)}</div>
   </div>` : ''}
   ${(() => {
     const metodoLabels = { dinheiro: 'Dinheiro', pix: 'PIX', debito: 'Cartão de Débito', credito: 'Cartão de Crédito' }
@@ -749,20 +750,20 @@ export const printReceipt = ({ os, client, vehicle, items, officeData, formatCur
     </div>`).join('')
 
   const logoHtml = officeData.logo
-    ? `<img src="${officeData.logo}" style="max-height:50px;max-width:120px;object-fit:contain" />`
+    ? `<img src="${escapeHtml(officeData.logo)}" style="max-height:50px;max-width:120px;object-fit:contain" />`
     : `<div style="width:36px;height:36px;background:#4f46e5;border-radius:8px;display:flex;align-items:center;justify-content:center"><span style="color:white;font-size:18px;font-weight:bold">B</span></div>`
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
-<head><meta charset="UTF-8"/><title>recibo-${vehicle?.placa}-${client?.nome?.split(' ')[0] || 'cliente'}.pdf</title>
+<head><meta charset="UTF-8"/><title>recibo-${escapeHtml(vehicle?.placa)}-${escapeHtml(client?.nome?.split(' ')[0] || 'cliente')}.pdf</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#1e293b;padding:24px;max-width:400px;margin:0 auto}@media print{body{padding:12px}}</style>
 </head><body>
   <div style="text-align:center;margin-bottom:20px;padding-bottom:16px;border-bottom:2px dashed #e2e8f0">
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px">
       ${logoHtml}
       <div style="text-align:left">
-        <div style="font-size:16px;font-weight:800">${officeData.nome || 'Minha Oficina'}</div>
-        ${officeData.telefone ? `<div style="font-size:11px;color:#64748b">${officeData.telefone}</div>` : ''}
+        <div style="font-size:16px;font-weight:800">${escapeHtml(officeData.nome || 'Minha Oficina')}</div>
+        ${officeData.telefone ? `<div style="font-size:11px;color:#64748b">${escapeHtml(officeData.telefone)}</div>` : ''}
       </div>
     </div>
     <div style="background:#f1f5f9;border-radius:8px;padding:6px 16px;display:inline-block;margin-top:8px">
@@ -772,11 +773,11 @@ export const printReceipt = ({ os, client, vehicle, items, officeData, formatCur
   <div style="margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;margin-bottom:6px">
       <span style="font-size:11px;color:#94a3b8;text-transform:uppercase;font-weight:600">Cliente</span>
-      <span style="font-size:13px;font-weight:600">${client?.nome || '—'}</span>
+      <span style="font-size:13px;font-weight:600">${escapeHtml(client?.nome || '—')}</span>
     </div>
     <div style="display:flex;justify-content:space-between;margin-bottom:6px">
       <span style="font-size:11px;color:#94a3b8;text-transform:uppercase;font-weight:600">Veículo</span>
-      <span style="font-size:13px;font-weight:600">${vehicle?.modelo} · ${vehicle?.placa}</span>
+      <span style="font-size:13px;font-weight:600">${escapeHtml(vehicle?.modelo)} · ${escapeHtml(vehicle?.placa)}</span>
     </div>
     <div style="display:flex;justify-content:space-between">
       <span style="font-size:11px;color:#94a3b8;text-transform:uppercase;font-weight:600">Data Entrega</span>
@@ -796,7 +797,7 @@ export const printReceipt = ({ os, client, vehicle, items, officeData, formatCur
       <span style="font-weight:800;font-size:16px;color:#4f46e5">${formatCurrencyFn(total)}</span>
     </div>
   </div>
-  ${os.deliveryNotes ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:#78350f">${os.deliveryNotes}</div>` : ''}
+  ${os.deliveryNotes ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:#78350f">${escapeHtml(os.deliveryNotes)}</div>` : ''}
   <div style="text-align:center;color:#94a3b8;font-size:10px;margin-top:16px;padding-top:12px;border-top:1px dashed #e2e8f0">
     Obrigado pela confiança! &bull; BoxCerto
   </div>
@@ -1139,13 +1140,13 @@ export const printVendaReceipt = ({ venda, clienteNome, officeData, formatCurren
     </div>`).join('')
   const itemRows = (venda.items || []).map(i =>
     `<tr>
-      <td style="padding:8px 4px;border-bottom:1px solid #f8fafc;font-size:12px">${i.produto}</td>
-      <td style="padding:8px 4px;border-bottom:1px solid #f8fafc;font-size:12px;text-align:center">${i.quantidade}</td>
+      <td style="padding:8px 4px;border-bottom:1px solid #f8fafc;font-size:12px">${escapeHtml(i.produto)}</td>
+      <td style="padding:8px 4px;border-bottom:1px solid #f8fafc;font-size:12px;text-align:center">${escapeHtml(i.quantidade)}</td>
       <td style="padding:8px 4px;border-bottom:1px solid #f8fafc;font-size:12px;text-align:right">${formatCurrencyFn(i.valorUnitario)}</td>
       <td style="padding:8px 4px;border-bottom:1px solid #f8fafc;font-size:12px;text-align:right;font-weight:600">${formatCurrencyFn(i.valorUnitario * i.quantidade)}</td>
     </tr>`).join('')
   const logoHtml = officeData.logo
-    ? `<img src="${officeData.logo}" style="max-height:44px;max-width:110px;object-fit:contain"/>`
+    ? `<img src="${escapeHtml(officeData.logo)}" style="max-height:44px;max-width:110px;object-fit:contain"/>`
     : `<div style="width:32px;height:32px;background:#16a34a;border-radius:8px;display:flex;align-items:center;justify-content:center"><span style="color:white;font-size:16px;font-weight:bold">V</span></div>`
 
   const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/>
@@ -1156,15 +1157,15 @@ export const printVendaReceipt = ({ venda, clienteNome, officeData, formatCurren
     <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px">
       ${logoHtml}
       <div style="text-align:left">
-        <div style="font-size:16px;font-weight:800">${officeData.nome || 'Minha Oficina'}</div>
-        ${officeData.telefone ? `<div style="font-size:11px;color:#64748b">${officeData.telefone}</div>` : ''}
+        <div style="font-size:16px;font-weight:800">${escapeHtml(officeData.nome || 'Minha Oficina')}</div>
+        ${officeData.telefone ? `<div style="font-size:11px;color:#64748b">${escapeHtml(officeData.telefone)}</div>` : ''}
       </div>
     </div>
     <div style="display:inline-block;background:#16a34a;color:white;font-size:10px;font-weight:700;padding:3px 12px;border-radius:20px;letter-spacing:.5px;text-transform:uppercase">Recibo de Venda</div>
   </div>
   <div style="display:flex;justify-content:space-between;margin-bottom:16px;font-size:12px;color:#64748b">
     <span>Data: <strong style="color:#1e293b">${data}</strong></span>
-    <span>Cliente: <strong style="color:#1e293b">${clienteNome || 'Anônimo'}</strong></span>
+    <span>Cliente: <strong style="color:#1e293b">${escapeHtml(clienteNome || 'Anônimo')}</strong></span>
   </div>
   <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
     <thead><tr style="background:#f8fafc">

@@ -11,6 +11,15 @@
 //   Dia 8+ → trial_expired   (trial expirou, dados aguardando)
 // ============================================================
 const { createClient } = require('@supabase/supabase-js')
+const crypto = require('crypto')
+
+// Comparação em tempo constante (evita timing attack no segredo do cron)
+const safeEqual = (a, b) => {
+  const bufA = Buffer.from(String(a))
+  const bufB = Buffer.from(String(b))
+  if (bufA.length !== bufB.length) return false
+  return crypto.timingSafeEqual(bufA, bufB)
+}
 
 const APP_URL = 'https://boxcerto.com'
 
@@ -172,15 +181,16 @@ async function gerarComissoesMensais(agora) {
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json')
 
-  // Segurança: aceita secret via header Authorization ou query param ?secret=
+  // Segurança: só aceita o segredo via header Authorization: Bearer
+  // (a Vercel Cron envia esse header automaticamente quando CRON_SECRET existe).
+  // Removido o fallback por ?secret= na URL — segredo em query vaza em logs/Referer.
   const cronSecret = process.env.CRON_SECRET
   if (!cronSecret) {
     return res.status(500).json({ error: 'CRON_SECRET não configurado' })
   }
 
   const authHeader = (req.headers.authorization || '').replace('Bearer ', '')
-  const authQuery  = (req.query && req.query.secret) || ''
-  if (authHeader !== cronSecret && authQuery !== cronSecret) {
+  if (!safeEqual(authHeader, cronSecret)) {
     return res.status(401).json({ error: 'Não autorizado' })
   }
 

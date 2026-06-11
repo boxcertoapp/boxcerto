@@ -15,17 +15,18 @@ import {
   officeDataStorage, formatCurrency, norm,
   printVendaReceipt, downloadVendaPDF,
 } from '../../lib/storage'
+import { escapeHtml } from '../../lib/text'
 
 // ── RELATÓRIO DE ESTOQUE ──────────────────────────────────
 function printEstoque({ items, officeData, formatCurrencyFn }) {
   const total = items.reduce((s, i) => s + i.valorCompra * i.quantidade, 0)
   const rows = items.map(i => `
     <tr style="${i.alertaAtivo && i.quantidade <= i.quantidadeMin ? 'background:#fef2f2' : ''}">
-      <td style="padding:10px 8px;border-bottom:1px solid #f1f5f9;font-size:13px">${i.produto}${i.alertaAtivo && i.quantidade <= i.quantidadeMin ? ' ⚠️' : ''}</td>
-      <td style="padding:10px 8px;border-bottom:1px solid #f1f5f9;font-size:13px;text-align:center;font-weight:${i.alertaAtivo && i.quantidade <= i.quantidadeMin ? '700;color:#dc2626' : '600'}">${i.quantidade}</td>
+      <td style="padding:10px 8px;border-bottom:1px solid #f1f5f9;font-size:13px">${escapeHtml(i.produto)}${i.alertaAtivo && i.quantidade <= i.quantidadeMin ? ' ⚠️' : ''}</td>
+      <td style="padding:10px 8px;border-bottom:1px solid #f1f5f9;font-size:13px;text-align:center;font-weight:${i.alertaAtivo && i.quantidade <= i.quantidadeMin ? '700;color:#dc2626' : '600'}">${escapeHtml(i.quantidade)}</td>
       <td style="padding:10px 8px;border-bottom:1px solid #f1f5f9;font-size:13px;text-align:right">${formatCurrencyFn(i.valorCompra)}</td>
       <td style="padding:10px 8px;border-bottom:1px solid #f1f5f9;font-size:13px;text-align:right">${formatCurrencyFn(i.valorVenda)}</td>
-      <td style="padding:10px 8px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#64748b">${i.fornecedor || '—'}</td>
+      <td style="padding:10px 8px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#64748b">${escapeHtml(i.fornecedor || '—')}</td>
     </tr>`).join('')
 
   const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/>
@@ -34,8 +35,8 @@ function printEstoque({ items, officeData, formatCurrencyFn }) {
 </head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #e2e8f0">
     <div>
-      ${officeData.logo ? `<img src="${officeData.logo}" style="max-height:50px;max-width:140px;object-fit:contain;margin-bottom:8px;display:block"/>` : ''}
-      <div style="font-size:18px;font-weight:800">${officeData.nome || 'Minha Oficina'}</div>
+      ${officeData.logo ? `<img src="${escapeHtml(officeData.logo)}" style="max-height:50px;max-width:140px;object-fit:contain;margin-bottom:8px;display:block"/>` : ''}
+      <div style="font-size:18px;font-weight:800">${escapeHtml(officeData.nome || 'Minha Oficina')}</div>
     </div>
     <div style="text-align:right">
       <div style="background:#4f46e5;color:white;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;display:inline-block;text-transform:uppercase;letter-spacing:.5px">Relatório de Estoque</div>

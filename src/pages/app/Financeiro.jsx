@@ -7,6 +7,7 @@ import {
   osStorage, expenseStorage, officeDataStorage, vendaStorage,
   formatCurrency, formatDate
 } from '../../lib/storage'
+import { escapeHtml } from '../../lib/text'
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const MESES_CURTOS = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
@@ -59,15 +60,15 @@ function MiniBars({ serie }) {
 function printFinanceiro({ mes, ano, totalReceitas, totalLucroOS, totalDespesas, lucroLiquido, deliveredOS, expenses, officeData }) {
   const osRows = deliveredOS.map(os => `
     <tr>
-      <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${os.vehicle?.placa || '—'}</td>
-      <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${os.vehicle?.modelo || '—'}</td>
-      <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${os.client?.nome || '—'}</td>
+      <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${escapeHtml(os.vehicle?.placa || '—')}</td>
+      <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${escapeHtml(os.vehicle?.modelo || '—')}</td>
+      <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${escapeHtml(os.client?.nome || '—')}</td>
       <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px;text-align:right">${formatCurrency(os.totals.venda)}</td>
     </tr>`).join('')
 
   const expRows = expenses.map(e => `
     <tr>
-      <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${e.descricao}</td>
+      <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px">${escapeHtml(e.descricao)}</td>
       <td style="padding:8px;border-bottom:1px solid #f1f5f9;font-size:12px;text-align:right;color:#ef4444">${formatCurrency(e.valor)}</td>
     </tr>`).join('')
 
@@ -76,8 +77,8 @@ function printFinanceiro({ mes, ano, totalReceitas, totalLucroOS, totalDespesas,
 </head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #e2e8f0">
     <div>
-      ${officeData.logo ? `<img src="${officeData.logo}" style="max-height:50px;max-width:140px;object-fit:contain;margin-bottom:8px;display:block"/>` : ''}
-      <div style="font-size:18px;font-weight:800">${officeData.nome || 'Minha Oficina'}</div>
+      ${officeData.logo ? `<img src="${escapeHtml(officeData.logo)}" style="max-height:50px;max-width:140px;object-fit:contain;margin-bottom:8px;display:block"/>` : ''}
+      <div style="font-size:18px;font-weight:800">${escapeHtml(officeData.nome || 'Minha Oficina')}</div>
     </div>
     <div style="text-align:right">
       <div style="background:#4f46e5;color:white;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;display:inline-block;text-transform:uppercase;letter-spacing:.5px">Relatório Financeiro</div>

@@ -1,3 +1,15 @@
+// Escapa dados do usuário antes de interpolar em HTML (impressão/PDF).
+// Previne XSS armazenado: um técnico não consegue injetar <script>/<img onerror>
+// na descrição de um item que rode quando o dono gera o PDF na própria origem.
+// Seguro em contexto de texto e de atributo (escapa " e ').
+export const escapeHtml = (s) =>
+  String(s ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+
 // Partículas que ficam em minúsculas no meio do nome (português brasileiro)
 const NAME_PARTICLES = new Set(['da', 'de', 'do', 'das', 'dos', 'e'])
 

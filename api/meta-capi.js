@@ -32,8 +32,11 @@ function hashPhone(phone) {
 
 // ── Handler principal ─────────────────────────────────────────
 module.exports = async function handler(req, res) {
-  // CORS — o frontend é same-origin mas cobre eventuais previews da Vercel
-  res.setHeader('Access-Control-Allow-Origin', '*')
+  // CORS restrito à origem do site (o Pixel não deve aceitar eventos de qualquer site)
+  const allowedOrigins = new Set(['https://boxcerto.com', 'https://www.boxcerto.com'])
+  const reqOrigin = req.headers.origin || ''
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigins.has(reqOrigin) ? reqOrigin : 'https://boxcerto.com')
+  res.setHeader('Vary', 'Origin')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 
