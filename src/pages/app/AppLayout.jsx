@@ -90,16 +90,13 @@ export default function AppLayout() {
   const diasRestantes = user.status === 'trial' ? trialDaysLeft(user) : null
 
   // Largura do container desktop conforme o tipo de conteúdo da página:
-  // - Listas/dashboard (Oficina, Estoque, Histórico, Financeiro) → ampla (grid multi-coluna)
-  // - Menu (formulários/config) → média (leitura confortável, menos espaço vazio)
+  // - Telas principais (Oficina, Estoque, Histórico, Financeiro, Menu) → ampla
   // - Demais → contida
   const path = location.pathname
   const pageMaxW =
-    ['/app/oficina', '/app/estoque', '/app/historico', '/app/financeiro'].some(p => path.startsWith(p))
+    ['/app/oficina', '/app/estoque', '/app/historico', '/app/financeiro', '/app/menu'].some(p => path.startsWith(p))
       ? 'max-w-6xl'
-      : path.startsWith('/app/menu')
-        ? 'max-w-4xl'
-        : 'max-w-3xl'
+      : 'max-w-3xl'
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
