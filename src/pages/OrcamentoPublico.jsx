@@ -135,7 +135,7 @@ function OrcamentoAcordeon({ items, total, desconto, descontoValor }) {
 }
 
 // ── Conteúdo por passo ───────────────────────────────────────────
-function ConteudoPasso({ passo, foiAtualizado, os, items, total, desconto, descontoValor, onAprovar, aprovando, onWhatsApp }) {
+function ConteudoPasso({ passo, foiAtualizado, os, items, total, desconto, descontoValor, onAprovar, aprovando, onWhatsApp, temTelefone }) {
   if (passo === 0) {
     // Aguardando aprovação — exibe orçamento completo
     return (
@@ -226,13 +226,15 @@ function ConteudoPasso({ passo, foiAtualizado, os, items, total, desconto, desco
               : <><CheckCircle2 className="w-5 h-5" /> Aprovar orçamento</>
             }
           </button>
-          <button
-            onClick={onWhatsApp}
-            className="w-full bg-white text-slate-700 font-semibold py-4 rounded-2xl text-base border border-gray-200 hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
-          >
-            <MessageCircle className="w-5 h-5 text-green-600" />
-            Tenho uma dúvida
-          </button>
+          {temTelefone && (
+            <button
+              onClick={onWhatsApp}
+              className="w-full bg-white text-slate-700 font-semibold py-4 rounded-2xl text-base border border-gray-200 hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+            >
+              <MessageCircle className="w-5 h-5 text-green-600" />
+              Tenho uma dúvida
+            </button>
+          )}
         </div>
       </>
     )
@@ -252,13 +254,15 @@ function ConteudoPasso({ passo, foiAtualizado, os, items, total, desconto, desco
 
         <OrcamentoAcordeon items={items} total={total} desconto={desconto} descontoValor={descontoValor} />
 
-        <button
-          onClick={onWhatsApp}
-          className="w-full bg-white text-slate-700 font-semibold py-4 rounded-2xl text-base border border-gray-200 hover:bg-gray-50 transition-all flex items-center justify-center gap-2 mb-8"
-        >
-          <MessageCircle className="w-5 h-5 text-green-600" />
-          Falar com a oficina
-        </button>
+        {temTelefone && (
+          <button
+            onClick={onWhatsApp}
+            className="w-full bg-white text-slate-700 font-semibold py-4 rounded-2xl text-base border border-gray-200 hover:bg-gray-50 transition-all flex items-center justify-center gap-2 mb-8"
+          >
+            <MessageCircle className="w-5 h-5 text-green-600" />
+            Falar com a oficina
+          </button>
+        )}
       </>
     )
   }
@@ -277,13 +281,15 @@ function ConteudoPasso({ passo, foiAtualizado, os, items, total, desconto, desco
 
         <OrcamentoAcordeon items={items} total={total} desconto={desconto} descontoValor={descontoValor} />
 
-        <button
-          onClick={onWhatsApp}
-          className="w-full bg-white text-slate-700 font-semibold py-4 rounded-2xl text-base border border-gray-200 hover:bg-gray-50 transition-all flex items-center justify-center gap-2 mb-8"
-        >
-          <MessageCircle className="w-5 h-5 text-green-600" />
-          Falar com a oficina
-        </button>
+        {temTelefone && (
+          <button
+            onClick={onWhatsApp}
+            className="w-full bg-white text-slate-700 font-semibold py-4 rounded-2xl text-base border border-gray-200 hover:bg-gray-50 transition-all flex items-center justify-center gap-2 mb-8"
+          >
+            <MessageCircle className="w-5 h-5 text-green-600" />
+            Falar com a oficina
+          </button>
+        )}
       </>
     )
   }
@@ -299,13 +305,15 @@ function ConteudoPasso({ passo, foiAtualizado, os, items, total, desconto, desco
         <p className="text-sm text-green-700 mt-1.5">Seu veículo está pronto. Fale com a oficina para combinar a retirada.</p>
       </div>
 
-      <button
-        onClick={onWhatsApp}
-        className="w-full bg-green-600 text-white font-bold py-4 rounded-2xl text-base hover:bg-green-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-      >
-        <MessageCircle className="w-5 h-5" />
-        Falar com a oficina no WhatsApp
-      </button>
+      {temTelefone && (
+        <button
+          onClick={onWhatsApp}
+          className="w-full bg-green-600 text-white font-bold py-4 rounded-2xl text-base hover:bg-green-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+        >
+          <MessageCircle className="w-5 h-5" />
+          Falar com a oficina no WhatsApp
+        </button>
+      )}
 
       <OrcamentoAcordeon items={items} total={total} desconto={desconto} descontoValor={descontoValor} />
 
@@ -424,6 +432,9 @@ export default function OrcamentoPublico() {
   const oficinaNome  = os.office?.nome    || 'Oficina'
   const oficinaTel   = os.office?.telefone || ''
   const oficinaLogo  = os.office?.logo    || ''
+  // Só libera o botão de contato quando a oficina tem um telefone dialável
+  // (DDD + número). Sem isso, o WhatsApp não abriria nada útil.
+  const temTelefone  = oficinaTel.replace(/\D/g, '').length >= 10
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -487,6 +498,7 @@ export default function OrcamentoPublico() {
           onAprovar={handleAprovar}
           aprovando={aprovando}
           onWhatsApp={handleWhatsApp}
+          temTelefone={temTelefone}
         />
 
         {/* Footer */}
