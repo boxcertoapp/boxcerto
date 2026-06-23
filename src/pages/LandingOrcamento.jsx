@@ -207,12 +207,17 @@ export default function LandingOrcamento() {
           <a href="/">
             <Logo size="sm" priority />
           </a>
-          <a
-            href={CADASTRO}
-            className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-indigo-700 transition-colors"
-          >
-            Começar grátis <ArrowRight className="w-3.5 h-3.5" />
-          </a>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <a href="/login" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors px-1.5">
+              Entrar
+            </a>
+            <a
+              href={CADASTRO}
+              className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-indigo-700 transition-colors"
+            >
+              Começar grátis <ArrowRight className="w-3.5 h-3.5" />
+            </a>
+          </div>
         </div>
       </header>
 

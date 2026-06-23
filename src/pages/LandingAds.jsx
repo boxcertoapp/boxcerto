@@ -552,13 +552,21 @@ export default function LandingAds() {
       {/* ── NAV ── */}
       <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-gray-100 shadow-sm px-4 py-3 flex items-center justify-between">
         <Logo size="md" priority />
-        <button
-          onClick={goRegister}
-          aria-label="Começar teste grátis por 7 dias, sem cartão de crédito"
-          className="bg-emerald-500 text-white font-bold text-sm px-4 py-2 rounded-xl hover:bg-emerald-600 transition-colors"
-        >
-          Começar grátis
-        </button>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            onClick={() => navigate('/login')}
+            className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors px-1.5"
+          >
+            Entrar
+          </button>
+          <button
+            onClick={goRegister}
+            aria-label="Começar teste grátis por 7 dias, sem cartão de crédito"
+            className="bg-emerald-500 text-white font-bold text-sm px-4 py-2 rounded-xl hover:bg-emerald-600 transition-colors"
+          >
+            Começar grátis
+          </button>
+        </div>
       </nav>
 
       {/* ── CONTEÚDO PRINCIPAL ── */}

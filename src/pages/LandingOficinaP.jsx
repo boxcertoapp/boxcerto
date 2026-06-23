@@ -47,6 +47,7 @@ function LpNav() {
           <img src="/logo.svg" alt="BoxCerto" width={34} height={34} />
           <span className="wm">Box<b>Certo</b></span>
         </a>
+        <Link className="login" to="/login">Entrar</Link>
         <Link className="btn btn-primary" to={SIGNUP}>
           Criar conta grátis <ArrowRight />
         </Link>

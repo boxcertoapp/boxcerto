@@ -1028,7 +1028,18 @@ export default function Landing() {
     if (loading || !user) return
     if (user.isAdmin)   { navigate('/admin',      { replace: true }); return }
     if (user.isTecnico) { navigate('/tecnico',    { replace: true }); return }
-    if (hasAccess(user)){ navigate('/app/oficina', { replace: true }); return }
+    if (hasAccess(user)) {
+      // Onboarding incompleto (ex.: cadastro via Google que caiu aqui pelo
+      // Site URL fallback do OAuth) → completa a avaliação do /bem-vindo
+      // antes de entrar no app. Mesma checagem que o BemVindo usa.
+      const precisaOnboarding =
+        !user.oficina?.trim() ||
+        !user.tipoOficina ||
+        !user.cargo ||
+        !user.whatsapp?.replace(/\D/g, '').length
+      navigate(precisaOnboarding ? '/bem-vindo' : '/app/oficina', { replace: true })
+      return
+    }
     navigate('/renovar', { replace: true })
   }, [user, loading, navigate])
 

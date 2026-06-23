@@ -207,6 +207,8 @@
 .lpp .lpnav .brand img { width: 34px; height: 34px; border-radius: 9px; }
 .lpp .lpnav .brand .wm { font-family: var(--font-display); font-weight: 800; font-size: 21px; letter-spacing: -0.03em; color: var(--ink); }
 .lpp .lpnav .brand .wm b { color: var(--indigo); font-weight: 800; }
+.lpp .lpnav .login { font-weight: 700; font-size: 14px; color: var(--ink); text-decoration: none; opacity: .72; transition: opacity .15s; }
+.lpp .lpnav .login:hover { opacity: 1; }
 @media (max-width: 600px) {
   .lpp .lpnav-inner { height: 60px; }
   /* Compacta o botão do nav em mobile */

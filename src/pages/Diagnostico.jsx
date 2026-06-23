@@ -439,7 +439,10 @@ export default function Diagnostico() {
           <a href="/">
             <Logo size="sm" priority />
           </a>
-          <div className="ml-auto text-xs text-slate-400">Diagnóstico gratuito</div>
+          <div className="ml-auto flex items-center gap-3">
+            <span className="text-xs text-slate-400 hidden sm:inline">Diagnóstico gratuito</span>
+            <a href="/login" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">Entrar</a>
+          </div>
         </div>
       </header>
 

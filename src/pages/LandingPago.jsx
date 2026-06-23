@@ -207,9 +207,14 @@ function TNav({ onCTA }) {
             Box<b style={{ color: '#a5acff' }}>Certo</b>
           </span>
         </Link>
-        <Link to="/cadastro?trial=card" onClick={() => { pushCTA('nav') }} className="btn btn-green" style={{ fontSize: 14, padding: '10px 20px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
-          Criar conta grátis <ArrowRight style={{ width: 16, height: 16 }} />
-        </Link>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 14 }}>
+          <Link to="/login" style={{ color: 'rgba(255,255,255,.85)', fontSize: 14, fontWeight: 700, textDecoration: 'none', fontFamily: 'var(--font-display)' }}>
+            Entrar
+          </Link>
+          <Link to="/cadastro?trial=card" onClick={() => { pushCTA('nav') }} className="btn btn-green" style={{ fontSize: 14, padding: '10px 20px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+            Criar conta grátis <ArrowRight style={{ width: 16, height: 16 }} />
+          </Link>
+        </div>
       </div>
     </header>
   )
