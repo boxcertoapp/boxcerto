@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   X, Check, ChevronRight, ChevronLeft, Loader2, AlertCircle,
@@ -1084,7 +1084,16 @@ function FabCoachmark({ firstName, onSkip, onManualProceed }) {
 
 function Phase2SendCoachmark({ onDone, onSkip }) {
   const [rect, setRect] = useState(null)
+  const [cardH, setCardH] = useState(160) // altura real do card (medida)
+  const cardRef = useRef(null)
   const doneRef = useRef(false)
+
+  // Mede a altura real do card — no mobile o texto quebra em mais linhas
+  // e a estimativa fixa fazia o card tapar o botão quando posicionado acima.
+  useLayoutEffect(() => {
+    const h = cardRef.current?.offsetHeight
+    if (h && Math.abs(h - cardH) > 2) setCardH(h)
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -1144,15 +1153,17 @@ function Phase2SendCoachmark({ onDone, onSkip }) {
   const viewportHeight = window.visualViewport?.height || window.innerHeight
   const viewportBottom = viewportTop + viewportHeight
   const cardWidth = Math.min(320, window.innerWidth - 24)
-  const estimatedCardHeight = 140
+  const gap = 14
 
   let cardTop, cardLeft
   if (rect) {
-    const roomBelow = viewportBottom - (ringTop + ringHeight) - 12
-    const placeBelow = roomBelow >= estimatedCardHeight
+    // Usa a altura REAL medida do card (cardH) — assim, ao posicionar acima,
+    // a base do card fica `gap` acima do botão e nunca o cobre.
+    const roomBelow = viewportBottom - (ringTop + ringHeight) - gap
+    const placeBelow = roomBelow >= cardH
     cardTop = placeBelow
-      ? ringTop + ringHeight + 12
-      : Math.max(viewportTop + 12, ringTop - estimatedCardHeight - 12)
+      ? ringTop + ringHeight + gap
+      : Math.max(viewportTop + 12, ringTop - cardH - gap)
     cardLeft = Math.max(12, Math.min(window.innerWidth - cardWidth - 12, ringLeft + ringWidth / 2 - cardWidth / 2))
   } else {
     // Botão ainda não apareceu — posiciona o card no topo centralizado
@@ -1177,6 +1188,7 @@ function Phase2SendCoachmark({ onDone, onSkip }) {
         />
       )}
       <div
+        ref={cardRef}
         className="fixed z-[395]"
         style={{ top: cardTop, left: cardLeft, width: cardWidth }}
       >
@@ -1272,6 +1284,11 @@ function WizardStyles() {
         0%, 100% { box-shadow: 0 0 0 3px #10b981, 0 0 0 8px rgba(16,185,129,.24); }
         50% { box-shadow: 0 0 0 3px #10b981, 0 0 0 16px rgba(16,185,129,0); }
       }
+      @keyframes wizardBtnPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.025); }
+      }
+      .wizard-pulse-target { animation: wizardBtnPulse 1.4s ease-in-out infinite; will-change: transform; }
       @keyframes wizardPulseIndigo {
         0%, 100% { box-shadow: 0 0 0 3px #4f46e5, 0 0 0 8px rgba(79,70,229,.32); }
         50% { box-shadow: 0 0 0 3px #4f46e5, 0 0 0 18px rgba(79,70,229,0); }

@@ -1695,7 +1695,7 @@ function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false }) {
               data-tour="btn-enviar-cliente"
               onClick={handleEnviarCliente}
               disabled={enviando}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-green-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-green-100 transition-colors hover:bg-green-700 disabled:opacity-60"
+              className="wizard-pulse-target flex w-full items-center justify-center gap-2 rounded-2xl bg-green-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-green-100 transition-colors hover:bg-green-700 disabled:opacity-60"
             >
               {enviando ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
