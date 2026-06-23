@@ -8,6 +8,17 @@ import { osStorage, formatCurrency } from '../lib/storage'
 import PlateTag from '../components/PlateTag'
 import { showToast } from '../components/Toast'
 
+// Monta o número no formato do wa.me (55 + DDD + número). Trata números
+// que já vêm com o código do país e zeros à esquerda. Retorna '' se for
+// curto demais para discar (aí o botão de contato nem aparece).
+function waNumber(raw) {
+  const d = (raw || '').replace(/\D/g, '').replace(/^0+/, '')
+  if (!d) return ''
+  if (d.length >= 12 && d.startsWith('55')) return d   // já tem o 55
+  if (d.length >= 10) return '55' + d                   // DDD + número
+  return ''
+}
+
 // ── Stepper ──────────────────────────────────────────────────────
 const PASSOS = [
   { key: 'orcamento', label: 'Orçamento'       },
@@ -371,7 +382,7 @@ export default function OrcamentoPublico() {
 
   const handleWhatsApp = () => {
     if (!os) return
-    const tel = (os.office?.telefone || '').replace(/\D/g, '')
+    const numero = waNumber(os.office?.telefone)
     const { passo: p, foiAtualizado: atualizado } = getEstado(os)
     const msgs = [
       atualizado
@@ -382,8 +393,8 @@ export default function OrcamentoPublico() {
       `Olá! Vi que o ${os.vehicle?.modelo} (${os.vehicle?.placa}) está pronto. Quando posso retirar?`,
     ]
     const texto = msgs[p] || msgs[0]
-    if (tel) {
-      window.open(`https://wa.me/55${tel}?text=${encodeURIComponent(texto)}`, '_blank')
+    if (numero) {
+      window.open(`https://wa.me/${numero}?text=${encodeURIComponent(texto)}`, '_blank')
     } else {
       setShowDuvida(true)
     }
@@ -432,9 +443,9 @@ export default function OrcamentoPublico() {
   const oficinaNome  = os.office?.nome    || 'Oficina'
   const oficinaTel   = os.office?.telefone || ''
   const oficinaLogo  = os.office?.logo    || ''
-  // Só libera o botão de contato quando a oficina tem um telefone dialável
-  // (DDD + número). Sem isso, o WhatsApp não abriria nada útil.
-  const temTelefone  = oficinaTel.replace(/\D/g, '').length >= 10
+  // Só libera o botão de contato quando há um número dialável (mesma
+  // checagem que o wa.me usa). Sem isso o WhatsApp não abriria nada.
+  const temTelefone  = !!waNumber(oficinaTel)
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -530,9 +541,9 @@ export default function OrcamentoPublico() {
               <button
                 onClick={() => {
                   if (!duvida.trim()) return
-                  const tel = oficinaTel.replace(/\D/g, '')
+                  const numero = waNumber(oficinaTel)
                   const texto = `Mensagem sobre ${os.vehicle?.placa}: ${duvida}`
-                  if (tel) window.open(`https://wa.me/55${tel}?text=${encodeURIComponent(texto)}`, '_blank')
+                  if (numero) window.open(`https://wa.me/${numero}?text=${encodeURIComponent(texto)}`, '_blank')
                   setShowDuvida(false)
                 }}
                 className="flex-1 py-2.5 rounded-xl bg-green-600 text-white text-sm font-semibold"
