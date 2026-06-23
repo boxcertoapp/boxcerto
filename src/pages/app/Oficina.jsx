@@ -1600,13 +1600,12 @@ function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false }) {
         <div className="flex items-center gap-2 p-4 border-b border-gray-100 shrink-0">
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full shrink-0"><X className="w-5 h-5 text-slate-600" /></button>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="font-bold text-slate-900 truncate">{os.vehicle?.placa} · {editForm.modelo || os.vehicle?.modelo}</p>
-              {os.numeroOS && (
-                <span className="text-[10px] font-mono font-bold text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded shrink-0">{formatNumeroOS(os.numeroOS)}</span>
-              )}
-            </div>
-            <p className="text-xs text-slate-400 truncate">{editForm.clienteNome || os.client?.nome} · {formatDate(os.createdAt)}</p>
+            <p className="font-bold text-slate-900 truncate">{os.vehicle?.placa} · {editForm.modelo || os.vehicle?.modelo}</p>
+            <p className="text-xs text-slate-400 truncate">
+              {os.numeroOS && <span className="font-mono font-semibold text-indigo-500">{formatNumeroOS(os.numeroOS)}</span>}
+              {os.numeroOS && ' · '}
+              {editForm.clienteNome || os.client?.nome} · {formatDate(os.createdAt)}
+            </p>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <a href={`https://wa.me/55${os.client?.whatsapp?.replace(/\D/g,'')}?text=${encodeURIComponent(WPP_MESSAGES[status]?.(os.client?.nome, os.vehicle?.modelo, totalComDesconto) || '')}`}

@@ -709,12 +709,37 @@ export default function Menu() {
     setTimeout(() => setLogoSaved(false), 2500)
   }
 
+  // Reduz a imagem para no máx. 512px antes de salvar — a logo aparece
+  // pequena em telas e PDFs, então guardamos uma versão leve mesmo que o
+  // usuário envie um arquivo grande (evita base64 pesado no banco/PDF).
+  const downscaleLogo = (dataUrl, maxDim = 512) => new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      const { width, height } = img
+      if (!width || !height || (width <= maxDim && height <= maxDim)) return resolve(dataUrl)
+      const scale = Math.min(maxDim / width, maxDim / height)
+      const canvas = document.createElement('canvas')
+      canvas.width  = Math.round(width * scale)
+      canvas.height = Math.round(height * scale)
+      try {
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL('image/png'))
+      } catch { resolve(dataUrl) }
+    }
+    img.onerror = () => resolve(dataUrl)
+    img.src = dataUrl
+  })
+
   const handleLogoChange = (e) => {
     const file = e.target.files[0]
     if (!file) return
-    if (file.size > 1024 * 1024) return showToast('A imagem deve ter no máximo 1MB.', 'warning')
+    // Limite generoso; não anunciado na UI. Só avisa se exceder.
+    if (file.size > 5 * 1024 * 1024) return showToast('A imagem deve ter no máximo 5MB.', 'warning')
     const reader = new FileReader()
-    reader.onload = (ev) => autoSaveLogo(ev.target.result)
+    reader.onload = async (ev) => {
+      const optimized = await downscaleLogo(ev.target.result, 512)
+      autoSaveLogo(optimized)
+    }
     reader.readAsDataURL(file)
   }
 
@@ -792,7 +817,7 @@ export default function Menu() {
         <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
           <p className="text-xs text-slate-400 leading-relaxed">Esses dados aparecem nos PDFs de orçamento enviados aos clientes.</p>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Logotipo (máx. 1MB)</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Logotipo</label>
             <div className="flex items-center gap-4">
               <div data-tour="btn-logo-oficina" onClick={() => !logoSaving && logoRef.current?.click()}
                 className={`w-20 h-20 rounded-2xl border-2 border-dashed flex items-center justify-center cursor-pointer transition-all overflow-hidden shrink-0 ${logoSaving ? 'border-gray-100 opacity-60' : 'border-gray-200 hover:border-indigo-400 hover:bg-indigo-50'}`}>
@@ -810,7 +835,7 @@ export default function Menu() {
                     Remover
                   </button>
                 )}
-                <p className="text-xs text-slate-400 mt-1">PNG, JPG, até 1MB · salvo automaticamente</p>
+                <p className="text-xs text-slate-400 mt-1">PNG, JPG · salvo automaticamente</p>
               </div>
               <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
             </div>
