@@ -264,9 +264,14 @@ export default function Register() {
         origem:       searchParams.get('origem')       || '',
       }))
     } catch {}
+    // Redireciona para o Site URL (origin), que o Supabase SEMPRE aceita.
+    // Se apontássemos para /bem-vindo sem essa URL estar na allowlist de
+    // Redirect URLs do Supabase, ele rejeita e devolve à home SEM criar a
+    // sessão (usuário cai deslogado). Com o origin, a sessão é criada e a
+    // Landing roteia o usuário com onboarding incompleto para /bem-vindo.
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin + '/bem-vindo' },
+      options: { redirectTo: window.location.origin },
     })
   }
 
