@@ -163,41 +163,21 @@ async function _apply(req, res) {
       }).catch(() => {})
     }
 
-    // E-mail de boas-vindas — awaited antes de res.json() para garantir
-    // envio no Vercel (função encerra assim que a resposta é enviada).
-    // Promise.race com 6s de timeout como segurança.
-    if (RESEND_KEY) {
-      const APP_URL = 'https://boxcerto.com'
+    // E-mail de boas-vindas via template central (send-email.js) — garante
+    // FROM equipe@, Reply-To, List-Unsubscribe e texto plano (entregabilidade).
+    // Awaited com timeout de 6s pois o Vercel encerra a função após res.json().
+    {
       await Promise.race([
-        fetch('https://api.resend.com/emails', {
+        fetch('https://boxcerto.com/api/send-email', {
           method:  'POST',
-          headers: {
-            'Authorization': `Bearer ${RESEND_KEY}`,
-            'Content-Type':  'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            from:    'BoxCerto <noreply@boxcerto.com>',
-            to:      [email.trim().toLowerCase()],
-            subject: `Bem-vindo ao programa de parceiros BoxCerto, ${nome.trim()}! 🤝`,
-            html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#f8fafc">
-  <div style="background:#4f46e5;border-radius:14px;padding:28px;text-align:center;margin-bottom:24px">
-    <h1 style="color:white;margin:0;font-size:24px">BoxCerto</h1>
-    <p style="color:#c7d2fe;margin:6px 0 0;font-size:13px">Programa de Parceiros</p>
-  </div>
-  <div style="background:white;border-radius:14px;padding:28px;border:1px solid #e2e8f0;margin-bottom:16px">
-    <h2 style="color:#1e293b;margin:0 0 8px">Olá, ${nome.trim()}! 🎉</h2>
-    <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px">Você agora faz parte do programa de parceiros BoxCerto.</p>
-    <div style="background:#eef2ff;border-radius:12px;padding:20px;margin-bottom:20px;border:1px solid #c7d2fe">
-      <p style="color:#3730a3;font-size:12px;font-weight:700;text-transform:uppercase;margin:0 0 12px">Seus dados</p>
-      <p style="color:#1e293b;font-size:14px;margin:6px 0">🔗 <strong>Link:</strong> <a href="${APP_URL}/parceiro/${slug}" style="color:#4f46e5">${APP_URL}/parceiro/${slug}</a></p>
-      <p style="color:#1e293b;font-size:14px;margin:12px 0 0">🎟️ <strong>Cupom:</strong> <span style="background:#4f46e5;color:white;padding:3px 10px;border-radius:6px;font-weight:700">${coupon}</span></p>
-    </div>
-    <div style="text-align:center;margin:24px 0">
-      <a href="${APP_URL}/parceiro/dashboard" style="background:#4f46e5;color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:bold;font-size:15px;display:inline-block">Acessar meu painel →</a>
-    </div>
-  </div>
-  <p style="color:#94a3b8;font-size:12px;text-align:center">BoxCerto · <a href="${APP_URL}" style="color:#94a3b8">boxcerto.com</a></p>
-</div>`,
+            type:        'affiliate_welcome',
+            to:          email.trim().toLowerCase(),
+            nome:        nome.trim(),
+            slug,
+            coupon_code: coupon,
+            link:        `https://boxcerto.com/parceiro/${slug}`,
           }),
         }).catch(e => console.warn('[Affiliate] Email erro:', e.message)),
         new Promise(resolve => setTimeout(resolve, 6000)),

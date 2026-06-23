@@ -125,45 +125,24 @@ async function handleLogin(req, res, supabase, body, resendKey) {
   const APP_URL   = 'https://boxcerto.com'
   const magicLink = `${APP_URL}/parceiro/dashboard?t=${token}&pid=${partner.id}`
 
-  // Envia magic link via Resend — awaited antes da resposta,
-  // pois Vercel encerra a função assim que res.json() é chamado.
+  // Envia magic link via template central (send-email.js) — garante FROM
+  // equipe@, Reply-To, List-Unsubscribe e texto plano (entregabilidade).
+  // Awaited com timeout pois o Vercel encerra a função após res.json().
   // try/catch garante que falha de email não vira 500 (token já foi salvo).
   try {
-    if (resendKey) {
-      await Promise.race([
-        fetch('https://api.resend.com/emails', {
-          method:  'POST',
-          headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            from:    'BoxCerto <noreply@boxcerto.com>',
-            to:      [partner.email],
-            subject: 'Seu link de acesso ao painel de parceiro BoxCerto',
-            html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#f8fafc">
-  <div style="background:#4f46e5;border-radius:14px;padding:28px;text-align:center;margin-bottom:24px">
-    <h1 style="color:white;margin:0;font-size:24px">BoxCerto</h1>
-    <p style="color:#c7d2fe;margin:6px 0 0;font-size:13px">Programa de Parceiros</p>
-  </div>
-  <div style="background:white;border-radius:14px;padding:28px;border:1px solid #e2e8f0;margin-bottom:16px">
-    <h2 style="color:#1e293b;margin:0 0 12px">Olá, ${partner.nome}! Aqui está seu link 🔑</h2>
-    <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px">
-      Clique no botão abaixo para acessar seu painel. O link expira em <strong>24 horas</strong>.
-    </p>
-    <div style="text-align:center;margin:24px 0">
-      <a href="${magicLink}" style="background:#4f46e5;color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:bold;font-size:15px;display:inline-block">
-        Acessar meu painel →
-      </a>
-    </div>
-    <p style="color:#94a3b8;font-size:12px;text-align:center">
-      Ou cole no navegador: <span style="word-break:break-all">${magicLink}</span>
-    </p>
-  </div>
-  <p style="color:#94a3b8;font-size:12px;text-align:center">Se não solicitou, ignore este email.</p>
-</div>`,
-          }),
-        }).catch(e => console.warn('[AffiliateAuth/login] Email erro:', e.message)),
-        new Promise(resolve => setTimeout(resolve, 6000)),
-      ])
-    }
+    await Promise.race([
+      fetch('https://boxcerto.com/api/send-email', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'affiliate_magic_link',
+          to:   partner.email,
+          nome: partner.nome,
+          link: magicLink,
+        }),
+      }).catch(e => console.warn('[AffiliateAuth/login] Email erro:', e.message)),
+      new Promise(resolve => setTimeout(resolve, 6000)),
+    ])
   } catch (emailErr) {
     console.error('[AffiliateAuth/login] Erro ao enviar magic link:', emailErr.message)
     // Não propaga — token já foi salvo, parceiro pode usar o link manualmente
