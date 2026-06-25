@@ -6,6 +6,7 @@ import {
 import { usePageMeta } from '../hooks/usePageMeta'
 import { usePageView } from '../hooks/usePageView'
 import { useConfig } from '../hooks/useConfig'
+import { normalizeSupportPhone } from '../lib/support'
 import Logo from '../components/Logo'
 
 const CADASTRO = 'https://www.boxcerto.com/cadastro'
@@ -245,7 +246,7 @@ export default function LandingOrcamento() {
                 <ArrowRight className="w-5 h-5" />
               </a>
               <a
-                href={`https://wa.me/${WPP_NUM}?text=${WPP_MSG}`}
+                href={`https://wa.me/${normalizeSupportPhone(cfg.support_phone)}?text=${WPP_MSG}`}
                 target="_blank" rel="noreferrer"
                 className="inline-flex items-center justify-center gap-2 border-2 border-gray-200 text-slate-700 font-semibold px-6 py-4 rounded-2xl hover:border-green-400 hover:text-green-700 hover:bg-green-50 transition-colors"
               >
@@ -470,7 +471,7 @@ export default function LandingOrcamento() {
                 <ArrowRight className="w-5 h-5" />
               </a>
               <a
-                href={`https://wa.me/${WPP_NUM}?text=${WPP_MSG}`}
+                href={`https://wa.me/${normalizeSupportPhone(cfg.support_phone)}?text=${WPP_MSG}`}
                 target="_blank" rel="noreferrer"
                 className="inline-flex items-center justify-center gap-2 border-2 border-indigo-400 text-white font-semibold px-6 py-4 rounded-2xl hover:bg-indigo-700 transition-colors"
               >

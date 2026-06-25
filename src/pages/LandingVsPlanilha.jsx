@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useConfig } from '../hooks/useConfig'
+import { normalizeSupportPhone } from '../lib/support'
 import { usePageView } from '../hooks/usePageView'
 import Logo from '../components/Logo'
 
@@ -436,7 +437,7 @@ export default function LandingVsPlanilha() {
                 Largar a planilha agora
                 <ArrowRight className="w-5 h-5" />
               </a>
-              <a href={`https://wa.me/${WPP_NUM}?text=${WPP_MSG}`}
+              <a href={`https://wa.me/${normalizeSupportPhone(cfg.support_phone)}?text=${WPP_MSG}`}
                 target="_blank" rel="noreferrer"
                 className="inline-flex items-center justify-center gap-2 border-2 border-indigo-400 text-white font-semibold px-6 py-4 rounded-2xl hover:bg-indigo-700 transition-colors">
                 <MessageCircle className="w-5 h-5" />
