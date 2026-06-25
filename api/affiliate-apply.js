@@ -170,7 +170,10 @@ async function _apply(req, res) {
       await Promise.race([
         fetch('https://boxcerto.com/api/send-email', {
           method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type':      'application/json',
+            'x-internal-secret': process.env.EMAIL_SECRET || '',
+          },
           body: JSON.stringify({
             type:        'affiliate_welcome',
             to:          email.trim().toLowerCase(),

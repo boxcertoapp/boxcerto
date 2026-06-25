@@ -133,7 +133,10 @@ async function handleLogin(req, res, supabase, body, resendKey) {
     await Promise.race([
       fetch('https://boxcerto.com/api/send-email', {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type':      'application/json',
+          'x-internal-secret': process.env.EMAIL_SECRET || '',
+        },
         body: JSON.stringify({
           type: 'affiliate_magic_link',
           to:   partner.email,
