@@ -8,6 +8,26 @@ const { createClient } = require('@supabase/supabase-js')
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const FROM          = 'BoxCerto <equipe@boxcerto.com>'
 const REPLY_TO      = 'suporte@boxcerto.com'
+
+// Telefone de suporte — lido do app_config (editável no admin), com fallback.
+// Atualizado a cada envio; cacheado por instância da função serverless.
+let SUPPORT_PHONE = '5553997065725'
+let _supportFetched = false
+async function loadSupportPhone() {
+  if (_supportFetched) return
+  _supportFetched = true
+  try {
+    const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
+    if (!url || !key) return
+    const supabase = createClient(url, key)
+    const { data } = await supabase.from('app_config').select('value').eq('key', 'support_phone').maybeSingle()
+    if (data?.value) {
+      const d = String(data.value).replace(/\D/g, '')
+      if (d.length >= 10) SUPPORT_PHONE = d.startsWith('55') ? d : '55' + d
+    }
+  } catch {}
+}
 const APP_URL       = 'https://boxcerto.com'
 const ADMIN_EMAIL   = 'rogerioknfilho@gmail.com'
 
@@ -64,7 +84,7 @@ const base = (content) => `<!DOCTYPE html>
   ${content}
   <p style="color:#94a3b8;font-size:12px;text-align:center;margin:16px 0 0">
     BoxCerto · <a href="${APP_URL}" style="color:#94a3b8">boxcerto.com</a><br>
-    Dúvidas? Responda este e-mail ou fale pelo <a href="https://wa.me/5553997065725" style="color:#94a3b8">WhatsApp</a>.
+    Dúvidas? Responda este e-mail ou fale pelo <a href="https://wa.me/${SUPPORT_PHONE}" style="color:#94a3b8">WhatsApp</a>.
   </p>
 </div>
 </body>
@@ -157,7 +177,7 @@ const templates = {
             </div>
             ${btn(`${APP_URL}/app/oficina`, 'Experimentar sem compromisso →')}
             <p style="color:#64748b;font-size:13px;text-align:center;margin:8px 0 0">
-              Tem dúvidas? <a href="https://wa.me/5553997065725" style="color:#4f46e5">Fale com a gente — respondemos rápido</a>
+              Tem dúvidas? <a href="https://wa.me/${SUPPORT_PHONE}" style="color:#4f46e5">Fale com a gente — respondemos rápido</a>
             </p>
           `)}
         `),
@@ -193,7 +213,7 @@ const templates = {
           </div>
           ${btn(`${APP_URL}/app/oficina`, 'Criar meu primeiro orçamento →')}
           <p style="color:#64748b;font-size:13px;text-align:center;margin:8px 0 0">
-            Precisa de ajuda? <a href="https://wa.me/5553997065725" style="color:#4f46e5">Fale com a gente no WhatsApp</a>
+            Precisa de ajuda? <a href="https://wa.me/${SUPPORT_PHONE}" style="color:#4f46e5">Fale com a gente no WhatsApp</a>
           </p>
         `)}
       `),
@@ -318,7 +338,7 @@ const templates = {
         </div>
         ${btn(`${APP_URL}/app/menu`, 'Atualizar forma de pagamento →')}
         <p style="color:#94a3b8;font-size:12px;text-align:center;margin:8px 0 0">
-          Precisa de ajuda? <a href="https://wa.me/5553997065725" style="color:#4f46e5">Fale conosco no WhatsApp</a>
+          Precisa de ajuda? <a href="https://wa.me/${SUPPORT_PHONE}" style="color:#4f46e5">Fale conosco no WhatsApp</a>
         </p>
       `)}
     `),
@@ -402,7 +422,7 @@ const templates = {
         </div>
         ${btn(`${APP_URL}/app/financeiro`, 'Explorar o financeiro →')}
         <p style="color:#64748b;font-size:13px;text-align:center;margin:8px 0 0">
-          Precisa de ajuda para configurar? <a href="https://wa.me/5553997065725" style="color:#4f46e5">Fale conosco</a>
+          Precisa de ajuda para configurar? <a href="https://wa.me/${SUPPORT_PHONE}" style="color:#4f46e5">Fale conosco</a>
         </p>
       `)}
     `),
@@ -486,7 +506,7 @@ const templates = {
         </div>
         ${btn(`${APP_URL}/app/menu`, 'Atualizar pagamento e reativar →')}
         <p style="color:#64748b;font-size:13px;text-align:center;margin:8px 0 0">
-          Prefere ajuda? <a href="https://wa.me/5553997065725" style="color:#4f46e5">Fale conosco no WhatsApp</a>
+          Prefere ajuda? <a href="https://wa.me/${SUPPORT_PHONE}" style="color:#4f46e5">Fale conosco no WhatsApp</a>
         </p>
       `)}
       ${notice('#92400e','#fefce8','#fde68a',
@@ -711,6 +731,7 @@ module.exports = async (req, res) => {
 
   if (!RESEND_API_KEY) return res.status(500).json({ error: 'RESEND_API_KEY não configurada' })
 
+  await loadSupportPhone() // garante o telefone de suporte atual antes de renderizar
   const { subject, html } = template(data)
   const text = toPlainText(html)
   const transactional = TRANSACTIONAL_TYPES.has(type)
