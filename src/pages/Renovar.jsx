@@ -1,10 +1,13 @@
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Zap, ArrowRight, MessageCircle, RefreshCw, LogOut } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { useConfig } from '../hooks/useConfig'
+import { supportWaHref } from '../lib/support'
 
 export default function Renovar() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const cfg = useConfig()
 
   const statusMsg = {
     cancelado:    { titulo: 'Assinatura cancelada',          desc: 'Sua assinatura foi cancelada. Renove para continuar usando o BoxCerto.' },
@@ -18,8 +21,7 @@ export default function Renovar() {
   }
 
   const abrirWhatsApp = () => {
-    const msg = encodeURIComponent(`Olá! Minha conta BoxCerto (${user?.email}) está com acesso bloqueado. Podem me ajudar?`)
-    window.open(`https://wa.me/5553997065725?text=${msg}`, '_blank')
+    window.open(supportWaHref(cfg.support_phone, `Olá! Minha conta BoxCerto (${user?.email}) está com acesso bloqueado. Podem me ajudar?`), '_blank')
   }
 
   return (

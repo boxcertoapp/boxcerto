@@ -14,6 +14,8 @@ export const CONFIG_DEFAULTS = {
   price_annual_monthly: '79.90',
   trial_days:           '7',
   trial_message:        'Experimente grátis por 7 dias, sem cartão necessário.',
+  // Telefone de suporte (formato wa.me: 55 + DDD + número). Editável no admin.
+  support_phone:        '5553997065725',
 }
 
 // Cache de módulo — compartilhado entre todos os componentes

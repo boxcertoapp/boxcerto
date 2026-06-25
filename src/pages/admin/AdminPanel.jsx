@@ -409,7 +409,7 @@ export default function AdminPanel() {
       case 'comunicacoes': return <Comunicacoes users={users} />
       case 'anuncios':    return <Anuncios     />
       case 'suporte':      return <SuporteAdmin />
-      case 'configuracoes':return <Configuracoes users={users} reload={reload} />
+      case 'configuracoes':return <Configuracoes users={users} reload={reload} confirmarComSenha={confirmarComSenha} />
       default:             return <Dashboard    {...sharedProps} onNavigate={setSection} />
     }
   }

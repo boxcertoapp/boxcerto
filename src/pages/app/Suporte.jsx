@@ -8,8 +8,8 @@ import {
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-
-const WPP = 'https://wa.me/5553997065725?text=Ol%C3%A1%2C%20tenho%20uma%20urg%C3%AAncia%20no%20BoxCerto%20e%20preciso%20de%20ajuda%20imediata.'
+import { useConfig } from '../../hooks/useConfig'
+import { supportWaHref } from '../../lib/support'
 
 // ── Guias passo a passo ────────────────────────────────────────
 const GUIAS = [
@@ -185,6 +185,8 @@ function FaqItem({ q, a }) {
 
 // ── Formulário de ticket ───────────────────────────────────────
 function FormTicket({ user, onEnviado }) {
+  const cfg = useConfig()
+  const WPP = supportWaHref(cfg.support_phone, 'Olá, tenho uma urgência no BoxCerto e preciso de ajuda imediata.')
   const [cat, setCat]         = useState('')
   const [titulo, setTitulo]   = useState('')
   const [msg, setMsg]         = useState('')

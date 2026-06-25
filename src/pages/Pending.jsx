@@ -1,9 +1,12 @@
 import { useLocation, Link } from 'react-router-dom'
 import { Clock, CheckCircle, MessageCircle } from 'lucide-react'
 import Logo from '../components/Logo'
+import { useConfig } from '../hooks/useConfig'
+import { supportWaHref } from '../lib/support'
 
 export default function Pending() {
   const location = useLocation()
+  const cfg = useConfig()
   const nome = location.state?.nome || 'Mecânico'
 
   return (
@@ -38,7 +41,7 @@ export default function Pending() {
           <p className="text-sm text-indigo-700">
             Tem alguma dúvida? Fale com a gente pelo WhatsApp:{' '}
             <a
-              href="https://wa.me/5553997065725?text=Ol%C3%A1%2C%20acabei%20de%20me%20cadastrar%20no%20BoxCerto%20e%20tenho%20uma%20d%C3%BAvida."
+              href={supportWaHref(cfg.support_phone, 'Olá, acabei de me cadastrar no BoxCerto e tenho uma dúvida.')}
               target="_blank"
               rel="noreferrer"
               className="font-semibold underline"

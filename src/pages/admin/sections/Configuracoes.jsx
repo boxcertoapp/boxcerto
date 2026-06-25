@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react'
 import {
   CreditCard, Users, Plug, Flag, Shield, CheckCircle,
   XCircle, Loader2, RefreshCw, ExternalLink, Save, ToggleLeft, ToggleRight,
-  Clock, AlertCircle
+  Clock, AlertCircle, Phone
 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { CONFIG_DEFAULTS, invalidateConfig } from '../../../hooks/useConfig'
+import { normalizeSupportPhone } from '../../../lib/support'
 
 // ── Seção wrapper ────────────────────────────────────────────
 function Section({ title, icon: Icon, children }) {
@@ -301,10 +302,82 @@ function AuditLog() {
 }
 
 // ── Principal ────────────────────────────────────────────────
-export default function Configuracoes({ users, reload }) {
+// ── Telefone de suporte (edição protegida por senha) ─────────
+function SuporteConfig({ confirmarComSenha }) {
+  const [phone,   setPhone]   = useState(CONFIG_DEFAULTS.support_phone)
+  const [loading, setLoading] = useState(true)
+  const [saving,  setSaving]  = useState(false)
+  const [saved,   setSaved]   = useState(false)
+
+  useEffect(() => {
+    supabase.from('app_config').select('value').eq('key', 'support_phone').maybeSingle()
+      .then(({ data }) => {
+        if (data?.value) setPhone(data.value)
+        setLoading(false)
+      })
+  }, [])
+
+  const doSave = async () => {
+    setSaving(true)
+    const value = normalizeSupportPhone(phone)
+    const { error } = await supabase.from('app_config')
+      .upsert({ key: 'support_phone', value, updated_at: new Date().toISOString() }, { onConflict: 'key' })
+    setSaving(false)
+    if (!error) {
+      setPhone(value)
+      invalidateConfig()
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } else {
+      alert('Erro ao salvar: ' + error.message)
+    }
+  }
+
+  const onSave = () => {
+    if (normalizeSupportPhone(phone).length < 12) {
+      alert('Informe um número válido com DDD (ex.: 53 99706-5725).')
+      return
+    }
+    confirmarComSenha(
+      'Alterar telefone de suporte',
+      'Esse número passa a ser exibido em todo o sistema (botões "Falar com suporte", emails e páginas). Confirme com sua senha de admin para salvar.',
+      doSave,
+    )
+  }
+
+  if (loading) return (
+    <Section title="Telefone de Suporte" icon={Phone}>
+      <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-slate-400" /></div>
+    </Section>
+  )
+
+  return (
+    <Section title="Telefone de Suporte" icon={Phone}>
+      <label className="block text-xs font-medium text-slate-600 mb-1.5">Número do WhatsApp de suporte</label>
+      <input
+        value={phone}
+        onChange={e => setPhone(e.target.value)}
+        placeholder="53 99706-5725"
+        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 mb-1.5"
+      />
+      <p className="text-xs text-slate-400 mb-4">
+        Com DDD. Aceita formatado — salvamos no formato do WhatsApp: <strong>{normalizeSupportPhone(phone)}</strong>.
+        Aplicado em todos os botões "Falar com suporte", emails e páginas do site.
+      </p>
+      <button onClick={onSave} disabled={saving}
+        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors disabled:opacity-60 ${saved ? 'bg-green-600 text-white' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
+        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+        {saving ? 'Salvando...' : saved ? '✓ Salvo e aplicado' : 'Salvar (pede senha)'}
+      </button>
+    </Section>
+  )
+}
+
+export default function Configuracoes({ users, reload, confirmarComSenha }) {
   return (
     <div className="space-y-5">
       <PlanosConfig />
+      <SuporteConfig confirmarComSenha={confirmarComSenha} />
       <AdminsConfig users={users} reload={reload} />
       <IntegracoesConfig />
       <FeatureFlags />
