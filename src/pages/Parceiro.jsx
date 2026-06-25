@@ -212,7 +212,7 @@ function Nav() {
 
 // ── Hero ─────────────────────────────────────────────────────
 function Hero() {
-  const total = useCountUp(1842.5, 1400)
+  const total = useCountUp(8730, 1400)
   return (
     <header className="pg-dark-grad" style={{ position:'relative', overflow:'hidden', padding:'96px 0 80px' }}>
       <div className="pg-grid-bg" />
@@ -230,9 +230,11 @@ function Hero() {
                 Você ganha todo mês.
               </span>
             </h1>
-            <p style={{ fontSize:'clamp(15px,1.55vw,18px)', lineHeight:1.65, color:'var(--on-dark-mut)', margin:'0 0 36px', maxWidth:480 }}>
+            <p style={{ fontSize:'clamp(15px,1.55vw,18px)', lineHeight:1.65, color:'var(--on-dark-mut)', margin:'0 0 36px', maxWidth:500 }}>
               <strong style={{ color:'var(--on-dark)' }}>R$ 50 na hora</strong> por cada oficina que vira cliente pagante.
-              Mais <strong style={{ color:'var(--on-dark)' }}>20% a 30% da mensalidade</strong> dela, todo mês, por 12 meses.
+              Mais <strong style={{ color:'var(--on-dark)' }}>20% a 30% da mensalidade</strong> dela, todo mês.
+              Some dezenas de oficinas e vira renda de verdade — no topo, parceiros
+              <strong style={{ color:'var(--green-soft)' }}> passam de R$ 20 mil por mês</strong>.
             </p>
             <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
               <a href="#cadastro" className="pg-btn" style={{
@@ -274,13 +276,13 @@ function Hero() {
               R$ {brlFull(total)}
             </div>
             <div style={{ fontSize:12, color:'var(--green-soft)', marginBottom:24, display:'flex', alignItems:'center', gap:6 }}>
-              <IcRepeat style={{ color:'var(--green-soft)' }} /> recorrente · 12 oficinas ativas · faixa 25%
+              <IcRepeat style={{ color:'var(--green-soft)' }} /> recorrente · 300 oficinas ativas · faixa Ouro 30%
             </div>
             {[
-              ['Maciel Auto Center','Caxias do Sul/RS','+R$ 24,25/mês'],
-              ['Gomes Multimarcas','Londrina/PR','+R$ 24,25/mês'],
+              ['Maciel Auto Center','Caxias do Sul/RS','+R$ 29,10/mês'],
+              ['Gomes Multimarcas','Londrina/PR','+R$ 29,10/mês'],
               ['Mecânica Brasil','Goiânia/GO','+R$ 29,10/mês'],
-              ['Natusch Auto Certo','Pelotas/RS','+R$ 24,25/mês'],
+              ['Natusch Auto Certo','Pelotas/RS','+R$ 29,10/mês'],
             ].map(([name, loc, val], i) => (
               <div key={i} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 0', borderBottom:'1px solid rgba(140,150,220,.08)' }}>
                 <IcCheck style={{ color:'var(--green-br)', width:12, height:12, flexShrink:0 }} />
@@ -291,8 +293,8 @@ function Hero() {
               </div>
             ))}
             <div style={{ display:'flex', justifyContent:'space-between', marginTop:16, fontSize:11, color:'var(--on-dark-faint)' }} className="pg-mono">
-              <span>+ 8 oficinas ativas</span>
-              <span>Bônus no mês: <strong style={{ color:'var(--green-soft)' }}>R$ 200,00</strong></span>
+              <span>+ 296 oficinas ativas</span>
+              <span>Bônus no mês: <strong style={{ color:'var(--green-soft)' }}>R$ 2.000,00</strong></span>
             </div>
           </div>
         </div>
@@ -355,8 +357,8 @@ function Ganhos() {
 
 // ── Calculator ───────────────────────────────────────────────
 function Calculator() {
-  const [n,     setN]     = useState(15)
-  const [novas, setNovas] = useState(4)
+  const [n,     setN]     = useState(80)
+  const [novas, setNovas] = useState(12)
 
   const t          = tierFor(n)
   const recMonth   = n * PLAN * t.pct
@@ -378,7 +380,7 @@ function Calculator() {
             Arraste e veja a máquina trabalhando.
           </h2>
           <p style={{ color:'var(--on-dark-mut)', fontSize:16, margin:0 }}>
-            Ajuste quantas oficinas ativas você tem e quantas novas entram no mês. Os números recalculam na hora.
+            Ajuste quantas oficinas ativas você tem e quantas novas entram no mês. Arraste até o topo: parceiros com centenas de oficinas <strong style={{ color:'var(--on-dark)' }}>passam de R$ 20 mil por mês</strong> — e não tem teto.
           </p>
         </Reveal>
 
@@ -397,9 +399,9 @@ function Calculator() {
                 <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:52, fontWeight:700, color:'#fff', letterSpacing:'-.03em', lineHeight:1, marginBottom:16 }}>
                   {n}<span style={{ fontSize:20, color:'var(--on-dark-faint)', fontWeight:400, marginLeft:6 }}>{n===1?'oficina':'oficinas'}</span>
                 </div>
-                <input type="range" min="1" max="50" value={n} onChange={e => setN(+e.target.value)} className="pg-slider" aria-label="Oficinas ativas" />
+                <input type="range" min="1" max="700" value={n} onChange={e => setN(+e.target.value)} className="pg-slider" aria-label="Oficinas ativas" />
                 <div className="pg-mono" style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'var(--on-dark-faint)', marginTop:6 }}>
-                  <span>1</span><span>25</span><span>50</span>
+                  <span>1</span><span>350</span><span>700</span>
                 </div>
               </div>
 
@@ -412,9 +414,9 @@ function Calculator() {
                 <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:44, fontWeight:700, color:'#fff', letterSpacing:'-.03em', lineHeight:1, marginBottom:16 }}>
                   {novas}<span style={{ fontSize:18, color:'var(--on-dark-faint)', fontWeight:400, marginLeft:6 }}>{novas===1?'nova':'novas'}</span>
                 </div>
-                <input type="range" min="0" max="20" value={novas} onChange={e => setNovas(+e.target.value)} className="pg-slider" aria-label="Novas pagantes no mês" />
+                <input type="range" min="0" max="50" value={novas} onChange={e => setNovas(+e.target.value)} className="pg-slider" aria-label="Novas pagantes no mês" />
                 <div className="pg-mono" style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'var(--on-dark-faint)', marginTop:6 }}>
-                  <span>0</span><span>10</span><span>20</span>
+                  <span>0</span><span>25</span><span>50</span>
                 </div>
               </div>
 
@@ -455,7 +457,10 @@ function Calculator() {
               </div>
 
               <p style={{ fontSize:11, color:'var(--on-dark-faint)', lineHeight:1.6, marginTop:20 }}>
-                Simulação com base no plano mensal de R$ 97. Comissão recorrente paga por até 12 meses por cliente ativo. O percentual sobe com seu volume.
+                Simulação com base no plano mensal de R$ 97 e na faixa de comissão do seu volume (20% a 30%).
+                Exemplo no topo: <strong style={{ color:'var(--on-dark-mut)' }}>500 oficinas ativas = R$ 14.550/mês só de recorrência</strong> (R$ 174.600/ano);
+                700 oficinas + 50 novas no mês passam de <strong style={{ color:'var(--green-soft)' }}>R$ 22 mil/mês</strong>.
+                Comissão recorrente paga por até 12 meses por cliente ativo. Sem teto de quantas você pode trazer.
               </p>
             </div>
           </div>
