@@ -86,6 +86,7 @@ module.exports = async (req, res) => {
 
       case 'checkout.session.completed': {
         const session        = event.data.object
+        const userId         = session.client_reference_id || null  // id Supabase (param do Payment Link)
         const email          = session.metadata?.email || session.customer_email
         const plan           = session.metadata?.plan  || 'monthly'
         const customerId     = session.customer
@@ -101,86 +102,101 @@ module.exports = async (req, res) => {
           } catch (e) { console.error('Error fetching subscription:', e.message) }
         }
 
-        await updateByEmail(email, {
-          status:                'active',
-          plan,
-          stripe_customer_id:    customerId,
-          stripe_subscription_id: subscriptionId,
-          activated_at:          new Date().toISOString(),
-          next_billing_at:       nextBilling,
-          canceled_at:           null,
-        })
-        console.log('✅ Pagamento confirmado:', email, plan)
-
-        // ── Comissão de afiliado (entrada R$ 50) ───────────────
-        if (email) {
-          try {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('id, responsavel, oficina, affiliate_ref, affiliate_coupon, affiliate_partner_id')
-              .eq('email', email).maybeSingle()
-
-            // Atribuição: cupom > ref (já salvo no perfil via user_metadata)
-            const affRef    = profile?.affiliate_coupon || profile?.affiliate_ref
-            const affField  = profile?.affiliate_coupon ? 'coupon_code' : 'slug'
-
-            if (affRef && !profile?.affiliate_partner_id) {
-              const { data: partner } = await supabase
-                .from('affiliate_partners')
-                .select('id, status')
-                .eq(affField, affRef).maybeSingle()
-
-              if (partner?.status === 'active') {
-                // Valor do plano para cálculo de comissão mensal
-                const planValue = session.amount_total ? session.amount_total / 100 : null
-
-                // Comissão de entrada R$ 50 (aprovada automaticamente no checkout)
-                await supabase.from('affiliate_commissions').insert({
-                  partner_id:       partner.id,
-                  customer_user_id: profile.id,
-                  customer_email:   email,
-                  type:             'entry',
-                  amount:           50.00,
-                  plan_value:       planValue,
-                  status:           'approved',
-                  approved_at:      new Date().toISOString(),
-                })
-
-                // Vincula parceiro ao perfil para comissões mensais futuras
-                await supabase.from('profiles')
-                  .update({ affiliate_partner_id: partner.id })
-                  .eq('id', profile.id)
-
-                // Evento de conversão
-                await supabase.from('affiliate_events').insert({
-                  partner_id: partner.id,
-                  event_type: 'converted',
-                  user_email: email,
-                  user_id:    profile.id,
-                  metadata:   { plan, session_id: session.id, plan_value: planValue },
-                })
-
-                console.log('💰 Comissão de entrada criada — parceiro:', affRef)
-              }
-            }
-          } catch (e) { console.error('Erro ao criar comissão de afiliado:', e.message) }
+        // Casa o perfil de forma robusta: por id (infalível) e, se não houver,
+        // por email exato e depois minúsculo. Evita falha de ativação quando o
+        // profiles.email está vazio (contas antigas) ou com case diferente.
+        let profile = null
+        if (userId) {
+          const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
+          profile = data || null
+        }
+        if (!profile && email) {
+          let { data } = await supabase.from('profiles').select('*').eq('email', email).maybeSingle()
+          if (!data && email !== email.toLowerCase()) {
+            ({ data } = await supabase.from('profiles').select('*').eq('email', email.toLowerCase()).maybeSingle())
+          }
+          profile = data || null
         }
 
-        // Busca nome e oficina para o email de boas-vindas
-        if (email) {
+        if (!profile) {
+          // Pagamento que não casou com nenhum usuário — loga ALTO para ativação manual.
+          console.error('🚨 Pagamento SEM perfil correspondente — ativar manualmente. session:', session.id, '| email:', email, '| client_reference_id:', userId)
+          break
+        }
+
+        await supabase.from('profiles').update({
+          status:                 'active',
+          plan,
+          stripe_customer_id:     customerId,
+          stripe_subscription_id: subscriptionId,
+          activated_at:           new Date().toISOString(),
+          next_billing_at:        nextBilling,
+          canceled_at:            null,
+        }).eq('id', profile.id)
+        console.log('✅ Pagamento confirmado:', profile.email || email, plan)
+
+        const destEmail = profile.email || email
+
+        // ── Comissão de afiliado (entrada R$ 50) ───────────────
+        try {
+          // Atribuição: cupom > ref (já salvo no perfil via user_metadata)
+          const affRef    = profile.affiliate_coupon || profile.affiliate_ref
+          const affField  = profile.affiliate_coupon ? 'coupon_code' : 'slug'
+
+          if (affRef && !profile.affiliate_partner_id) {
+            const { data: partner } = await supabase
+              .from('affiliate_partners')
+              .select('id, status')
+              .eq(affField, affRef).maybeSingle()
+
+            if (partner?.status === 'active') {
+              // Valor do plano para cálculo de comissão mensal
+              const planValue = session.amount_total ? session.amount_total / 100 : null
+
+              // Comissão de entrada R$ 50 (aprovada automaticamente no checkout)
+              await supabase.from('affiliate_commissions').insert({
+                partner_id:       partner.id,
+                customer_user_id: profile.id,
+                customer_email:   destEmail,
+                type:             'entry',
+                amount:           50.00,
+                plan_value:       planValue,
+                status:           'approved',
+                approved_at:      new Date().toISOString(),
+              })
+
+              // Vincula parceiro ao perfil para comissões mensais futuras
+              await supabase.from('profiles')
+                .update({ affiliate_partner_id: partner.id })
+                .eq('id', profile.id)
+
+              // Evento de conversão
+              await supabase.from('affiliate_events').insert({
+                partner_id: partner.id,
+                event_type: 'converted',
+                user_email: destEmail,
+                user_id:    profile.id,
+                metadata:   { plan, session_id: session.id, plan_value: planValue },
+              })
+
+              console.log('💰 Comissão de entrada criada — parceiro:', affRef)
+            }
+          }
+        } catch (e) { console.error('Erro ao criar comissão de afiliado:', e.message) }
+
+        // Email de confirmação de pagamento
+        if (destEmail) {
           try {
-            const { data: profile } = await supabase
-              .from('profiles').select('responsavel, oficina').eq('email', email).single()
             const proximaCobranca = nextBilling
               ? new Date(nextBilling).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
               : null
-            await sendEmail('payment_success', email, {
-              nome:            profile?.responsavel || email.split('@')[0],
-              oficina:         profile?.oficina     || 'sua oficina',
+            await sendEmail('payment_success', destEmail, {
+              nome:            profile.responsavel || destEmail.split('@')[0],
+              oficina:         profile.oficina     || 'sua oficina',
               plano:           plan,
               proximaCobranca,
             })
-          } catch (e) { console.error('Erro ao buscar perfil para email:', e.message) }
+          } catch (e) { console.error('Erro ao enviar email de confirmação:', e.message) }
         }
         break
       }

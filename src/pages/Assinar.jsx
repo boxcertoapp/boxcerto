@@ -36,11 +36,14 @@ export default function Assinar() {
   const economia = Math.round(pMensal * 12 - pAnual)
 
   const abrirStripe = (url) => {
-    // Pré-preenche o email do cliente no checkout
-    const finalUrl = user?.email
-      ? `${url}?prefilled_email=${encodeURIComponent(user.email)}`
-      : url
-    window.location.href = finalUrl
+    // Pré-preenche o email e passa o id do usuário (client_reference_id).
+    // O webhook usa o id para casar o pagamento ao perfil de forma infalível,
+    // mesmo que o email esteja vazio/diferente no banco.
+    const params = new URLSearchParams()
+    if (user?.email) params.set('prefilled_email', user.email)
+    if (user?.id)    params.set('client_reference_id', user.id)
+    const qs = params.toString()
+    window.location.href = qs ? `${url}?${qs}` : url
   }
 
   return (
