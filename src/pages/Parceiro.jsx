@@ -5,6 +5,8 @@
 // ============================================================
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useConfig } from '../hooks/useConfig'
+import { supportWaHref } from '../lib/support'
 
 // ── CSS (tokens + animações não mapeáveis no Tailwind) ───────
 const CSS = `
@@ -794,6 +796,7 @@ function FormSection() {
 
 // ── Footer ───────────────────────────────────────────────────
 function ParcFooter() {
+  const cfg = useConfig()
   return (
     <footer style={{ background:'var(--ink-2)', padding:'60px 0 40px', borderTop:'1px solid rgba(140,150,220,.08)' }}>
       <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 28px' }}>
@@ -811,7 +814,7 @@ function ParcFooter() {
             {[
               { title:'Programa',  links:[['#ganhos','Como você ganha'],['#calculadora','Calculadora'],['#cadastro','Cadastro']] },
               { title:'BoxCerto',  links:[['https://boxcerto.com','Site principal'],['/lp','Para oficinas'],['/login','Entrar']] },
-              { title:'Suporte',   links:[['https://wa.me/5553997065725','WhatsApp'],['/privacidade','Privacidade'],['/termos','Termos']] },
+              { title:'Suporte',   links:[[supportWaHref(cfg.support_phone),'WhatsApp'],['/privacidade','Privacidade'],['/termos','Termos']] },
             ].map(col => (
               <div key={col.title}>
                 <h4 style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:13, fontWeight:700, color:'var(--on-dark)', marginBottom:14 }}>{col.title}</h4>

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { ArrowRight, CheckCircle, Zap, Star, Clock, TrendingUp, Package, FileText, ChevronRight, MessageCircle, Mail } from 'lucide-react'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useConfig } from '../hooks/useConfig'
+import { normalizeSupportPhone } from '../lib/support'
 import { usePageView } from '../hooks/usePageView'
 import { supabase } from '../lib/supabase'
 import Logo from '../components/Logo'
@@ -177,6 +178,7 @@ function OpcaoCard({ opcao, selecionada, onClick }) {
 }
 
 function ResultadoCard({ dor, orcamentoMsg, equipeMsg, perda, cfg_pm }) {
+  const cfg = useConfig()
   if (!dor) return null  // guard contra stale closure residual
   const c = COR[dor.cor] || COR.indigo
   const DorIcon = dor.icon
@@ -282,7 +284,7 @@ function ResultadoCard({ dor, orcamentoMsg, equipeMsg, perda, cfg_pm }) {
           <ArrowRight className="w-5 h-5" />
         </a>
         <a
-          href={`https://wa.me/${WPP_NUM}?text=${WPP_MSG}`}
+          href={`https://wa.me/${normalizeSupportPhone(cfg.support_phone)}?text=${WPP_MSG}`}
           target="_blank" rel="noreferrer"
           className="flex items-center justify-center gap-2 w-full border-2 border-gray-200 text-slate-700 font-semibold py-3.5 rounded-2xl hover:border-green-400 hover:text-green-700 hover:bg-green-50 transition-colors"
         >

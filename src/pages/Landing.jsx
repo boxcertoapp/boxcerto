@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth, hasAccess } from '../contexts/AuthContext'
 import { useConfig } from '../hooks/useConfig'
+import { supportWaHref } from '../lib/support'
 import { usePageView } from '../hooks/usePageView'
 import { usePageMeta } from '../hooks/usePageMeta'
 import {
@@ -929,6 +930,7 @@ function Faq() {
 
 /* ── Final CTA ────────────────────────────────────────────── */
 function FinalCta() {
+  const cfg = useConfig()
   return (
     <section className="section final-cta">
       <span className="glow g1" />
@@ -953,7 +955,7 @@ function FinalCta() {
             <a className="btn btn-primary btn-lg" href="/cadastro">
               Começar teste grátis de 7 dias <ArrowRight />
             </a>
-            <a className="btn btn-green btn-lg" href={WPP} target="_blank" rel="noreferrer">
+            <a className="btn btn-green btn-lg" href={supportWaHref(cfg.support_phone, 'Olá, tenho dúvidas sobre o BoxCerto!')} target="_blank" rel="noreferrer">
               <WhatsappIcon /> Falar no WhatsApp
             </a>
           </div>
@@ -976,6 +978,7 @@ const FOOTER_COLS = [
 ]
 
 function Footer() {
+  const cfg = useConfig()
   return (
     <footer className="footer">
       <div className="wrap">
@@ -986,7 +989,7 @@ function Footer() {
               <span className="wm">Box<b>Certo</b></span>
             </a>
             <p>Gestão de oficina de verdade: orçamento aprovado pelo WhatsApp, OS, clientes, estoque e financeiro num app só.</p>
-            <a className="f-wa" href={WPP} target="_blank" rel="noreferrer">
+            <a className="f-wa" href={supportWaHref(cfg.support_phone, 'Olá, tenho dúvidas sobre o BoxCerto!')} target="_blank" rel="noreferrer">
               <WhatsappIcon /> Falar com a gente no WhatsApp
             </a>
           </div>

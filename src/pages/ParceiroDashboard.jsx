@@ -10,6 +10,8 @@ import {
   TrendingUp, Clock, Edit2, X, Save, Wrench, ChevronRight,
   ExternalLink, AlertCircle, Mail, Sparkles, Eye, EyeOff, Lock
 } from 'lucide-react'
+import { useConfig } from '../hooks/useConfig'
+import { supportWaHref } from '../lib/support'
 
 // ── Constantes ───────────────────────────────────────────────
 const SESSION_KEY = 'boxcerto_aff_session' // localStorage key
@@ -638,6 +640,7 @@ function LoginScreen({ onLoginSuccess }) {
 
 // ── Dashboard view ────────────────────────────────────────────
 function Dashboard({ session, onLogout, firstLogin = false, onIdentitySaved }) {
+  const cfg = useConfig()
   const { partner, commissions = [], activeRefs = 0, trialLeads = 0, totalSignups = 0, clicks = 0, tier = 20, totals = {} } = session
 
   // Sequência de modais no 1º login:
@@ -970,7 +973,7 @@ function Dashboard({ session, onLogout, firstLogin = false, onIdentitySaved }) {
         <p className="text-center text-xs text-slate-400 pb-4">
           BoxCerto · Programa de Parceiros ·{' '}
           <a href="/parceiro" className="hover:underline">Página pública</a>{' '}·{' '}
-          <a href="https://wa.me/5553997065725" target="_blank" rel="noreferrer" className="hover:underline">Suporte</a>
+          <a href={supportWaHref(cfg.support_phone)} target="_blank" rel="noreferrer" className="hover:underline">Suporte</a>
         </p>
       </main>
     </div>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { usePageView } from '../hooks/usePageView'
 import { useConfig } from '../hooks/useConfig'
+import { supportWaHref } from '../lib/support'
 import {
   ArrowRight, Check, X as XIcon, Wrench, Zap, Package, TrendingUp,
   FileText, Users, Smartphone, ShieldCheck, Clock, RotateCcw, Plus,
@@ -597,6 +598,7 @@ function Faq() {
 
 /* ── Final CTA ────────────────────────────────────────────── */
 function FinalCta() {
+  const config = useConfig()
   return (
     <section className="section final-cta">
       <span className="glow g1" />
@@ -612,7 +614,7 @@ function FinalCta() {
             <Link className="btn btn-primary btn-lg" to={SIGNUP}>
               Criar conta grátis <ArrowRight />
             </Link>
-            <a className="btn btn-green btn-lg" href={WPP} target="_blank" rel="noreferrer">
+            <a className="btn btn-green btn-lg" href={supportWaHref(config.support_phone, 'Quero testar o BoxCerto na minha oficina')} target="_blank" rel="noreferrer">
               <WaIcon /> Falar no WhatsApp
             </a>
           </div>

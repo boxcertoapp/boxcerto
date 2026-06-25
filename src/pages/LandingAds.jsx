@@ -13,6 +13,7 @@ import {
 import { usePageMeta } from '../hooks/usePageMeta'
 import { usePageView } from '../hooks/usePageView'
 import { useConfig } from '../hooks/useConfig'
+import { supportWaHref } from '../lib/support'
 
 // ─── hook scroll ─────────────────────────────────────────────────────────────
 function useScrolled(px = 400) {
@@ -910,7 +911,7 @@ export default function LandingAds() {
             <Logo size="sm" priority onDark />
             <div className="flex items-center gap-3">
               <a
-                href="https://wa.me/5553997065725"
+                href={supportWaHref(cfg.support_phone)}
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Falar com o suporte pelo WhatsApp"
@@ -937,7 +938,7 @@ export default function LandingAds() {
               <span aria-hidden="true">·</span>
               <a href="/privacidade" target="_blank" rel="noreferrer" className="hover:text-slate-200 transition-colors">Privacidade</a>
               <span aria-hidden="true">·</span>
-              <a href="https://wa.me/5553997065725" target="_blank" rel="noreferrer" className="hover:text-slate-200 transition-colors">Suporte WhatsApp</a>
+              <a href={supportWaHref(cfg.support_phone)} target="_blank" rel="noreferrer" className="hover:text-slate-200 transition-colors">Suporte WhatsApp</a>
             </p>
           </div>
         </div>

@@ -5,13 +5,13 @@ import Logo from '../components/Logo'
 import { useAuth } from '../contexts/AuthContext'
 import { usePageView } from '../hooks/usePageView'
 import { usePageMeta } from '../hooks/usePageMeta'
+import { useConfig } from '../hooks/useConfig'
 import { supabase } from '../lib/supabase'
 import { titleCaseName } from '../lib/text'
+import { supportWaHref } from '../lib/support'
 import { sendCapi } from '../lib/metaCapi'
 import { getAffiliateRef, getAffiliateCoupon, saveAffiliateCoupon, clearAffiliateData } from '../lib/affiliateTracking'
 import '../styles/cadastro.css'
-
-const WPP_SUPORTE = 'https://wa.me/5553997065725?text=' + encodeURIComponent('Olá! Tenho dúvidas sobre o BoxCerto e quero ajuda para me cadastrar.')
 
 // Eventos que também gravamos no Supabase para o painel admin
 const DB_EVENTS = new Set([
@@ -80,6 +80,7 @@ export default function Register() {
   const { register }   = useAuth()
   const navigate       = useNavigate()
   const [searchParams] = useSearchParams()
+  const cfg            = useConfig()
   usePageView('/cadastro')
   usePageMeta({
     title:       'Criar conta grátis — BoxCerto | Sistema para Oficina Mecânica',
@@ -508,7 +509,7 @@ export default function Register() {
               </span>
               <a
                 className="expert"
-                href={WPP_SUPORTE} target="_blank" rel="noreferrer"
+                href={supportWaHref(cfg.support_phone, 'Olá! Tenho dúvidas sobre o BoxCerto e quero ajuda para me cadastrar.')} target="_blank" rel="noreferrer"
                 onClick={() => track('cadastro_wpp_suporte_click')}
               >
                 <MessageCircle /> Falar com especialista antes de cadastrar

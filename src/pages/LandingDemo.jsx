@@ -5,6 +5,8 @@
  */
 import { useNavigate } from 'react-router-dom'
 import { usePageMeta } from '../hooks/usePageMeta'
+import { useConfig } from '../hooks/useConfig'
+import { supportWaHref } from '../lib/support'
 import {
   ArrowRight, Play, CheckCircle, Star, Shield, Zap,
   Wrench, Clock, TrendingUp, Package, ChevronRight,
@@ -252,6 +254,7 @@ function AppMockup() {
 
 // ─── Página principal ────────────────────────────────────────────────────────
 export default function LandingDemo() {
+  const cfg = useConfig()
   usePageMeta({
     title: 'BoxCerto — Sistema para Oficina Mecânica | Teste Grátis',
     description: 'OS, histórico de clientes, financeiro e estoque num só lugar. Tudo pelo celular. Teste grátis agora — sem cadastro, sem cartão.',
@@ -598,7 +601,7 @@ export default function LandingDemo() {
             <Logo size="sm" onDark priority />
             <div className="flex items-center gap-4">
               <a
-                href="https://wa.me/5553997065725"
+                href={supportWaHref(cfg.support_phone)}
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center gap-1.5 bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-xl hover:bg-emerald-700 transition-colors"

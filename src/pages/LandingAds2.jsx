@@ -14,6 +14,7 @@ import {
 import { usePageMeta } from '../hooks/usePageMeta'
 import { usePageView } from '../hooks/usePageView'
 import { useConfig } from '../hooks/useConfig'
+import { supportWaHref } from '../lib/support'
 
 // ─── hook scroll ──────────────────────────────────────────────────────────────
 function useScrolled(px = 400) {
@@ -496,7 +497,7 @@ export default function LandingAds2() {
           {' · '}
           <a href="/privacidade" target="_blank" rel="noreferrer" className="hover:text-slate-300 transition-colors">Privacidade</a>
           {' · '}
-          <a href="https://wa.me/5553997065725" target="_blank" rel="noreferrer" className="hover:text-slate-300 transition-colors">Suporte WhatsApp</a>
+          <a href={supportWaHref(cfg.support_phone)} target="_blank" rel="noreferrer" className="hover:text-slate-300 transition-colors">Suporte WhatsApp</a>
         </p>
       </footer>
 

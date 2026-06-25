@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom'
 import Logo from '../components/Logo'
+import { useConfig } from '../hooks/useConfig'
+import { supportWaHref, formatSupportPhone } from '../lib/support'
 
 const EMPRESA  = 'BoxCerto Tecnologia Ltda.'
 const CNPJ     = '52.354.481/0001-37'
 const EMAIL    = 'contato@boxcerto.com'
-const WHATSAPP = '(53) 99706-5725'
 const DATA_VIG = '01 de maio de 2025'
 
 function Secao({ num, titulo, children }) {
@@ -17,6 +18,7 @@ function Secao({ num, titulo, children }) {
 }
 
 export default function Termos() {
+  const cfg = useConfig()
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-12">
       {/* Logo */}
@@ -191,8 +193,8 @@ export default function Termos() {
             Dúvidas? Fale com a gente:{' '}
             <a href={`mailto:${EMAIL}`} className="text-indigo-600 hover:underline">{EMAIL}</a>
             {' '}·{' '}
-            <a href="https://wa.me/5553997065725" target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">
-              WhatsApp {WHATSAPP}
+            <a href={supportWaHref(cfg.support_phone)} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">
+              WhatsApp {formatSupportPhone(cfg.support_phone)}
             </a>
           </p>
           <p className="text-xs text-slate-400 text-center mt-2">
