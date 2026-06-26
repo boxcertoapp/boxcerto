@@ -12,6 +12,7 @@
 //   META_CAPI_TOKEN — Token de acesso da Conversions API
 // ============================================================
 const crypto = require('crypto')
+const { clientIp, guard } = require('./_ratelimit')
 
 const PIXEL_ID     = process.env.META_PIXEL_ID
 const ACCESS_TOKEN = process.env.META_CAPI_TOKEN
@@ -42,6 +43,10 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' })
+
+  // Rate limit generoso (tracking): só corta flood
+  const ip = clientIp(req)
+  if (await guard(req, res, [{ id: `capi:${ip}`, max: 100, windowSec: 60 }])) return
 
   // Gera o event_id antes de qualquer coisa para poder retorná-lo
   // mesmo que o envio à Meta falhe (o dataLayer.push ainda vai funcionar)

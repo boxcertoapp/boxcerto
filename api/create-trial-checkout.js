@@ -6,6 +6,7 @@
 // Para subscription mode, Stripe SEMPRE exige cartão — mesmo no trial.
 // ============================================================
 const Stripe = require('stripe')
+const { clientIp, guard } = require('./_ratelimit')
 
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json')
@@ -13,6 +14,10 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
+
+  // Rate limit: cria sessões/customers no Stripe
+  const ip = clientIp(req)
+  if (await guard(req, res, [{ id: `trial-checkout:${ip}`, max: 15, windowSec: 3600 }])) return
 
   const { email, nome } = req.body || {}
   if (!email) return res.status(400).json({ error: 'email obrigatório' })

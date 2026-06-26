@@ -10,6 +10,7 @@
 // ============================================================
 const crypto           = require('crypto')
 const { createClient } = require('@supabase/supabase-js')
+const { clientIp, guard } = require('./_ratelimit')
 
 const PIX_TYPES = ['cpf', 'cnpj', 'email', 'telefone', 'aleatoria']
 
@@ -45,6 +46,19 @@ module.exports = async function handler(req, res) {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SRV)
   const body     = req.body || {}
   const { action } = body
+
+  // ── Rate limiting (fail-open sem Upstash) ────────────────────
+  const ip = clientIp(req)
+  // Teto geral por IP para qualquer ação
+  if (await guard(req, res, [{ id: `aff-auth:${ip}`, max: 60, windowSec: 60 }])) return
+  // Login é o alvo de brute force (PBKDF2 caro): trava por IP+email e por IP
+  if (action === 'login') {
+    const email = (body.email || '').trim().toLowerCase()
+    if (await guard(req, res, [
+      { id: `aff-login:${ip}:${email}`, max: 8,  windowSec: 60 },   // 8/min no email-alvo
+      { id: `aff-login-ip:${ip}`,       max: 30, windowSec: 3600 }, // 30/h por IP
+    ])) return
+  }
 
   try {
     if (action === 'login')            return await handleLogin(req, res, supabase, body, RESEND_KEY)

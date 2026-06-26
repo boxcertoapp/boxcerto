@@ -7,6 +7,7 @@
 // ============================================================
 const Stripe           = require('stripe')
 const { createClient } = require('@supabase/supabase-js')
+const { clientIp, guard } = require('./_ratelimit')
 
 // ── helpers ───────────────────────────────────────────────────
 function slugify(str) {
@@ -38,6 +39,10 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' })
+
+  // Rate limit: cadastro de parceiro cria cupom Stripe + dispara email
+  const ip = clientIp(req)
+  if (await guard(req, res, [{ id: `aff-apply:${ip}`, max: 5, windowSec: 3600 }])) return
 
   try {
     await _apply(req, res)

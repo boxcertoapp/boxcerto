@@ -7,6 +7,7 @@
 // ============================================================
 const webpush = require('web-push')
 const { createClient } = require('@supabase/supabase-js')
+const { clientIp, guard } = require('./_ratelimit')
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
@@ -26,6 +27,10 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
+
+  // Rate limit: público (disparado na aprovação) → evita flood de push
+  const ip = clientIp(req)
+  if (await guard(req, res, [{ id: `notify-aprov:${ip}`, max: 20, windowSec: 60 }])) return
 
   const { token } = req.body || {}
   if (!token) return res.status(400).json({ error: 'token required' })
