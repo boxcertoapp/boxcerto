@@ -1,16 +1,28 @@
 // ============================================================
-// _ratelimit.js — rate limiting fail-open via Upstash Redis (REST)
+// _ratelimit.js — rate limiting fail-open via Supabase (Postgres)
 //
 // O prefixo "_" faz a Vercel NÃO transformar em rota pública.
-// FAIL-OPEN: se UPSTASH_REDIS_REST_URL/TOKEN não existirem (ou o Redis
-// falhar), NÃO bloqueia ninguém. Seguro pra deployar antes das chaves —
-// só passa a limitar quando as env vars entrarem na Vercel.
+// Sem dependência externa: usa o Supabase que já temos. Chama a função
+// public.rate_limit_hit (SECURITY DEFINER) com a service_role key.
 //
-// Estratégia: janela fixa (INCR + EXPIRE) — simples e robusta para
-// prevenção de abuso/brute force.
+// FAIL-OPEN: se a função ainda não existir, der erro ou faltar env var,
+// NÃO bloqueia ninguém. Seguro deployar antes de rodar o SQL —
+// ativa sozinho quando supabase/rate_limits.sql for aplicado.
+//
+// Usar só em endpoints de BAIXO volume (login, cadastro, checkout).
+// Alto volume (tracking) fica com o Vercel Firewall (camada de borda).
 // ============================================================
-const URL   = process.env.UPSTASH_REDIS_REST_URL
-const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN
+const { createClient } = require('@supabase/supabase-js')
+
+const URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
+const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+let _client = null
+function db() {
+  if (!URL || !KEY) return null
+  if (!_client) _client = createClient(URL, KEY)
+  return _client
+}
 
 // IP real do cliente atrás da Vercel
 function clientIp(req) {
@@ -22,20 +34,14 @@ function clientIp(req) {
 // Verifica uma regra. Retorna { ok: true } ou { ok: false, retryAfter }.
 // Qualquer erro/ausência de config → { ok: true } (fail-open).
 async function rateLimit(id, { max, windowSec }) {
-  if (!URL || !TOKEN) return { ok: true }
+  const supabase = db()
+  if (!supabase) return { ok: true }
   try {
-    const now    = Math.floor(Date.now() / 1000)
-    const bucket = Math.floor(now / windowSec)
-    const key    = `rl:${id}:${bucket}`
-    const res = await fetch(`${URL}/pipeline`, {
-      method:  'POST',
-      headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
-      body:    JSON.stringify([['INCR', key], ['EXPIRE', key, String(windowSec)]]),
+    const { data, error } = await supabase.rpc('rate_limit_hit', {
+      p_key: id, p_max: max, p_window_sec: windowSec,
     })
-    if (!res.ok) return { ok: true }
-    const data  = await res.json()
-    const count = Number((data && data[0] && data[0].result) || 0)
-    if (count > max) return { ok: false, retryAfter: windowSec - (now % windowSec) }
+    if (error) return { ok: true }          // função ainda não criada → fail-open
+    if (data === false) return { ok: false, retryAfter: windowSec }
     return { ok: true }
   } catch {
     return { ok: true }
