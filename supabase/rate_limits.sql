@@ -54,8 +54,23 @@ GRANT EXECUTE ON FUNCTION public.rate_limit_hit(text, integer, integer) TO servi
 
 
 -- ============================================================
--- LIMPEZA (opcional) — remove contadores velhos que não são mais usados.
--- A tabela é pequena (1 linha por IP/email ativo), mas rode de vez em
--- quando ou agende no cron se quiser manter enxuta:
+-- LIMPEZA AUTOMÁTICA — remove contadores velhos.
+-- Chamada todo dia pelo cron-emails.js (Vercel Cron, 10h).
 -- ============================================================
--- DELETE FROM private.rate_limits WHERE expires_at < now() - interval '1 day';
+CREATE OR REPLACE FUNCTION public.rate_limit_cleanup()
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = private
+AS $$
+DECLARE
+  v_deleted integer;
+BEGIN
+  DELETE FROM private.rate_limits WHERE expires_at < now() - interval '1 day';
+  GET DIAGNOSTICS v_deleted = ROW_COUNT;
+  RETURN v_deleted;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.rate_limit_cleanup() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.rate_limit_cleanup() TO service_role;

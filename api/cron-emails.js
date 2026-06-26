@@ -194,6 +194,13 @@ module.exports = async (req, res) => {
     return res.status(401).json({ error: 'Não autorizado' })
   }
 
+  // ── Limpeza diária da tabela de rate limit (contadores velhos) ──
+  // Fire-and-forget; se a função não existir ainda, só ignora.
+  try {
+    const { data: rlDeleted } = await supabase.rpc('rate_limit_cleanup')
+    if (rlDeleted) console.log(`[cron] rate_limits: ${rlDeleted} contadores antigos removidos`)
+  } catch (e) { console.warn('[cron] rate_limit_cleanup:', e.message) }
+
   const agora      = new Date()
   const resultados = { enviados: 0, pulados: 0, erros: 0 }
 
