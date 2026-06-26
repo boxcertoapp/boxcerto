@@ -14,6 +14,12 @@
 // ============================================================
 const { createClient } = require('@supabase/supabase-js')
 
+// DESLIGADO por padrão: sem RATELIMIT_ON=1, o helper NÃO toca no Supabase
+// (zero consulta, zero custo). A proteção fica 100% no Vercel Firewall.
+// Para ligar a camada granular (por IP+email), defina RATELIMIT_ON=1 na
+// Vercel e rode supabase/rate_limits.sql.
+const ENABLED = process.env.RATELIMIT_ON === '1'
+
 const URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -34,6 +40,7 @@ function clientIp(req) {
 // Verifica uma regra. Retorna { ok: true } ou { ok: false, retryAfter }.
 // Qualquer erro/ausência de config → { ok: true } (fail-open).
 async function rateLimit(id, { max, windowSec }) {
+  if (!ENABLED) return { ok: true }       // desligado → não chama o Supabase
   const supabase = db()
   if (!supabase) return { ok: true }
   try {
