@@ -11,7 +11,7 @@ import {
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import {
-  MAX_FOTOS, QUOTA_BYTES, ETIQUETAS_PADRAO, fmtMB,
+  MAX_FOTOS, QUOTA_BYTES, MAX_FILE_BYTES, ETIQUETAS_PADRAO, fmtMB,
   processarFoto, subirFoto, definirVisibilidade, apagarFoto,
   urlsAssinadas, recalcularUso,
 } from '../../lib/fotos'
@@ -64,11 +64,11 @@ export default function OsFotos({ os, ownerId, criadoPor }) {
     for (const file of arquivos) {
       setEnviando(e => e + 1)
       try {
+        if (file.size > MAX_FILE_BYTES) throw new Error('Arquivo muito grande. Envie uma foto comum do celular.')
         const processed = await processarFoto(file)
         const tamanho = processed.fullBlob.size + processed.thumbBlob.size
         if (usoAtual + tamanho > QUOTA_BYTES) {
-          setErro('upgrade')   // marca p/ mostrar o aviso de espaço
-          setEnviando(e => e - 1)
+          setErro('upgrade')   // marca p/ mostrar o aviso de espaço (o finally decrementa)
           break
         }
         const foto = await subirFoto({ userId: ownerId, osId: os.id, processed, criadoPor })
