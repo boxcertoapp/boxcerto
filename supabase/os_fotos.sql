@@ -69,6 +69,12 @@ CREATE POLICY "os_fotos_pub_owner_write" ON storage.objects
   FOR INSERT TO authenticated
   WITH CHECK (bucket_id = 'os-fotos-pub' AND (storage.foldername(name))[1] = auth.uid()::text);
 
+DROP POLICY IF EXISTS "os_fotos_pub_owner_update" ON storage.objects;
+CREATE POLICY "os_fotos_pub_owner_update" ON storage.objects
+  FOR UPDATE TO authenticated
+  USING      (bucket_id = 'os-fotos-pub' AND (storage.foldername(name))[1] = auth.uid()::text)
+  WITH CHECK (bucket_id = 'os-fotos-pub' AND (storage.foldername(name))[1] = auth.uid()::text);
+
 DROP POLICY IF EXISTS "os_fotos_pub_owner_delete" ON storage.objects;
 CREATE POLICY "os_fotos_pub_owner_delete" ON storage.objects
   FOR DELETE TO authenticated
@@ -77,6 +83,24 @@ CREATE POLICY "os_fotos_pub_owner_delete" ON storage.objects
 DROP POLICY IF EXISTS "os_fotos_pub_tecnico_write" ON storage.objects;
 CREATE POLICY "os_fotos_pub_tecnico_write" ON storage.objects
   FOR INSERT TO authenticated
+  WITH CHECK (
+    bucket_id = 'os-fotos-pub' AND EXISTS (
+      SELECT 1 FROM public.profiles p
+      WHERE p.id = auth.uid() AND p.tipo = 'tecnico'
+        AND p.master_id::text = (storage.foldername(name))[1]
+    )
+  );
+
+DROP POLICY IF EXISTS "os_fotos_pub_tecnico_update" ON storage.objects;
+CREATE POLICY "os_fotos_pub_tecnico_update" ON storage.objects
+  FOR UPDATE TO authenticated
+  USING (
+    bucket_id = 'os-fotos-pub' AND EXISTS (
+      SELECT 1 FROM public.profiles p
+      WHERE p.id = auth.uid() AND p.tipo = 'tecnico'
+        AND p.master_id::text = (storage.foldername(name))[1]
+    )
+  )
   WITH CHECK (
     bucket_id = 'os-fotos-pub' AND EXISTS (
       SELECT 1 FROM public.profiles p
