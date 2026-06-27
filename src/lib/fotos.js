@@ -102,7 +102,10 @@ export async function definirVisibilidade(foto, visivel, userId) {
     if (signed.error) throw new Error(signed.error.message)
     const blob = await (await fetch(signed.data.signedUrl)).blob()
     const pubPath = `${userId}/${foto.id}.jpg`
-    const up = await supabase.storage.from(BUCKET_PUB).upload(pubPath, blob, { contentType: 'image/jpeg', upsert: true })
+    // Sem upsert (igual ao upload privado, que funciona). Limpa órfão antes
+    // pra um INSERT limpo — o upsert batia num caminho de RLS no servidor.
+    await supabase.storage.from(BUCKET_PUB).remove([pubPath]).catch(() => {})
+    const up = await supabase.storage.from(BUCKET_PUB).upload(pubPath, blob, { contentType: 'image/jpeg' })
     if (up.error) throw new Error(up.error.message)
     return { ...foto, visivel_cliente: true, pub: pubPath }
   }
