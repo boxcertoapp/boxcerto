@@ -11,6 +11,8 @@ import {
   Flag, TriangleAlert, ClipboardList, Circle
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { useConfig } from '../../hooks/useConfig'
+import OsFotos from './OsFotos'
 import { supabase } from '../../lib/supabase'
 import { sendCapi } from '../../lib/metaCapi'
 import FipeSeletor from '../../components/FipeSeletor'
@@ -1266,6 +1268,9 @@ function StockPickerRow({ item, onAdd }) {
 
 // ── OS DETAIL MODAL ───────────────────────────────────────
 function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false }) {
+  const { user } = useAuth()
+  const cfg = useConfig()
+  const showFotos = cfg.feature_os_fotos === 'on' || user?.isAdmin
   const [items, setItems] = useState([])
   const [status, setStatus] = useState(os.status)
   const [showAddItem, setShowAddItem] = useState(false)
@@ -1972,6 +1977,11 @@ function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false }) {
               </div>
             )}
           </div>
+
+          {/* ── FOTOS DA OS ─────────────────────────────────── */}
+          {showFotos && (
+            <OsFotos os={os} ownerId={user.id} criadoPor={user.id} />
+          )}
 
           {/* Aviso: itens alterados após aprovação */}
           {itensAlteradosAposAprovacao && (

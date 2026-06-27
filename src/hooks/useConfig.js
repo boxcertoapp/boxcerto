@@ -16,6 +16,8 @@ export const CONFIG_DEFAULTS = {
   trial_message:        'Experimente grátis por 7 dias, sem cartão necessário.',
   // Telefone de suporte (formato wa.me: 55 + DDD + número). Editável no admin.
   support_phone:        '5553997065725',
+  // Feature flag: seção de fotos na OS (off em produção até liberar; admin sempre vê)
+  feature_os_fotos:     'off',
 }
 
 // Cache de módulo — compartilhado entre todos os componentes
