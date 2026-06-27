@@ -190,7 +190,8 @@ export default function OsFotos({ os, ownerId, criadoPor }) {
         )}
       </div>
 
-      <input ref={inputRef} type="file" accept="image/*" multiple capture="environment"
+      {/* sem capture → o celular oferece câmera E galeria */}
+      <input ref={inputRef} type="file" accept="image/*" multiple
         className="hidden" onChange={e => adicionar(e.target.files)} />
 
       {/* Lightbox */}

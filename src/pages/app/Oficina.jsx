@@ -1430,7 +1430,16 @@ function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false }) {
   }
 
   const handleDeleteOS = async () => {
+    // Apaga as fotos do Storage antes (o banco não tem cascade pro Storage)
+    try {
+      const fts = Array.isArray(os.fotos) ? os.fotos : []
+      const priv = fts.flatMap(f => [f.path, f.thumb]).filter(Boolean)
+      const pub  = fts.map(f => f.pub).filter(Boolean)
+      if (priv.length) await supabase.storage.from('os-fotos').remove(priv).catch(() => {})
+      if (pub.length)  await supabase.storage.from('os-fotos-pub').remove(pub).catch(() => {})
+    } catch {}
     await osStorage.delete(os.id)
+    try { await supabase.rpc('fotos_recalc_usage', { p_user: user.id }) } catch {}
     setShowDeleteConfirm(false)
     onClose()
   }

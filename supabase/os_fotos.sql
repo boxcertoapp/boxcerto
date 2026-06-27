@@ -196,3 +196,59 @@ $$;
 
 REVOKE ALL ON FUNCTION public.get_os_by_token(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_os_by_token(text) TO anon, authenticated;
+
+
+-- ── 7. Retenção: varre OS entregues há +12 meses ─────────────
+-- Limpa o array fotos dessas OS, recalcula a cota dos donos e DEVOLVE
+-- os caminhos do Storage pro cron apagar (SQL não apaga arquivo do S3).
+CREATE OR REPLACE FUNCTION public.fotos_retention_sweep()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_ids   uuid[];
+  v_users uuid[];
+  v_priv  text[];
+  v_pub   text[];
+  v_u     uuid;
+BEGIN
+  SELECT array_agg(id), array_agg(DISTINCT user_id)
+  INTO v_ids, v_users
+  FROM public.service_orders
+  WHERE status = 'entregue'
+    AND updated_at < now() - interval '12 months'
+    AND jsonb_array_length(COALESCE(fotos, '[]'::jsonb)) > 0;
+
+  IF v_ids IS NULL THEN
+    RETURN jsonb_build_object('priv', '[]'::jsonb, 'pub', '[]'::jsonb);
+  END IF;
+
+  SELECT array_agg(x) FILTER (WHERE COALESCE(x, '') <> '')
+  INTO v_priv
+  FROM (
+    SELECT f->>'path' AS x FROM public.service_orders so, jsonb_array_elements(so.fotos) f WHERE so.id = ANY(v_ids)
+    UNION ALL
+    SELECT f->>'thumb' FROM public.service_orders so, jsonb_array_elements(so.fotos) f WHERE so.id = ANY(v_ids)
+  ) s;
+
+  SELECT array_agg(f->>'pub') FILTER (WHERE COALESCE(f->>'pub', '') <> '')
+  INTO v_pub
+  FROM public.service_orders so, jsonb_array_elements(so.fotos) f WHERE so.id = ANY(v_ids);
+
+  UPDATE public.service_orders SET fotos = '[]'::jsonb WHERE id = ANY(v_ids);
+
+  FOREACH v_u IN ARRAY v_users LOOP
+    PERFORM public.fotos_recalc_usage(v_u);
+  END LOOP;
+
+  RETURN jsonb_build_object(
+    'priv', COALESCE(to_jsonb(v_priv), '[]'::jsonb),
+    'pub',  COALESCE(to_jsonb(v_pub),  '[]'::jsonb)
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.fotos_retention_sweep() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.fotos_retention_sweep() TO service_role;
