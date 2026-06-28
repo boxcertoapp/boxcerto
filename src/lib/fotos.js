@@ -100,13 +100,23 @@ export async function definirVisibilidade(foto, visivel, userId) {
   if (visivel && !foto.pub) {
     const signed = await supabase.storage.from(BUCKET).createSignedUrl(foto.path, 120)
     if (signed.error) throw new Error(signed.error.message)
-    const blob = await (await fetch(signed.data.signedUrl)).blob()
+    const resp = await fetch(signed.data.signedUrl)
+    if (!resp.ok) throw new Error('Não consegui ler a imagem para publicar. Tente de novo.')
+    const blob = await resp.blob()
     const pubPath = `${userId}/${foto.id}.jpg`
-    // Sem upsert (igual ao upload privado, que funciona). Limpa órfão antes
-    // pra um INSERT limpo — o upsert batia num caminho de RLS no servidor.
-    await supabase.storage.from(BUCKET_PUB).remove([pubPath]).catch(() => {})
-    const up = await supabase.storage.from(BUCKET_PUB).upload(pubPath, blob, { contentType: 'image/jpeg' })
-    if (up.error) throw new Error(up.error.message)
+    // upsert:true cobre republicar/sobrescrever (a policy de UPDATE do bucket
+    // público já existe). Sem ele, um objeto órfão de tentativa antiga dá 400.
+    const up = await supabase.storage.from(BUCKET_PUB).upload(pubPath, blob, {
+      contentType: 'image/jpeg', upsert: true,
+    })
+    if (up.error) {
+      console.error('[fotos][pub] erro ao publicar', {
+        message: up.error?.message,
+        status: up.error?.statusCode ?? up.error?.status,
+        pubPath, userId, blobSize: blob?.size, blobType: blob?.type, full: up.error,
+      })
+      throw new Error(up.error.message)
+    }
     return { ...foto, visivel_cliente: true, pub: pubPath }
   }
   if (!visivel && foto.pub) {
