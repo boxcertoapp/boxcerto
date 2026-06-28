@@ -17,11 +17,13 @@ import {
   MessageSquare, ClipboardList, Package, ChevronRight,
   Send, Plus, Trash2, Clock, History, Flag,
   TriangleAlert, UserCheck, ChevronDown, Check,
-  Search, ChevronLeft, ChevronUp,
+  Search, ChevronLeft, ChevronUp, Camera,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import { useConfig } from '../../hooks/useConfig'
 import { osStorage, itemStorage, formatCurrency, formatDate, norm } from '../../lib/storage'
+import OsFotos from '../app/OsFotos'
 
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
@@ -82,6 +84,7 @@ async function fetchOS() {
       notasInternas:os.notas_internas || [],
       urgente:      os.urgente        || false,
       problemaFlag: os.problema_flag  || false,
+      fotos:        os.fotos          || [],
       items: osItems.map(i => ({
         id:       i.id,
         descricao:i.descricao,
@@ -699,6 +702,9 @@ function EstoqueTab({ meNome }) {
 
 // ── Detalhe da OS ──────────────────────────────────────────────
 function OSDetalhe({ os: osInicial, meNome, masterId, podeAssumir, onClose, onReload }) {
+  const { user } = useAuth()
+  const cfg = useConfig()
+  const showFotos = cfg.feature_os_fotos === 'on' || user?.isAdmin
   const [os, setOs]            = useState(osInicial)
   const [tab, setTab]          = useState('tarefas')
   const [showHistory, setShowHistory] = useState(false)
@@ -900,6 +906,7 @@ function OSDetalhe({ os: osInicial, meNome, masterId, podeAssumir, onClose, onRe
           { id: 'tarefas',  icon: ClipboardList, label: 'Tarefas',  badge: os.checklist?.length ? `${totalFeitas}/${os.checklist.length}` : null },
           { id: 'notas',    icon: MessageSquare, label: 'Notas',     badge: os.notasInternas?.length || null },
           { id: 'servicos', icon: Package,       label: 'Serviços',  badge: os.items?.length || null },
+          ...(showFotos ? [{ id: 'fotos', icon: Camera, label: 'Fotos', badge: os.fotos?.length || null }] : []),
         ].map(({ id, icon: Icon, label, badge }) => (
           <button
             key={id}
@@ -1083,6 +1090,13 @@ function OSDetalhe({ os: osInicial, meNome, masterId, podeAssumir, onClose, onRe
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── Tab: Fotos ────────────────────────────────────────── */}
+      {tab === 'fotos' && showFotos && (
+        <div className="flex-1 overflow-y-auto p-4">
+          <OsFotos os={os} ownerId={masterId} criadoPor={user.id} />
         </div>
       )}
 

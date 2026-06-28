@@ -83,6 +83,8 @@ const CSS = `
 @media(max-width:640px){.pg-sticky-cta{display:flex!important;}}
 @media(min-width:641px){.pg-sticky-cta{display:none!important;}}
 @media(max-width:860px){.pg-nav-links{display:none!important;}}
+@media(max-width:560px){.pg-nav-inner{padding:0 14px!important;gap:10px!important;}.pg-nav-actions{gap:8px!important;}.pg-nav-ghost{padding:8px 11px!important;font-size:12px!important;}.pg-nav-cta{padding:9px 14px!important;font-size:12px!important;}}
+@media(max-width:360px){.pg-brand-text{display:none!important;}}
 @media(max-width:460px){.pg-field-row{grid-template-columns:1fr!important;}.pg-steps{grid-template-columns:1fr!important;}.pg-form-stats{grid-template-columns:1fr!important;}}
 `
 
@@ -168,7 +170,7 @@ function Brand() {
   return (
     <div style={{ display:'inline-flex', alignItems:'center', gap:9 }}>
       <img src="/logo.svg" alt="BoxCerto" style={{ width:32, height:32, borderRadius:8 }} />
-      <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:18, fontWeight:700, color:'var(--on-dark)' }}>
+      <span className="pg-brand-text" style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:18, fontWeight:700, color:'var(--on-dark)' }}>
         Box<span>Certo</span>
       </span>
     </div>
@@ -179,16 +181,16 @@ function Brand() {
 function Nav() {
   return (
     <nav className="pg-nav">
-      <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 28px', height:64, display:'flex', alignItems:'center', gap:32 }}>
+      <div className="pg-nav-inner" style={{ maxWidth:1180, margin:'0 auto', padding:'0 28px', height:64, display:'flex', alignItems:'center', gap:32 }}>
         <Brand />
         <div className="pg-nav-links" style={{ display:'flex', gap:28, marginLeft:8 }}>
           {[['#ganhos','Como você ganha'],['#calculadora','Calculadora'],['#vende','O produto'],['#cadastro','Cadastro']].map(([href, label]) => (
             <a key={href} href={href} style={{ fontSize:14, color:'var(--on-dark-mut)', textDecoration:'none' }}>{label}</a>
           ))}
         </div>
-        <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:10 }}>
-          <a href="/parceiro/dashboard" style={{
-            display:'inline-flex', alignItems:'center', gap:6,
+        <div className="pg-nav-actions" style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:10 }}>
+          <a href="/parceiro/dashboard" className="pg-nav-ghost" style={{
+            display:'inline-flex', alignItems:'center', gap:6, whiteSpace:'nowrap',
             color:'var(--on-dark-faint)', fontSize:13, fontWeight:600, textDecoration:'none',
             padding:'10px 14px', borderRadius:11, border:'1px solid rgba(140,150,220,.18)',
             transition:'color .15s,border-color .15s',
@@ -198,8 +200,8 @@ function Nav() {
           >
             Já sou parceiro
           </a>
-          <a href="#cadastro" className="pg-btn" style={{
-            display:'inline-flex', alignItems:'center', gap:8,
+          <a href="#cadastro" className="pg-btn pg-nav-cta" style={{
+            display:'inline-flex', alignItems:'center', gap:8, whiteSpace:'nowrap',
             background:'var(--indigo)', color:'white', padding:'10px 20px',
             borderRadius:13, fontSize:13, fontWeight:700, textDecoration:'none',
             boxShadow:'0 10px 30px -8px var(--indigo-glow),inset 0 1px 0 rgba(255,255,255,.22)',
@@ -265,7 +267,7 @@ function Hero() {
           {/* panel card */}
           <div style={{
             background:'rgba(28,30,54,.7)', border:'1px solid rgba(140,150,220,.16)',
-            borderRadius:24, padding:28, backdropFilter:'blur(12px)',
+            borderRadius:24, padding:28, backdropFilter:'blur(12px)', minWidth:0,
             boxShadow:'0 40px 90px -30px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06)',
           }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
@@ -286,7 +288,7 @@ function Hero() {
             ].map(([name, loc, val], i) => (
               <div key={i} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 0', borderBottom:'1px solid rgba(140,150,220,.08)' }}>
                 <IcCheck style={{ color:'var(--green-br)', width:12, height:12, flexShrink:0 }} />
-                <span style={{ flex:1, fontSize:13, color:'var(--on-dark)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                <span style={{ flex:1, minWidth:0, fontSize:13, color:'var(--on-dark)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                   {name} <span style={{ color:'var(--on-dark-faint)' }}>· {loc}</span>
                 </span>
                 <span className="pg-mono" style={{ fontSize:11, color:'var(--green-soft)', fontWeight:700, flexShrink:0 }}>{val}</span>

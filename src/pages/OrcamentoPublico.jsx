@@ -3,8 +3,10 @@ import { useParams } from 'react-router-dom'
 import {
   CheckCircle2, MessageCircle, Clock, Car, Wrench,
   Shield, Loader2, XCircle, ChevronDown, ChevronUp, Bell, RefreshCw,
+  Camera, X,
 } from 'lucide-react'
 import { osStorage, formatCurrency } from '../lib/storage'
+import { urlPublica } from '../lib/fotos'
 import PlateTag from '../components/PlateTag'
 import { showToast } from '../components/Toast'
 
@@ -17,6 +19,42 @@ function waNumber(raw) {
   if (d.length >= 12 && d.startsWith('55')) return d   // já tem o 55
   if (d.length >= 10) return '55' + d                   // DDD + número
   return ''
+}
+
+// ── Galeria de fotos (só as liberadas pela oficina) ──────────────
+function FotosCliente({ fotos }) {
+  const lista = (fotos || []).filter(f => f && f.pub)
+  const [zoom, setZoom] = useState(null)
+  if (!lista.length) return null
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <div className="px-4 pt-4 pb-2 flex items-center gap-2">
+        <Camera className="w-4 h-4 text-slate-400" />
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Fotos do serviço</p>
+      </div>
+      <div className="px-4 pb-4 grid grid-cols-3 gap-2">
+        {lista.map((f, i) => (
+          <button key={i} onClick={() => setZoom(i)} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
+            <img src={urlPublica(f.pub)} alt={f.etiqueta || 'Foto do serviço'} className="w-full h-full object-cover" loading="lazy" />
+            {f.etiqueta && (
+              <span className="absolute bottom-1 left-1 right-1 text-[9px] font-semibold text-white bg-black/55 rounded px-1 py-0.5 truncate text-center">{f.etiqueta}</span>
+            )}
+          </button>
+        ))}
+      </div>
+      {zoom != null && lista[zoom] && (
+        <div className="fixed inset-0 z-[60] bg-black/90 flex flex-col" onClick={() => setZoom(null)}>
+          <div className="flex justify-between items-center p-4 shrink-0">
+            <span className="text-white/70 text-xs font-mono">{zoom + 1} / {lista.length}</span>
+            <button className="p-2 rounded-full hover:bg-white/10"><X className="w-5 h-5 text-white" /></button>
+          </div>
+          <div className="flex-1 flex items-center justify-center px-4 pb-6 min-h-0">
+            <img src={urlPublica(lista[zoom].pub)} alt={lista[zoom].etiqueta || 'Foto do serviço'} className="max-h-full max-w-full object-contain rounded-lg" />
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ── Stepper ──────────────────────────────────────────────────────
@@ -451,7 +489,7 @@ export default function OrcamentoPublico() {
     <div className="min-h-screen bg-slate-50">
 
       {/* Header da oficina */}
-      <div className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10">
+      <div className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-30">
         <div className="max-w-lg mx-auto flex items-center gap-3">
           {oficinaLogo ? (
             <img src={oficinaLogo} alt={oficinaNome} className="h-10 w-auto object-contain" />
@@ -511,6 +549,9 @@ export default function OrcamentoPublico() {
           onWhatsApp={handleWhatsApp}
           temTelefone={temTelefone}
         />
+
+        {/* Fotos do serviço (só as liberadas pela oficina) */}
+        <FotosCliente fotos={os.fotos} />
 
         {/* Footer */}
         <p className="text-center text-xs text-slate-300 pb-6">Gerenciado por BoxCerto · boxcerto.com</p>

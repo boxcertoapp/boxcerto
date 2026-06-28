@@ -201,6 +201,17 @@ module.exports = async (req, res) => {
     if (rlDeleted) console.log(`[cron] rate_limits: ${rlDeleted} contadores antigos removidos`)
   } catch (e) { console.warn('[cron] rate_limit_cleanup:', e.message) }
 
+  // ── Retenção de fotos: OS entregues há +12 meses ───────────────
+  // O RPC limpa o banco e devolve os caminhos; o cron apaga do Storage.
+  try {
+    const { data: sweep } = await supabase.rpc('fotos_retention_sweep')
+    const priv = sweep?.priv || []
+    const pub  = sweep?.pub  || []
+    if (priv.length) await supabase.storage.from('os-fotos').remove(priv).catch(() => {})
+    if (pub.length)  await supabase.storage.from('os-fotos-pub').remove(pub).catch(() => {})
+    if (priv.length || pub.length) console.log(`[cron] fotos: retenção removeu ${priv.length + pub.length} arquivos`)
+  } catch (e) { console.warn('[cron] fotos_retention_sweep:', e.message) }
+
   const agora      = new Date()
   const resultados = { enviados: 0, pulados: 0, erros: 0 }
 
