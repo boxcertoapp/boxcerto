@@ -489,7 +489,7 @@ export default function OrcamentoPublico() {
     <div className="min-h-screen bg-slate-50">
 
       {/* Header da oficina */}
-      <div className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10">
+      <div className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-30">
         <div className="max-w-lg mx-auto flex items-center gap-3">
           {oficinaLogo ? (
             <img src={oficinaLogo} alt={oficinaNome} className="h-10 w-auto object-contain" />
