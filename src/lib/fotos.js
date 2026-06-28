@@ -104,10 +104,13 @@ export async function definirVisibilidade(foto, visivel, userId) {
     if (!resp.ok) throw new Error('Não consegui ler a imagem para publicar. Tente de novo.')
     const blob = await resp.blob()
     const pubPath = `${userId}/${foto.id}.jpg`
-    // upsert:true cobre republicar/sobrescrever (a policy de UPDATE do bucket
-    // público já existe). Sem ele, um objeto órfão de tentativa antiga dá 400.
+    // INSERT puro (SEM upsert). O x-upsert:true faz o servidor usar
+    // ON CONFLICT DO UPDATE, e é esse caminho que bate na RLS do bucket
+    // público — o INSERT simples passa. Removemos um eventual órfão antes
+    // (republicação) pra garantir caminho de INSERT limpo.
+    await supabase.storage.from(BUCKET_PUB).remove([pubPath]).catch(() => {})
     const up = await supabase.storage.from(BUCKET_PUB).upload(pubPath, blob, {
-      contentType: 'image/jpeg', upsert: true,
+      contentType: 'image/jpeg',
     })
     if (up.error) {
       console.error('[fotos][pub] erro ao publicar', {
