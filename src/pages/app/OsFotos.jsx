@@ -158,7 +158,7 @@ export default function OsFotos({ os, ownerId, criadoPor }) {
           <button key={f.id} onClick={() => setLightbox(idx)}
             className="relative aspect-square rounded-xl overflow-hidden bg-gray-200 group">
             {thumbs[f.thumb]
-              ? <img src={thumbs[f.thumb]} alt={f.etiqueta || 'Foto da OS'} className="w-full h-full object-cover" loading="lazy" />
+              ? <img src={thumbs[f.thumb]} alt={f.etiqueta || 'Foto da OS'} className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105" loading="lazy" />
               : <div className="w-full h-full flex items-center justify-center"><ImageIcon className="w-5 h-5 text-slate-300" /></div>}
             {f.visivel_cliente && (
               <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-green-600/90 flex items-center justify-center" title="Visível pro cliente">
@@ -216,6 +216,8 @@ function Lightbox({ fotos, idx, onIdx, onClose, onToggleVisivel, onEtiqueta, onR
   const [url, setUrl] = useState(null)
   const [custom, setCustom] = useState('')
   const [confirmDel, setConfirmDel] = useState(false)
+  const [shown, setShown] = useState(false)
+  const touchX = useRef(null)
 
   useEffect(() => {
     let vivo = true
@@ -224,18 +226,49 @@ function Lightbox({ fotos, idx, onIdx, onClose, onToggleVisivel, onEtiqueta, onR
     return () => { vivo = false }
   }, [f.path])
 
+  // fade-in + trava o scroll do fundo enquanto aberto
+  useEffect(() => {
+    setShown(true)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [])
+
+  // teclado: Esc fecha, ←/→ navegam
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose()
+      else if (e.key === 'ArrowLeft'  && idx > 0)               onIdx(idx - 1)
+      else if (e.key === 'ArrowRight' && idx < fotos.length - 1) onIdx(idx + 1)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [idx, fotos.length, onClose, onIdx])
+
   const etCustomAtiva = f.etiqueta && !ETIQUETAS_PADRAO.includes(f.etiqueta)
 
   return (
-    <div className="fixed inset-0 z-[80] bg-black/85 flex flex-col" onClick={onClose}>
+    <div className={`fixed inset-0 z-[80] bg-black/85 flex flex-col transition-opacity duration-200 ${shown ? 'opacity-100' : 'opacity-0'}`} onClick={onClose}>
       {/* Topo */}
       <div className="flex items-center justify-between p-4 shrink-0" onClick={e => e.stopPropagation()}>
-        <span className="text-white/70 text-xs font-mono">{idx + 1} / {fotos.length}</span>
+        <span className="text-white/70 text-xs font-mono">
+          {idx + 1} / {fotos.length}
+          {f.criado_em && <span className="text-white/40"> · {new Date(f.criado_em).toLocaleDateString('pt-BR')}</span>}
+        </span>
         <button onClick={onClose} className="p-2 rounded-full hover:bg-white/10"><X className="w-5 h-5 text-white" /></button>
       </div>
 
       {/* Imagem */}
-      <div className="flex-1 flex items-center justify-center px-4 min-h-0 relative" onClick={e => e.stopPropagation()}>
+      <div className="flex-1 flex items-center justify-center px-4 min-h-0 relative"
+        onClick={e => e.stopPropagation()}
+        onTouchStart={e => { touchX.current = e.touches[0].clientX }}
+        onTouchEnd={e => {
+          if (touchX.current == null) return
+          const dx = e.changedTouches[0].clientX - touchX.current
+          if (dx > 50 && idx > 0) onIdx(idx - 1)
+          else if (dx < -50 && idx < fotos.length - 1) onIdx(idx + 1)
+          touchX.current = null
+        }}>
         {idx > 0 && (
           <button onClick={() => onIdx(idx - 1)} className="absolute left-2 p-2 rounded-full bg-white/10 hover:bg-white/20">
             <ChevronLeft className="w-6 h-6 text-white" />
