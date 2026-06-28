@@ -112,14 +112,7 @@ export async function definirVisibilidade(foto, visivel, userId) {
       await supabase.storage.from(BUCKET_PUB).remove([pubPath])
       up = await supabase.storage.from(BUCKET_PUB).upload(pubPath, blob, { contentType: 'image/jpeg' })
     }
-    if (up.error) {
-      console.error('[fotos][pub] erro ao publicar', {
-        message: up.error?.message,
-        status: up.error?.statusCode ?? up.error?.status,
-        pubPath, userId, blobSize: blob?.size, blobType: blob?.type, full: up.error,
-      })
-      throw new Error(up.error.message)
-    }
+    if (up.error) throw new Error(up.error.message)
     return { ...foto, visivel_cliente: true, pub: pubPath }
   }
   if (!visivel && foto.pub) {
