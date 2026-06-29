@@ -1,6 +1,7 @@
 // ============================================================
 // ParceiroPerfil — LP personalizada por parceiro
-// Rota: /parceiro/:slug
+// Rota: /box/:slug  (link público que o parceiro compartilha)
+// /parceiro/:slug ainda redireciona pra cá (compat de links antigos)
 // Design: hi-fi handoff (parc.css reference)
 // Lógica original preservada integralmente.
 // ============================================================

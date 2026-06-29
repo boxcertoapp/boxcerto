@@ -342,7 +342,7 @@ function IdentityModal({ current, onSave, onClose, isFirst = false }) {
             <label className="block text-xs font-semibold text-slate-600 mb-1">Seu link de indicação</label>
             <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-400">
               <span className="bg-slate-50 px-3 py-2.5 text-xs text-slate-400 border-r border-gray-200 whitespace-nowrap select-none">
-                {appUrl}/parceiro/
+                {appUrl}/box/
               </span>
               <input
                 value={slug}
@@ -355,7 +355,7 @@ function IdentityModal({ current, onSave, onClose, isFirst = false }) {
               <p className="text-red-500 text-xs mt-1">Mínimo 3 caracteres. Apenas letras minúsculas, números e hífens. Sem hífen no início ou fim.</p>
             )}
             {slug && slugOk && (
-              <p className="text-emerald-600 text-xs mt-1">✓ {appUrl}/parceiro/{slug}</p>
+              <p className="text-emerald-600 text-xs mt-1">✓ {appUrl}/box/{slug}</p>
             )}
           </div>
 
@@ -658,7 +658,7 @@ function Dashboard({ session, onLogout, firstLogin = false, onIdentitySaved }) {
   const [copied,    setCopied]    = useState(null)
 
   const appUrl = window.location.origin
-  const link   = `${appUrl}/parceiro/${partnerSlug}`
+  const link   = `${appUrl}/box/${partnerSlug}`
   const coupon = partnerCoupon
 
   const copy = (text, key) => {
