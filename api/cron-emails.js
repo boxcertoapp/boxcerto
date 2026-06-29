@@ -84,7 +84,15 @@ async function temOS(userId) {
 
 // ── Geração de comissões mensais recorrentes ──────────────
 async function gerarComissoesMensais(agora) {
-  const PLAN_VALUE = 97
+  // Valor mensal por plano (mesma fonte do app). Anual usa o equivalente mensal,
+  // senão o parceiro receberia % sobre 97 num cliente que paga 79,90/mês.
+  const { data: cfgRows } = await supabase
+    .from('app_config').select('key, value')
+    .in('key', ['price_monthly', 'price_annual_monthly'])
+  const cfg = Object.fromEntries((cfgRows || []).map(r => [r.key, parseFloat(r.value)]))
+  const PRICE_MONTHLY  = cfg.price_monthly        || 97
+  const PRICE_ANNUAL_M = cfg.price_annual_monthly || 79.90
+  const planValueFor = (plan) => (plan === 'annual' ? PRICE_ANNUAL_M : PRICE_MONTHLY)
 
   // Mês de referência = mês anterior
   const refDate   = new Date(agora.getFullYear(), agora.getMonth() - 1, 1)
@@ -107,7 +115,7 @@ async function gerarComissoesMensais(agora) {
   // Todos os indicados ativos agrupados por parceiro
   const { data: referrals } = await supabase
     .from('profiles')
-    .select('id, email, affiliate_partner_id')
+    .select('id, email, affiliate_partner_id, plan')
     .not('affiliate_partner_id', 'is', null)
     .eq('status', 'active')
 
@@ -137,26 +145,29 @@ async function gerarComissoesMensais(agora) {
       ? Number(partner.commission_custom_pct)
       : myRefs.length >= 26 ? 30 : myRefs.length >= 11 ? 25 : 20
 
-    const amount = Math.round(PLAN_VALUE * tierPct / 100 * 100) / 100
-
     // Indicados sem comissão neste mês
     const novos = myRefs.filter(r => !existingSet.has(`${partner.id}::${r.email}`))
     if (novos.length === 0) continue
 
-    const rows = novos.map(r => ({
-      partner_id:       partner.id,
-      customer_user_id: r.id,
-      type:             'monthly',
-      reference_month:  refMonth,
-      amount,
-      tier_applied:     tierPct,
-      plan_value:       PLAN_VALUE,
-      customer_email:   r.email,
-      status:           'pending',
-      // Recorrente não tem hold de 7 dias (cliente já é pagante) — elegível
-      // já na geração, então o job de promoção agenda pro dia 5 deste mês.
-      eligible_at:      agora.toISOString(),
-    }))
+    // Valor por indicado conforme o plano dele (mensal vs anual).
+    const rows = novos.map(r => {
+      const planValue = planValueFor(r.plan)
+      const amount = Math.round(planValue * tierPct) / 100   // planValue × tierPct%
+      return {
+        partner_id:       partner.id,
+        customer_user_id: r.id,
+        type:             'monthly',
+        reference_month:  refMonth,
+        amount,
+        tier_applied:     tierPct,
+        plan_value:       planValue,
+        customer_email:   r.email,
+        status:           'pending',
+        // Recorrente não tem hold de 7 dias (cliente já é pagante) — elegível
+        // já na geração, então o job de promoção agenda pro dia 5 deste mês.
+        eligible_at:      agora.toISOString(),
+      }
+    })
 
     const { error } = await supabase.from('affiliate_commissions').insert(rows)
     if (error) {
@@ -164,9 +175,8 @@ async function gerarComissoesMensais(agora) {
       continue
     }
 
-    const totalFmt = Number(amount * novos.length).toLocaleString('pt-BR', {
-      style: 'currency', currency: 'BRL',
-    })
+    const totalFmt = rows.reduce((s, row) => s + row.amount, 0)
+      .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
     // Notifica o parceiro
     await enviarEmail('affiliate_commission_generated', partner.email, {

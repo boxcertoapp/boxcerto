@@ -323,7 +323,7 @@ function Ganhos() {
         <div className="pg-pillars" style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:20, marginBottom:24 }}>
           {[
             { d:0,   em:'⚡', num:'GANHO 01 · NA HORA',  big:'R$ 50', unit:'/ pagante',  title:'Bônus de ativação',           desc:'Toda oficina que sai do teste e vira cliente pagante coloca R$ 50 direto no seu PIX. Sem teto de quantas você pode trazer.' },
-            { d:90,  em:'🔄', num:'GANHO 02 · TODO MÊS', big:'20–30', unit:'% / mês',    title:'Comissão recorrente',          desc:'Você fatura uma porcentagem da mensalidade de cada cliente ativo, todo mês, por 12 meses. Indicou uma vez, recebe o ano inteiro.' },
+            { d:90,  em:'🔄', num:'GANHO 02 · TODO MÊS', big:'20–30', unit:'% / mês',    title:'Comissão recorrente',          desc:'Você fatura uma porcentagem da mensalidade de cada cliente ativo, todo mês, enquanto ele seguir cliente. Sem prazo pra acabar — indicou uma vez, recebe sempre.' },
             { d:180, em:'📈', num:'A FAIXA SOBE',         big:'+ vol', unit:'= + %',      title:'Quanto mais ativas, maior a fatia', desc:'Sua porcentagem cresce conforme o número de oficinas ativas na sua carteira. Recompensamos quem leva o programa a sério.' },
           ].map((p, i) => (
             <Reveal key={i} delay={p.d} style={{ background:'rgba(28,30,54,.6)', border:'1px solid rgba(140,150,220,.12)', borderRadius:24, padding:'32px 28px' }}>
@@ -452,7 +452,7 @@ function Calculator() {
               ))}
 
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'14px 18px', marginTop:4, background:'rgba(34,211,107,.08)', border:'1px solid rgba(34,211,107,.25)', borderRadius:14 }}>
-                <span style={{ fontSize:13, color:'var(--green-soft)' }}>Recorrente projetado em 12 meses</span>
+                <span style={{ fontSize:13, color:'var(--green-soft)' }}>Recorrente projetado em 1 ano</span>
                 <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:24, color:'var(--green-br)' }}>
                   <span style={{ fontSize:12 }}>R$</span>{brl(animYear)}
                 </span>
@@ -462,7 +462,7 @@ function Calculator() {
                 Simulação com base no plano mensal de R$ 97 e na faixa de comissão do seu volume (20% a 30%).
                 Exemplo no topo: <strong style={{ color:'var(--on-dark-mut)' }}>500 oficinas ativas = R$ 14.550/mês só de recorrência</strong> (R$ 174.600/ano);
                 700 oficinas + 50 novas no mês passam de <strong style={{ color:'var(--green-soft)' }}>R$ 22 mil/mês</strong>.
-                Comissão recorrente paga por até 12 meses por cliente ativo. Sem teto de quantas você pode trazer.
+                Comissão recorrente paga todo mês enquanto o cliente seguir ativo — sem prazo pra acabar. Sem teto de quantas você pode trazer.
               </p>
             </div>
           </div>
@@ -640,7 +640,7 @@ const FAQS = [
   ['Quando e como eu recebo?', 'Sempre via PIX, todo dia 5. R$ 50 por cada oficina que vira pagante, mais a comissão recorrente da mensalidade enquanto ela seguir cliente.'],
   ['Tem custo ou contrato de fidelidade?', 'Nenhum. Entrar é grátis, sem mensalidade e sem fidelidade. Você participa enquanto quiser e sai quando quiser.'],
   ['Posso indicar pelo WhatsApp e nas redes?', 'Pode e deve. Você recebe um link único e materiais prontos — manda no story, no grupo, pro cliente, onde seu público estiver.'],
-  ['Por quanto tempo recebo a recorrente?', 'Por até 12 meses por cliente ativo. Indicou uma vez, recebe o ano inteiro enquanto a oficina continuar pagando.'],
+  ['Por quanto tempo recebo a recorrente?', 'Enquanto a oficina continuar cliente. Não tem prazo de corte: indicou e ela ficou ativa, você recebe todo mês, pra sempre.'],
   ['O programa é novo?', 'É — e essa é a melhor hora pra entrar. Quem começa agora constrói carteira de oficinas antes da concorrência e sobe de faixa (20% → 25% → 30%) primeiro.'],
 ]
 
@@ -889,7 +889,7 @@ function FormSection() {
               {[
                 { n:'R$50',  l:'por oficina pagante' },
                 { n:'30%',   l:'de recorrente no topo' },
-                { n:'12',    l:'meses por cliente' },
+                { n:'∞',     l:'enquanto for cliente' },
               ].map((s, i) => (
                 <div key={i} style={{ textAlign:'center', padding:'18px 8px', background:'rgba(255,255,255,.05)', borderRadius:16, border:'1px solid rgba(140,150,220,.1)' }}>
                   <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:28, fontWeight:700, color:'#fff', letterSpacing:'-.02em' }}>{s.n}</div>

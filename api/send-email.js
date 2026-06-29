@@ -539,7 +539,7 @@ const templates = {
         <div style="background:#f0fdf4;border-radius:12px;padding:16px;margin-bottom:20px;border:1px solid #bbf7d0">
           <p style="color:#166534;font-size:13px;font-weight:600;margin:0 0 10px">Como funciona sua comissão:</p>
           <p style="color:#15803d;font-size:13px;margin:4px 0">💰 R$50 fixo por cada nova assinatura</p>
-          <p style="color:#15803d;font-size:13px;margin:4px 0">📈 + 20% a 30% da mensalidade por 12 meses</p>
+          <p style="color:#15803d;font-size:13px;margin:4px 0">📈 + 20% a 30% da mensalidade, todo mês, enquanto a oficina for cliente</p>
           <p style="color:#15803d;font-size:13px;margin:4px 0">💳 Pagamento via PIX todo dia 5 do mês</p>
         </div>
         ${btn(`${APP_URL}/parceiro/dashboard`, 'Acessar meu dashboard →')}
