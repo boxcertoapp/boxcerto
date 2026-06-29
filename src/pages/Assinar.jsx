@@ -50,7 +50,11 @@ export default function Assinar() {
   // Cliente veio de parceiro → checkout dinâmico aplica o cupom automático.
   // Em qualquer falha, cai no Payment Link estático (pagamento nunca quebra).
   const irParaCheckout = async (plan, fallbackUrl) => {
-    const { affiliate_ref, affiliate_coupon } = getAffiliateAttribution()
+    // Fonte de verdade é o PERFIL (o cadastro limpa o localStorage). localStorage
+    // só como fallback (caso chegue aqui sem ter passado pelo cadastro).
+    const loc = getAffiliateAttribution()
+    const affiliate_ref    = user?.affiliateRef    || loc.affiliate_ref
+    const affiliate_coupon = user?.affiliateCoupon || loc.affiliate_coupon
     if (!affiliate_ref && !affiliate_coupon) return abrirStripe(fallbackUrl)
     try {
       const resp = await fetch('/api/create-checkout-session', {
