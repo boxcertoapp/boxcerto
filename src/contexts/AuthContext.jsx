@@ -58,6 +58,8 @@ const buildUser = (authUser, profile) => {
     firstActionAt: profile?.first_action_at || null,
     utmSource:     profile?.utm_source    || null,
     utmCampaign:   profile?.utm_campaign  || null,
+    affiliateRef:    profile?.affiliate_ref    || null,
+    affiliateCoupon: profile?.affiliate_coupon || null,
   }
 }
 
