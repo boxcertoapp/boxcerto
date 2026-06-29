@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, Component } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { captureAffiliateRef } from './lib/affiliateTracking'
 import Toaster from './components/Toast'
@@ -130,6 +130,14 @@ function PageLoader() {
   )
 }
 
+// Compat: links antigos /parceiro/:slug redirecionam para /box/:slug (preserva ?ref=).
+// O link público do parceiro saiu de baixo de /parceiro pra não expor a página de ganhos.
+function ParceiroSlugRedirect() {
+  const { slug } = useParams()
+  const { search } = useLocation()
+  return <Navigate to={`/box/${slug}${search}`} replace />
+}
+
 export default function App() {
   // Captura ?ref= de afiliado em qualquer página de entrada
   useEffect(() => { captureAffiliateRef() }, [])
@@ -168,7 +176,9 @@ export default function App() {
             <Route path="/bem-vindo"                        element={<BemVindo />} />
             <Route path="/parceiro"              element={<Parceiro />} />
             <Route path="/parceiro/dashboard" element={<ParceiroDashboard />} />
-            <Route path="/parceiro/:slug"     element={<ParceiroPerfil />} />
+            <Route path="/box/:slug"          element={<ParceiroPerfil />} />
+            {/* compat: link antigo /parceiro/:slug → /box/:slug */}
+            <Route path="/parceiro/:slug"     element={<ParceiroSlugRedirect />} />
 
             {/* Demo interativo */}
             <Route path="/demo"       element={<LandingDemo />} />

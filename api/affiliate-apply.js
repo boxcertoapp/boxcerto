@@ -185,7 +185,7 @@ async function _apply(req, res) {
             nome:        nome.trim(),
             slug,
             coupon_code: coupon,
-            link:        `https://boxcerto.com/parceiro/${slug}`,
+            link:        `https://boxcerto.com/box/${slug}`,
           }),
         }).catch(e => console.warn('[Affiliate] Email erro:', e.message)),
         new Promise(resolve => setTimeout(resolve, 6000)),

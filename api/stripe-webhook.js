@@ -35,6 +35,45 @@ const getRawBody = (req) =>
     req.on('error', reject)
   })
 
+// ── Afiliado: resolve o parceiro ativo do perfil (vínculo ou cupom/ref) ──
+async function resolverParceiro(supabase, profile) {
+  if (profile.affiliate_partner_id) {
+    const { data } = await supabase.from('affiliate_partners')
+      .select('id, status').eq('id', profile.affiliate_partner_id).maybeSingle()
+    if (data?.status === 'active') return data
+  }
+  const ref = profile.affiliate_coupon || profile.affiliate_ref
+  if (!ref) return null
+  const field = profile.affiliate_coupon ? 'coupon_code' : 'slug'
+  const { data } = await supabase.from('affiliate_partners')
+    .select('id, status').eq(field, ref).maybeSingle()
+  return data?.status === 'active' ? data : null
+}
+
+// ── Comissão de entrada (R$50): nasce PENDING, elegível em 7 dias ──
+// Dedup por (parceiro, cliente): cria uma única vez, no 1º pagamento real.
+async function criarComissaoEntrada(supabase, partnerId, profile, email, planValue) {
+  const { data: existe } = await supabase.from('affiliate_commissions')
+    .select('id').eq('partner_id', partnerId)
+    .eq('customer_user_id', profile.id).eq('type', 'entry').maybeSingle()
+  if (existe) return false
+
+  const eligible = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+  const { error } = await supabase.from('affiliate_commissions').insert({
+    partner_id:       partnerId,
+    customer_user_id: profile.id,
+    customer_email:   email,
+    type:             'entry',
+    amount:           50.00,
+    plan_value:       planValue,
+    status:           'pending',
+    eligible_at:      eligible,
+  })
+  if (error) { console.error('Erro ao criar comissão de entrada:', error.message); return false }
+  console.log('💰 Comissão de entrada (pending · 7d) — cliente:', email)
+  return true
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json')
 
@@ -137,52 +176,28 @@ module.exports = async (req, res) => {
 
         const destEmail = profile.email || email
 
-        // ── Comissão de afiliado (entrada R$ 50) ───────────────
+        // ── Afiliado: vincula parceiro + comissão de entrada ───
+        // Atribuição sempre. Entrada só pra ANUAL à vista aqui (mode=payment);
+        // mensal (assinatura) cria a entrada na 1ª fatura paga, no
+        // invoice.payment_succeeded — só conta após pagamento real.
         try {
-          // Atribuição: cupom > ref (já salvo no perfil via user_metadata)
-          const affRef    = profile.affiliate_coupon || profile.affiliate_ref
-          const affField  = profile.affiliate_coupon ? 'coupon_code' : 'slug'
-
-          if (affRef && !profile.affiliate_partner_id) {
-            const { data: partner } = await supabase
-              .from('affiliate_partners')
-              .select('id, status')
-              .eq(affField, affRef).maybeSingle()
-
-            if (partner?.status === 'active') {
-              // Valor do plano para cálculo de comissão mensal
-              const planValue = session.amount_total ? session.amount_total / 100 : null
-
-              // Comissão de entrada R$ 50 (aprovada automaticamente no checkout)
-              await supabase.from('affiliate_commissions').insert({
-                partner_id:       partner.id,
-                customer_user_id: profile.id,
-                customer_email:   destEmail,
-                type:             'entry',
-                amount:           50.00,
-                plan_value:       planValue,
-                status:           'approved',
-                approved_at:      new Date().toISOString(),
-              })
-
-              // Vincula parceiro ao perfil para comissões mensais futuras
+          const partner = await resolverParceiro(supabase, profile)
+          if (partner) {
+            if (!profile.affiliate_partner_id) {
               await supabase.from('profiles')
-                .update({ affiliate_partner_id: partner.id })
-                .eq('id', profile.id)
-
-              // Evento de conversão
+                .update({ affiliate_partner_id: partner.id }).eq('id', profile.id)
               await supabase.from('affiliate_events').insert({
-                partner_id: partner.id,
-                event_type: 'converted',
-                user_email: destEmail,
-                user_id:    profile.id,
-                metadata:   { plan, session_id: session.id, plan_value: planValue },
+                partner_id: partner.id, event_type: 'converted',
+                user_email: destEmail, user_id: profile.id,
+                metadata:   { plan, session_id: session.id },
               })
-
-              console.log('💰 Comissão de entrada criada — parceiro:', affRef)
+            }
+            if (session.mode === 'payment') {
+              const planValue = session.amount_total ? session.amount_total / 100 : null
+              await criarComissaoEntrada(supabase, partner.id, profile, destEmail, planValue)
             }
           }
-        } catch (e) { console.error('Erro ao criar comissão de afiliado:', e.message) }
+        } catch (e) { console.error('Erro ao processar afiliado (checkout):', e.message) }
 
         // Email de confirmação de pagamento
         if (destEmail) {
@@ -222,6 +237,26 @@ module.exports = async (req, res) => {
           canceled_at:     null,
         })
         console.log('✅ Pagamento recorrente OK:', customerId)
+
+        // ── Comissão de entrada na 1ª fatura paga (assinatura) ──
+        // Dedup garante 1x. resolverParceiro funciona mesmo se o vínculo ainda
+        // não tiver sido gravado (resolve por cupom/ref) — evita race com o checkout.
+        try {
+          const { data: profile } = await supabase.from('profiles')
+            .select('id, email, affiliate_partner_id, affiliate_coupon, affiliate_ref')
+            .eq('stripe_customer_id', customerId).maybeSingle()
+          if (profile) {
+            const partner = await resolverParceiro(supabase, profile)
+            if (partner) {
+              if (!profile.affiliate_partner_id) {
+                await supabase.from('profiles')
+                  .update({ affiliate_partner_id: partner.id }).eq('id', profile.id)
+              }
+              const planValue = invoice.amount_paid ? invoice.amount_paid / 100 : null
+              await criarComissaoEntrada(supabase, partner.id, profile, profile.email, planValue)
+            }
+          }
+        } catch (e) { console.error('Erro ao processar afiliado (invoice):', e.message) }
         break
       }
 
@@ -260,7 +295,7 @@ module.exports = async (req, res) => {
         try {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('email, responsavel, oficina')
+            .select('id, email, responsavel, oficina')
             .eq('stripe_customer_id', customerId)
             .single()
           if (profile?.email) {
@@ -269,7 +304,15 @@ module.exports = async (req, res) => {
               oficina: profile.oficina     || 'sua oficina',
             })
           }
-        } catch (e) { console.error('Erro ao enviar email de cancelamento:', e.message) }
+          // Cancela comissões ainda em validação (pending) — saiu dentro do hold.
+          // As já aprovadas (passaram dos 7 dias) ficam: o cliente pagou e o
+          // parceiro tem direito (só reembolso de fato estorna).
+          if (profile?.id) {
+            await supabase.from('affiliate_commissions')
+              .update({ status: 'canceled' })
+              .eq('customer_user_id', profile.id).eq('status', 'pending')
+          }
+        } catch (e) { console.error('Erro no cancelamento (email/comissões):', e.message) }
         break
       }
 
@@ -296,6 +339,27 @@ module.exports = async (req, res) => {
           ...statusUpdate,
         })
         console.log(`🔄 Assinatura atualizada (${subscription.status}):`, customerId)
+        break
+      }
+
+      case 'charge.refunded': {
+        // Reembolso: o dinheiro voltou — estorna comissões ainda não pagas
+        // (pending OU approved). As já pagas ao parceiro não são tocadas aqui.
+        const charge     = event.data.object
+        const customerId = charge.customer
+        if (customerId) {
+          try {
+            const { data: profile } = await supabase.from('profiles')
+              .select('id').eq('stripe_customer_id', customerId).maybeSingle()
+            if (profile?.id) {
+              await supabase.from('affiliate_commissions')
+                .update({ status: 'canceled' })
+                .eq('customer_user_id', profile.id)
+                .in('status', ['pending', 'approved'])
+              console.log('↩️ Reembolso — comissões não pagas canceladas:', customerId)
+            }
+          } catch (e) { console.error('Erro ao estornar comissões (refund):', e.message) }
+        }
         break
       }
 

@@ -278,7 +278,7 @@ function PartnerDetailModal({ partner, onClose, onReload }) {
           <div>
             <h3 className="text-base font-bold text-slate-900">{partner.nome}</h3>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span className="font-mono text-xs text-indigo-600">boxcerto.com/parceiro/{partner.slug}</span>
+              <span className="font-mono text-xs text-indigo-600">boxcerto.com/box/{partner.slug}</span>
               {partner.coupon_code && (
                 <span className="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded-full text-slate-600">
                   {partner.coupon_code}
@@ -838,7 +838,7 @@ export default function Afiliados() {
               <tbody className="divide-y divide-gray-100">
                 {filtered.map(p => {
                   const st   = statsFor(p.id)
-                  const link = `${window.location.origin}/parceiro/${p.slug}`
+                  const link = `${window.location.origin}/box/${p.slug}`
                   const sb   = STATUS_BADGE[p.status]
                   return (
                     <tr key={p.id} className="hover:bg-gray-50 transition-colors">
@@ -945,7 +945,7 @@ export default function Afiliados() {
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <a
-                            href={`/parceiro/${p.slug}`}
+                            href={`/box/${p.slug}`}
                             target="_blank"
                             rel="noreferrer"
                             title="Abrir página do parceiro"
