@@ -580,6 +580,111 @@ function Audience() {
   )
 }
 
+// ── Liberdade (você só indica) ───────────────────────────────
+function Liberdade() {
+  const nosso = [
+    'O produto que converte sozinho no teste grátis de 7 dias',
+    'A cobrança e toda a parte financeira com a oficina',
+    'O suporte ao cliente, via WhatsApp — você não atende ninguém',
+    'As atualizações e novidades do BoxCerto',
+    'O seu pagamento, no PIX, todo dia 5',
+  ]
+  return (
+    <section style={{ background:'var(--paper)', padding:'0 0 100px' }}>
+      <div style={{ maxWidth:1180, margin:'0 auto', padding:'0 28px' }}>
+        <Reveal style={{ textAlign:'center', maxWidth:560, margin:'0 auto 48px' }}>
+          <span className="pg-mono" style={{ fontSize:11, letterSpacing:'.22em', textTransform:'uppercase', color:'var(--text-mut)', display:'block', marginBottom:14 }}>Seu trabalho é leve</span>
+          <h2 style={{ fontSize:'clamp(26px,4vw,42px)', fontWeight:700, letterSpacing:'-.025em', color:'var(--text-d)', margin:'0 0 14px', lineHeight:1.15 }}>
+            Você indica. O resto é com a gente.
+          </h2>
+          <p style={{ color:'var(--text-mut)', fontSize:16, lineHeight:1.65, margin:0 }}>
+            Não precisa entender de mecânica, não precisa vender na marra, não precisa dar suporte. Você compartilha um link — do celular, de onde estiver.
+          </p>
+        </Reveal>
+
+        <Reveal delay={100} className="pg-why-grid" style={{ display:'grid', gridTemplateColumns:'0.8fr 1.2fr', gap:16, alignItems:'stretch' }}>
+          {/* Você faz */}
+          <div style={{ background:'var(--indigo)', borderRadius:24, padding:'32px 28px', color:'#fff', display:'flex', flexDirection:'column' }}>
+            <span className="pg-mono" style={{ fontSize:11, letterSpacing:'.2em', textTransform:'uppercase', opacity:.7, marginBottom:14 }}>Você faz</span>
+            <div style={{ fontSize:40, marginBottom:14 }}>🔗</div>
+            <h3 style={{ fontSize:22, fontWeight:700, margin:'0 0 10px', lineHeight:1.2 }}>Compartilha seu link.</h3>
+            <p style={{ fontSize:14, color:'rgba(255,255,255,.82)', lineHeight:1.65, margin:0 }}>
+              No story, no grupo, pro cliente, pro colega de ramo. É literalmente o seu único trabalho — sem reunião, sem planilha, sem perseguir ninguém.
+            </p>
+          </div>
+          {/* A gente cuida */}
+          <div style={{ background:'var(--card)', border:'1px solid var(--line)', borderRadius:24, padding:'32px 28px' }}>
+            <span className="pg-mono" style={{ fontSize:11, letterSpacing:'.2em', textTransform:'uppercase', color:'var(--text-mut)', display:'block', marginBottom:18 }}>A gente cuida de tudo isto</span>
+            <div style={{ display:'grid', gap:14 }}>
+              {nosso.map((t, i) => (
+                <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
+                  <span style={{ width:24, height:24, borderRadius:8, background:'rgba(22,179,90,.1)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <IcCheck style={{ color:'var(--green)', width:14, height:14 }} />
+                  </span>
+                  <span style={{ fontSize:15, color:'var(--text-d)', lineHeight:1.5 }}>{t}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  )
+}
+
+// ── FAQ de parceiro ──────────────────────────────────────────
+const FAQS = [
+  ['Preciso entender de mecânica?', 'Não. Quem usa o BoxCerto é a oficina. Você só indica pra quem pode se interessar — o resto é com o produto.'],
+  ['Preciso vender ou convencer na marra?', 'Não. São 7 dias grátis sem cartão: a oficina testa e decide sozinha. Você apresenta, o produto converte. Sem pressão, sem perseguir ninguém.'],
+  ['Preciso dar suporte pra oficina?', 'Não. Todo o suporte é nosso, via WhatsApp. Você não atende cliente, não resolve dúvida técnica e não cuida de cobrança.'],
+  ['Quando e como eu recebo?', 'Sempre via PIX, todo dia 5. R$ 50 por cada oficina que vira pagante, mais a comissão recorrente da mensalidade enquanto ela seguir cliente.'],
+  ['Tem custo ou contrato de fidelidade?', 'Nenhum. Entrar é grátis, sem mensalidade e sem fidelidade. Você participa enquanto quiser e sai quando quiser.'],
+  ['Posso indicar pelo WhatsApp e nas redes?', 'Pode e deve. Você recebe um link único e materiais prontos — manda no story, no grupo, pro cliente, onde seu público estiver.'],
+  ['Por quanto tempo recebo a recorrente?', 'Por até 12 meses por cliente ativo. Indicou uma vez, recebe o ano inteiro enquanto a oficina continuar pagando.'],
+  ['O programa é novo?', 'É — e essa é a melhor hora pra entrar. Quem começa agora constrói carteira de oficinas antes da concorrência e sobe de faixa (20% → 25% → 30%) primeiro.'],
+]
+
+function FaqItem({ q, a, defaultOpen }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div style={{ background:'var(--card)', border:'1px solid var(--line)', borderRadius:18, overflow:'hidden' }}>
+      <button onClick={() => setOpen(o => !o)} style={{
+        width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:16,
+        padding:'20px 24px', background:'none', border:'none', cursor:'pointer', textAlign:'left',
+      }}>
+        <span style={{ fontSize:16, fontWeight:700, color:'var(--text-d)' }}>{q}</span>
+        <span style={{ fontSize:22, color:'var(--indigo)', flexShrink:0, lineHeight:1, transform: open ? 'rotate(45deg)' : 'none', transition:'transform .2s' }}>+</span>
+      </button>
+      {open && (
+        <p style={{ margin:0, padding:'0 24px 22px', fontSize:14.5, color:'var(--text-mut)', lineHeight:1.7 }}>{a}</p>
+      )}
+    </div>
+  )
+}
+
+function FAQ() {
+  return (
+    <section style={{ background:'var(--paper)', padding:'0 0 100px' }}>
+      <div style={{ maxWidth:760, margin:'0 auto', padding:'0 28px' }}>
+        <Reveal style={{ textAlign:'center', marginBottom:44 }}>
+          <span className="pg-mono" style={{ fontSize:11, letterSpacing:'.22em', textTransform:'uppercase', color:'var(--text-mut)', display:'block', marginBottom:14 }}>Antes de você perguntar</span>
+          <h2 style={{ fontSize:'clamp(26px,4vw,42px)', fontWeight:700, letterSpacing:'-.025em', color:'var(--text-d)', margin:0, lineHeight:1.15 }}>
+            As dúvidas que todo parceiro tem.
+          </h2>
+        </Reveal>
+        <div style={{ display:'grid', gap:12 }}>
+          {FAQS.map(([q, a], i) => <FaqItem key={i} q={q} a={a} defaultOpen={i === 0} />)}
+        </div>
+        <Reveal delay={80} style={{ textAlign:'center', marginTop:36 }}>
+          <a href="#cadastro" className="pg-btn" style={{ display:'inline-flex', alignItems:'center', gap:8, background:'var(--indigo)', color:'#fff', padding:'14px 26px', borderRadius:13, fontSize:15, fontWeight:700, textDecoration:'none', boxShadow:'0 10px 30px -8px var(--indigo-glow)' }}>
+            Quero começar a indicar <IcArrow />
+          </a>
+        </Reveal>
+      </div>
+    </section>
+  )
+}
+
 // ── Form helpers ─────────────────────────────────────────────
 function Field({ label, required, sub, err, children }) {
   return (
@@ -851,8 +956,10 @@ export default function Parceiro() {
       <Ganhos />
       <Calculator />
       <Vende />
+      <Liberdade />
       <Steps />
       <Audience />
+      <FAQ />
       <FormSection />
       <ParcFooter />
 
