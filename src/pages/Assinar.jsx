@@ -3,6 +3,7 @@ import { Check, Zap, ArrowLeft, Shield, Star } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useConfig } from '../hooks/useConfig'
 import { usePageView } from '../hooks/usePageView'
+import { getAffiliateAttribution } from '../lib/affiliateTracking'
 
 // ── COLE AQUI OS LINKS DO STRIPE APÓS CRIAR EM:
 // Stripe Dashboard → Produtos → Payment Links → + Novo link de pagamento
@@ -35,15 +36,42 @@ export default function Assinar() {
   const pAnualM  = parseFloat(cfg.price_annual_monthly) || 79.90
   const economia = Math.round(pMensal * 12 - pAnual)
 
+  // Payment Link estático (fluxo padrão, sem cupom).
+  // Pré-preenche o email e passa o id do usuário (client_reference_id) — o
+  // webhook casa o pagamento ao perfil de forma infalível pelo id.
   const abrirStripe = (url) => {
-    // Pré-preenche o email e passa o id do usuário (client_reference_id).
-    // O webhook usa o id para casar o pagamento ao perfil de forma infalível,
-    // mesmo que o email esteja vazio/diferente no banco.
     const params = new URLSearchParams()
     if (user?.email) params.set('prefilled_email', user.email)
     if (user?.id)    params.set('client_reference_id', user.id)
     const qs = params.toString()
     window.location.href = qs ? `${url}?${qs}` : url
+  }
+
+  // Cliente veio de parceiro → checkout dinâmico aplica o cupom automático.
+  // Em qualquer falha, cai no Payment Link estático (pagamento nunca quebra).
+  const irParaCheckout = async (plan, fallbackUrl) => {
+    const { affiliate_ref, affiliate_coupon } = getAffiliateAttribution()
+    if (!affiliate_ref && !affiliate_coupon) return abrirStripe(fallbackUrl)
+    try {
+      const resp = await fetch('/api/create-checkout-session', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email:             user?.email,
+          officeName:        user?.oficina || '',
+          plan,
+          affiliateCoupon:   affiliate_coupon || null,
+          affiliateRef:      affiliate_ref || null,
+          clientReferenceId: user?.id || null,
+          successPath:       '/sucesso',
+        }),
+      })
+      const json = await resp.json().catch(() => ({}))
+      if (resp.ok && json.url) { window.location.href = json.url; return }
+      throw new Error(json.error || 'checkout indisponível')
+    } catch {
+      abrirStripe(fallbackUrl)
+    }
   }
 
   return (
@@ -94,7 +122,7 @@ export default function Assinar() {
               ))}
             </ul>
             <button
-              onClick={() => abrirStripe(LINK_MENSAL)}
+              onClick={() => irParaCheckout('monthly', LINK_MENSAL)}
               className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl hover:bg-slate-700 transition-colors"
             >
               Assinar plano mensal
@@ -123,7 +151,7 @@ export default function Assinar() {
               ))}
             </ul>
             <button
-              onClick={() => abrirStripe(LINK_ANUAL)}
+              onClick={() => irParaCheckout('annual', LINK_ANUAL)}
               className="w-full bg-white text-indigo-700 font-bold py-3 rounded-xl hover:bg-indigo-50 transition-colors"
             >
               Assinar plano anual
