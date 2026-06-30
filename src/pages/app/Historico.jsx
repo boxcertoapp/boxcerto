@@ -617,7 +617,7 @@ export default function Historico() {
       <div className="sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm px-4 pt-4 pb-2 border-b border-gray-100">
         <div className="flex items-center mb-3">
           {/* Seletor deslizante Clientes/Veículos — mostra os dois, desliza pro selecionado */}
-          <div className="relative grid grid-cols-2 flex-1 sm:flex-none sm:w-full sm:max-w-xs bg-gray-100 rounded-xl p-1">
+          <div className="relative grid grid-cols-2 w-full sm:max-w-xs bg-gray-100 rounded-xl p-1">
             {/* pilha branca que desliza */}
             <div
               className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] bg-white rounded-lg shadow-sm transition-transform duration-200 ease-out ${
@@ -634,11 +634,6 @@ export default function Historico() {
               </button>
             ))}
           </div>
-          <span className="ml-3 text-sm text-slate-400 font-medium whitespace-nowrap">
-            {view === 'veiculos'
-              ? `${vehicles.length} ${vehicles.length === 1 ? 'veículo' : 'veículos'}`
-              : `${clients.length} ${clients.length === 1 ? 'cliente' : 'clientes'}`}
-          </span>
         </div>
 
         {/* Busca + alternar visualização */}

@@ -161,7 +161,7 @@ export default function AppLayout() {
 
         {/* Main content — offset for sidebar */}
         <div className="ml-56 flex-1 flex flex-col min-h-screen">
-          <main ref={mainDesktopRef} className="flex-1 overflow-y-auto">
+          <main ref={mainDesktopRef} className="flex-1 overflow-y-auto [scrollbar-gutter:stable]">
             {/* Largura adaptada ao tipo de página (ver pageMaxW acima) */}
             <div className={`${pageMaxW} mx-auto px-4 xl:px-8`}>
               <Outlet />
@@ -240,7 +240,7 @@ export default function AppLayout() {
         </header>
 
         {/* Content */}
-        <main ref={mainMobileRef} className="flex-1 overflow-y-auto pb-24">
+        <main ref={mainMobileRef} className="flex-1 overflow-y-auto [scrollbar-gutter:stable] pb-24">
           <Outlet />
         </main>
 
