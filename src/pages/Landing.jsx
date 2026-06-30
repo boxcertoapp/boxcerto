@@ -971,14 +971,28 @@ function FinalCta() {
 }
 
 /* ── Footer ───────────────────────────────────────────────── */
-const FOOTER_COLS = [
-  ['Produto',  ['Funcionalidades', 'Como funciona', 'Para quem', 'Preços']],
-  ['Empresa',  ['Sobre', 'Blog', 'Contato', 'Seja parceiro']],
-  ['Suporte',  ['Central de ajuda', 'WhatsApp', 'Status', 'Treinamentos']],
-]
-
 function Footer() {
   const cfg = useConfig()
+  const wa  = supportWaHref(cfg.support_phone, 'Olá, tenho dúvidas sobre o BoxCerto!')
+  // Só destinos reais (seções da página, rotas que existem, WhatsApp, e-mail).
+  // Removidos Sobre/Blog/Status/Treinamentos — não há página; voltam quando existirem.
+  const cols = [
+    ['Produto', [
+      ['Funcionalidades', '#funcionalidades'],
+      ['Como funciona',   '#como-funciona'],
+      ['Para quem',       '#para-quem'],
+      ['Preços',          '#precos'],
+    ]],
+    ['Empresa', [
+      ['Seja parceiro', '/parceiro'],
+      ['Contato',       'mailto:contato@boxcerto.com'],
+    ]],
+    ['Suporte', [
+      ['Central de ajuda', wa],
+      ['WhatsApp',         wa],
+    ]],
+  ]
+  const ext = (h) => h.startsWith('http') || h.startsWith('mailto')
   return (
     <footer className="footer">
       <div className="wrap">
@@ -989,23 +1003,25 @@ function Footer() {
               <span className="wm">Box<b>Certo</b></span>
             </a>
             <p>Gestão de oficina de verdade: orçamento aprovado pelo WhatsApp, OS, clientes, estoque e financeiro num app só.</p>
-            <a className="f-wa" href={supportWaHref(cfg.support_phone, 'Olá, tenho dúvidas sobre o BoxCerto!')} target="_blank" rel="noreferrer">
+            <a className="f-wa" href={wa} target="_blank" rel="noreferrer">
               <WhatsappIcon /> Falar com a gente no WhatsApp
             </a>
           </div>
-          {FOOTER_COLS.map(([h, items]) => (
+          {cols.map(([h, items]) => (
             <div className="f-col" key={h}>
               <h5>{h}</h5>
-              {items.map((it) => <a href="#" key={it}>{it}</a>)}
+              {items.map(([label, href]) => (
+                <a href={href} key={label} {...(ext(href) ? { target: '_blank', rel: 'noreferrer' } : {})}>{label}</a>
+              ))}
             </div>
           ))}
         </div>
         <div className="footer-bottom">
-          <div>© 2026 BoxCerto · Gestão de oficina mecânica online</div>
+          <div>© {new Date().getFullYear()} BoxCerto · Gestão de oficina mecânica online</div>
           <div className="fb-links">
-            <a href="#">Termos</a>
-            <a href="#">Privacidade</a>
-            <a href="#">LGPD</a>
+            <a href="/termos">Termos</a>
+            <a href="/privacidade">Privacidade</a>
+            <a href="/privacidade">LGPD</a>
           </div>
         </div>
       </div>

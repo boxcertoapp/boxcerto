@@ -99,7 +99,7 @@ export default function Termos() {
           </p>
           <p>
             Para solicitar reembolso dentro do prazo legal, entre em contato pelo e-mail <strong>{EMAIL}</strong> ou
-            WhatsApp <strong>{WHATSAPP}</strong>.
+            WhatsApp <strong>{formatSupportPhone(cfg.support_phone)}</strong>.
           </p>
         </Secao>
 
@@ -139,7 +139,7 @@ export default function Termos() {
             etc.).
           </p>
           <p>
-            Suporte técnico está disponível via WhatsApp <strong>{WHATSAPP}</strong> e e-mail{' '}
+            Suporte técnico está disponível via WhatsApp <strong>{formatSupportPhone(cfg.support_phone)}</strong> e e-mail{' '}
             <strong>{EMAIL}</strong> em horário comercial (segunda a sexta, 9h–18h).
           </p>
         </Secao>
