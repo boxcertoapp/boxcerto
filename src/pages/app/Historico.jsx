@@ -497,6 +497,7 @@ export default function Historico() {
   const [clients, setClients]   = useState([])   // enriquecidos
   const [vehicles, setVehicles] = useState([])   // enriquecidos
   const [view, setView]         = useState('clientes') // clientes | veiculos
+  const [viewMenu, setViewMenu] = useState(false)      // dropdown do seletor Clientes/Veículos
   const [display, setDisplay]   = useState('cards')     // cards | list
   const [query, setQuery]       = useState('')
   const [filtro, setFiltro]     = useState('todos')     // todos | sumidos | aniversario | top
@@ -616,20 +617,41 @@ export default function Historico() {
       {/* Header + busca + filtros fixos */}
       <div className="sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm px-4 pt-4 pb-2 border-b border-gray-100">
         <div className="flex items-center gap-2 mb-3">
-          {view === 'veiculos'
-            ? <Car className="w-5 h-5 text-indigo-600" />
-            : <Users className="w-5 h-5 text-indigo-600" />}
-          <h1 className="text-xl font-bold text-slate-900">{view === 'veiculos' ? 'Veículos' : 'Clientes'}</h1>
-          <span className="text-sm text-slate-400 font-medium">{view === 'veiculos' ? vehicles.length : clients.length}</span>
+          {/* Seletor único Clientes/Veículos — o próprio título é o seletor */}
+          <div className="relative">
+            <button
+              onClick={() => setViewMenu(o => !o)}
+              aria-haspopup="listbox"
+              aria-expanded={viewMenu}
+              className="flex items-center gap-2 -ml-1 pl-1 pr-2 py-1 rounded-xl hover:bg-gray-100 active:bg-gray-100 transition-colors"
+            >
+              {view === 'veiculos'
+                ? <Car className="w-5 h-5 text-indigo-600" />
+                : <Users className="w-5 h-5 text-indigo-600" />}
+              <h1 className="text-xl font-bold text-slate-900">{view === 'veiculos' ? 'Veículos' : 'Clientes'}</h1>
+              <span className="text-sm text-slate-400 font-medium">{view === 'veiculos' ? vehicles.length : clients.length}</span>
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${viewMenu ? 'rotate-180' : ''}`} />
+            </button>
 
-          {/* Toggle Clientes | Veículos */}
-          <div className="ml-auto flex bg-gray-100 rounded-xl p-0.5">
-            {[['clientes', 'Clientes'], ['veiculos', 'Veículos']].map(([k, lbl]) => (
-              <button key={k} onClick={() => setView(k)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${view === k ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>
-                {lbl}
-              </button>
-            ))}
+            {viewMenu && (
+              <>
+                {/* backdrop pra fechar ao tocar fora */}
+                <div className="fixed inset-0 z-30" onClick={() => setViewMenu(false)} />
+                <div role="listbox" className="absolute left-0 top-full mt-1 z-40 w-44 bg-white rounded-xl shadow-lg border border-gray-100 p-1">
+                  {[['clientes', 'Clientes', Users, clients.length], ['veiculos', 'Veículos', Car, vehicles.length]].map(([k, lbl, Icon, n]) => (
+                    <button key={k} role="option" aria-selected={view === k}
+                      onClick={() => { setView(k); setViewMenu(false) }}
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                        view === k ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-gray-50'
+                      }`}>
+                      <Icon className={`w-4 h-4 ${view === k ? 'text-indigo-600' : 'text-slate-400'}`} />
+                      {lbl}
+                      <span className={`ml-auto text-xs font-bold ${view === k ? 'text-indigo-400' : 'text-slate-300'}`}>{n}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
