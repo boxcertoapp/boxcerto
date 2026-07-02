@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { osStorage, formatCurrency } from '../lib/storage'
 import { urlPublica } from '../lib/fotos'
+import { supabase } from '../lib/supabase'
 import PlateTag from '../components/PlateTag'
 import { showToast } from '../components/Toast'
 
@@ -178,6 +179,67 @@ function OrcamentoAcordeon({ items, total, desconto, descontoValor }) {
             </div>
           </div>
         </div>
+      )}
+    </div>
+  )
+}
+
+// ── Vistoria de entrada (ciente do cliente) ──────────────────────
+const ITENS_LBL = { estepe: 'Estepe', macaco: 'Macaco', chave_roda: 'Chave de roda', documentos: 'Documentos', som: 'Som/multimídia', tapetes: 'Tapetes' }
+
+function VistoriaCliente({ token }) {
+  const [v,        setV]        = useState(null)
+  const [ciente,   setCiente]   = useState(null)
+  const [enviando, setEnviando] = useState(false)
+
+  useEffect(() => {
+    let vivo = true
+    supabase.rpc('get_vistoria_by_token', { p_token: token }).then(({ data }) => {
+      if (vivo && data) { setV(data); setCiente(data.ciente || null) }
+    })
+    return () => { vivo = false }
+  }, [token])
+
+  if (!v) return null
+
+  const itensPresentes = Object.entries(v.itens || {}).filter(([, on]) => on).map(([k]) => ITENS_LBL[k] || k)
+
+  const confirmar = async () => {
+    setEnviando(true)
+    const { data, error } = await supabase.rpc('vistoria_dar_ciente', { p_token: token })
+    setEnviando(false)
+    if (error) { showToast('Não foi possível confirmar. Tente de novo.', 'warning'); return }
+    if (data) setCiente(data)
+  }
+
+  const fmtDt = (d) => new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 p-5 mt-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Shield className="w-4 h-4 text-indigo-600" />
+        <h3 className="text-sm font-bold text-slate-800">Vistoria de entrada</h3>
+      </div>
+      <div className="space-y-1.5 text-sm text-slate-600 mb-4">
+        {v.combustivel && <p>Combustível na entrada: <strong className="text-slate-800">{v.combustivel}</strong></p>}
+        {itensPresentes.length > 0 && <p>Itens: {itensPresentes.join(', ')}</p>}
+        {v.avarias_count > 0 && <p>{v.avarias_count} {v.avarias_count === 1 ? 'avaria registrada' : 'avarias registradas'}</p>}
+        {v.observacoes && <p className="text-slate-500">{v.observacoes}</p>}
+      </div>
+
+      <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 mb-3">
+        <p className="text-xs text-slate-500 leading-relaxed">Declaro estar ciente do estado do veículo descrito acima, registrado na entrada para serviço.</p>
+      </div>
+
+      {ciente ? (
+        <div className="flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-emerald-600">
+          <CheckCircle2 className="w-4 h-4" /> Confirmado em {fmtDt(ciente.em)}
+        </div>
+      ) : (
+        <button onClick={confirmar} disabled={enviando}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition-colors disabled:opacity-60">
+          {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} Confirmo o estado na entrada
+        </button>
       )}
     </div>
   )
@@ -552,6 +614,9 @@ export default function OrcamentoPublico() {
 
         {/* Fotos do serviço (só as liberadas pela oficina) */}
         <FotosCliente fotos={os.fotos} />
+
+        {/* Vistoria de entrada — ciente do cliente (só se a oficina liberou) */}
+        <VistoriaCliente token={token} />
 
         {/* Footer */}
         <p className="text-center text-xs text-slate-300 pb-6">Gerenciado por BoxCerto · boxcerto.com</p>

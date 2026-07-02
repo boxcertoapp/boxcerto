@@ -26,6 +26,8 @@ export default function OsVistoria({ os, ownerId, criadoPor }) {
   const [enviando, setEnviando] = useState(false)
   const [erro,     setErro]     = useState('')
   const [confirmSelar, setConfirmSelar] = useState(false)
+  const [addAdendo,   setAddAdendo]   = useState(false)
+  const [adendoTexto, setAdendoTexto] = useState('')
   const inputRef = useRef(null)
 
   const selada = v?.status === 'selada'
@@ -109,6 +111,14 @@ export default function OsVistoria({ os, ownerId, criadoPor }) {
     nova.laudo.selada_em  = new Date().toISOString()
     nova.laudo.selada_por = criadoPor || null
     await persistir(nova)
+  }
+
+  const salvarAdendo = async () => {
+    const t = adendoTexto.trim(); if (!t) return
+    const nova = clone(v)
+    nova.adendos = [...(nova.adendos || []), { em: new Date().toISOString(), por: criadoPor || null, texto: t }]
+    const ok = await persistir(nova)
+    if (ok) { setAdendoTexto(''); setAddAdendo(false) }
   }
 
   // ── Render ─────────────────────────────────────────────────
@@ -307,7 +317,31 @@ export default function OsVistoria({ os, ownerId, criadoPor }) {
                   <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${v.visivel_cliente ? 'right-0.5' : 'left-0.5'}`} />
                 </span>
               </button>
-              <p className="text-[11px] text-slate-400 flex items-center gap-1"><FileText className="w-3 h-3" /> Precisa corrigir? Em breve dá pra adicionar um adendo datado.</p>
+              {(v.adendos || []).length > 0 && (
+                <div className="space-y-1.5">
+                  {v.adendos.map((a, i) => (
+                    <div key={i} className="text-xs bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-1.5">
+                      <p className="text-amber-800">{a.texto}</p>
+                      <p className="text-amber-500 text-[10px] mt-0.5">Adendo · {new Date(a.em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {addAdendo ? (
+                <div>
+                  <textarea value={adendoTexto} onChange={e => setAdendoTexto(e.target.value)} rows={2}
+                    placeholder="O que mudou ou foi encontrado depois de selada."
+                    className="w-full text-sm rounded-lg border border-gray-200 px-3 py-2 focus:outline-none focus:border-indigo-400 resize-none" />
+                  <div className="flex gap-2 mt-1.5">
+                    <button onClick={salvarAdendo} className="flex-1 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700">Salvar adendo</button>
+                    <button onClick={() => { setAddAdendo(false); setAdendoTexto('') }} className="px-3 py-2 rounded-lg bg-gray-100 text-slate-600 text-xs font-semibold">Cancelar</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setAddAdendo(true)} className="text-xs text-indigo-600 font-medium flex items-center gap-1">
+                  <Plus className="w-3 h-3" /> Adicionar adendo
+                </button>
+              )}
             </div>
           )}
         </div>
