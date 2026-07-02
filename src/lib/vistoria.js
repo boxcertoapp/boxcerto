@@ -11,7 +11,8 @@ import {
   QUOTA_BYTES, MAX_FILE_BYTES, fmtMB,
 } from './fotos'
 
-const BUCKET = 'os-fotos'
+const BUCKET     = 'os-fotos'
+const BUCKET_PUB = 'os-fotos-pub'
 
 export const MAX_AVARIAS = 10
 export const ANGULOS = [
@@ -61,6 +62,38 @@ export async function subirFotoVistoria({ userId, osId, processed, criadoPor }) 
 export async function apagarFotoVistoria(foto) {
   const alvos = [foto?.path, foto?.thumb].filter(Boolean)
   if (alvos.length) await supabase.storage.from(BUCKET).remove(alvos).catch(() => {})
+}
+
+// ── Publicar pro cliente (copia guiadas + avarias pro bucket público) ──
+// Guarda os caminhos pub FORA do laudo (o laudo é imutável quando selado).
+// Retorna o array de caminhos públicos (vistoria.pub).
+export async function publicarVistoria(v, userId) {
+  const fontes = []
+  for (const a of ANGULOS) { const f = v.laudo?.guiadas?.[a.key]; if (f) fontes.push(f) }
+  for (const f of (v.laudo?.avarias || [])) if (f) fontes.push(f)
+
+  const pub = []
+  for (const foto of fontes) {
+    try {
+      const signed = await supabase.storage.from(BUCKET).createSignedUrl(foto.path, 120)
+      if (signed.error) continue
+      const resp = await fetch(signed.data.signedUrl)
+      if (!resp.ok) continue
+      const blob = await resp.blob()
+      const pubPath = `${userId}/vistoria/${foto.id}.jpg`
+      let up = await supabase.storage.from(BUCKET_PUB).upload(pubPath, blob, { contentType: 'image/jpeg' })
+      if (up.error && (up.error.statusCode === '409' || /already exists/i.test(up.error.message || ''))) {
+        await supabase.storage.from(BUCKET_PUB).remove([pubPath])
+        up = await supabase.storage.from(BUCKET_PUB).upload(pubPath, blob, { contentType: 'image/jpeg' })
+      }
+      if (!up.error) pub.push(pubPath)
+    } catch { /* pula a foto que falhar */ }
+  }
+  return pub
+}
+
+export async function despublicarVistoria(pub) {
+  if (pub && pub.length) await supabase.storage.from(BUCKET_PUB).remove(pub).catch(() => {})
 }
 
 // ── Objeto de vistoria em rascunho (vazio) ───────────────────

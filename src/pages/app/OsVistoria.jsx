@@ -7,18 +7,19 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   ShieldCheck, Camera, X, Plus, Lock, AlertCircle, HardDrive, Check,
-  Loader2, Eye, EyeOff, FileText,
+  Loader2, Eye, EyeOff, Fuel,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import {
   ANGULOS, COMBUSTIVEL, ITENS, MAX_AVARIAS, QUOTA_BYTES, MAX_FILE_BYTES, fmtMB,
   processarFoto, subirFotoVistoria, apagarFotoVistoria, urlsAssinadas, recalcularUso, vistoriaVazia,
+  publicarVistoria, despublicarVistoria,
 } from '../../lib/vistoria'
 
 const clone = (o) => JSON.parse(JSON.stringify(o))
 
-export default function OsVistoria({ os, ownerId, criadoPor }) {
+export default function OsVistoria({ os, ownerId, criadoPor, autoIniciar = false }) {
   const [v,        setV]        = useState(os.vistoria || null)
   const [thumbs,   setThumbs]   = useState({})
   const [uso,      setUso]      = useState(null)
@@ -28,6 +29,7 @@ export default function OsVistoria({ os, ownerId, criadoPor }) {
   const [confirmSelar, setConfirmSelar] = useState(false)
   const [addAdendo,   setAddAdendo]   = useState(false)
   const [adendoTexto, setAdendoTexto] = useState('')
+  const [publicando,  setPublicando]  = useState(false)
   const inputRef = useRef(null)
 
   const selada = v?.status === 'selada'
@@ -59,6 +61,12 @@ export default function OsVistoria({ os, ownerId, criadoPor }) {
   }, [os.id, ownerId])
 
   const iniciar = () => persistir(vistoriaVazia(os.km ? Number(String(os.km).replace(/\D/g, '')) || null : null))
+
+  // Veio do aviso "fazer agora" ao criar a OS → abre o rascunho sozinho
+  useEffect(() => {
+    if (autoIniciar && !v) iniciar()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoIniciar])
 
   // ── Upload ─────────────────────────────────────────────────
   const abrirPicker = (tipo, angulo) => {
@@ -102,7 +110,21 @@ export default function OsVistoria({ os, ownerId, criadoPor }) {
   }
 
   const editarLaudo = (fn) => { if (selada) return; const nova = clone(v); fn(nova.laudo); persistir(nova) }
-  const toggleCiente = () => { const nova = clone(v); nova.visivel_cliente = !nova.visivel_cliente; persistir(nova) }
+
+  const toggleCiente = async () => {
+    const ligar = !v.visivel_cliente
+    const nova = clone(v)
+    nova.visivel_cliente = ligar
+    if (selada) {
+      setPublicando(true)
+      try {
+        if (ligar) nova.pub = await publicarVistoria(v, ownerId)
+        else { await despublicarVistoria(v.pub); nova.pub = null }
+      } catch { showToast('Não consegui atualizar a visibilidade pro cliente.', 'warning'); setPublicando(false); return }
+      setPublicando(false)
+    }
+    await persistir(nova)
+  }
 
   const selar = async () => {
     setConfirmSelar(false)
@@ -110,6 +132,11 @@ export default function OsVistoria({ os, ownerId, criadoPor }) {
     nova.status = 'selada'
     nova.laudo.selada_em  = new Date().toISOString()
     nova.laudo.selada_por = criadoPor || null
+    if (nova.visivel_cliente) {
+      setPublicando(true)
+      try { nova.pub = await publicarVistoria(v, ownerId) } catch {}
+      setPublicando(false)
+    }
     await persistir(nova)
   }
 
@@ -195,19 +222,27 @@ export default function OsVistoria({ os, ownerId, criadoPor }) {
             <p className="text-xs text-red-600 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" /> {erro}</p>
           )}
 
-          {/* km + combustível */}
+          {/* Combustível — medidor */}
           <div>
-            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
-              Combustível
-              {v.laudo.km != null && <span className="ml-2 font-normal normal-case text-slate-400">· km na entrada: {Number(v.laudo.km).toLocaleString('pt-BR')}</span>}
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+              <Fuel className="w-3.5 h-3.5" /> Combustível
+              {v.laudo.km != null && <span className="ml-auto font-normal normal-case text-slate-400">km na entrada: {Number(v.laudo.km).toLocaleString('pt-BR')}</span>}
             </p>
-            <div className="flex gap-1.5">
-              {COMBUSTIVEL.map(c => (
-                <button key={c} onClick={() => editarLaudo(l => { l.combustivel = c })} disabled={selada}
-                  className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-60 ${v.laudo.combustivel === c ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-slate-500'}`}>
-                  {c}
-                </button>
-              ))}
+            <div className="flex items-end gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-2.5">
+              {COMBUSTIVEL.map((c, i) => {
+                const selIdx = COMBUSTIVEL.indexOf(v.laudo.combustivel)
+                const filled = selIdx >= 0 && i <= selIdx
+                const sel = v.laudo.combustivel === c
+                const cor  = selIdx <= 1 ? 'bg-red-400' : selIdx === 2 ? 'bg-amber-400' : 'bg-emerald-500'
+                return (
+                  <button key={c} onClick={() => editarLaudo(l => { l.combustivel = c })} disabled={selada}
+                    className="flex-1 flex flex-col items-center gap-1.5 disabled:cursor-default group">
+                    <span className={`w-full rounded-md transition-all duration-200 ${filled ? cor : 'bg-gray-200 group-hover:bg-gray-300'}`}
+                      style={{ height: 12 + i * 6 }} />
+                    <span className={`text-xs font-semibold transition-colors ${sel ? 'text-slate-800' : 'text-slate-400'}`}>{c}</span>
+                  </button>
+                )
+              })}
             </div>
           </div>
 
@@ -290,8 +325,10 @@ export default function OsVistoria({ os, ownerId, criadoPor }) {
                 <div className="bg-white border border-indigo-200 rounded-xl p-3">
                   <p className="text-xs text-slate-600 mb-2.5">Finalizar trava a vistoria — depois só dá pra adicionar adendo, não editar. Confirmar?</p>
                   <div className="flex gap-2">
-                    <button onClick={selar} className="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">Sim, finalizar</button>
-                    <button onClick={() => setConfirmSelar(false)} className="px-4 py-2.5 rounded-xl bg-gray-100 text-slate-600 text-sm font-semibold">Cancelar</button>
+                    <button onClick={selar} disabled={publicando} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60">
+                      {publicando ? <><Loader2 className="w-4 h-4 animate-spin" /> Publicando…</> : 'Sim, finalizar'}
+                    </button>
+                    <button onClick={() => setConfirmSelar(false)} disabled={publicando} className="px-4 py-2.5 rounded-xl bg-gray-100 text-slate-600 text-sm font-semibold disabled:opacity-60">Cancelar</button>
                   </div>
                 </div>
               ) : (
@@ -307,11 +344,11 @@ export default function OsVistoria({ os, ownerId, criadoPor }) {
                 <Lock className="w-3.5 h-3.5 text-emerald-600" />
                 Selada em {new Date(v.laudo.selada_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </p>
-              <button onClick={toggleCiente}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
+              <button onClick={toggleCiente} disabled={publicando}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 border border-gray-100 disabled:opacity-70">
                 <span className="flex items-center gap-2 text-xs text-slate-600">
-                  {v.visivel_cliente ? <Eye className="w-3.5 h-3.5 text-indigo-600" /> : <EyeOff className="w-3.5 h-3.5 text-slate-400" />}
-                  Cliente vê no link de aprovação
+                  {publicando ? <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" /> : v.visivel_cliente ? <Eye className="w-3.5 h-3.5 text-indigo-600" /> : <EyeOff className="w-3.5 h-3.5 text-slate-400" />}
+                  {publicando ? 'Atualizando fotos do cliente…' : 'Cliente vê no link de aprovação'}
                 </span>
                 <span className={`w-8 h-4 rounded-full relative transition-colors ${v.visivel_cliente ? 'bg-indigo-600' : 'bg-gray-300'}`}>
                   <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${v.visivel_cliente ? 'right-0.5' : 'left-0.5'}`} />

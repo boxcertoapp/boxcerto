@@ -220,6 +220,16 @@ function VistoriaCliente({ token }) {
         <Shield className="w-4 h-4 text-indigo-600" />
         <h3 className="text-sm font-bold text-slate-800">Vistoria de entrada</h3>
       </div>
+      {(v.fotos || []).length > 0 && (
+        <div className="grid grid-cols-4 gap-1.5 mb-4">
+          {v.fotos.map((p, i) => (
+            <a key={i} href={urlPublica(p)} target="_blank" rel="noreferrer"
+              className="aspect-square rounded-lg overflow-hidden bg-gray-100 block">
+              <img src={urlPublica(p)} alt="Foto da vistoria de entrada" className="w-full h-full object-cover" loading="lazy" />
+            </a>
+          ))}
+        </div>
+      )}
       <div className="space-y-1.5 text-sm text-slate-600 mb-4">
         {v.combustivel && <p>Combustível na entrada: <strong className="text-slate-800">{v.combustivel}</strong></p>}
         {itensPresentes.length > 0 && <p>Itens: {itensPresentes.join(', ')}</p>}

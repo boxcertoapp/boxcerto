@@ -527,6 +527,7 @@ export default function Oficina() {
   const [onboardingOsOpen, setOnboardingOsOpen] = useState(false)
   const [showNewOS, setShowNewOS] = useState(false)
   const [prefillPlate, setPrefillPlate] = useState('')
+  const [abrirVistoriaOS, setAbrirVistoriaOS] = useState(false)
   const [refresh, setRefresh] = useState(0)
   const reload = () => setRefresh(r => r + 1)
   const firedFirstBudget = useRef(false) // guarda contra duplo disparo de CreatedFirstBudget
@@ -610,9 +611,10 @@ export default function Oficina() {
       {selectedOS && (
         <OSDetailModal
           os={selectedOS}
-          onClose={() => { setSelectedOS(null); setOnboardingOsOpen(false); reload() }}
+          onClose={() => { setSelectedOS(null); setOnboardingOsOpen(false); setAbrirVistoriaOS(false); reload() }}
           officeName={user.oficina}
           onboardingOsOpen={onboardingOsOpen}
+          abrirVistoria={abrirVistoriaOS}
         />
       )}
       {showNewOS && (
@@ -620,7 +622,7 @@ export default function Oficina() {
           officeName={user.oficina}
           prefillPlate={prefillPlate}
           onClose={() => { setShowNewOS(false); setPrefillPlate(''); reload() }}
-          onCreated={async (createdOS) => {
+          onCreated={async (createdOS, abrirVistoria = false) => {
             // CreatedFirstBudget: dispara CAPI + dataLayer só na primeira OS
             // dupla guarda: DB (onboardingOsDone) + ref em memória (firedFirstBudget)
             if (!user.onboardingOsDone && !firedFirstBudget.current) {
@@ -639,6 +641,7 @@ export default function Oficina() {
             setShowNewOS(false)
             setPrefillPlate('')
             setSelectedOS(createdOS)
+            setAbrirVistoriaOS(!!abrirVistoria)
             reload()
           }}
         />
@@ -649,6 +652,10 @@ export default function Oficina() {
 
 // ── NEW OS MODAL ─────────────────────────────────────────
 function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
+  const { user } = useAuth()
+  const cfg = useConfig()
+  const showVistoriaPrompt = cfg.feature_vistoria === 'on' || user?.isAdmin
+  const [feitoOS, setFeitoOS] = useState(null)
   const [placa, setPlaca] = useState(prefillPlate)
   const [step, setStep] = useState('plate') // plate | newClient | confirm
   const [vehicle, setVehicle] = useState(null)
@@ -823,7 +830,8 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
       }
       window.dispatchEvent(new CustomEvent('boxcerto:os-criada', { detail: { osId: createdOS.id } }))
       showSaveCheck('OS Aberta!')
-      if (onCreated) onCreated(hydratedOS)
+      if (showVistoriaPrompt) setFeitoOS(hydratedOS)
+      else if (onCreated) onCreated(hydratedOS)
       else onClose()
     } catch (e) {
       setError(e.message || 'Erro ao criar OS.')
@@ -844,7 +852,8 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
       }
       window.dispatchEvent(new CustomEvent('boxcerto:os-criada', { detail: { osId: createdOS.id } }))
       showSaveCheck('OS Aberta!')
-      if (onCreated) onCreated(hydratedOS)
+      if (showVistoriaPrompt) setFeitoOS(hydratedOS)
+      else if (onCreated) onCreated(hydratedOS)
       else onClose()
     } catch (e) {
       setError(e.message || 'Erro ao criar OS.')
@@ -856,6 +865,25 @@ function NewOSModal({ officeName, onClose, prefillPlate = '', onCreated }) {
   const inpReqBase = 'w-full px-3 py-2.5 rounded-xl border focus:outline-none focus:ring-2 text-sm transition-colors'
   // Borda vermelha só após tentar salvar e enquanto o campo obrigatório estiver vazio
   const reqInp = (val) => `${inpReqBase} ${triedSave && !val ? 'border-red-400 focus:border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-indigo-400 focus:ring-indigo-50'}`
+
+  // Aviso pós-criação: fazer o check-in de entrada agora?
+  if (feitoOS) {
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+        <div className="bg-white rounded-2xl p-5 w-full max-w-sm">
+          <div className="flex items-center gap-2.5 mb-2">
+            <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0"><Camera className="w-5 h-5 text-indigo-600" /></div>
+            <p className="font-bold text-slate-900">Fazer check-in de entrada?</p>
+          </div>
+          <p className="text-sm text-slate-500 mb-4">Registre o estado do veículo com fotos.</p>
+          <div className="flex gap-2">
+            <button onClick={() => onCreated?.(feitoOS, true)} className="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">Fazer agora</button>
+            <button onClick={() => onCreated?.(feitoOS, false)} className="flex-1 py-2.5 rounded-xl bg-gray-100 text-slate-600 text-sm font-semibold hover:bg-gray-200">Agora não</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40"
@@ -1268,7 +1296,7 @@ function StockPickerRow({ item, onAdd }) {
 }
 
 // ── OS DETAIL MODAL ───────────────────────────────────────
-function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false }) {
+function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false, abrirVistoria = false }) {
   const { user } = useAuth()
   const cfg = useConfig()
   const showFotos = cfg.feature_os_fotos === 'on' || user?.isAdmin
@@ -1991,7 +2019,7 @@ function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false }) {
 
           {/* ── VISTORIA DE ENTRADA ─────────────────────────── */}
           {showVistoria && (
-            <OsVistoria os={os} ownerId={user.id} criadoPor={user.id} />
+            <OsVistoria os={os} ownerId={user.id} criadoPor={user.id} autoIniciar={abrirVistoria} />
           )}
 
           {/* ── FOTOS DA OS ─────────────────────────────────── */}
