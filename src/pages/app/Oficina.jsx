@@ -13,6 +13,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext'
 import { useConfig } from '../../hooks/useConfig'
 import OsFotos from './OsFotos'
+import OsVistoria from './OsVistoria'
 import { supabase } from '../../lib/supabase'
 import { sendCapi } from '../../lib/metaCapi'
 import FipeSeletor from '../../components/FipeSeletor'
@@ -1271,6 +1272,7 @@ function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false }) {
   const { user } = useAuth()
   const cfg = useConfig()
   const showFotos = cfg.feature_os_fotos === 'on' || user?.isAdmin
+  const showVistoria = cfg.feature_vistoria === 'on' || user?.isAdmin
   const [items, setItems] = useState([])
   const [status, setStatus] = useState(os.status)
   const [showAddItem, setShowAddItem] = useState(false)
@@ -1986,6 +1988,11 @@ function OSDetailModal({ os, onClose, officeName, onboardingOsOpen = false }) {
               </div>
             )}
           </div>
+
+          {/* ── VISTORIA DE ENTRADA ─────────────────────────── */}
+          {showVistoria && (
+            <OsVistoria os={os} ownerId={user.id} criadoPor={user.id} />
+          )}
 
           {/* ── FOTOS DA OS ─────────────────────────────────── */}
           {showFotos && (

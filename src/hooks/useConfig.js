@@ -18,6 +18,8 @@ export const CONFIG_DEFAULTS = {
   support_phone:        '5553997065725',
   // Feature flag: seção de fotos na OS (off em produção até liberar; admin sempre vê)
   feature_os_fotos:     'off',
+  // Feature flag: vistoria de entrada do veículo (off até liberar; admin sempre vê)
+  feature_vistoria:     'off',
 }
 
 // Cache de módulo — compartilhado entre todos os componentes

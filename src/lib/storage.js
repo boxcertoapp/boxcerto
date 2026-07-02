@@ -70,6 +70,7 @@ const mapOS = (os) => !os ? null : ({
   urgente:       os.urgente        || false,
   problemaFlag:  os.problema_flag  || false,
   fotos:         os.fotos          || [],
+  vistoria:      os.vistoria       || null,
 })
 
 const mapItem = (i) => !i ? null : ({

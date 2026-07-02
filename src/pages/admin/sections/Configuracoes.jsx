@@ -271,6 +271,48 @@ function FotosFlagConfig() {
   )
 }
 
+// ── Flag real: Vistoria de entrada ───────────────────────────
+function VistoriaFlagConfig() {
+  const [ativo,   setAtivo]   = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving,  setSaving]  = useState(false)
+
+  useEffect(() => {
+    supabase.from('app_config').select('value').eq('key', 'feature_vistoria').maybeSingle()
+      .then(({ data }) => { setAtivo(data?.value === 'on'); setLoading(false) })
+  }, [])
+
+  const toggle = async () => {
+    setSaving(true)
+    const novo = ativo ? 'off' : 'on'
+    const { error } = await supabase.from('app_config')
+      .upsert({ key: 'feature_vistoria', value: novo, updated_at: new Date().toISOString() }, { onConflict: 'key' })
+    setSaving(false)
+    if (!error) { setAtivo(!ativo); invalidateConfig() }
+    else alert('Erro: ' + error.message)
+  }
+
+  return (
+    <Section title="Vistoria de entrada (beta)" icon={Shield}>
+      {loading ? (
+        <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-slate-400" /></div>
+      ) : (
+        <div className={`flex items-center gap-3 p-3 rounded-xl ${ativo ? 'bg-indigo-50 border border-indigo-100' : 'bg-gray-50'}`}>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-slate-800">Check-in de entrada do veículo</p>
+            <p className="text-xs text-slate-400">
+              {ativo ? 'Ligado para todas as oficinas.' : 'Desligado — só admin vê (para testes). Ligue quando estiver pronto pra todos.'}
+            </p>
+          </div>
+          <button onClick={toggle} disabled={saving} className={`transition-colors disabled:opacity-50 ${ativo ? 'text-indigo-600' : 'text-slate-300'}`}>
+            {saving ? <Loader2 className="w-7 h-7 animate-spin" /> : ativo ? <ToggleRight className="w-8 h-8" /> : <ToggleLeft className="w-8 h-8" />}
+          </button>
+        </div>
+      )}
+    </Section>
+  )
+}
+
 // ── Feature flags ────────────────────────────────────────────
 function FeatureFlags() {
   const [flags, setFlags] = useState([
@@ -420,6 +462,7 @@ export default function Configuracoes({ users, reload, confirmarComSenha }) {
     <div className="space-y-5">
       <PlanosConfig />
       <FotosFlagConfig />
+      <VistoriaFlagConfig />
       <SuporteConfig confirmarComSenha={confirmarComSenha} />
       <AdminsConfig users={users} reload={reload} />
       <IntegracoesConfig />
