@@ -17,13 +17,14 @@ import {
   MessageSquare, ClipboardList, Package, ChevronRight,
   Send, Plus, Trash2, Clock, History, Flag,
   TriangleAlert, UserCheck, ChevronDown, Check,
-  Search, ChevronLeft, ChevronUp, Camera,
+  Search, ChevronLeft, ChevronUp, Camera, ShieldCheck,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConfig } from '../../hooks/useConfig'
 import { osStorage, itemStorage, formatCurrency, formatDate, norm } from '../../lib/storage'
 import OsFotos from '../app/OsFotos'
+import OsVistoria from '../app/OsVistoria'
 
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
@@ -705,6 +706,7 @@ function OSDetalhe({ os: osInicial, meNome, masterId, podeAssumir, onClose, onRe
   const { user } = useAuth()
   const cfg = useConfig()
   const showFotos = cfg.feature_os_fotos === 'on' || user?.isAdmin
+  const showVistoria = cfg.feature_vistoria === 'on' || user?.isAdmin
   const [os, setOs]            = useState(osInicial)
   const [tab, setTab]          = useState('tarefas')
   const [showHistory, setShowHistory] = useState(false)
@@ -906,6 +908,7 @@ function OSDetalhe({ os: osInicial, meNome, masterId, podeAssumir, onClose, onRe
           { id: 'tarefas',  icon: ClipboardList, label: 'Tarefas',  badge: os.checklist?.length ? `${totalFeitas}/${os.checklist.length}` : null },
           { id: 'notas',    icon: MessageSquare, label: 'Notas',     badge: os.notasInternas?.length || null },
           { id: 'servicos', icon: Package,       label: 'Serviços',  badge: os.items?.length || null },
+          ...(showVistoria ? [{ id: 'vistoria', icon: ShieldCheck, label: 'Vistoria', badge: null }] : []),
           ...(showFotos ? [{ id: 'fotos', icon: Camera, label: 'Fotos', badge: os.fotos?.length || null }] : []),
         ].map(({ id, icon: Icon, label, badge }) => (
           <button
@@ -1090,6 +1093,13 @@ function OSDetalhe({ os: osInicial, meNome, masterId, podeAssumir, onClose, onRe
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── Tab: Vistoria ─────────────────────────────────────── */}
+      {tab === 'vistoria' && showVistoria && (
+        <div className="flex-1 overflow-y-auto p-4">
+          <OsVistoria os={os} ownerId={masterId} criadoPor={user.id} />
         </div>
       )}
 
